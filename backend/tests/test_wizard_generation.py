@@ -120,6 +120,43 @@ def test_explicit_function_assignments_preserve_each_confirmed_controller():
         wizard_generation._declared_function_assignments('- Funktionszuordnungen: {"MotionControl":42}')
 
 
+def test_source_scoped_responsibilities_keep_their_host_and_literal_evidence(monkeypatch):
+    def controller(name, duty):
+        return {
+            'hardware_name': name, 'hardware_description': name, 'device_type': 'ECU', 'device_class': 4,
+            'function_name': name + 'Function', 'function_description': name,
+            'interface_name': name + '_Ethernet', 'interface_type': 'Ethernet',
+            'transport_network_ref': None, 'message_name': name + 'Data',
+            'message_id_hex': None, 'direction': 'tx', 'cycle_ms': 20, 'dlc': 1,
+            'signal_name': name + 'Status', 'start_bit': 0, 'length_bits': 8,
+            'byte_order': 'little_endian', 'data_type': 'unsigned', 'factor': 1, 'offset_value': 0,
+            'configuration': {'source_scoped_functions': [{'name': duty, 'source_quote': duty}]},
+        }
+    spec = {'domain': 'custom', 'modelType': 'custom',
+            'targetCounts': {'gateways': 0, 'ecus': 2, 'sensors': 0, 'actuators': 0},
+            'communicationSystemCounts': {'ethernet': 1},
+            'chains': [controller('Alpha', 'Perception (Objekte, Spuren)'),
+                       controller('Beta', 'Thermomanagement')]}
+    monkeypatch.setattr(wizard_generation.proposal_store, 'list_proposals', lambda limit: [])
+    monkeypatch.setattr(wizard_generation.model, 'objects', lambda _kind: [])
+    monkeypatch.setattr(wizard_generation, 'extract_specification', lambda _prompt: spec)
+    monkeypatch.setattr(wizard_generation.proposal_service, 'create',
+                        lambda proposal_type, changes, summary, **metadata: {'changes': changes})
+    changes = wizard_generation.generate({'prompt': 'Explizite Aufgaben auf zwei Controllern'})['changes']
+    hardware = {item['data']['name']: '$' + item['local_ref'] for item in changes
+                if item['object_type'] == 'HardwareNode'}
+    functions = [item['data'] for item in changes if item['object_type'] == 'Function'
+                 and (item['data'].get('configuration') or {}).get('source_scoped_function')]
+    assert len(functions) == 2
+    for function, host, duty in zip(functions, ['Alpha', 'Beta'],
+                                    ['Perception (Objekte, Spuren)', 'Thermomanagement']):
+        assert function['hardware_node_id'] == hardware[host]
+        assert function['configuration']['source_scoped_function']['source_quote'] == duty
+        assert function['configuration']['processing_evidence'] == 'NONE'
+        assert function['configuration']['dependency_review'] == 'REQUIRED'
+        assert 'consumer_refs' not in function['configuration']
+
+
 def test_wizard_direct_gpio_signal_has_binding_without_message_or_bus(monkeypatch):
     def chain(name, device_type, technology):
         return {
@@ -1171,3 +1208,208 @@ def test_network_editor_communication_function_is_not_an_unexpected_user_functio
 
     result = execute(authority, 'test_network_editor_function', Permission.READ_MODEL, {}, lambda _: operation())
     assert result.success, result.findings
+
+
+def test_reviewed_document_functions_require_explicit_real_hosts_and_keep_sources():
+    from backend.nis.agent.orchestration.project_intake import document_fact_identity
+    fact = {'name': 'Motion Control', 'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None,
+            'source_quote': 'Motion Control und Kraftregelung', 'source_context': ['054 Roboter', 'Funktionen']}
+    evidence = {'components': [fact], 'source_sha256': 'a' * 64}
+    with pytest.raises(ValueError, match='Funktionszuordnung'):
+        wizard_generation._reviewed_document_functions(evidence, ['hauptrechner'])
+    evidence['function_assignments'] = {document_fact_identity(fact): 'Gateway'}
+    with pytest.raises(ValueError, match='Funktionszuordnung'):
+        wizard_generation._reviewed_document_functions(evidence, ['hauptrechner'])
+    evidence['function_assignments'] = {document_fact_identity(fact): 'Hauptrechner'}
+    result = wizard_generation._reviewed_document_functions(evidence, ['hauptrechner'])
+    assert result[0]['host'] == 'hauptrechner'
+    assert result[0]['source_quote'] == fact['source_quote']
+    assert result[0]['source_context'] == fact['source_context']
+    assert result[0]['fact_id'] == document_fact_identity(fact)
+    assert result[0]['source_sha256'] == 'a' * 64
+    other = {**fact, 'source_context': ['056 AMR', 'Funktionen']}
+    evidence['components'].append(other)
+    evidence['function_assignments'][document_fact_identity(other)] = 'Hauptrechner'
+    result = wizard_generation._reviewed_document_functions(evidence, ['hauptrechner'])
+    assert len({duty['name'] for duty in result}) == 2
+
+
+def test_typed_function_preserves_unique_literal_controller_scope_without_sole_host_fallback():
+    fact = {'name': 'Perception', 'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None,
+            'source_quote': 'Perception (Objekte, Spuren)', 'source_context': ['Robot A', 'Functions']}
+    evidence = {'components': [fact], 'source_sha256': 'a' * 64}
+    chain = {'hardware_name': 'ADC', 'device_type': 'ECU', 'configuration': {
+        'source_scoped_functions': [{'source_quote': fact['source_quote']}],
+        'document_equipment_evidence': {'source_context': ['Robot A', 'Architecture']}}}
+    result = wizard_generation._reviewed_document_functions(evidence, ['adc'], [chain])
+    assert result[0]['host'] == 'adc'
+    assert result[0]['assignment_source'] == 'source_scoped_function'
+    chain['configuration']['document_equipment_evidence']['source_context'] = ['Robot B', 'Architecture']
+    with pytest.raises(ValueError, match='Funktionszuordnung'):
+        wizard_generation._reviewed_document_functions(evidence, ['adc'], [chain])
+    chain['configuration']['document_equipment_evidence']['source_context'] = ['Robot A', 'Architecture']
+    with pytest.raises(ValueError, match='Funktionszuordnung'):
+        wizard_generation._reviewed_document_functions(evidence, ['adc', 'other'], [chain, {**chain, 'hardware_name': 'Other'}])
+
+
+@pytest.mark.parametrize('reviewed', [False, True])
+def test_source_cross_section_function_keeps_declared_owner_provenance(reviewed):
+    from backend.nis.agent.orchestration.project_intake import document_fact_identity
+    fact = {'name': 'Fahrdynamikregelung', 'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None,
+            'source_quote': 'Fahrdynamikregelung', 'source_context': ['Vehicle', '4. Systemfunktionen', '4.4 Fahrzeugsteuerung']}
+    context = ['Vehicle', '2. Domain‑Controller‑Design', '2.2 Chassis Domain Controller (CDC)']
+    witness = {**fact, 'source_context': context}
+    evidence = {'components': [fact, witness], 'source_sha256': 'c' * 64}
+    if reviewed:
+        evidence['function_assignments'] = {document_fact_identity(fact): 'CDC'}
+    chain = {'hardware_name': 'CDC', 'device_type': 'ECU', 'configuration': {
+        'source_scoped_functions': [{'source_quote': fact['source_quote']}],
+        'document_equipment_evidence': {'source_context': context}}}
+    result = wizard_generation._reviewed_document_functions(evidence, ['cdc'], [chain])
+    assert len(result) == 2
+    assert all(item['host'] == 'cdc' and item['assignment_source'] == 'source_scoped_function' for item in result)
+    assert result[0]['fact_id'] == document_fact_identity(fact)
+    assert result[0]['source_quote'] == fact['source_quote']
+    assert result[0]['source_sha256'] == 'c' * 64
+
+
+@pytest.mark.parametrize('invalid', ['different-profile', 'ambiguous-owner', 'qualified-subject', 'composite',
+                                   'missing-witness', 'wrong-kind', 'wrong-role', 'quantity',
+                                   'nonliteral-subject', 'shared-citation', 'empty-fact-context',
+                                   'empty-owner-context', 'empty-witness-context'])
+def test_source_cross_section_function_rejects_unproved_owner(invalid):
+    fact = {'name': 'Fahrdynamikregelung', 'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None,
+            'source_quote': 'Fahrdynamikregelung', 'source_context': ['Vehicle A', '4. Systemfunktionen', '4.4 Fahrzeugsteuerung']}
+    context = ['Vehicle A', '2. Domain‑Controller‑Design', '2.2 CDC']
+    witnesses = [{**fact, 'source_context': context}]
+    chains = [{'hardware_name': 'CDC', 'device_type': 'ECU', 'configuration': {
+        'source_scoped_functions': [{'source_quote': fact['source_quote']}],
+        'document_equipment_evidence': {'source_context': context}}}]
+    if invalid == 'different-profile':
+        witnesses[0]['source_context'] = ['Vehicle B', *context[1:]]
+        chains[0]['configuration']['document_equipment_evidence']['source_context'] = witnesses[0]['source_context']
+    elif invalid == 'ambiguous-owner':
+        other_context = [*context[:-1], '2.3 Other']
+        witnesses.append({**fact, 'source_context': other_context})
+        chains.append({'hardware_name': 'Other', 'device_type': 'ECU', 'configuration': {
+            'source_scoped_functions': [{'source_quote': fact['source_quote']}],
+            'document_equipment_evidence': {'source_context': other_context}}})
+    elif invalid in {'qualified-subject', 'composite'}:
+        fact['name'] += ' (Steering)' if invalid == 'qualified-subject' else ' und Planning'
+        fact['source_quote'] = fact['name']
+    elif invalid == 'missing-witness':
+        witnesses = []
+    elif invalid == 'wrong-kind':
+        witnesses[0]['kind'] = 'CATEGORY'
+    elif invalid == 'wrong-role':
+        witnesses[0]['role'] = 'CONTROLLER'
+    elif invalid == 'quantity':
+        witnesses[0]['quantity'] = 1
+    elif invalid == 'nonliteral-subject':
+        fact['source_quote'] = 'Other source line'
+    elif invalid == 'empty-fact-context':
+        fact['source_context'] = []
+    elif invalid == 'empty-owner-context':
+        chains[0]['configuration']['document_equipment_evidence']['source_context'] = []
+        witnesses[0]['source_context'] = ['Functions']
+    elif invalid == 'empty-witness-context':
+        chains[0]['configuration']['document_equipment_evidence']['source_context'] = ['Architecture']
+        witnesses[0]['source_context'] = []
+    elif invalid == 'shared-citation':
+        witnesses[0]['source_quote'] = 'Fahrdynamikregelung und Planning'
+        witnesses.append({**witnesses[0], 'name': 'Planning'})
+        chains[0]['configuration']['source_scoped_functions'] = [{'source_quote': 'Planning'}]
+    with pytest.raises(ValueError, match='Funktionszuordnung'):
+        wizard_generation._reviewed_document_functions({'components': [fact, *witnesses], 'source_sha256': 'c' * 64},
+                                                     ['cdc', 'other'], chains)
+
+
+@pytest.mark.parametrize('with_scoped', [False, True])
+def test_typed_document_duties_enter_model_proposal_with_complete_requirements(monkeypatch, with_scoped):
+    import hashlib
+    from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references, resolve_document_references, document_fact_identity
+    source = '# Robot\n## Architecture\nHauptrechner\n## Functions\nMotion Control\n## Requirements\nREQ-R-001: The controller shall detect sensor faults.'
+    rows = document_source_references(source)
+    units = document_component_sources(rows)
+    facts = resolve_document_references({'components': [{'source_ref': unit['source_ref'], **unit['policy']} for unit in units], 'technologies': []}, rows)['components']
+    function = next(fact for fact in facts if fact['kind'] == 'FUNCTION')
+    envelope = {'source_sha256': hashlib.sha256(source.encode()).hexdigest(), 'source_chars': len(source), 'source_text': source,
+                'facts': facts, 'technologies': [], 'questions': [], 'answers': [],
+                'function_assignments': {document_fact_identity(function): 'Hauptrechner'}}
+    prompt = source + '\n- Dokument-Geräte: ' + json.dumps(envelope, ensure_ascii=False)
+    chain = {'hardware_name': 'Hauptrechner', 'hardware_description': 'Hauptrechner', 'device_type': 'ECU', 'device_class': 4,
+             'function_name': 'HauptrechnerStatus', 'function_description': 'Status', 'interface_name': 'Hauptrechner_Ethernet',
+             'interface_type': 'Ethernet', 'transport_network_ref': None, 'message_name': 'HauptrechnerData',
+             'message_id_hex': None, 'direction': 'tx', 'cycle_ms': 20, 'dlc': 1, 'signal_name': 'HauptrechnerValue',
+             'start_bit': 0, 'length_bits': 8, 'byte_order': 'little_endian', 'data_type': 'unsigned', 'factor': 1, 'offset_value': 0}
+    if with_scoped:
+        chain['configuration'] = {'source_scoped_functions': [{'name': 'Motion Control', 'source_quote': 'Motion Control'}]}
+    spec = {'domain': 'custom', 'modelType': 'custom', 'targetCounts': {'gateways': 0, 'ecus': 1, 'sensors': 0, 'actuators': 0},
+            'communicationSystemCounts': {'ethernet': 1}, 'chains': [chain]}
+    monkeypatch.setattr(wizard_generation.proposal_store, 'list_proposals', lambda limit: [])
+    monkeypatch.setattr(wizard_generation.model, 'objects', lambda _kind: [])
+    monkeypatch.setattr(wizard_generation, 'extract_specification', lambda _prompt: spec)
+    captured = {}
+    monkeypatch.setattr(wizard_generation.proposal_service, 'create',
+                        lambda proposal_type, changes, summary, **metadata: captured.update(changes=changes, metadata=metadata) or captured)
+    result = wizard_generation.generate({'prompt': prompt})
+    duties = [row['data'] for row in result['changes'] if row['object_type'] == 'Function'
+              and ((row['data'].get('configuration') or {}).get('reviewed_document_function')
+                   or (row['data'].get('configuration') or {}).get('reviewed_document_functions'))]
+    assert len(duties) == 1
+    config = duties[0]['configuration']
+    duty = config.get('reviewed_document_function') or config['reviewed_document_functions'][0]
+    assert duty['source_quote'] == 'Motion Control'
+    assert duty['source_context'] == ['Robot', 'Functions']
+    assert duties[0]['configuration']['processing_evidence'] == 'NONE'
+    assert duties[0]['configuration']['dependency_review'] == 'REQUIRED'
+    assert duties[0]['configuration']['source_scoped_function']['source_quote'] == 'Motion Control'
+    assert len([row for row in result['changes'] if row['object_type'] == 'Function']) == 2
+    evidence = next(item for item in captured['metadata']['evidence'] if item.get('source') == 'reviewed_document')
+    assert evidence['components'] == facts
+    assert any(fact['source_quote'] == 'REQ-R-001: The controller shall detect sensor faults.' for fact in evidence['components'])
+    if with_scoped:
+        assert len(evidence['function_bindings']) == 1
+
+
+
+def test_numeric_controller_heading_and_child_tasks_keep_the_same_explicit_function_host():
+    quote = 'Perception (Objekte, Spuren)'
+    fact = {'name': 'Perception', 'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None, 'source_quote': quote,
+            'source_context': ['2. Architektur', '2.3 ADAS Domain Controller (ADC)', '2.3.1 Aufgaben']}
+    evidence = {'components': [fact], 'source_sha256': 'a' * 64}
+    def host(name, scope):
+        return {'hardware_name': name, 'device_type': 'ECU', 'configuration': {
+            'source_scoped_functions': [{'source_quote': quote}], 'document_equipment_evidence': {'source_context': scope}}}
+    chains = [host('ADC', ['2. Architektur', '2.3 ADAS Domain Controller (ADC)']),
+              host('CGW', ['2. Architektur', '2.1 Central Gateway'])]
+    result = wizard_generation._reviewed_document_functions(evidence, ['adc', 'cgw'], chains)
+    assert result[0]['host'] == 'adc'
+    assert result[0]['assignment_source'] == 'source_scoped_function'
+
+
+def test_shared_list_quote_never_transfers_a_different_function_owner():
+    from backend.nis.agent.orchestration.project_intake import document_fact_identity
+    facts = [{'name': name, 'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None,
+              'source_quote': 'Perception, Planning', 'source_context': ['Robot', 'Functions']}
+             for name in ['Perception', 'Planning']]
+    chain = {'hardware_name': 'ADC', 'device_type': 'ECU', 'configuration': {
+        'source_scoped_functions': [{'name': 'Perception', 'source_quote': 'Perception'}],
+        'document_equipment_evidence': {'source_context': ['Robot', 'Architecture']}}}
+    evidence = {'components': facts, 'source_sha256': 'a' * 64}
+    with pytest.raises(ValueError, match='Planning'):
+        wizard_generation._reviewed_document_functions(evidence, ['adc', 'planner'], [chain])
+    evidence['function_assignments'] = {document_fact_identity(facts[1]): 'Planner'}
+    result = wizard_generation._reviewed_document_functions(evidence, ['adc', 'planner'], [chain])
+    assert [duty['host'] for duty in result] == ['adc', 'planner']
+    assert result[0]['assignment_source'] == 'source_scoped_function'
+    assert result[1]['assignment_source'] == 'explicit_user_statement'
+
+
+def test_atomic_functions_never_reuse_a_combined_list_function_or_another_subject():
+    combined = {'name': 'Perception, Planning', 'source_quote': 'Perception, Planning'}
+    perception = {'name': 'Perception', 'source_quote': 'Perception'}
+    for subject in ['Perception', 'Planning']:
+        fact = {'name': subject + ' [0123456789]', 'source_quote': combined['source_quote']}
+        assert not wizard_generation._reviewed_function_reuse_matches(fact, combined, shared_citation=True)
+        assert wizard_generation._reviewed_function_reuse_matches(fact, perception, shared_citation=True) is (subject == 'Perception')

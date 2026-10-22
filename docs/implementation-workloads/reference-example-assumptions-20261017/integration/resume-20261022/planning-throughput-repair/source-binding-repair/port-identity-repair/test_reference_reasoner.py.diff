@@ -1,0 +1,41 @@
+--- before/backend/tests/test_reference_reasoner.py
++++ after/backend/tests/test_reference_reasoner.py
+@@ -243,6 +243,24 @@
+                     *[row for row in candidate['inventory_choices'] if row['choice_kind'] != 'EXISTING'],
+                     native_existing_bindings(existing)]
+             candidate['devices'] = []
++        if 'port_parameters' in payload['format']['properties']:
++            rows = candidate.get('ports', [])
++            prior = {row['id']: row for row in content['current_candidate']['ports']}
++            # Convert only a valid authored selection. Never deduplicate or
++            # erase an intentionally foreign/rewritten fixture identity.
++            if (len({row['id'] for row in rows}) == len(rows)
++                    and all(row['id'] in prior and all(row[key] == prior[row['id']][key]
++                        for key in ('id', 'device_id', 'technology', 'role', 'network_scope')) for row in rows)):
++                candidate['port_parameters'] = {row['id']: {
++                    'parameters': deepcopy(row['parameters']), 'rationale': row['rationale'],
++                    'field_references': deepcopy(row.get('field_references', {}))} for row in rows}
++                candidate['ports'] = []
++        if 'functions_by_fact' in payload['format']['properties']:
++            rows = candidate.get('functions', [])
++            if len({row['source_fact_id'] for row in rows}) == len(rows):
++                candidate['functions_by_fact'] = {row['source_fact_id']: {
++                    key: deepcopy(value) for key, value in row.items() if key != 'source_fact_id'} for row in rows}
++                candidate['functions'] = []
+         native_content = (' \n' if wire_padding else '') + json.dumps(candidate) + ('\n ' if wire_padding else '')
+         return httpx.Response(200, json={'message': {'content': native_content}, 'done': True, 'done_reason': 'length' if truncate else 'stop',
+                                        'prompt_eval_count': 500, 'eval_count': 500})
+@@ -359,8 +377,11 @@
+     port = intent['$defs']['ReferencePort']
+     assert port['properties']['parameters'] == {'type': 'object', 'properties': {}, 'additionalProperties': False}
+     parameters = _reference_schema_for_stage(prepared, {'ports'}, port_ids=('PC',))
+-    assert parameters['properties']['ports']['minItems'] == parameters['properties']['ports']['maxItems'] == 1
+-    assert parameters['$defs']['ReferencePort']['properties']['id']['enum'] == ['PC']
++    assert parameters['properties']['ports']['minItems'] == parameters['properties']['ports']['maxItems'] == 0
++    keyed = parameters['properties']['port_parameters']
++    assert keyed['required'] == ['PC'] and set(keyed['properties']) == {'PC'}
++    assert keyed['additionalProperties'] is False
++    assert set(keyed['properties']['PC']['properties']) == {'parameters', 'rationale', 'field_references'}
+     assert intake.reference_design_schema(prepared) == public
+     assert public['properties']['ports']['maxItems'] > 1
+ 

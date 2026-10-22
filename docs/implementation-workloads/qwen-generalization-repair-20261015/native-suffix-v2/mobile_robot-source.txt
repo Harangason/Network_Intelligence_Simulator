@@ -1,0 +1,223 @@
+Systembeschreibung – Mobiler Service‑Roboter mit Greifarm und 360°‑Sensorik
+1. Systemübersicht
+Der Roboter ist ein kompakter, autonom navigierender Bodenroboter mit 4–6 Rädern, einem aktiven Greifarm, sowie einer multimodalen Sensorplattform (LiDAR, Kamera, Ultraschall).
+Er ist für Indoor‑ und Light‑Outdoor‑Umgebungen konzipiert und soll Objekte erkennen, lokalisieren, greifen und transportieren können.
+
+Der Roboter nutzt eine zentrale Recheneinheit (z. B. Raspberry Pi 5) für Sensorfusion, Navigation, Objekterkennung und Bewegungsplanung.
+Motorcontroller, Sensoren und Aktoren sind über ein modulares Bus‑System (CAN, I²C, UART) angebunden.
+
+2. Systemarchitektur (High-Level)
+2.1 Hardwarekomponenten
+Chassis & Antrieb
+
+4–6 Räder (abhängig von Stabilitätsanforderungen)
+
+Einzelradantrieb mit DC‑ oder BLDC‑Motoren
+
+Motorcontroller (z. B. Roboclaw, ODrive)
+
+Federung optional
+
+Sensorik
+
+360° LiDAR (z. B. RPLIDAR A2/A3 oder Ouster OS0)
+
+RGB‑Kamera (z. B. Raspberry Pi Cam v3 oder Intel RealSense)
+
+Ultraschallsensoren (8–12 Stück für Nahbereich)
+
+IMU (Gyro + Accelerometer)
+
+ToF‑Sensoren für präzise Distanzmessung
+
+Encoder an jedem Rad
+
+Greifarm
+
+3–5 Freiheitsgrade
+
+Servomotoren oder kleine BLDC‑Aktuatoren
+
+Greifer mit Kraftsensor oder einfacher Zweifingermechanik
+
+Recheneinheit
+
+Raspberry Pi 5 (Hauptrechner)
+
+Mikrocontroller (STM32, Arduino, ESP32) für Echtzeitmotorik
+
+Kommunikation
+
+CAN‑Bus für Motoren
+
+I²C für Sensoren
+
+UART für LiDAR
+
+WiFi/Bluetooth für Telemetrie
+
+Energieversorgung
+
+Li‑Ion Akku 12–24 V
+
+BMS
+
+DC‑DC‑Wandler für 5 V/12 V
+
+3. Funktionsbeschreibung
+3.1 Navigation
+Lokalisierung mittels LiDAR‑SLAM
+
+Hinderniserkennung durch Kamera + Ultraschall
+
+Pfadplanung (A, RRT, DWA)
+
+Geschwindigkeitsregelung pro Rad
+
+3.2 Manipulation
+Greifarm fährt zu Zielkoordinaten
+
+Kamera erkennt Objekt (CV/AI)
+
+Greifer schließt mit definierter Kraft
+
+Transport zum Zielpunkt
+
+3.3 Autonomie
+Autonomes Fahren zu Wegpunkten
+
+Automatische Rückkehr zur Ladestation
+
+Fehlererkennung (Sensorfehler, Blockaden)
+
+3.4 Teleoperation
+Web‑Interface oder App
+
+Live‑Video
+
+Manuelle Steuerung des Arms
+
+4. Anforderungen (Requirements)
+Strukturiert nach Kategorien, DOORS‑ready.
+
+4.1 Funktionale Anforderungen (F‑REQ)
+Navigation
+F‑REQ‑NAV‑001: Das System muss eine 360°‑Umgebungskarte mittels LiDAR erstellen können.
+
+F‑REQ‑NAV‑002: Der Roboter muss autonom Hindernissen ausweichen.
+
+F‑REQ‑NAV‑003: Der Roboter muss Wegpunkte anfahren können.
+
+F‑REQ‑NAV‑004: Das System muss eine Positionsgenauigkeit von ≤ 10 cm erreichen.
+
+Objekterkennung & Greifen
+F‑REQ‑MAN‑001: Der Roboter muss Objekte mittels Kamera erkennen können.
+
+F‑REQ‑MAN‑002: Der Greifarm muss Objekte bis 500 g sicher greifen können.
+
+F‑REQ‑MAN‑003: Der Greifarm muss mindestens 3 DOF besitzen.
+
+F‑REQ‑MAN‑004: Der Greifer muss eine Kraftregelung besitzen.
+
+Sensorik
+F‑REQ‑SEN‑001: Das System muss LiDAR‑Daten mit ≥ 5 Hz verarbeiten.
+
+F‑REQ‑SEN‑002: Ultraschallsensoren müssen Hindernisse im Bereich 5–200 cm erkennen.
+
+F‑REQ‑SEN‑003: Die Kamera muss mindestens 1080p liefern.
+
+F‑REQ‑SEN‑004: Die IMU muss Lageänderungen mit ≥ 100 Hz erfassen.
+
+Kommunikation
+F‑REQ‑COM‑001: Das System muss Telemetriedaten über WLAN senden.
+
+F‑REQ‑COM‑002: Der Roboter muss über ein Web‑Interface steuerbar sein.
+
+4.2 Nichtfunktionale Anforderungen (NF‑REQ)
+Performance
+NF‑REQ‑PER‑001: Die Latenz der Motorregelung darf 20 ms nicht überschreiten.
+
+NF‑REQ‑PER‑002: Die Bildverarbeitung muss ≥ 15 FPS erreichen.
+
+Sicherheit
+NF‑REQ‑SAF‑001: Der Roboter muss bei Sensorfehlern automatisch stoppen.
+
+NF‑REQ‑SAF‑002: Der Greifarm darf bei Überlast automatisch abschalten.
+
+Robustheit
+NF‑REQ‑ROB‑001: Das System muss 2 h Dauerbetrieb ermöglichen.
+
+NF‑REQ‑ROB‑002: Der Roboter muss leichte Stöße bis 5 J tolerieren.
+
+Wartbarkeit
+NF‑REQ‑MAI‑001: Alle Sensoren müssen modular austauschbar sein.
+
+NF‑REQ‑MAI‑002: Firmware‑Updates müssen OTA möglich sein.
+
+5. Schnittstellenbeschreibung
+5.1 Elektrische Schnittstellen
+LiDAR → UART
+
+Kamera → CSI
+
+Ultraschall → GPIO/I²C
+
+Motorcontroller → CAN
+
+Greifarm → PWM/Serial
+
+5.2 Software‑Schnittstellen
+ROS2 Topics:
+
+/scan (LiDAR)
+
+/camera/image_raw
+
+/cmd_vel
+
+/arm/joint_states
+
+/arm/cmd
+
+Services:
+
+/arm/grab
+
+/arm/release
+
+/navigation/set_goal
+
+6. Betriebsmodi
+Autonomer Modus
+
+Teleoperation
+
+Docking/Laden
+
+Diagnosemodus
+
+Notstopp
+
+7. Testfälle (Auszug)
+TC‑NAV‑001
+Roboter fährt autonom durch einen Raum mit 10 Hindernissen → keine Kollision.
+
+TC‑MAN‑003
+Greifarm hebt Objekt (300 g) und platziert es auf Tisch → kein Fallenlassen.
+
+TC‑SEN‑002
+Ultraschallsensor erkennt Hindernis bei 50 cm ± 5 cm.
+
+TC‑SYS‑005
+System läuft 2 h ohne Überhitzung oder Fehlermeldung.
+
+8. Erweiterungsmöglichkeiten
+3D‑LiDAR
+
+KI‑basierte Objekterkennung (YOLOv8)
+
+Autonomes Andocken an Ladestation
+
+Multi‑Roboter‑Koordination
+
+GPS‑Modul für Outdoor

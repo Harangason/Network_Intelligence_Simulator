@@ -1,0 +1,36 @@
+{
+  "measurements": [
+    {
+      "rationale": "Der Radar-Sensor (derived-324a04f93cbbf9575e1a6f0c) liefert gemäß Quellenprofil (Fc778aa8aa79a) und den ADAS-Anforderungen (REQ-ADC-01, REQ-FUS-01) Rohdaten für die Objekterkennung. Die registrierte Messgröße 'radar_detections' (ID: radar_detections) ist die korrekte semantische Zuordnung für Radar-Rückstreuungen/Detektionen, die für die Fusion benötigt werden. Die Einheit 'byte' und die Struktur 'MULTI_VALUE' entsprechen dem Katalog. Die Zykluszeit von 50 ms ist der Standardwert aus dem Katalog und erfüllt die Latenzanforderung der Fusion (< 50 ms End-to-End, Sensorzyklus muss kürzer oder gleich sein, hier als Basiswert angenommen).",
+      "device_id": "derived-324a04f93cbbf9575e1a6f0c",
+      "measurement_id": "radar_detections",
+      "field_references": {
+        "Fc778aa8aa79a": ["Radar"]
+      }
+    },
+    {
+      "rationale": "Der Kamera-Sensor (derived-31b037959c79cb29c302e87e) liefert gemäß Quellenprofil (Fc778aa8aa79a) Bilddaten. Die registrierte Messgröße 'image_frame' (ID: image_frame) ist die korrekte semantische Zuordnung für Kamerabilder. Die Einheit 'byte' und die Struktur 'IMAGE_STREAM' entsprechen dem Katalog. Die Zykluszeit von 33 ms (ca. 30 fps) ist der Standardwert aus dem Katalog und typisch für Fahrzeugkameras, um die Latenzanforderungen der ADAS-Fusion (REQ-ADC-01) zu erfüllen.",
+      "device_id": "derived-31b037959c79cb29c302e87e",
+      "measurement_id": "image_frame",
+      "field_references": {
+        "Fc778aa8aa79a": ["Kamera"]
+      }
+    },
+    {
+      "rationale": "Der Lidar-Sensor (derived-fc12e8ab906f803287577d7d) liefert gemäß Quellenprofil (Fc778aa8aa79a) Punktwolken-Daten. Die registrierte Messgröße 'point_cloud' (ID: point_cloud) ist die korrekte semantische Zuordnung für Lidar-Daten. Die Einheit 'byte' und die Struktur 'POINT_CLOUD' entsprechen dem Katalog. Die Zykluszeit von 100 ms ist der Standardwert aus dem Katalog. Lidar hat typischerweise niedrigere Update-Raten als Radar/Kamera, was durch die höhere Latenz-Toleranz in der Fusion (REQ-FUS-04) gedeckt ist.",
+      "device_id": "derived-fc12e8ab906f803287577d7d",
+      "measurement_id": "point_cloud",
+      "field_references": {
+        "Fc778aa8aa79a": ["Lidar"]
+      }
+    },
+    {
+      "rationale": "Der Ultraschall-Sensor (derived-482b2ee5c210f9bd611779d8) liefert gemäß Quellenprofil (Fc778aa8aa79a) Abstandsdaten für den Nahbereich. Die registrierte Messgröße 'distance' (ID: distance) ist die korrekte semantische Zuordnung für Ultraschall-Abstandsmessungen. Die Einheit 'm' entspricht dem Katalog. Die Zykluszeit ist nicht im Katalog für 'distance' explizit als Default angegeben, aber für Ultraschall typischerweise im Bereich von 10-50 ms. Da keine spezifische Default-Zykluszeit für 'distance' im Katalog steht, wird hier eine REFERENCE_ASSUMPTION von 20 ms getroffen, die für Parkassistenten und Nahbereichserkennung üblich ist und die Echtzeitanforderungen der ADAS-Fusion erfüllt.",
+      "device_id": "derived-482b2ee5c210f9bd611779d8",
+      "measurement_id": "distance",
+      "field_references": {
+        "Fc778aa8aa79a": ["Ultraschall"]
+      }
+    }
+  ]
+}

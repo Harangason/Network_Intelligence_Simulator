@@ -1,0 +1,66 @@
+{
+  "at_utc": "2026-10-22T15:17:49.325205+00:00",
+  "container_id": "3c92591fe43594d36275d2524869f58599e65d8d28e1661a841a69f7f27747ca",
+  "image_id": "sha256:3792d2e086e43af616d9fb63fd371c352fe101db5136b84f381cd9999363785b",
+  "ready": {
+    "database": "available",
+    "status": "ready",
+    "storage": "available"
+  },
+  "processes": [
+    {
+      "pid": 1,
+      "cmd": "python generate_realistic_communication_tool.py ",
+      "status": {
+        "Name": "python",
+        "State": "S (sleeping)",
+        "PPid": "0"
+      }
+    },
+    {
+      "pid": 13,
+      "cmd": "/usr/local/bin/python -m backend.nis.app ",
+      "status": {
+        "Name": "python",
+        "State": "S (sleeping)",
+        "PPid": "1"
+      }
+    },
+    {
+      "pid": 102,
+      "cmd": "next-server (v16.3.2)                                                            ",
+      "status": {
+        "Name": "next-server (v1",
+        "State": "S (sleeping)",
+        "PPid": "1"
+      }
+    },
+    {
+      "pid": 24584,
+      "cmd": "python -c import os,json,pathlib; rows=[]\nfor p in pathlib.Path('/proc').iterdir():\n if p.name.isdigit():\n  try: rows.append({'pid':int(p.name),'cmd':(p/'cmdline').read_bytes().replace(b'\\x00',b' ').decode(),'status':{line.split(':',1)[0]:line.split(':',1)[1].strip() for line in (p/'status').read_text().splitlines() if line.startswith(('Name:','State:','PPid:'))}})\n  except (FileNotFoundError,ProcessLookupError,PermissionError): pass\nprint(json.dumps(rows)) ",
+      "status": {
+        "Name": "python",
+        "State": "R (running)",
+        "PPid": "0"
+      }
+    }
+  ],
+  "launcher_sha256": "05702ebb428ef2e5637c919dc73d9a540d3dd6b122194d1ff0b341ed2ce26334",
+  "warmup_code": [
+    {
+      "line": 1064,
+      "context": [
+        "                        print(f\"Lokaler AI-Dienst bleibt nicht verfügbar: {error}\", file=sys.stderr)",
+        "                elif _local_ai_enabled(service_environment) and not local_ai_ready:",
+        "                    local_ai_ready = _prewarm_local_ai(service_environment)",
+        "                    if local_ai_ready:",
+        "                        print(\"Lokales Semantikmodell wurde nachträglich vorgewärmt.\")",
+        "",
+        "                database_host, database_port = _database_endpoint(service_environment[\"DATABASE_URL\"])",
+        "                if not _tcp_endpoint_available(database_host, database_port):",
+        "                    try:"
+      ]
+    }
+  ],
+  "no_signal_sent": true
+}

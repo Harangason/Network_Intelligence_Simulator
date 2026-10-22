@@ -1,0 +1,161 @@
+--- before/backend/nis/agent/tools/wizard_generation.py
++++ after/backend/nis/agent/tools/wizard_generation.py
+@@ -870,7 +870,8 @@
+     stamp = {'source': 'REFERENCE_ASSUMPTION', 'design_id': reference['design_id'],
+              'revision': reference['revision'], 'request_sha256': reference['request_sha256'],
+              'source_sha256': reference['source_sha256'], 'review_source': reference['review_source'],
+-             'processing_evidence': 'NONE', 'timing_evidence': 'NONE'}
++             'processing_evidence': 'NONE', 'timing_evidence': 'NONE',
++             'hardware_evidence': False, 'qualification': 'UNVERIFIED'}
+     created = {('$' + item['local_ref']): item for item in changes}
+ 
+     def row_for(ref, kind):
+@@ -1006,8 +1007,8 @@
+     def assumptions(port):
+         technology = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(port['technology'])
+         roles = DEFAULT_TECHNOLOGY_REGISTRY.parameter_roles(technology)
+-        aliases = DEFAULT_TECHNOLOGY_REGISTRY.profile(technology, fields=('parameter_aliases',)).get('parameter_aliases') or {}
+-        values = {aliases.get(key, key): value for key, value in port['parameters'].items() if roles.get(aliases.get(key, key)) == 'CONFIGURATION'}
++        normalized = DEFAULT_TECHNOLOGY_REGISTRY.normalize_parameters(technology, port['parameters'])
++        values = {key: value for key, value in normalized.items() if roles.get(key) == 'CONFIGURATION'}
+         return {technology: {'values': values, 'provenance': {key: {
+             'source': 'NIS_SIMULATION_ASSUMPTION', 'status': 'ASSUMED', 'technology': technology,
+             'hardware_evidence': False, 'value': deepcopy(value), 'reference_origin': stamp,
+@@ -1170,7 +1171,9 @@
+                         **contract, 'input_refs': inputs,
+                         'actuator_refs': [device_refs[key] for key, row in by_device.items()
+                                           if row['kind'] == 'ACTUATOR' and row.get('owner_device_id') == device_id]}
+-    document_evidence['reference_design'] = {**stamp, 'coverage': deepcopy(reference['coverage']),
++    document_evidence['reference_design'] = {**stamp,
++        'qualification_findings': deepcopy(reference.get('qualification_findings', [])),
++        'coverage': deepcopy(reference['coverage']),
+         'decision_evidence': deepcopy(reference['decision_evidence']), 'context_bindings': context_bindings}
+ 
+ 
+--- before/frontend/src/features/agent/lib/engineering-agent.ts
++++ after/frontend/src/features/agent/lib/engineering-agent.ts
+@@ -131,6 +131,9 @@
+   schema_version: 1; design_id: string; revision: number;
+   project_id: string; source_sha256: string; request_sha256: string;
+   status: 'REVIEW_REQUIRED' | 'ACCEPTED'; canonical_writes: false;
++  qualification?: 'UNVERIFIED'; hardware_evidence?: false;
++  qualification_findings?: { target_ref: string; technology: string; parameter: string; value_role: string;
++    qualification: 'UNVERIFIED'; hardware_evidence: false; finding: Record<string, unknown> }[];
+   request: { mode: 'EXAMPLE_PROJECT'; prompt: string; reference_sources: ReferenceSource[]; source_request_id?: string };
+   fact_id_map: Record<string, string>;
+   proposal: {
+--- before/frontend/src/features/agent/ui/agent-chat-core.tsx
++++ after/frontend/src/features/agent/ui/agent-chat-core.tsx
+@@ -2269,6 +2269,10 @@
+           <p role="status">{currentReference.status === 'ACCEPTED' ? 'Referenzannahmen übernommen' : 'Referenzannahmen zur Prüfung'} · {currentReference.proposal.devices.length} Teilnehmerentwürfe · {currentReference.proposal.functions.length} Funktionen · {currentReference.proposal.communication.length} Kommunikationsbeziehungen</p>
+           <details><summary>Alle Referenzannahmen mit Begründung prüfen</summary>
+             <p>Belegart: REFERENCE_ASSUMPTION. Keine bestätigte Hardwareeignung, Verarbeitungsausführung oder funktionale Zeitbewertung.</p>
++            <p>Hardware- und Zeitnachweise bleiben ungeprüft. Die Freigabe dieses Beispielentwurfs ersetzt weder Preflight noch die technische Qualifikation.</p>
++            {(currentReference.qualification_findings?.length ?? 0) > 0 && <details><summary>Offene technische Nachweise ({currentReference.qualification_findings?.length})</summary>
++              <ul>{currentReference.qualification_findings?.map((row, index) => <li key={index}>{row.target_ref} · {row.technology} · {row.parameter} · {row.value_role}: {String(row.finding.message ?? row.finding.code ?? 'Nachweis offen')}</li>)}</ul>
++            </details>}
+             <h4>Teilnehmer und Umfang</h4><ul>{currentReference.proposal.devices.map(row => <li key={row.id}>{row.quantity} × {row.name} · {row.kind}: {row.rationale}</li>)}</ul>
+             <h4>Funktionszuordnung</h4><ul>{currentReference.proposal.functions.map(row => <li key={row.source_fact_id}>{row.source_fact_id} · {row.realization} · {row.executor_device_ids.join(', ') || row.realized_by_fact_ids.join(', ')}: {row.rationale}</li>)}</ul>
+             <h4>Anschlüsse und technische Parameter</h4><ul>{currentReference.proposal.ports.map(row => <li key={row.id}>{row.device_id} · {row.technology} · {row.network_scope}: {JSON.stringify(row.parameters)} · {row.rationale}</li>)}</ul>
+--- before/backend/tests/test_reference_model_persistence.py
++++ after/backend/tests/test_reference_model_persistence.py
+@@ -0,0 +1,99 @@
++"""Real isolated canonical writes from a mocked reviewed plan; no Qwen/E2E claim."""
++from uuid import uuid4
++
++from backend.nis.agent.api.tool_contract import Permission
++from backend.nis.agent.orchestration.local_reasoner import LocalEngineeringReasoner
++from backend.nis.agent.orchestration import project_intake as intake
++from backend.nis.agent.tools import project_draft, proposal_service, wizard_generation, model
++from backend.nis.agent.tools.runtime import ToolAuthority, execute
++from backend.tests.test_reference_design import fixture_request, wire
++from backend.tests.test_reference_reasoner import complete_design
++from backend.tests.test_reference_design_integration import marker
++
++
++def test_accepted_reference_model_survives_normal_validation_review_apply(monkeypatch):
++    """Keep full facts, real recipients, local dependencies, ports and assumption role."""
++    async def local_unit_fixture(_self, prepared):
++        plan = complete_design(prepared)
++        ids = {fact['name']: key for key, fact in prepared['facts'].items()}
++        for row in plan['functions']:
++            if row['source_fact_id'] == ids['Gesamtfunktion']:
++                row.update(realization='COMPOSITE', executor_device_ids=[],
++                           realized_by_fact_ids=[ids['Regelung'], ids['Diagnose']])
++        for row in plan['communication']:
++            if row['role'] == 'COMMAND':
++                row.update(producer_fact_id=ids['Regelung'], transmission_mode='CYCLIC', cycle_ms=50)
++                for field in ('request_source', 'request_communication_id', 'response_processing_ms', 'min_interval_ms'):
++                    row.pop(field, None)
++            elif row['role'] == 'MEASUREMENT':
++                row['consumer_fact_ids'] = [ids['Regelung']]
++        plan['functional_dependencies'] = [{'id': 'control-diagnostic', 'producer_fact_id': ids['Regelung'],
++            'consumer_fact_ids': [ids['Diagnose']], 'executor_device_id': 'C', 'signal_name': 'ControlDiagnostic',
++            'encoding': wire(), 'rationale': 'Local explicit test dependency'}]
++        # Explicit status contract, never a generator-invented default recipient.
++        status = {'length_bits': 4, 'data_type': 'unsigned', 'unit': 'code', 'factor': 1,
++            'min_value': 0, 'max_value': 15, 'semantic': {'semantic_type': 'STATE', 'meaning': 'Controller state'},
++            'data': {'enum_values': {'OFF': 0, 'INIT': 1, 'READY': 2, 'ACTIVE': 3, 'DEGRADED': 4, 'ERROR': 5},
++                     'invalid_raw': [15], 'reserved_raw': list(range(6, 15)), 'default_value': 0}}
++        plan['communication'].append({'id': 'state', 'producer_device_id': 'C', 'consumer_device_ids': ['A'],
++            'producer_fact_id': ids['Diagnose'], 'source_port_id': 'PC', 'consumer_port_ids': ['PA'],
++            'scope': 'LOCAL_IO', 'role': 'STATUS', 'signal_name': 'ControllerState', 'encoding': status,
++            'transmission_mode': 'CYCLIC', 'cycle_ms': 100, 'rationale': 'Explicit test state recipient'})
++        # Distinct receive-only Ethernet port exercises the public CORE bitrate alias.
++        plan['ports'].append({'id': 'BACKBONE', 'device_id': 'C', 'technology': 'ethernet', 'role': 'BACKBONE',
++            'network_scope': 'backbone', 'parameters': {'bitrate': 1000000000}, 'rationale': 'Explicit example assumption'})
++        return intake.validate_reference_design(plan, prepared)
++
++    monkeypatch.setattr(LocalEngineeringReasoner, 'plan_reference_design', local_unit_fixture)
++    authority = ToolAuthority('reference-model-' + uuid4().hex, 'test-human')
++    request = fixture_request()
++    request.update(source_request_id=uuid4().hex)
++    request['prompt'] = ('- Projekt-Modelltyp: embedded_systems\n- Industrie: Embedded Systems\n'
++                         '- Netzwerktechnologien: CAN (can), Ethernet (ethernet)\n- Systemcluster-Graph: []\n'
++                         + request['prompt'])
++    def call(name, handler, arguments=None):
++        result = execute(authority, name, Permission.GENERATE_PROPOSAL, arguments or {}, handler)
++        assert result.success, result
++        return result.data
++
++    record = call('reference', project_draft.generate_reference_design, request)
++    assert not record['proposal']['unresolved'], record['proposal']['unresolved']
++    record = call('accept', project_draft.accept_reference_design,
++                  {key: record[key] for key in ('design_id', 'revision', 'request_sha256')})
++    prompt = request['prompt'] + '\n' + marker(record)
++    proposal = call('generate', wizard_generation.generate, {'prompt': prompt})
++    checked = call('validate', lambda _: proposal_service.validate(proposal['proposal_id']))
++    assert checked['status'] == 'VALIDATED', checked['validation_result']
++    approved = call('review', lambda _: proposal_service.review(checked['proposal_id'],
++        revision=checked['revision'], decision='approve', actor='test-human', trace_id=uuid4().hex))
++    applied = call('apply', lambda _: proposal_service.apply(approved['proposal_id'], actor='test-human', trace_id=uuid4().hex))
++    assert applied['status'] == 'APPLIED'
++    objects = call('read', lambda _: {kind: model.objects(kind) for kind in
++                    ('HardwareNode', 'Function', 'HardwareNetworkInterface', 'Message', 'Signal', 'DataObject')})
++    assert len(objects['HardwareNode']) == 3
++    interfaces = objects['HardwareNetworkInterface']
++    assert len(interfaces) == 4
++    assert len({row['physical_port_ref'] for row in interfaces}) == 4
++    ethernet = next(row for row in interfaces if row['technology'] == 'Ethernet')
++    assumptions = ethernet['capabilities']['simulation_parameter_assumptions']['ethernet']
++    assert assumptions['values']['bitrate_bps'] == 1000000000
++    assert assumptions['provenance']['bitrate_bps']['hardware_evidence'] is False
++    assert assumptions['provenance']['bitrate_bps']['reference_origin']['qualification'] == 'UNVERIFIED'
++    assert ethernet['name'].startswith('ETH_')
++    functions = objects['Function']
++    covered = [entry for row in functions for entry in row.get('configuration', {}).get('reference_source_coverage', [])]
++    assert len({entry['fact_id'] for entry in covered}) == 3
++    assert any(entry['realization'] == 'COMPOSITE' for entry in covered)
++    assert all(row.get('configuration', {}).get('processing_evidence') == 'NONE' for row in functions)
++    requirements = [entry for row in objects['HardwareNode'] for entry in row.get('identity', {}).get('reference_source_requirements', [])]
++    assert len(requirements) == 1
++    assert requirements[0]['source_quote'] == 'REQ-001: Das System MUSS diagnostizierbar sein.'
++    assert requirements[0]['allocation'] == 'UNALLOCATED_SOURCE_SCOPE'
++    assert len(objects['DataObject']) == 1
++    assert len(objects['Message']) == len(record['proposal']['communication'])
++    assert len(objects['Signal']) == len(record['proposal']['communication'])
++    for message in objects['Message']:
++        assert message.get('consumer_refs'), message
++    # Repeating generation may propose nothing but must never duplicate canonical objects.
++    repeated = call('repeat', wizard_generation.generate, {'prompt': prompt})
++    assert not [row for row in repeated.get('changes', []) if row.get('action', 'CREATE') == 'CREATE']

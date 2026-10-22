@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import base64
+import shutil
 import socket
+import subprocess
 import sys
 import threading
-from io import BytesIO
+from io import BytesIO, StringIO
 from pathlib import Path
 
 import pytest
@@ -31,6 +34,8 @@ LAUNCHER_SPEC.loader.exec_module(LAUNCHER)
 
 
 class _RunningProcess:
+    returncode = 0
+
     @staticmethod
     def poll() -> None:
         return None
@@ -518,6 +523,163 @@ def test_hybrid_ai_does_not_block_application_startup() -> None:
     assert LAUNCHER._local_ai_enabled({"AI_PROVIDER": "hybrid-demand"}) is True
     assert LAUNCHER._local_ai_required_for_startup({"AI_PROVIDER": "hybrid-demand"}) is False
     assert LAUNCHER._local_ai_required_for_startup({"AI_PROVIDER": "local"}) is True
+
+
+@pytest.mark.parametrize("mode", ["local", "hybrid-demand"])
+@pytest.mark.parametrize("owns_provider", [False, True])
+def test_launcher_start_and_recovery_preserve_active_inference(
+    monkeypatch, tmp_path, mode, owns_provider,
+) -> None:
+    """A metadata outage must not enqueue a model or replace a live provider."""
+    (tmp_path / "frontend" / "node_modules").mkdir(parents=True)
+    environment = {
+        "AI_PROVIDER": mode,
+        "LOCAL_AI_BASE_URL": "http://127.0.0.1:11434/v1",
+        "LOCAL_AI_MODEL": "qwen3.8:27b",
+        "LOCAL_AI_FAST_MODEL": "llama3.1:8b",
+        "DATABASE_URL": "postgresql://unused-isolated-test",
+    }
+    provider = _RunningProcess()
+    ensured, terminated, requests = [], [], []
+    clock = [0.0]
+    checks = [0]
+
+    def ensure(_environment, _log):
+        ensured.append(True)
+        return provider if owns_provider else None
+
+    def models(_environment):
+        checks[0] += 1
+        # Healthy at startup, one failed watchdog probe, then healthy again.
+        return None if checks[0] == 2 else ["qwen3.8:27b", "llama3.1:8b"]
+
+    def sleep(_seconds):
+        clock[0] += 6.0
+        if clock[0] > 18.0:
+            raise KeyboardInterrupt
+
+    def open_request(request, **_kwargs):
+        requests.append(request)
+        return _JsonResponse(b'{}')
+
+    monkeypatch.setattr(LAUNCHER, "ROOT", tmp_path)
+    monkeypatch.setattr(LAUNCHER, "SERVICE_LOG_ROOT", tmp_path / "logs")
+    monkeypatch.setattr(LAUNCHER, "_assert_canonical_project_root", lambda: None)
+    monkeypatch.setattr(LAUNCHER, "_frontend_command", lambda *_args: ["fake-next"])
+    monkeypatch.setattr(LAUNCHER, "_ensure_port_available", lambda *_args: None)
+    monkeypatch.setattr(LAUNCHER, "_runtime_environment", lambda: environment.copy())
+    monkeypatch.setattr(LAUNCHER, "_prepare_backend_runtime_root", lambda *_args: None)
+    monkeypatch.setattr(LAUNCHER, "_prepare_frontend_dist_dir", lambda *_args: None)
+    monkeypatch.setattr(LAUNCHER, "_open_service_log", lambda *_args: StringIO())
+    monkeypatch.setattr(LAUNCHER, "_ensure_engineering_database", lambda *_args: None)
+    monkeypatch.setattr(LAUNCHER, "_ensure_local_ai", ensure)
+    monkeypatch.setattr(LAUNCHER, "_ollama_models", models)
+    monkeypatch.setattr(LAUNCHER, "_tcp_endpoint_available", lambda *_args, **_kwargs: True)
+    monkeypatch.setattr(LAUNCHER, "_wait_for_url", lambda *_args, **_kwargs: True)
+    monkeypatch.setattr(LAUNCHER.subprocess, "Popen", lambda *_args, **_kwargs: _RunningProcess())
+    monkeypatch.setattr(LAUNCHER, "_terminate_process_tree", terminated.append)
+    monkeypatch.setattr(LAUNCHER, "urlopen", open_request)
+    monkeypatch.setattr(LAUNCHER.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(LAUNCHER.time, "sleep", sleep)
+    monkeypatch.setenv("NETWORKIS_OPEN_BROWSER", "0")
+
+    assert LAUNCHER._run_web() == 0
+    assert checks[0] >= 3
+    assert requests == [], "Startup/watchdog must not generate or prewarm a model."
+    assert len(ensured) == 1, "A reachable or live provider must not be replaced."
+    assert terminated.count(provider) == (1 if owns_provider else 0), "Owned provider stops only on launcher exit."
+
+
+def test_metadata_unavailable_reachable_provider_is_not_replaced(monkeypatch):
+    monkeypatch.setattr(LAUNCHER, "_ollama_models", lambda _environment: None)
+    monkeypatch.setattr(LAUNCHER, "_tcp_endpoint_available", lambda *_args, **_kwargs: True)
+    monkeypatch.setattr(LAUNCHER.subprocess, "Popen", lambda *_args, **_kwargs: pytest.fail("Duplicate serve"))
+    monkeypatch.setattr(LAUNCHER, "_ollama_executable", lambda: "fake-ollama")
+    with pytest.raises(RuntimeError, match="Metadaten"):
+        LAUNCHER._ensure_local_ai({"AI_PROVIDER": "local", "LOCAL_AI_MODEL": "qwen3.8:27b"}, None)
+
+
+def test_unreachable_external_provider_never_starts_a_local_replacement(monkeypatch):
+    monkeypatch.setattr(LAUNCHER, "_ollama_models", lambda _environment: None)
+    monkeypatch.setattr(LAUNCHER, "_tcp_endpoint_available", lambda *_args, **_kwargs: False)
+    monkeypatch.setattr(LAUNCHER.subprocess, "Popen", lambda *_args, **_kwargs: pytest.fail("Foreign endpoint replacement"))
+    with pytest.raises(RuntimeError, match="externe"):
+        LAUNCHER._ensure_local_ai({
+            "AI_PROVIDER": "local", "LOCAL_AI_MODEL": "qwen3.8:27b",
+            "LOCAL_AI_BASE_URL": "http://external-provider.invalid:11434/v1",
+        }, None)
+
+
+def test_local_provider_can_start_after_confirmed_absent_listener(monkeypatch):
+    models = iter([None, ["qwen3.8:27b"]])
+    monkeypatch.setattr(LAUNCHER, "_ollama_models", lambda _environment: next(models))
+    monkeypatch.setattr(LAUNCHER, "_tcp_endpoint_available", lambda *_args, **_kwargs: False)
+    monkeypatch.setattr(LAUNCHER, "_ollama_executable", lambda: "fake-ollama")
+    started = []
+    owned = _RunningProcess()
+
+    def start(command, **_kwargs):
+        started.append(command)
+        return owned
+
+    monkeypatch.setattr(LAUNCHER.subprocess, "Popen", start)
+    assert LAUNCHER._ensure_local_ai({"AI_PROVIDER": "local", "LOCAL_AI_MODEL": "qwen3.8:27b"}, None) is owned
+    assert started == [["fake-ollama", "serve"]]
+
+
+def test_strict_local_start_still_rejects_missing_requested_model(monkeypatch):
+    monkeypatch.setattr(LAUNCHER, "_ollama_models", lambda _environment: ["llama3.1:8b"])
+    with pytest.raises(RuntimeError, match="qwen3.8:27b.*fehlt"):
+        LAUNCHER._ensure_local_ai({"AI_PROVIDER": "local", "LOCAL_AI_MODEL": "qwen3.8:27b"}, None)
+
+
+@pytest.mark.parametrize("metadata_ready,listening", [(True, True), (False, True), (False, False)])
+def test_powershell_startup_preserves_provider_and_does_not_generate(metadata_ready, listening):
+    shell = shutil.which("pwsh") or shutil.which("powershell")
+    if shell is None:
+        pytest.skip("PowerShell unavailable")
+    # Execute the actual startup clause with isolated command doubles. Never
+    # execute the rest of the launcher or contact a real provider/container.
+    script = r'''
+$ErrorActionPreference = 'Stop'
+$source = '__SOURCE__'
+$errors = $null; $tokens = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile($source, [ref]$tokens, [ref]$errors)
+if ($errors.Count) { throw 'PowerShell syntax error' }
+$block = $ast.Find({param($node)
+  $node -is [System.Management.Automation.Language.IfStatementAst] -and
+  $node.Clauses[0].Item1.Extent.Text -eq 'Test-ReadablePath $Ollama'
+}, $true)
+if (-not $block) { throw 'Startup clause missing' }
+$script:starts = 0; $script:gets = 0; $script:posts = 0
+$Ollama = 'fake-ollama'
+function Test-ReadablePath { return $true }
+function Test-OllamaListener { return __LISTENING__ }
+function Invoke-WebRequest {
+  $script:gets++
+  if (-not __READY__) { throw 'Transient metadata outage' }
+}
+function Invoke-RestMethod { $script:posts++; throw 'Unsolicited model generation' }
+function Start-Process {
+  param($FilePath, $ArgumentList, $WindowStyle)
+  if ($FilePath -ne 'fake-ollama' -or $ArgumentList -ne 'serve' -or $WindowStyle -ne 'Hidden') { throw 'Unexpected process' }
+  $script:starts++
+}
+function Start-Sleep {}
+& ([scriptblock]::Create($block.Extent.Text))
+if ($script:gets -ne 1 -or $script:starts -ne __STARTS__ -or $script:posts -ne 0) { throw 'Provider ownership violated' }
+'PASS'
+'''
+    script = (script.replace("__SOURCE__", str(ROOT / "scripts/dev/start-networkis.ps1").replace("'", "''"))
+              .replace("__LISTENING__", "$true" if listening else "$false")
+              .replace("__READY__", "$true" if metadata_ready else "$false")
+              .replace("__STARTS__", "0" if metadata_ready or listening else "1"))
+    result = subprocess.run(
+        [shell, "-NoProfile", "-NonInteractive", "-EncodedCommand", base64.b64encode(script.encode("utf-16-le")).decode("ascii")],
+        capture_output=True, text=True, timeout=20,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "PASS" in result.stdout
 
 
 def test_prewarm_uses_fast_model_and_keep_alive(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {pathToFileURL} from 'node:url';
+const out=path.dirname(process.argv[1]);
+const projected=await import(pathToFileURL(path.resolve(out,'execution-source-scope-projection.ts')).href);
+const original=await import(pathToFileURL(path.resolve('frontend/src/features/agent/lib/document-clarification.ts')).href);
+const input=JSON.parse(fs.readFileSync('docs/implementation-workloads/document-function-owner-cross-reference-20261017/actual-source-counterprobe-inputs.json','utf8'));
+const before=original.documentSourceFunctionAssignments(input.facts,input.owners);
+const after=projected.documentSourceFunctionAssignments(input.facts,input.owners);
+if(JSON.stringify(before)!==JSON.stringify(after)||Object.keys(after).length!==23)throw new Error('Actual source assignments changed');
+const report={status:'PASSED_PURE_ACTUAL_SOURCE_OWNER_REGRESSION',source_facts:input.facts.length,source_assignments:Object.keys(after).length,unresolved_functions:input.facts.filter(f=>f.kind==='FUNCTION').length-Object.keys(after).length,unchanged:true,scope:'Diagnostic pure projection of the exact staged scope regex into the existing TS module; no application write, Native run, model or simulation.'};
+fs.writeFileSync(path.join(out,'source-owner-regression.json'),JSON.stringify(report,null,2)+'\n');
+process.stdout.write(JSON.stringify(report));

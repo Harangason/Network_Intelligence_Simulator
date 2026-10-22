@@ -2,14 +2,14 @@
   "proposal_type": "DOCUMENT_INTERPRETATION",
   "status": "REVIEW_REQUIRED",
   "interpretation": {
-    "summary": "Die vollständige Quelle wurde in 7 lokalen Qwen-Abschnitten ausgewertet. Alle Aussagen bleiben prüfpflichtig.",
+    "summary": "Die vollständige Quelle wurde in 7 lokalen Qwen-Abschnitten ausgewertet: 5 benannte Geräte, 6 unquantifizierte Gerätegruppen. Der Prüfauftrag wird aus den zusammengeführten Quellenbefunden aufgebaut.",
     "components": [
       {
-        "name": "Elektronische Steuergeräte (Domain‑Controller, Sensor‑ECUs, Aktor‑ECUs)",
+        "name": "Domain‑Controller (Powertrain, Chassis, ADAS, Body, Infotainment)",
         "kind": "CATEGORY",
         "role": "CONTROLLER",
         "quantity": null,
-        "source_quote": "Elektronische Steuergeräte (Domain‑Controller, Sensor‑ECUs, Aktor‑ECUs)"
+        "source_quote": "Domain‑Controller (Powertrain, Chassis, ADAS, Body, Infotainment)"
       },
       {
         "name": "Sensorik (Radar, Kamera, Lidar, Ultraschall, IMU, Raddrehzahl)",
@@ -520,37 +520,14 @@
         "source_quote": "REQ‑FUS‑14: Fusion MUSS EKF/UKF unterstützen."
       }
     ],
-    "proposed_task": "Erstellung eines Engineering-Vorschlags zur Strukturierung der Fahrzeugarchitektur. Identifikation der genannten Domänen-Controller als Kategorien, Erfassung der Sensorik und Aktorik als Funktionsgruppen sowie Validierung der registrierten Transportprotokolle (CAN, CAN-FD, Ethernet, LIN, UDS) gegen die Quellenzitate. Keine Zuordnung konkreter Instanzen, da keine spezifischen Gerätenamen oder Stückzahlen vorliegen.\n\nEngineering-Vorschlag zur Strukturierung der logischen ADAS-Funktionen, Middleware-Protokolle (SOME/IP, DDS) und regulatorischen Anforderungen (UN-ECE, ISO) in ein prüfpflichtiges Lastenheft. Fokus auf Trennung von Funktionen, Kategorien und Anforderungen ohne Erfindung von Hardware-Instanzen.\n\nValidierung der Instanzen PDC, CDC und ADC als Controller. Erfassung der registrierten Transportvarianten Ethernet, CAN, CAN-FD, LIN und UDS. Trennung von Funktionen (Sensorfusion, Regelung) und Anforderungen (REQ-IDs). Klärung offener Schnittstellen wie GMSL/FPD-Link.\n\nErgänze DEVICE_ALIAS für BDC und IDC mit vollständigen Quellenzitaten. Bestätige die Einordnung der registrierten Transportvarianten (CAN, CAN-FD, LIN, Ethernet, SOME/IP, DDS, MOST, AVB) und trenne Anforderungen von Geräteinstanzen.\n\nEngineering-Vorschlag: Implementierung der definierten Sicherheits- und Safety-Mechanismen. Fokus auf Verschlüsselung (TLS/IPsec/SOME/IP-Sec), HSM-Integration, signierte OTA-Updates, UDS-Diagnose über Ethernet und Safety-Features wie Alive-Counter, CRC, Watchdog und redundante Pfade für ASIL-D. ADAS-Controller muss Fail-Operational sein. Alle Anforderungen sind als MUST-Kriterien zu validieren.\n\nErstellung eines Cybersecurity-Architekturkonzepts, das die geforderten Funktionen (Secure Boot, HSM, IDS/IPS, OTA-Sicherheit) auf die vorhandenen Controller-Instanzen abbildet. Verifikation der Unterstützung für TLS 1.3 und SOME/IP-Sec in der Netzwerk-Stack-Konfiguration. Klärung der physischen Umsetzung der HSM-Anforderung (integriert vs. extern).\n\nAnalyse der Anforderungen an die Sensorfusion und Datenverarbeitung. Identifikation der logischen Funktionen (Fusion, Tracking, Klassifikation) und der zugehörigen Datenqualitäts- und Sicherheitsanforderungen. Keine Zuordnung zu physischen Geräten, da keine konkreten Instanzen benannt sind.",
-    "assumptions": [
-      "Die in R0017 genannten 'Domain-Controller' werden als unquantifizierte Gerätekategorie interpretiert, da keine spezifischen Instanzen (z.B. ADC, BDC) mit Namen oder Stückzahl benannt sind.",
-      "Die in R0046 und R0047 aufgeführten Sensor- und Aktortypen werden als Kategorien zusammengefasst, da es sich um eine Typenliste ohne konkrete Geräteinstanzen handelt.",
-      "Die genannten Protokolle SOME/IP und DDS werden als registrierte Transportvarianten im NIS-Katalog behandelt, da sie explizit in der Middleware-Zeile genannt sind.",
-      "Die ISO-Normen und UN-ECE-Regelungen werden als Anforderungen (REQUIREMENT) und nicht als technische Komponenten interpretiert.",
-      "Die Nennung von 'Powertrain Domain Controller (PDC)' in R0013 wird als konkrete Instanz und nicht nur als Kategorie interpretiert.",
-      "Die in R0056 genannten Sensorlinks (GMSL, FPD-Link) sind keine registrierten NIS-Transporte und werden als UNRESOLVED geführt.",
-      "Die Kürzel BDC und IDC werden als eindeutige Aliasse für die in R0010 und R0022 definierten Domain Controller interpretiert.",
-      "Die Nennung von 'MOST/AVB' in R0029 wird als zwei separate, registrierte Transportvarianten behandelt.",
-      "TLS und IPsec werden als spezifische Protokollvarianten behandelt, die nicht im NIS-Katalog als registrierte TRANSPORTs aufgeführt sind, daher UNRESOLVED.",
-      "HSM wird als Hardware-Komponente interpretiert, die nicht als spezifisches Gerät im Katalog registriert ist, daher UNRESOLVED.",
-      "Die Anforderung 'HSM verwenden' (R0016) impliziert die Nutzung einer Hardware-Sicherheitsmodul-Fähigkeit, die entweder in den bestehenden Controllern integriert ist oder als separate Komponente realig",
-      "Die geforderte 'Netzwerkverkehr analysieren' (R0018) und 'Anomalien erkennen' (R0019) wird durch eine logische IDS/IPS-Funktion (R0017) abgedeckt, die auf den vorhandenen Netzwerk-Stacks läuft.",
-      "Die genannten Datenquellen (Radar, Kamera, IMU, Lidar, Raddrehzahl) beziehen sich auf logische Eingangsdaten der Fusion, nicht auf physische Sensorinstanzen.",
-      "EKF und UKF werden als algorithmische Verfahren interpretiert, nicht als spezifische Hardware-Implementierungen."
-    ],
+    "proposed_task": "Engineering-Vorschlag anhand der vollständigen quellengebundenen Qwen-Befunde prüfen.\nDie 5 konkret benannten Geräte als Instanzen übernehmen und ihre Anschlüsse sowie Funktionszuordnungen bestätigen.\nBenannte Geräte: Powertrain Domain Controller (PDC); Chassis Domain Controller (CDC); ADAS Domain Controller (ADC); Body Domain Controller (BDC); Infotainment Domain Controller (IDC).\nDie 6 unquantifizierten Gerätegruppen getrennt halten; zusätzliche Instanzen und Stückzahlen vor einer Geräteerzeugung klären.\nDie 7 erfassten logischen Funktionen den bestätigten Geräten zuordnen und Funktionspartner klären.\nDie 36 erfassten Anforderungen mit ihren Quellenbelegen als Prüfkriterien erhalten.\nDie belegten registrierten Kommunikationsvarianten getrennt planen und die tatsächlichen Geräteanschlüsse bestätigen.\nNicht eindeutig registrierte Schnittstellen vor einer technischen Zuordnung klären.\nÄnderungen erst nach Prüfung dieses Vorschlags bestätigen; keine Mengen, Topologien oder technischen Parameter ergänzen.",
+    "assumptions": [],
     "open_questions": [
-      "Welche spezifischen Domain-Controller (z.B. ADC, BDC) sind in der späteren Spezifikation als Instanzen definiert und wie sind sie den in R0045 genannten Domänen (Powertrain, Chassis, ADAS, Body, Infot",
-      "Welche konkreten Hardware-Instanzen (Controller/ECUs) sind für die Ausführung der genannten ADAS-Funktionen (Perception, Fusion, Planning) vorgesehen?",
-      "Sind die genannten Sensorarten (Radar, Kamera, Lidar, IMU) als konkrete Instanzen oder nur als logische Kategorien in der Systemarchitektur zu verorten?",
-      "Sind GMSL und FPD-Link im NIS-Katalog als spezifische Transportvarianten registriert oder bleiben sie UNRESOLVED?",
-      "Gibt es weitere konkrete Instanzen für die in R0006 genannten Domänen (Body, Infotainment) in diesem Abschnitt?",
-      "Sind die in R0050 genannten 'Punkt-zu-Punkt-Links' als spezifische registrierte Transportvariante oder als generische Kategorie zu klassifizieren?",
-      "Welche konkrete Hardware-Instanz realisiert die in R0037 genannten '100/1000BASE-T1' Spezifikationen, da kein explizites Gerät benannt ist?",
-      "Sind TLS und IPsec als spezifische Transportvarianten im NIS-Katalog registriert oder müssen sie als UNRESOLVED behandelt werden?",
-      "Welche spezifische Hardware-Instanz ist mit 'HSM' gemeint und ist sie im NIS-Katalog registriert?",
-      "Welche konkreten Controller-Instanzen (z.B. ADC, BDC) müssen die HSM-Funktionalität bereitstellen, und ist diese bereits in der Hardware vorhanden?",
-      "Wie ist die physische Topologie für die 'sichere Backend-Kommunikation' (R0034) definiert, und welche spezifischen Transportvarianten (außer SOME/IP) sind für die externe Kommunikation zugelassen?",
-      "Welche konkreten Sensorinstanzen liefern die genannten Daten (Radar, Kamera, IMU, Lidar, Raddrehzahl)?",
-      "Gibt es spezifische Hardware-Anforderungen an die Rechenleistung für die Fusion und die genannten Algorithmen (EKF/UKF)?"
+      "Welche konkreten Geräte und Stückzahlen gehören zusätzlich zu den bereits benannten Instanzen zu diesen Gruppen: Domain‑Controller (Powertrain, Chassis, ADAS, Body, Infotainment)?",
+      "Welche konkreten Geräte und Stückzahlen gehören zusätzlich zu den bereits benannten Instanzen zu diesen Gruppen: Sensorik (Radar, Kamera, Lidar, Ultraschall, IMU, Raddrehzahl)?",
+      "Welche konkreten Geräte und Stückzahlen gehören zusätzlich zu den bereits benannten Instanzen zu diesen Gruppen: Aktorik (Bremsaktuator, Lenkaktuator, Antriebsaktuator)?",
+      "Welche konkreten Geräte und Stückzahlen gehören zusätzlich zu den bereits benannten Instanzen zu diesen Gruppen: HMI‑Systeme (Displays, Bedienelemente, Warnanzeigen); Mechanische Struktur (Karosserie, Fahrwerk, Bremsen, Antrieb); Elektrische Energieversorgung (12‑V/48‑V, HV‑System)?",
+      "Welche technische Realisierung und gegebenenfalls registrierte Variante ist für diese noch ungeklärten Schnittstellen vorgesehen: GMSL, FPD‑Link, TLS, IPsec, HSM, ADAS‑Controller, Radar‑, Kameradaten, IMU‑Daten, Raddrehzahldaten, Lidar‑Daten, EKF, UKF?"
     ]
   },
   "source_name": "Fahrzeug komplett.txt",
@@ -596,7 +573,7 @@
     }
   ],
   "provider": "local_ollama",
-  "created_at": "2026-10-14T17:40:24.781436+00:00",
+  "created_at": "2026-10-14T19:06:01.433517+00:00",
   "canonical_writes": false,
   "approval_required": true
 }

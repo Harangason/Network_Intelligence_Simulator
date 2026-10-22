@@ -1,0 +1,230 @@
+--- /dev/null
++++ docs\implementation-workloads\qwen-generalization-20261015\probe.py
+@@ -0,0 +1,122 @@
++"""Capture actual local Qwen interpretation of complete, diverse source files.
++
++This verification script never opens a database or writes canonical model data.
++Semantic review is recorded separately, rather than inferred from schema success.
++"""
++import asyncio
++import hashlib
++import json
++import sys
++import time
++from datetime import datetime, timezone
++from pathlib import Path
++
++ROOT = Path(__file__).resolve().parents[3]
++sys.path.insert(0, str(ROOT))
++from backend.nis.agent.orchestration.local_reasoner import LocalEngineeringReasoner
++from backend.nis.engineering.goal_execution.progress import sink
++
++OUT = Path(__file__).parent
++BENCH = Path('C:/Users/marti/PycharmProjects/Benchmark_Modelle')
++CASES = [
++    ('building', 'Intelligentes HLK-Regelsystem.txt'),
++    ('chemical', 'Chemieanlagen-Modul.txt'),
++    ('cobot', 'Kollaborativer Roboterarm.txt'),
++    ('medical', 'Infusionspumpe.txt'),
++    ('telecom', '5G-RAN-Komponente.txt'),
++    ('space', 'Satelliten-Avionik.txt'),
++    ('mobile_robot', 'Mobiler Service‑Roboter mit Greifarm und 360°‑Sensorik.txt'),
++]
++
++
++def save(path, value):
++    path.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding='utf-8')
++
++
++async def main():
++    reasoner = LocalEngineeringReasoner()
++    manifest = {
++        'started_at': datetime.now(timezone.utc).isoformat(),
++        'purpose': 'Native inference on other original project files; semantic review separate',
++        'database_access': False,
++        'model': reasoner.model,
++        'endpoint': str(reasoner.client.base_url),
++        'application_hashes': {p: hashlib.sha256((ROOT / p).read_bytes()).hexdigest()
++                               for p in ('backend/nis/agent/orchestration/local_reasoner.py',
++                                         'backend/nis/agent/orchestration/project_intake.py')},
++        'cases': [],
++    }
++    tags = await reasoner.client.get(reasoner.chat_url.removesuffix('/chat') + '/tags')
++    tags.raise_for_status()
++    installed = next(m for m in tags.json()['models'] if m['name'] == reasoner.model)
++    assert installed['details']['family'].startswith('qwen')
++    manifest['installed_model'] = installed
++    save(OUT / 'manifest.json', manifest)
++    current = {}
++
++    async def capture(response):
++        if response.request.url.path != '/api/chat':
++            return
++        await response.aread()
++        current['calls'].append({'request': json.loads(response.request.content),
++                                 'http_status': response.status_code,
++                                 'response': response.json()})
++        save(OUT / f"{current['id']}-wire.json", current['calls'])
++        actual = response.json()
++        print(json.dumps({'case': current['id'], 'event': 'MODEL_RESPONSE',
++                          'call': len(current['calls']), 'model': actual.get('model'),
++                          'tokens': actual.get('eval_count'),
++                          'seconds': round(actual.get('total_duration', 0) / 1e9, 2)}), flush=True)
++
++    reasoner.client.event_hooks['response'] = [capture]
++    token = sink.set(lambda event: print(json.dumps({'case': current.get('id'), **event}, ensure_ascii=True), flush=True))
++    try:
++        selected = set(sys.argv[1:])
++        for case_id, filename in CASES:
++            if selected and case_id not in selected:
++                continue
++            current = {'id': case_id, 'calls': []}
++            raw = (BENCH / filename).read_bytes()
++            source = raw.decode('utf-8')
++            (OUT / f'{case_id}-source.txt').write_bytes(raw)
++            item = {'id': case_id, 'file': filename, 'original_path': str(BENCH / filename),
++                    'source_sha256': hashlib.sha256(raw).hexdigest(), 'source_chars': len(source),
++                    'source_bytes': len(raw), 'status': 'RUNNING'}
++            manifest['cases'].append(item)
++            save(OUT / 'manifest.json', manifest)
++            print(json.dumps({'case': case_id, 'event': 'START', 'file': filename,
++                              'chars': len(source)}, ensure_ascii=True), flush=True)
++            started = time.monotonic()
++            try:
++                result = await reasoner.interpret_document(source, filename)
++                save(OUT / f'{case_id}-proposal.json', result)
++                assert result['source_complete'] is True
++                assert result['canonical_writes'] is False and result['approval_required'] is True
++                assert result['model'] == reasoner.model and result['provider'] == 'local_ollama'
++                assert result['source_sha256'] == item['source_sha256']
++                transmitted = []
++                for call in current['calls']:
++                    payload = json.loads(call['request']['messages'][1]['content'])
++                    text = ''.join(payload['source_lines'].values())
++                    if not payload.get('validation_feedback'):
++                        transmitted.append(text)
++                    assert call['response']['model'] == reasoner.model
++                    assert call['response'].get('eval_count', 0) > 0
++                assert ''.join(transmitted) == source, 'Wire input must preserve the complete original source'
++                item.update(status='NATIVE_RETURNED', segments=len(result['segments']),
++                            components=len(result['interpretation']['components']),
++                            technologies=len(result['interpretation']['technologies']))
++            except Exception as error:
++                item.update(status='NATIVE_FAILED', error=str(error), error_type=type(error).__name__)
++            item.update(seconds=round(time.monotonic() - started, 2), calls=len(current['calls']))
++            save(OUT / 'manifest.json', manifest)
++            print(json.dumps(item, ensure_ascii=True), flush=True)
++    finally:
++        sink.reset(token)
++        await reasoner.client.aclose()
++    manifest['finished_at'] = datetime.now(timezone.utc).isoformat()
++    save(OUT / 'manifest.json', manifest)
++
++
++if __name__ == '__main__':
++    asyncio.run(main())
+--- /dev/null
++++ docs\implementation-workloads\qwen-generalization-20261015\acceptance.md
+@@ -0,0 +1,17 @@
++# Vorab festgelegter Prüfbereich
++
++Sieben unveränderte Originaldateien aus `C:\Users\marti\PycharmProjects\Benchmark_Modelle` werden vollständig an den installierten lokalen Qwen-Dokumentplaner übergeben. Dies prüft Dokumentverständnis und Vorschlagsqualität. Es prüft weder den vollständigen Wizard-Ablauf noch Simulation, technische Freigabe oder EIP-Integration.
++
++Die Tests verwenden keine Datenbank, kein Mock-Modell, keine aufgezeichneten Antworten als Eingabe und keinen Cloud-Dienst. Jede echte Anfrage und Antwort, Originaldatei, Laufzeit und Quellhash werden gespeichert. Ein erfolgreiches Schema allein ist kein fachlicher Erfolg.
++
++| Datei | Unabhängige Erwartungen aus dem Original |
++| --- | --- |
++| Intelligentes HLK-Regelsystem | Gebäudeautomation und Raumregelung erhalten; Raumcontroller, Sensorik und Aktoren als unquantifizierten Architekturumfang behandeln. Komfort/Energie/Fernzugriff als Anforderungen, keine bestätigten Busse oder Stückzahlen erfinden. |
++| Chemieanlagen-Modul | Prozessmodul, Prozesssensorik, Aktoren und SPS/DCS berücksichtigen; Rezepturablauf, Regelkreise und Alarme als Funktionen; Druckabschaltung als Test-/Sicherheitsverhalten. Keine Stückzahl aus „Beispiel 11“, keine automatische CAN-/Automotive-Auswahl. |
++| Kollaborativer Roboterarm | Gelenkaktuatoren, Kraft-/Momentensensorik und Sicherheitssteuerung erhalten; Bahnplanung und Kollisionsüberwachung als Funktionen. „Beispiel 14“ ist keine Gerätezahl. Fehlende Stückzahlen und Anschlüsse klären. |
++| Infusionspumpe | Pumpenmechanik, Fluss-/Luftsensorik und Embedded Controller berücksichtigen; Förderprofilsteuerung, Okklusionserkennung, Alarmierung als Funktionen. Toleranz und Stoppfunktion als Anforderungen; keine erfundene Gerätezahl oder medizinische Freigabe. |
++| 5G-RAN-Komponente | Funkmodul und Architekturkontext erhalten; Baseband-Processing und Scheduling nicht in physische Geräte umdeuten. Der Projekttitel belegt keinen konkret ausgeführten Geräteanschluss; offene Fronthaul-/Backhaul-Realisierung klären. Keine Automotive-Vorlage. |
++| Satelliten-Avionik | On-Board-Computer, Power Control Unit, Sensortypen und Reaktionsräder berücksichtigen; FDIR/Mode Management/Telecommand als Funktionen und F-/NF-REQ als Anforderungen. CAN separat erhalten; SpaceWire und „UART-ähnlich“ nicht ohne Prüfung als bestätigte physische Anschlüsse übernehmen. Keine Mengen aus REQ-/TC-Nummern. |
++| Mobiler Service-Roboter | Raspberry Pi 5 als benannten Hauptrechner von beispielhaften/alternativen Geräten unterscheiden. Unquantifizierte Typen, 4–6 Räder und 8–12 Ultraschallsensoren bleiben offene Mengenbereiche, keine erfundene exakte Stückzahl. CAN, I²C, UART und explizite Schnittstellen erhalten; WiFi/Bluetooth/CSI/Serial nach Registry und Quelle behandeln. Anforderungs- und Testnummern, Freiheitsgrade, Frequenzen und Spannungen sind keine Geräteanzahlen. Gesamtvorschlag darf frühen und späten Dokumentabschnitten nicht widersprechen. |
++
++Gemeinsame Abnahme: Vollständiger Originaltext muss in den tatsächlichen Modellanfragen nachweisbar sein. Fakten müssen Quellenstellen besitzen; Vorschlag und Fragen müssen zur jeweiligen Branche und zu den fehlenden Angaben passen. Fehler werden als Fehler dokumentiert, auch wenn die eingebaute Validierung sie durchlässt. Eine Rückfrage ist ein zulässiges Ergebnis bei unvollständigen Beschreibungen.
+--- /dev/null
++++ docs\implementation-workloads\qwen-generalization-20261015\findings.md
+@@ -0,0 +1,50 @@
++# Befunde der echten Qwen-Prüfung
++
++## F1: Gemeinsame Architekturzeile kann mehrere Gerätearten nicht getrennt belegen
++
++`Intelligentes HLK-Regelsystem.txt` scheitert in beiden tatsächlichen Modellantworten an derselben Grenze. Die Quelle nennt Raumcontroller, Sensorik, Aktoren und BMS/Cloud gemeinsam. Qwen ordnet diese Quelle mehrfach ein. `resolve_document_references()` lehnt mehrere Komponenten aus derselben `source_ref` ab. Die Korrekturaufforderung wird übermittelt, beseitigt den Fehler aber nicht.
++
++Erste fehlerhafte ausführende Schicht: Quellenreferenz-Auflösung in `backend/nis/agent/orchestration/project_intake.py`, vor der fachlichen Validierung. Zusätzlich nennt die Modellprosa den allgemeinen Raumcontroller eine konkrete Instanz, obwohl weder eine individuelle Kennung noch eine Stückzahl vorliegt. Ein anderer Dateiname oder zusätzliche Controller-Stichwörter beheben diese strukturelle Grenze nicht.
++
++Evidence: `building-wire.json` enthält beide echten Anfragen, das Validierungsfeedback und beide Antworten; `manifest.json` enthält den terminalen Fehler. Produktivdaten wurden nicht verändert.
++
++Dasselbe terminale Problem tritt bei `Kollaborativer Roboterarm.txt` und `Infusionspumpe.txt` nach jeweils zwei echten Modellantworten auf. Die erste Roboterarm-Antwort trennt die Hardware fachlich sinnvoll in Aktor-, Sensor-, Controller- und sonstige Kategorien, kann diese Aufteilung mit der vorhandenen Quellenreferenz aber nicht ausdrücken. Die Korrektur wechselt Sicherheitssteuerung und Teach-Panel sogar von Kategorien zu Instanzen, ohne den eigentlichen Quellenkonflikt zu lösen. Bei der Infusionspumpe nennt die erste Antwort zusätzlich einen allgemeinen Embedded Controller mit Stückzahl 1 und „Embedded“/„Remote“ als ungeklärte Technologien. Diese Antworten wurden nicht als Vorschlag übernommen.
++
++## F2: Formal akzeptierte Antwort kann unterschiedliche Hardwarerollen zusammenwerfen
++
++`Chemieanlagen-Modul.txt` liefert nach einer echten Modellantwort einen prüfpflichtigen Vorschlag. Prozessmodul, Funktionen und Anforderungen passen zum Original; es werden keine Stückzahlen oder Busse erfunden. Allerdings wird die gesamte gemischte Architekturzeile als eine `CATEGORY/OTHER` gespeichert. Prozesssensorik, Aktoren und SPS/DCS werden damit nicht als getrennte Sensor-, Aktor- und Controllergruppen erfasst. Die Annahme nennt sogar Prozesssensorik und Aktoren ausdrücklich `role OTHER`.
++
++Der Validator akzeptiert diesen Informationsverlust. `NATIVE_RETURNED` bedeutet daher nicht fachliches PASS. Für einen verwendbaren Geräteumfang ist dies ein Teilbefund, kein allgemeiner Erfolgsnachweis.
++
++Evidence: `chemical-proposal.json`, `chemical-wire.json` und unveränderte Originalkopie `chemical-source.txt`.
++
++## F3: Logische Verarbeitung wird in akzeptierter Telekommunikationsantwort zu Hardware
++
++`5G-RAN-Komponente.txt` liefert einen prüfpflichtigen Vorschlag nach einem echten Modellaufruf. Der Telekommunikationskontext und die Funktionen Scheduling/QoS werden erkannt, konkrete Stückzahlen werden nicht erfunden. Die gesamte Architekturzeile landet jedoch wieder als `CATEGORY/OTHER`. Die Annahme bezeichnet ausdrücklich auch „Baseband-Processing“ als Hardwarekategorie. Damit geht die erforderliche Trennung zwischen Verarbeitung, Funkhardware und Schnittstellen verloren. Die registrierte 5G-Technologie wird aus dem Projekttitel erkannt; das belegt für sich noch keine konkrete Geräteanschluss-Zuordnung.
++
++Evidence: `telecom-proposal.json` und `telecom-wire.json`. Auch dieser formal akzeptierte Vorschlag ist daher nur teilweise fachlich brauchbar.
++
++## F4: Satelliten-Architektur scheitert ebenfalls; Transportqualifikation geht verloren
++
++`Satelliten-Avionik.txt` wird nach zwei echten Antworten mit demselben Mehrfachreferenzfehler für die gemeinsame Hardwarezeile abgelehnt. Die Antworten erkennen FDIR, Telecommand, Sensortypen und Reaktionsräder. Ein übernehmbarer Vorschlag entsteht jedoch nicht. Die erste Antwort nennt UART ohne die Einschränkung „UART-ähnlich“ aus der Quelle; die Registry-Vorauswahl liefert UART bereits als verpflichtenden registrierten Kandidaten. Damit ist die Unterscheidung zwischen erwähntem Protokoll und bestätigter konkreter Realisierung nicht ausreichend im Vorschlag erhalten. Es fand keine physische Modellzuweisung statt.
++
++Evidence: `space-wire.json`, `space-source.txt` und terminaler Fehler in `manifest.json`.
++
++## F5: Ausführlicher Roboter liefert Gesamtvorschlag mit falscher Instanz- und Rollenbildung
++
++`Mobiler Service‑Roboter mit Greifarm und 360°‑Sensorik.txt` wird in zwei echten Qwen-Aufrufen vollständig verarbeitet. Alle 5019 Zeichen sind in den tatsächlichen Anfragen nachgewiesen. Der Bereich 8–12 Ultraschallsensoren bleibt richtig eine Kategorie ohne feste Stückzahl. Raspberry Pi 5 wird aus der eigenen Hauptrechner-Deklaration erkannt. CAN, UART, GPIO, PWM und ROS2 bleiben als getrennte registrierte Technologien erhalten; Bluetooth wird nicht zu einer erfundenen Variante erweitert.
++
++Der Gesamtvorschlag ist dennoch nur teilweise brauchbar:
++
++- Die allgemeine Auswahlliste „Mikrocontroller (STM32, Arduino, ESP32) für Echtzeitmotorik“ wird zu einer konkreten Instanz mit Stückzahl 1. Die Quelle bestätigt keine individuelle Auswahl oder exakte Zahl. Der Gesamtauftrag fordert die Übernahme als eines von zwei konkret benannten Geräten, ohne hierzu eine Auswahlfrage zu stellen.
++- „Motorcontroller (z. B. Roboclaw, ODrive)“ wird als `CATEGORY/ACTUATOR` geführt. Der vorhandene Rollencheck erkennt das zusammengesetzte Wort Motorcontroller nicht als ausdrücklichen Controller. Die Controllerrolle darf nicht aus dem Aktor-Kontext abgeleitet werden.
++- I²C bleibt UNRESOLVED; ebenso wird WLAN trotz bereits erkanntem WiFi als zusätzlicher ungeklärter Begriff ausgegeben. Die aktuelle Erkennung behandelt diese Schreibweisen nicht einheitlich. Dies ist ein Befund zur Normalisierung, keine Berechtigung für eine beliebige Protokollersetzung.
++- Die Quelle beschreibt Navigation, Manipulation, Autonomie und Teleoperation ausführlich, die strukturierte Ergebnisliste enthält aber keine einzige FUNCTION. Der daraus zusammengesetzte Gesamtauftrag enthält folglich keinen entsprechenden Funktionsschritt. Pro Abschnitt werden höchstens acht wesentliche Komponenten erfasst; vollständige Übertragung bedeutet daher keine vollständige semantische Erfassung.
++
++Evidence: `mobile_robot-proposal.json`, beide echten Aufrufe in `mobile_robot-wire.json`, Originalkopie und Integritätsprüfung in `audit.json`.
++
++## Mögliche Reparaturrichtung, noch nicht umgesetzt
++
++Quellenstellen müssen mehrere unterscheidbare, weiterhin exakt belegte Hardwareaussagen innerhalb einer gemeinsamen Zeile tragen können, etwa über geprüfte Teilspannen. Identische Geräte dürfen dabei nicht dupliziert werden. Gemischte Rollen dürfen nicht als pauschale OTHER-Gruppe verschwinden. Allgemeine Controllerarten und beispielhafte Alternativen dürfen ohne individuelle Deklaration keine bestätigten Instanzen werden. Anschließend sind dieselben Originaldateien mit echten Modellantworten erneut zu prüfen; eine bloße Lockerung des Validators wäre kein Nachweis.
++
++Dieser Auftrag ist eine zusätzliche Prüfung. Es wurde bislang kein Anwendungscode geändert und keine neue Produktivversion ausgeliefert.
+--- /dev/null
++++ docs\implementation-workloads\qwen-generalization-20261015\report.md
+@@ -0,0 +1,29 @@
++# Qwen mit sieben weiteren Projektdateien geprüft
++
++**Ergebnis: Das allgemeine Funktionieren ist nicht nachgewiesen. Vier Dokumente werden abgelehnt, drei liefern nur teilweise brauchbare Vorschläge. Kein Fall erfüllt alle vorab festgelegten fachlichen Kriterien.** Qwen erkennt unterschiedliche Branchen und Inhalte, aber die Überführung in getrennte, quellengebundene Geräte, Funktionen und Rückfragen ist noch unzuverlässig.
++
++| Originaldatei | Ergebnis | Entscheidender Befund |
++| --- | --- | --- |
++| Intelligentes HLK-Regelsystem.txt | Abgelehnt | Controller, Sensorik und Aktoren teilen eine Architekturzeile; beide Antworten scheitern an der Mehrfachreferenz. Allgemeine Controllerart wird als Instanz behandelt. |
++| Chemieanlagen-Modul.txt | Teilweise brauchbar | Prozesskontext und Funktionen passen; Sensorik, Aktoren und SPS/DCS verschwinden als getrennte Rollen in einer CATEGORY/OTHER. |
++| Kollaborativer Roboterarm.txt | Abgelehnt | Qwen erkennt verschiedene Hardwarekategorien, kann sie wegen der gemeinsamen Quellenzeile aber nicht getrennt übergeben. Auch die Korrektur scheitert. |
++| Infusionspumpe.txt | Abgelehnt | Gemeinsame Hardwarezeile scheitert zweimal. Allgemeiner Embedded Controller wird zunächst mit Stückzahl 1 angesetzt. |
++| 5G-RAN-Komponente.txt | Teilweise brauchbar | Telekommunikationskontext erkannt; Baseband-Processing wird zusammen mit Hardware und Schnittstellen als Hardwarekategorie eingeordnet. |
++| Satelliten-Avionik.txt | Abgelehnt | Gemeinsame Hardwareliste scheitert zweimal; „UART-ähnlich“ erscheint in der Vorschlagsprosa als UART ohne Einschränkung. |
++| Mobiler Service‑Roboter mit Greifarm und 360°‑Sensorik.txt | Teilweise brauchbar | Mengenbereich bleibt offen und Hauptrechner wird erkannt. Mikrocontroller-Auswahl wird jedoch zu einer konkreten Instanz, Motorcontroller zum Aktor; I²C/WLAN bleiben ungeklärt, die strukturierte Funktionsliste ist leer. |
++
++## Tatsächlich ausgeführt
++
++Am 15.10.2026 von 06:36 bis 07:11 Uhr Europe/Berlin: zwölf echte Modellaufrufe mit dem lokal installierten `qwen3.8:27b` (Familie qwen35, 27,3B, Q4_K_M), insgesamt 7603 erzeugte Tokens und rund 34,9 Minuten. Modell-Digest: `22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643`.
++
++Alle sieben Originaldateien wurden unverändert geprüft. Der unabhängige Abgleich bestätigt bytegleiche Originalkopien und die vollständige Übertragung jedes Dokuments in den tatsächlichen Modellanfragen, einschließlich der beiden Abschnitte des ausführlichen Roboters. Die Korrekturen erhielten dieselben Quellen mit Validierungsfeedback. Es wurden keine Modellantworten simuliert oder wiederverwendet. Die Dokumentauswertung lief lokal ohne ChatGPT-/Cloud-Inferenz.
++
++Die beiden geprüften Anwendungsmodule stimmen per SHA-256 mit der laufenden Produktivversion überein. Die Fehler sind somit auch im produktiven Code vorhanden. Kein Anwendungscode, kanonisches Modell oder Produktivdatensatz wurde geändert. Eine neue Auslieferung war für diesen Prüfauftrag nicht erforderlich und wurde nicht vorgenommen.
++
++## Konsequenz
++
++Die Korrektur muss allgemein an Quellenbindung und fachlicher Validierung ansetzen: mehrere exakt belegte Aussagen innerhalb einer Zeile zulassen, identische Geräte weiterhin gegen Duplikate schützen, Kategorien und Alternativen von Instanzen trennen, zusammengesetzte Controllerbezeichnungen richtig prüfen und Schreibweisen sowie Einschränkungen von Protokollen erhalten. Die vollständige Funktionsbeschreibung darf trotz begrenzter Ausgabelisten nicht unbemerkt verloren gehen. Anschließend sind dieselben Dateien erneut mit echtem Qwen zu prüfen. Eine Sonderbehandlung einzelner Dateinamen oder eine bloße Lockerung des Validators würde den Befund nicht lösen.
++
++Diese Prüfung deckt Dokumentaufnahme und Vorschlagsqualität ab. Sie belegt keine vollständige Wizard-Ausführung, Simulation, technische Freigabe oder EIP-Integration. Die Prüfung ist abgeschlossen; die allgemeine fachliche Anforderung bleibt mit den beschriebenen Produktbefunden offen. Reparaturen wurden in diesem zusätzlichen Testauftrag nicht umgesetzt.
++
++Nachweise: [Vorab-Kriterien](acceptance.md), [detaillierte Befunde](findings.md), [Integritätsprüfung und Ergebniszahlen](audit.json), [Dateihashes und Laufzeiten](manifest.json), [produktive Codehashes](production-code-observation.json), [Laufprotokoll](native-run.log). Die Dateien `*-wire.json` enthalten alle echten Anfragen und Antworten; `*-proposal.json` enthalten ausschließlich tatsächlich zurückgegebene Vorschläge.

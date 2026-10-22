@@ -1,0 +1,918 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="9" skipped="0" tests="10" time="8.033" timestamp="2026-10-17T17:46:43.271945+02:00" hostname="Haranga"><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_complete_original_and_short_ids_survive_detached_review" time="0.612"><error message="failed on setup with &quot;subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged-loader.mjs', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs']' returned non-zero exit status 1.&quot;">@pytest.fixture
+    def prepared():
+&gt;       return intake.prepare_reference_design(fixture_request())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+docs\implementation-workloads\reference-example-assumptions-20261017\root\test_reference_design.py:67: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+docs\implementation-workloads\reference-example-assumptions-20261017\root\staged\backend\nis\agent\orchestration\project_intake.py:1386: in prepare_reference_design
+    catalog = reference_design_catalog(request.prompt)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+docs\implementation-workloads\reference-example-assumptions-20261017\root\conftest.py:28: in _catalog_from_existing_exports
+    completed = subprocess.run([node, '--experimental-strip-types', '--import', str(out / 'staged-loader.mjs'),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+input = '{"prompt": "Controller (ECU)\\nSensorik (Temperatursensoren)\\nAktorik (Ventile)\\nFunktion: Regelung\\nFunktion: Dia...e\\": \\"Controller (ECU)\\"}], \\"answers\\": [], \\"function_assignments\\": {}}", "operation": "reference-catalog"}'
+capture_output = True, timeout = None, check = True
+popenargs = (['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Netw...orkloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs'],)
+kwargs = {'cwd': WindowsPath('I:/PycharmProjects/My_first_Network_Simulator'), 'text': True, 'encoding': 'utf-8', 'stdin': -1, ...}
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output &amp; stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+&gt;               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged-loader.mjs', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs']' returned non-zero exit status 1.
+
+C:\Users\marti\anaconda3\Lib\subprocess.py:577: CalledProcessError</error></testcase><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_reviewed_counts_remain_exact_or_minimum" time="0.613"><failure message="subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged-loader.mjs', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs']' returned non-zero exit status 1.">def test_reviewed_counts_remain_exact_or_minimum():
+        answer = {'id': 'reviewed-sensors', 'label': 'Sensorik (Temperatursensoren)', 'source_context': [],
+                  'role': 'SENSOR', 'quantity': 3, 'minimum': True}
+&gt;       prepared = intake.prepare_reference_design(fixture_request(answers=[answer]))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+docs\implementation-workloads\reference-example-assumptions-20261017\root\test_reference_design.py:217: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+docs\implementation-workloads\reference-example-assumptions-20261017\root\staged\backend\nis\agent\orchestration\project_intake.py:1386: in prepare_reference_design
+    catalog = reference_design_catalog(request.prompt)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+docs\implementation-workloads\reference-example-assumptions-20261017\root\conftest.py:28: in _catalog_from_existing_exports
+    completed = subprocess.run([node, '--experimental-strip-types', '--import', str(out / 'staged-loader.mjs'),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+input = '{"prompt": "Controller (ECU)\\nSensorik (Temperatursensoren)\\nAktorik (Ventile)\\nFunktion: Regelung\\nFunktion: Dia...NSOR\\", \\"quantity\\": 3, \\"minimum\\": true}], \\"function_assignments\\": {}}", "operation": "reference-catalog"}'
+capture_output = True, timeout = None, check = True
+popenargs = (['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Netw...orkloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs'],)
+kwargs = {'cwd': WindowsPath('I:/PycharmProjects/My_first_Network_Simulator'), 'text': True, 'encoding': 'utf-8', 'stdin': -1, ...}
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output &amp; stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+&gt;               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged-loader.mjs', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs']' returned non-zero exit status 1.
+
+C:\Users\marti\anaconda3\Lib\subprocess.py:577: CalledProcessError</failure></testcase><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_inherited_command_encoding_is_still_checked" time="0.656"><failure message="subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged-loader.mjs', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs']' returned non-zero exit status 1.">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001B97B1A7100&gt;
+
+    def test_inherited_command_encoding_is_still_checked(monkeypatch):
+&gt;       prepared, candidate, choices = confirmed_fixture(monkeypatch)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+docs\implementation-workloads\reference-example-assumptions-20261017\root\test_reference_design.py:574: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+docs\implementation-workloads\reference-example-assumptions-20261017\root\test_reference_design.py:465: in confirmed_fixture
+    prepared = intake.prepare_reference_design(fixture_request())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+docs\implementation-workloads\reference-example-assumptions-20261017\root\staged\backend\nis\agent\orchestration\project_intake.py:1386: in prepare_reference_design
+    catalog = reference_design_catalog(request.prompt)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+docs\implementation-workloads\reference-example-assumptions-20261017\root\test_reference_design.py:462: in confirmed_catalog
+    catalog = original(prompt)
+              ^^^^^^^^^^^^^^^^
+docs\implementation-workloads\reference-example-assumptions-20261017\root\conftest.py:28: in _catalog_from_existing_exports
+    completed = subprocess.run([node, '--experimental-strip-types', '--import', str(out / 'staged-loader.mjs'),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+input = '{"prompt": "Controller (ECU)\\nSensorik (Temperatursensoren)\\nAktorik (Ventile)\\nFunktion: Regelung\\nFunktion: Dia...e\\": \\"Controller (ECU)\\"}], \\"answers\\": [], \\"function_assignments\\": {}}", "operation": "reference-catalog"}'
+capture_output = True, timeout = None, check = True
+popenargs = (['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Netw...orkloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs'],)
+kwargs = {'cwd': WindowsPath('I:/PycharmProjects/My_first_Network_Simulator'), 'text': True, 'encoding': 'utf-8', 'stdin': -1, ...}
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output &amp; stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+&gt;               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged-loader.mjs', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs']' returned non-zero exit status 1.
+
+C:\Users\marti\anaconda3\Lib\subprocess.py:577: CalledProcessError</failure></testcase><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_multiple_explicit_instances_keep_their_total_without_implicit_group_endpoints" time="0.549"><failure message="subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged-loader.mjs', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs']' returned non-zero exit status 1.">def test_multiple_explicit_instances_keep_their_total_without_implicit_group_endpoints():
+        request = fixture_request()
+        source, serialized = request['prompt'].split('\n- Dokument-Geräte: ')
+        envelope = json.loads(serialized)
+        envelope['facts'][0]['quantity'] = 2
+        source = source.replace('Controller (ECU)', '2 Controller (ECU)')
+        envelope['facts'][0]['source_quote'] = '2 Controller (ECU)'
+        envelope['devices'][0].update(quantity=2, source_quote='2 Controller (ECU)')
+        envelope.update(source_text=source, source_chars=len(source), source_sha256=hashlib.sha256(source.encode()).hexdigest())
+        request['prompt'] = source + '\n- Dokument-Geräte: ' + json.dumps(envelope)
+&gt;       prepared = intake.prepare_reference_design(request)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+docs\implementation-workloads\reference-example-assumptions-20261017\root\test_reference_design.py:600: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+docs\implementation-workloads\reference-example-assumptions-20261017\root\staged\backend\nis\agent\orchestration\project_intake.py:1386: in prepare_reference_design
+    catalog = reference_design_catalog(request.prompt)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+docs\implementation-workloads\reference-example-assumptions-20261017\root\conftest.py:28: in _catalog_from_existing_exports
+    completed = subprocess.run([node, '--experimental-strip-types', '--import', str(out / 'staged-loader.mjs'),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+input = '{"prompt": "2 Controller (ECU)\\nSensorik (Temperatursensoren)\\nAktorik (Ventile)\\nFunktion: Regelung\\nFunktion: D...e\\": \\"Controller (ECU)\\"}], \\"answers\\": [], \\"function_assignments\\": {}}", "operation": "reference-catalog"}'
+capture_output = True, timeout = None, check = True
+popenargs = (['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Netw...orkloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs'],)
+kwargs = {'cwd': WindowsPath('I:/PycharmProjects/My_first_Network_Simulator'), 'text': True, 'encoding': 'utf-8', 'stdin': -1, ...}
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output &amp; stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+&gt;               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged-loader.mjs', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs']' returned non-zero exit status 1.
+
+C:\Users\marti\anaconda3\Lib\subprocess.py:577: CalledProcessError</failure></testcase><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_internal_profile_feedback_keeps_complete_original_but_final_validation_requires_all" time="0.651"><failure message="subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged-loader.mjs', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs']' returned non-zero exit status 1.">def test_internal_profile_feedback_keeps_complete_original_but_final_validation_requires_all():
+&gt;       prepared, candidate = profiled_fixture()
+                              ^^^^^^^^^^^^^^^^^^
+
+docs\implementation-workloads\reference-example-assumptions-20261017\root\test_reference_design.py:619: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+docs\implementation-workloads\reference-example-assumptions-20261017\root\test_reference_design.py:350: in profiled_fixture
+    prepared = intake.prepare_reference_design({'mode': 'EXAMPLE_PROJECT',
+docs\implementation-workloads\reference-example-assumptions-20261017\root\staged\backend\nis\agent\orchestration\project_intake.py:1386: in prepare_reference_design
+    catalog = reference_design_catalog(request.prompt)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+docs\implementation-workloads\reference-example-assumptions-20261017\root\conftest.py:28: in _catalog_from_existing_exports
+    completed = subprocess.run([node, '--experimental-strip-types', '--import', str(out / 'staged-loader.mjs'),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+input = '{"prompt": "# 054. Roboterbeispiel\\nController (ECU)\\nSensorik (Temperatursensoren)\\nAktorik (Ventile)\\nFunktion:...e\\": \\"Controller (ECU)\\"}], \\"answers\\": [], \\"function_assignments\\": {}}", "operation": "reference-catalog"}'
+capture_output = True, timeout = None, check = True
+popenargs = (['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Netw...orkloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs'],)
+kwargs = {'cwd': WindowsPath('I:/PycharmProjects/My_first_Network_Simulator'), 'text': True, 'encoding': 'utf-8', 'stdin': -1, ...}
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output &amp; stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+&gt;               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged-loader.mjs', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs']' returned non-zero exit status 1.
+
+C:\Users\marti\anaconda3\Lib\subprocess.py:577: CalledProcessError</failure></testcase><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_internal_profile_feedback_cannot_change_scope_or_primary_evidence[foreign_fact]" time="0.568"><failure message="subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged-loader.mjs', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs']' returned non-zero exit status 1.">mutation = 'foreign_fact'
+
+    @pytest.mark.parametrize('mutation', ['foreign_fact', 'foreign_profile', 'invented_scope', 'changed_source'])
+    def test_internal_profile_feedback_cannot_change_scope_or_primary_evidence(mutation):
+&gt;       prepared, candidate = profiled_fixture()
+                              ^^^^^^^^^^^^^^^^^^
+
+docs\implementation-workloads\reference-example-assumptions-20261017\root\test_reference_design.py:637: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+docs\implementation-workloads\reference-example-assumptions-20261017\root\test_reference_design.py:350: in profiled_fixture
+    prepared = intake.prepare_reference_design({'mode': 'EXAMPLE_PROJECT',
+docs\implementation-workloads\reference-example-assumptions-20261017\root\staged\backend\nis\agent\orchestration\project_intake.py:1386: in prepare_reference_design
+    catalog = reference_design_catalog(request.prompt)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+docs\implementation-workloads\reference-example-assumptions-20261017\root\conftest.py:28: in _catalog_from_existing_exports
+    completed = subprocess.run([node, '--experimental-strip-types', '--import', str(out / 'staged-loader.mjs'),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+input = '{"prompt": "# 054. Roboterbeispiel\\nController (ECU)\\nSensorik (Temperatursensoren)\\nAktorik (Ventile)\\nFunktion:...e\\": \\"Controller (ECU)\\"}], \\"answers\\": [], \\"function_assignments\\": {}}", "operation": "reference-catalog"}'
+capture_output = True, timeout = None, check = True
+popenargs = (['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Netw...orkloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs'],)
+kwargs = {'cwd': WindowsPath('I:/PycharmProjects/My_first_Network_Simulator'), 'text': True, 'encoding': 'utf-8', 'stdin': -1, ...}
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output &amp; stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+&gt;               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged-loader.mjs', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs']' returned non-zero exit status 1.
+
+C:\Users\marti\anaconda3\Lib\subprocess.py:577: CalledProcessError</failure></testcase><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_internal_profile_feedback_cannot_change_scope_or_primary_evidence[foreign_profile]" time="0.632"><failure message="subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged-loader.mjs', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs']' returned non-zero exit status 1.">mutation = 'foreign_profile'
+
+    @pytest.mark.parametrize('mutation', ['foreign_fact', 'foreign_profile', 'invented_scope', 'changed_source'])
+    def test_internal_profile_feedback_cannot_change_scope_or_primary_evidence(mutation):
+&gt;       prepared, candidate = profiled_fixture()
+                              ^^^^^^^^^^^^^^^^^^
+
+docs\implementation-workloads\reference-example-assumptions-20261017\root\test_reference_design.py:637: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+docs\implementation-workloads\reference-example-assumptions-20261017\root\test_reference_design.py:350: in profiled_fixture
+    prepared = intake.prepare_reference_design({'mode': 'EXAMPLE_PROJECT',
+docs\implementation-workloads\reference-example-assumptions-20261017\root\staged\backend\nis\agent\orchestration\project_intake.py:1386: in prepare_reference_design
+    catalog = reference_design_catalog(request.prompt)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+docs\implementation-workloads\reference-example-assumptions-20261017\root\conftest.py:28: in _catalog_from_existing_exports
+    completed = subprocess.run([node, '--experimental-strip-types', '--import', str(out / 'staged-loader.mjs'),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+input = '{"prompt": "# 054. Roboterbeispiel\\nController (ECU)\\nSensorik (Temperatursensoren)\\nAktorik (Ventile)\\nFunktion:...e\\": \\"Controller (ECU)\\"}], \\"answers\\": [], \\"function_assignments\\": {}}", "operation": "reference-catalog"}'
+capture_output = True, timeout = None, check = True
+popenargs = (['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Netw...orkloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs'],)
+kwargs = {'cwd': WindowsPath('I:/PycharmProjects/My_first_Network_Simulator'), 'text': True, 'encoding': 'utf-8', 'stdin': -1, ...}
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output &amp; stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+&gt;               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged-loader.mjs', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs']' returned non-zero exit status 1.
+
+C:\Users\marti\anaconda3\Lib\subprocess.py:577: CalledProcessError</failure></testcase><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_internal_profile_feedback_cannot_change_scope_or_primary_evidence[invented_scope]" time="0.619"><failure message="subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged-loader.mjs', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs']' returned non-zero exit status 1.">mutation = 'invented_scope'
+
+    @pytest.mark.parametrize('mutation', ['foreign_fact', 'foreign_profile', 'invented_scope', 'changed_source'])
+    def test_internal_profile_feedback_cannot_change_scope_or_primary_evidence(mutation):
+&gt;       prepared, candidate = profiled_fixture()
+                              ^^^^^^^^^^^^^^^^^^
+
+docs\implementation-workloads\reference-example-assumptions-20261017\root\test_reference_design.py:637: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+docs\implementation-workloads\reference-example-assumptions-20261017\root\test_reference_design.py:350: in profiled_fixture
+    prepared = intake.prepare_reference_design({'mode': 'EXAMPLE_PROJECT',
+docs\implementation-workloads\reference-example-assumptions-20261017\root\staged\backend\nis\agent\orchestration\project_intake.py:1386: in prepare_reference_design
+    catalog = reference_design_catalog(request.prompt)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+docs\implementation-workloads\reference-example-assumptions-20261017\root\conftest.py:28: in _catalog_from_existing_exports
+    completed = subprocess.run([node, '--experimental-strip-types', '--import', str(out / 'staged-loader.mjs'),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+input = '{"prompt": "# 054. Roboterbeispiel\\nController (ECU)\\nSensorik (Temperatursensoren)\\nAktorik (Ventile)\\nFunktion:...e\\": \\"Controller (ECU)\\"}], \\"answers\\": [], \\"function_assignments\\": {}}", "operation": "reference-catalog"}'
+capture_output = True, timeout = None, check = True
+popenargs = (['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Netw...orkloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs'],)
+kwargs = {'cwd': WindowsPath('I:/PycharmProjects/My_first_Network_Simulator'), 'text': True, 'encoding': 'utf-8', 'stdin': -1, ...}
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output &amp; stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+&gt;               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged-loader.mjs', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs']' returned non-zero exit status 1.
+
+C:\Users\marti\anaconda3\Lib\subprocess.py:577: CalledProcessError</failure></testcase><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_internal_profile_feedback_cannot_change_scope_or_primary_evidence[changed_source]" time="0.519"><failure message="subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged-loader.mjs', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs']' returned non-zero exit status 1.">mutation = 'changed_source'
+
+    @pytest.mark.parametrize('mutation', ['foreign_fact', 'foreign_profile', 'invented_scope', 'changed_source'])
+    def test_internal_profile_feedback_cannot_change_scope_or_primary_evidence(mutation):
+&gt;       prepared, candidate = profiled_fixture()
+                              ^^^^^^^^^^^^^^^^^^
+
+docs\implementation-workloads\reference-example-assumptions-20261017\root\test_reference_design.py:637: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+docs\implementation-workloads\reference-example-assumptions-20261017\root\test_reference_design.py:350: in profiled_fixture
+    prepared = intake.prepare_reference_design({'mode': 'EXAMPLE_PROJECT',
+docs\implementation-workloads\reference-example-assumptions-20261017\root\staged\backend\nis\agent\orchestration\project_intake.py:1386: in prepare_reference_design
+    catalog = reference_design_catalog(request.prompt)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+docs\implementation-workloads\reference-example-assumptions-20261017\root\conftest.py:28: in _catalog_from_existing_exports
+    completed = subprocess.run([node, '--experimental-strip-types', '--import', str(out / 'staged-loader.mjs'),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+input = '{"prompt": "# 054. Roboterbeispiel\\nController (ECU)\\nSensorik (Temperatursensoren)\\nAktorik (Ventile)\\nFunktion:...e\\": \\"Controller (ECU)\\"}], \\"answers\\": [], \\"function_assignments\\": {}}", "operation": "reference-catalog"}'
+capture_output = True, timeout = None, check = True
+popenargs = (['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Netw...orkloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs'],)
+kwargs = {'cwd': WindowsPath('I:/PycharmProjects/My_first_Network_Simulator'), 'text': True, 'encoding': 'utf-8', 'stdin': -1, ...}
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output &amp; stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+&gt;               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged-loader.mjs', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs']' returned non-zero exit status 1.
+
+C:\Users\marti\anaconda3\Lib\subprocess.py:577: CalledProcessError</failure></testcase><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_same_instance_label_uses_existing_scoped_identity_and_profile_specific_protection" time="0.681"><failure message="subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged-loader.mjs', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs']' returned non-zero exit status 1.">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001B979A3CC30&gt;
+
+    def test_same_instance_label_uses_existing_scoped_identity_and_profile_specific_protection(monkeypatch):
+        from backend.nis.agent.tools import wizard_generation
+&gt;       prepared, candidate = profiled_fixture()
+                              ^^^^^^^^^^^^^^^^^^
+
+docs\implementation-workloads\reference-example-assumptions-20261017\root\test_reference_design.py:649: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+docs\implementation-workloads\reference-example-assumptions-20261017\root\test_reference_design.py:350: in profiled_fixture
+    prepared = intake.prepare_reference_design({'mode': 'EXAMPLE_PROJECT',
+docs\implementation-workloads\reference-example-assumptions-20261017\root\staged\backend\nis\agent\orchestration\project_intake.py:1386: in prepare_reference_design
+    catalog = reference_design_catalog(request.prompt)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+docs\implementation-workloads\reference-example-assumptions-20261017\root\conftest.py:28: in _catalog_from_existing_exports
+    completed = subprocess.run([node, '--experimental-strip-types', '--import', str(out / 'staged-loader.mjs'),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+input = '{"prompt": "# 054. Roboterbeispiel\\nController (ECU)\\nSensorik (Temperatursensoren)\\nAktorik (Ventile)\\nFunktion:...e\\": \\"Controller (ECU)\\"}], \\"answers\\": [], \\"function_assignments\\": {}}", "operation": "reference-catalog"}'
+capture_output = True, timeout = None, check = True
+popenargs = (['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Netw...orkloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs'],)
+kwargs = {'cwd': WindowsPath('I:/PycharmProjects/My_first_Network_Simulator'), 'text': True, 'encoding': 'utf-8', 'stdin': -1, ...}
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output &amp; stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+&gt;               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['C:\\Program Files\\nodejs\\node.EXE', '--experimental-strip-types', '--import', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged-loader.mjs', 'I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\root\\staged\\frontend\\scripts\\extract-wizard-specification.mjs']' returned non-zero exit status 1.
+
+C:\Users\marti\anaconda3\Lib\subprocess.py:577: CalledProcessError</failure></testcase></testsuite></testsuites>

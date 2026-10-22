@@ -1,0 +1,495 @@
+--- a/scripts/release/run-release-gate.py
++++ b/scripts/release/run-release-gate.py
+@@ -56,6 +56,14 @@
+ 
+ 
+ def main():
++    spec = importlib.util.spec_from_file_location('gate_delivery', ROOT / 'scripts/release-and-deploy.py')
++    delivery = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(delivery)
++    with delivery.gate_lock(ROOT):
++        return run_gate(delivery)
++
++
++def run_gate(delivery):
+     parser = argparse.ArgumentParser()
+     parser.add_argument('--image', help='Already built candidate image; must contain the current source manifest.')
+     parser.add_argument('--output', type=Path, default=ROOT / 'backend/test-output/release-gates')
+@@ -81,6 +89,23 @@
+     initial_source_sha256 = initial_manifest['source_sha256']
+     initial_commit_id = initial_manifest['commit_id']
+     docker = isolation.docker_executable()
++    paths = list(delivery.receipt_paths())
++    if args.output.resolve() != (ROOT / 'backend/test-output/release-gates').resolve() and args.output.exists():
++        paths.extend(args.output.rglob('receipt.json'))
++    ai_url = os.environ.get('NIS_E2E_LOCAL_AI_BASE_URL', 'http://127.0.0.1:1/v1').strip()
++    existing = delivery.prepared_stack(docker, paths, initial_source_sha256, initial_commit_id,
++                                      prepare=args.prepare, keep=args.keep, ai_url=ai_url,
++                                      image=args.image, development_base=args.development_base)
++    if existing:
++        current = info.build_manifest()
++        if (current['source_sha256'], current['commit_id']) != (initial_source_sha256, initial_commit_id):
++            raise RuntimeError('Sources changed while checking the prepared stack; no build was started.')
++        path, previous = existing
++        print(json.dumps({'status': 'PREPARED', 'reused_stack': True,
++                          'receipt': str(path), 'base_url': previous['base_url']}), flush=True)
++        return 0
++    if not args.image and not args.development_base:
++        args.image = delivery.reusable_image(paths, initial_source_sha256, initial_commit_id)
+     token = secrets.token_hex(6)
+     output = args.output.resolve() / token; output.mkdir(parents=True, exist_ok=True)
+     names = {key: 'nis-e2e-' + key + '-' + token for key in ('db', 'app', 'network', 'runtime')}
+@@ -179,7 +204,7 @@
+             app_port = reservation.getsockname()[1]
+         # Record an explicit host port. Docker's "::13500" dynamic publication
+         # selects a different port after restart, invalidating browser recovery.
+-        local_ai_base_url = os.environ.get('NIS_E2E_LOCAL_AI_BASE_URL', 'http://127.0.0.1:1/v1').strip()
++        local_ai_base_url = ai_url
+         control('run', '-d', '--name', names['app'], '--network', names['network'], '--label', 'networkis.test=disposable',
+                 '-e', 'DATABASE_URL', '-e', 'NETWORKIS_ALLOW_NON_CANONICAL_ROOT=1', '-e', 'NUMERIC_ACCELERATOR=cpu',
+                 '-e', 'NIS_DATA_DIR=/app/var/data', '-e', 'NIS_RUNTIME_DIR=/app/var/runtime', '-e', 'SIMULATION_EXECUTOR=thread',
+@@ -227,7 +252,12 @@
+                     subprocess.run([docker,'logs',name],stdout=log,stderr=subprocess.STDOUT)
+             if not (receipt['status'] == 'PREPARED' or (args.keep and receipt['status'] != 'PASS')):
+                 cleanup = [docker, 'rm', '-f', name] if kind=='container' else [docker, kind, 'rm', name]
+-                subprocess.run(cleanup,capture_output=True)
++                result = subprocess.run(cleanup, capture_output=True)
++                receipt.setdefault('cleanup', []).append({'kind': kind, 'name': name, 'exit_code': result.returncode})
++                if result.returncode:
++                    receipt['cleanup_incomplete'] = True
++        if receipt.get('cleanup_incomplete'):
++            receipt.update(status='FAIL', error='Test stack cleanup failed; reconcile the exact retained resources before another gate.')
+         save_receipt()
+         print(json.dumps({'status':receipt['status'],'receipt':str(output/'receipt.json')}),flush=True)
+     return 0 if receipt['status']=='PASS' else 1
+--- a/scripts/release/release-and-deploy.py
++++ b/scripts/release/release-and-deploy.py
+@@ -6,6 +6,7 @@
+ _entry_sys.path.insert(0, str(_EntryPath(__file__).resolve().parents[1]))
+ 
+ import argparse
++from contextlib import contextmanager
+ import importlib.util
+ import json
+ import os
+@@ -16,10 +17,134 @@
+ import sys
+ import time
+ from urllib.request import urlopen
++from urllib.parse import urlsplit
+ import uuid
+ 
+ ROOT = Path(__file__).resolve().parents[2]
+ RECEIPTS = ROOT / 'backend/test-output/release-gates'
++
++
++@contextmanager
++def gate_lock(root):
++    """One gate per checkout, even for direct calls and different output paths.
++
++    The OS releases the lock after a crash; an old lock file never owns a lease.
++    """
++    path = root / 'backend/test-output/release-gates/.gate.lock'
++    path.parent.mkdir(parents=True, exist_ok=True)
++    with path.open('a+b') as stream:
++        stream.seek(0, os.SEEK_END)
++        if not stream.tell():
++            stream.write(b'\0')
++            stream.flush()
++        stream.seek(0)
++        try:
++            if os.name == 'nt':
++                import msvcrt
++                msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
++            else:
++                import fcntl
++                fcntl.flock(stream, fcntl.LOCK_EX | fcntl.LOCK_NB)
++        except OSError as error:
++            raise RuntimeError('Another release/preparation gate holds the checkout lock; no new build was started.') from error
++        try:
++            yield
++        finally:
++            stream.seek(0)
++            if os.name == 'nt':
++                msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
++            else:
++                fcntl.flock(stream, fcntl.LOCK_UN)
++
++
++def prepared_stack(docker, paths, source, commit, *, prepare, keep, ai_url,
++                   image=None, development_base=None):
++    """Reuse one healthy exact stack; never accumulate retained environments.
++
++    Stopped and unclassified containers count too: deletion needs a separate
++    audited retirement. Normal transient full gates still clean up in finally.
++    """
++    paths = list(paths)
++    if not (prepare or keep):
++        # A previous cleanup failure must not be multiplied by another full gate.
++        failed = set()
++        for path in paths:
++            try:
++                receipt = json.loads(path.read_text(encoding='utf-8-sig'))
++                if isinstance(receipt, dict) and receipt.get('cleanup_incomplete') is True:
++                    failed.update(value for value in receipt.get('containers', {}).values()
++                                  if isinstance(value, str) and value.startswith('nis-e2e-'))
++            except (OSError, ValueError, AttributeError):
++                continue
++        if failed:
++            for command in (['ps', '-a', '--format', '{{.Names}}'],
++                            ['volume', 'ls', '--format', '{{.Name}}'],
++                            ['network', 'ls', '--format', '{{.Name}}']):
++                actual = set(subprocess.check_output([docker, *command], text=True).split())
++                if failed & actual:
++                    raise RuntimeError('A previous test-stack cleanup is incomplete; reconcile its exact resources before another gate. No image was built.')
++        return None
++    ids = subprocess.check_output(
++        [docker, 'ps', '-aq', '--filter', 'name=nis-e2e-'], text=True).split()
++    if not ids:
++        # Networks/volumes left by an interrupted prepare also need reconciliation.
++        for kind, name in (('volume', 'nis-e2e-runtime-'), ('network', 'nis-e2e-network-')):
++            names = subprocess.check_output(
++                [docker, kind, 'ls', '--format', '{{.Name}}'], text=True).split()
++            if any(item.startswith(name) for item in names):
++                raise RuntimeError('Retained test resources exist without containers. Archive/retire their exact receipt resources before preparing another stack.')
++        return None
++    containers = json.loads(subprocess.check_output([docker, 'inspect', *ids], text=True))
++    actual_names = {row['Name'].lstrip('/') for row in containers}
++    for path in paths:
++        try:
++            receipt = json.loads(path.read_text(encoding='utf-8-sig'))
++            if not isinstance(receipt, dict):
++                continue
++            names = receipt.get('containers', {})
++            if not isinstance(names, dict):
++                continue
++            expected = {names.get('app'), names.get('db')}
++            if (prepare and receipt.get('status') == 'PREPARED'
++                    and receipt.get('initial_source_sha256') == source
++                    and receipt.get('initial_commit_id') == commit
++                    and receipt.get('development_only') is not True
++                    and development_base is None
++                    and (image is None or image in {receipt.get('image_id'), receipt.get('image_tag')})
++                    and receipt.get('stack_retirement') is None
++                    and None not in expected and actual_names == expected):
++                app = next(row for row in containers if row['Name'].lstrip('/') == names['app'])
++                db = next(row for row in containers if row['Name'].lstrip('/') == names['db'])
++                if (app['Image'] != receipt.get('image_id')
++                        or any(row['State']['Status'] != 'running' for row in (app, db))
++                        or any((row['Config'].get('Labels') or {}).get('networkis.test') != 'disposable' for row in (app, db))
++                        or f'LOCAL_AI_BASE_URL={ai_url}' not in app['Config'].get('Env', [])):
++                    continue
++                env = dict(item.split('=', 1) for item in app['Config'].get('Env', []) if '=' in item)
++                database = urlsplit(env.get('DATABASE_URL', ''))
++                if (database.hostname != 'test-db' or database.username != 'nis_test'
++                        or database.port != 5432 or database.path != '/nis_test_e2e'
++                        or not names.get('network') or not names.get('runtime')
++                        or any(names['network'] not in row['NetworkSettings']['Networks'] for row in (app, db))
++                        or not any(m.get('Name') == names['runtime'] and m['Destination'] == '/app/var/data'
++                                   for m in app.get('Mounts', []))):
++                    continue
++                base = receipt['base_url']
++                # The URL must be the actual isolated loopback publication.
++                ports = app['NetworkSettings']['Ports']['13500/tcp']
++                if not any(p['HostIp'] == '127.0.0.1' and base == 'http://127.0.0.1:' + p['HostPort'] for p in ports):
++                    continue
++                with urlopen(base + '/api/ready', timeout=3) as response:
++                    if response.status != 200:
++                        continue
++                with urlopen(base + '/api/build-info', timeout=3) as response:
++                    live = json.load(response)
++                if live.get('source_sha256') == source and live.get('commit_id') == commit:
++                    return path, receipt
++        except (OSError, ValueError, KeyError, TypeError, StopIteration):
++            continue
++    raise RuntimeError('A retained test stack already exists (' + ', '.join(sorted(actual_names))
++                       + '). Reuse/resume it or archive and retire its exact receipt resources before preparing another; no image was built.')
+ 
+ 
+ def receipt_paths():
+@@ -83,7 +208,8 @@
+             image = receipt.get('image_id')
+             if (receipt.get('initial_source_sha256') == source
+                     and receipt.get('initial_commit_id') == commit
+-                    and receipt.get('status') in {'PASS', 'FAIL'}
++                    and receipt.get('status') in {'PASS', 'FAIL', 'PREPARED'}
++                    and receipt.get('stack_retirement') is None
+                     and receipt.get('development_only') is not True
+                     and isinstance(image, str)
+                     and re.fullmatch(r'sha256:[0-9a-f]{64}', image)):
+@@ -135,7 +261,7 @@
+ def main():
+     parser = argparse.ArgumentParser(description=__doc__)
+     parser.add_argument('--receipt', type=Path, help='Deploy this existing PASS receipt; do not build an image.')
+-    parser.add_argument('--no-reuse', action='store_true', help='Run a fresh gate even when this source already has a PASS.')
++    parser.add_argument('--no-reuse', action='store_true', help='Run a fresh full gate; an existing exact-source image is still reused.')
+     args = parser.parse_args()
+     if not os.environ.get('NIS_TEST_DOCKER') and not shutil.which('docker'):
+         config = json.loads((ROOT / 'config/networkis.resources.json').read_text(encoding='utf-8'))
+@@ -154,7 +280,7 @@
+         other = None if args.no_reuse else active_gate(receipt_paths(), source)
+         if other:
+             raise SystemExit(f'Another release gate for this source is running: {other}')
+-        candidate = None if args.no_reuse else reusable_image(receipt_paths(), source, commit)
++        candidate = reusable_image(receipt_paths(), source, commit)
+         output = RECEIPTS / ('delivery-' + uuid.uuid4().hex[:12])
+         command = [sys.executable, str(ROOT / 'scripts/run-release-gate.py'), '--output', str(output)]
+         if candidate:
+--- a/scripts/tests/test_release_lifecycle.py
++++ b/scripts/tests/test_release_lifecycle.py
+@@ -0,0 +1,184 @@
++"""Host-only regressions: concurrency, retained stacks and exact-source reuse."""
++import importlib.util
++import io
++import json
++from pathlib import Path
++import subprocess
++import sys
++import tempfile
++from types import SimpleNamespace
++import unittest
++from unittest.mock import MagicMock, patch
++
++ROOT = Path(__file__).resolve().parents[2]
++SPEC = importlib.util.spec_from_file_location('lifecycle_delivery', ROOT / 'scripts/release-and-deploy.py')
++DELIVERY = importlib.util.module_from_spec(SPEC)
++SPEC.loader.exec_module(DELIVERY)
++
++
++class LifecycleTests(unittest.TestCase):
++    def gate(self):
++        spec = importlib.util.spec_from_file_location('lifecycle_gate', ROOT / 'scripts/run-release-gate.py')
++        module = importlib.util.module_from_spec(spec)
++        spec.loader.exec_module(module)
++        return module
++
++    def test_prepare_reuse_returns_before_receipt_creation_or_build(self):
++        gate = self.gate()
++        delivery = MagicMock()
++        delivery.receipt_paths.return_value = []
++        delivery.prepared_stack.return_value = (Path('existing/receipt.json'), {'base_url': 'http://127.0.0.1:12345'})
++        info = SimpleNamespace(build_manifest=lambda: {'source_sha256': 's', 'commit_id': 'c'})
++        isolation = SimpleNamespace(docker_executable=lambda: 'docker')
++        spec = SimpleNamespace(loader=SimpleNamespace(exec_module=lambda module: None))
++        with (patch.object(sys, 'argv', ['run-release-gate.py', '--prepare']),
++              patch.object(gate.importlib.util, 'spec_from_file_location', return_value=spec),
++              patch.object(gate.importlib.util, 'module_from_spec', side_effect=[isolation, info]),
++              patch.object(gate.secrets, 'token_hex') as token,
++              patch.object(gate.subprocess, 'run') as mutate,
++              patch('builtins.print') as output):
++            self.assertEqual(gate.run_gate(delivery), 0)
++            self.assertTrue(json.loads(output.call_args.args[0])['reused_stack'])
++            token.assert_not_called()
++            mutate.assert_not_called()
++            delivery.reusable_image.assert_not_called()
++
++    def test_retained_stack_rejection_precedes_build_and_any_receipt(self):
++        gate = self.gate()
++        delivery = MagicMock()
++        delivery.receipt_paths.return_value = []
++        delivery.prepared_stack.side_effect = RuntimeError('existing retained stack')
++        info = SimpleNamespace(build_manifest=lambda: {'source_sha256': 's', 'commit_id': 'c'})
++        isolation = SimpleNamespace(docker_executable=lambda: 'docker')
++        spec = SimpleNamespace(loader=SimpleNamespace(exec_module=lambda module: None))
++        with (patch.object(sys, 'argv', ['run-release-gate.py', '--prepare']),
++              patch.object(gate.importlib.util, 'spec_from_file_location', return_value=spec),
++              patch.object(gate.importlib.util, 'module_from_spec', side_effect=[isolation, info]),
++              patch.object(gate.secrets, 'token_hex') as token,
++              patch.object(gate.subprocess, 'run') as mutate):
++            with self.assertRaisesRegex(RuntimeError, 'existing retained stack'):
++                gate.run_gate(delivery)
++            token.assert_not_called()
++            mutate.assert_not_called()
++
++    def test_host_orchestration_changes_verification_without_application_rebuild(self):
++        gate = self.gate()
++        spec = importlib.util.spec_from_file_location('lifecycle_info', ROOT / 'scripts/write-build-info.py')
++        info = importlib.util.module_from_spec(spec)
++        spec.loader.exec_module(info)
++        with tempfile.TemporaryDirectory() as folder:
++            root = Path(folder)
++            script = root / 'scripts/release/run-release-gate.py'
++            script.parent.mkdir(parents=True)
++            script.write_text('version = 1')
++            source = info.build_manifest(root)['source_sha256']
++            with patch.object(gate, 'ROOT', root):
++                verification = gate.verification_manifest()
++                script.write_text('version = 2')
++                self.assertNotEqual(verification, gate.verification_manifest())
++            self.assertEqual(source, info.build_manifest(root)['source_sha256'])
++
++    def test_second_process_is_blocked_and_lock_is_released_after_failure(self):
++        with tempfile.TemporaryDirectory() as folder:
++            root = Path(folder)
++            code = ("import importlib.util; from pathlib import Path; "
++                    "s=importlib.util.spec_from_file_location('delivery'," + repr(str(ROOT / 'scripts/release-and-deploy.py')) + "); "
++                    "m=importlib.util.module_from_spec(s); s.loader.exec_module(m); "
++                    "\nwith m.gate_lock(Path(" + repr(folder) + ")): print('acquired')")
++            with self.assertRaisesRegex(ValueError, 'test failure'):
++                with DELIVERY.gate_lock(root):
++                    result = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True)
++                    self.assertNotEqual(result.returncode, 0)
++                    self.assertIn('checkout lock', result.stderr)
++                    raise ValueError('test failure')
++            result = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True)
++            self.assertEqual(result.returncode, 0, result.stderr)
++            self.assertIn('acquired', result.stdout)
++
++    def test_stopped_or_unknown_stack_blocks_before_any_docker_mutation(self):
++        with patch.object(DELIVERY.subprocess, 'check_output', side_effect=[
++                'a\nb', json.dumps([{'Name': '/nis-e2e-app-old'}, {'Name': '/nis-e2e-db-old'}])]) as run:
++            with self.assertRaisesRegex(RuntimeError, 'retained test stack'):
++                DELIVERY.prepared_stack('docker', [], 's', 'c', prepare=True, keep=False, ai_url='ai')
++            self.assertEqual([c.args[0][1] for c in run.call_args_list], ['ps', 'inspect'])
++
++    def test_orphan_volume_blocks_new_prepare(self):
++        with patch.object(DELIVERY.subprocess, 'check_output', side_effect=['', 'nis-e2e-runtime-old']):
++            with self.assertRaisesRegex(RuntimeError, 'without containers'):
++                DELIVERY.prepared_stack('docker', [], 's', 'c', prepare=True, keep=False, ai_url='ai')
++
++    def test_transient_full_gate_does_not_reuse_or_touch_retained_stack(self):
++        with patch.object(DELIVERY.subprocess, 'check_output') as run:
++            self.assertIsNone(DELIVERY.prepared_stack('docker', [], 's', 'c', prepare=False, keep=False, ai_url='ai'))
++            run.assert_not_called()
++
++    def test_failed_cleanup_blocks_full_gate_until_exact_resources_are_gone(self):
++        with tempfile.TemporaryDirectory() as folder:
++            path = Path(folder) / 'receipt.json'
++            path.write_text(json.dumps({'cleanup_incomplete': True,
++                                        'containers': {'app': 'nis-e2e-app-failed', 'runtime': 'nis-e2e-runtime-failed'}}))
++            for inventory in (['nis-e2e-app-failed'], ['', 'nis-e2e-runtime-failed']):
++                with patch.object(DELIVERY.subprocess, 'check_output', side_effect=inventory):
++                    with self.assertRaisesRegex(RuntimeError, 'cleanup is incomplete'):
++                        DELIVERY.prepared_stack('docker', [path], 's', 'c', prepare=False, keep=False, ai_url='ai')
++            with patch.object(DELIVERY.subprocess, 'check_output', side_effect=['unrelated', '', '']):
++                self.assertIsNone(DELIVERY.prepared_stack('docker', [path], 's', 'c', prepare=False, keep=False, ai_url='ai'))
++
++    def test_identical_healthy_stack_is_reused_but_source_or_ai_drift_blocks(self):
++        with tempfile.TemporaryDirectory() as folder:
++            path = Path(folder) / 'receipt.json'
++            receipt = {'status': 'PREPARED', 'initial_source_sha256': 's', 'initial_commit_id': 'c',
++                       'image_id': 'sha256:image', 'containers': {'app': 'nis-e2e-app-a', 'db': 'nis-e2e-db-a',
++                           'network': 'nis-e2e-network-a', 'runtime': 'nis-e2e-runtime-a'},
++                       'base_url': 'http://127.0.0.1:12345'}
++            path.write_text(json.dumps(receipt), encoding='utf-8')
++            app = {'Name': '/nis-e2e-app-a', 'Image': 'sha256:image', 'State': {'Status': 'running'},
++                   'Config': {'Labels': {'networkis.test': 'disposable'}, 'Env': ['LOCAL_AI_BASE_URL=ai',
++                       'DATABASE_URL=postgresql://nis_test:secret@test-db:5432/nis_test_e2e']},
++                   'Mounts': [{'Name': 'nis-e2e-runtime-a', 'Destination': '/app/var/data'}],
++                   'NetworkSettings': {'Networks': {'nis-e2e-network-a': {}},
++                       'Ports': {'13500/tcp': [{'HostIp': '127.0.0.1', 'HostPort': '12345'}]}}}
++            db = {**app, 'Name': '/nis-e2e-db-a'}
++            for source, ai_url, allowed in [('s', 'ai', True), ('different', 'ai', False), ('s', 'other', False)]:
++                ready = io.StringIO('{}')
++                ready.status = 200
++                live = io.StringIO(json.dumps({'source_sha256': 's', 'commit_id': 'c'}))
++                with (patch.object(DELIVERY.subprocess, 'check_output', side_effect=['a\nb', json.dumps([app, db])]),
++                      patch.object(DELIVERY, 'urlopen', side_effect=[ready, live])):
++                    if allowed:
++                        self.assertEqual(DELIVERY.prepared_stack('docker', [path], source, 'c', prepare=True, keep=False, ai_url=ai_url), (path, receipt))
++                    else:
++                        with self.assertRaisesRegex(RuntimeError, 'retained test stack'):
++                            DELIVERY.prepared_stack('docker', [path], source, 'c', prepare=True, keep=False, ai_url=ai_url)
++            for changes in ({'image': 'sha256:other'}, {'development_base': 'different'}):
++                with patch.object(DELIVERY.subprocess, 'check_output', side_effect=['a\nb', json.dumps([app, db])]):
++                    with self.assertRaisesRegex(RuntimeError, 'retained test stack'):
++                        DELIVERY.prepared_stack('docker', [path], 's', 'c', prepare=True, keep=False, ai_url='ai', **changes)
++            app['Config']['Env'][-1] = 'DATABASE_URL=postgresql://nis_test:secret@production-db:5432/nis_test_e2e'
++            with patch.object(DELIVERY.subprocess, 'check_output', side_effect=['a\nb', json.dumps([app, db])]):
++                with self.assertRaisesRegex(RuntimeError, 'retained test stack'):
++                    DELIVERY.prepared_stack('docker', [path], 's', 'c', prepare=True, keep=False, ai_url='ai')
++
++    def test_prepared_image_reused_but_development_retired_or_missing_never_reused(self):
++        with tempfile.TemporaryDirectory() as folder:
++            path = Path(folder) / 'receipt.json'
++            baseline = {'status': 'PREPARED', 'initial_source_sha256': 's', 'initial_commit_id': 'c',
++                        'image_id': 'sha256:' + 'a' * 64}
++            for extra, allowed in [({}, True), ({'development_only': True}, False),
++                                   ({'stack_retirement': {'status': 'ARCHIVED'}}, False),
++                                   ({'initial_source_sha256': 'other'}, False)]:
++                path.write_text(json.dumps({**baseline, **extra}), encoding='utf-8')
++                with (patch.object(DELIVERY, 'load_module') as load,
++                      patch.object(DELIVERY.subprocess, 'run') as run):
++                    load.return_value.docker_executable.return_value = 'docker'
++                    run.return_value.returncode = 0
++                    run.return_value.stdout = baseline['image_id']
++                    self.assertEqual(DELIVERY.reusable_image([path], 's', 'c'), baseline['image_id'] if allowed else None)
++            path.write_text(json.dumps(baseline), encoding='utf-8')
++            with patch.object(DELIVERY, 'load_module'), patch.object(DELIVERY.subprocess, 'run') as run:
++                run.return_value.returncode = 1
++                self.assertIsNone(DELIVERY.reusable_image([path], 's', 'c'))
++
++
++if __name__ == '__main__':
++    unittest.main()
+--- a/docs/WIZARD_RELEASE_GATE.md
++++ b/docs/WIZARD_RELEASE_GATE.md
+@@ -118,7 +118,8 @@
+ and Git revision. Otherwise it builds a new candidate once. After
+ deployment it checks the running immutable image, readiness and live source ID.
+ Use `--receipt <receipt.json>` to select an existing matching PASS explicitly,
+-or `--no-reuse` when a fresh gate is required. Failed candidates and historical
++or `--no-reuse` when a fresh gate is required (the exact-source image is still
++reused; this flag invalidates test reuse, not image reuse). Failed candidates and historical
+ images remain subject to the audited retention policy in `scripts/release_storage.py`;
+ the delivery command never prunes Docker images.
+ 
+@@ -136,6 +137,35 @@
+ 
+ `python scripts/run-release-gate.py --prepare` retains a disposable stack for
+ interactive diagnosis and returns its isolated URL in a PREPARED receipt.
++Repeated preparation reuses the same healthy stack only when application source,
++Git revision, image, isolated storage/network and AI endpoint agree. The existing
++receipt remains PREPARED; reuse never constitutes a new test or release PASS.
++An existing non-development PREPARED image can also be reused for a full gate;
++the full gate still executes every required check. Direct gate calls select
++existing exact-source images before considering a new build.
++
++All gate calls hold one OS lock for the canonical checkout, independent of
++`--output`. A concurrent call fails before building. At most one retained
++diagnostic stack is allowed: `--prepare` and `--keep` refuse to create another
++when old, stopped, unknown or orphaned test resources exist. Resume the existing
++stack or archive and retire its exact receipt resources first; a new output
++directory or an explicit `--image` does not bypass this bound. Normal full gates
++use transient stacks and record cleanup failures as FAIL, preserving evidence
++for reconciliation. No script automatically deletes historical images.
++
++Bundle application repairs and run the relevant host/unit checks before building
++the next candidate. Test-only and host release-tool changes require verification,
++not a new application image. For retirement, record the explicit authorization,
++fresh running/stopped-container inventory, production and rollback identities,
++original receipts, logs and recoverable data/image archive hashes. Verify the
++archive index, configuration and every referenced layer before exact image
++removal with `docker image rm --no-prune`. Preserve active, PASS and unknown
++images unless a separate applicable retention audit authorizes removal. Retiring
++a PREPARED stack does not change its original receipt to FAIL or claim feature
++delivery. The authorized 2026-10-21 cleanup is recorded in
++`docs/implementation-workloads/test-stack-retention-20261021`; it does not grant
++blanket permission to delete future PREPARED candidates.
++
+ `--development-base <existing-image>` can reuse installed dependencies only with
+ `--prepare`; the image is labeled as development and cannot pass a release gate.
+ Production images must be built using the Dockerfile and locked dependency files.
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -77,6 +77,20 @@
+ A restart of the existing image does not count as deployment of a tested change.
+ Required release gates must still pass; this rule does not authorize bypassing
+ checks or deploying an untested build.
++
++## Avoid repeated candidate builds and retained test stacks
++
++Bundle application repairs and complete relevant local checks before preparing
++another image. Reuse an existing non-development image for the exact application
++source and Git revision, including PREPARED candidates; changed tests or host
++release orchestration alone require retesting rather than rebuilding the app.
++Use the canonical release/preparation scripts: their checkout-wide OS lock and
++single retained diagnostic-stack bound must not be bypassed with manual builds,
++new output directories or copied scripts. Resume the retained stack or archive
++and retire its exact resources before replacing it. Preserve original receipts,
++logs, recoverable data, production and required rollback images. No bulk prune,
++forced removal or invented FAIL/delivered-equivalence evidence. Image deletion
++still requires the applicable retention audit or explicit scoped authorization.
+ 
+ ## Scoped direct delivery for simulation and results UI work
+ 

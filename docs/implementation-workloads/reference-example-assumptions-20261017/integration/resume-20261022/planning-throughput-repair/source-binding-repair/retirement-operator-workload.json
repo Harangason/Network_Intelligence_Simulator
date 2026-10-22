@@ -1,0 +1,105 @@
+{
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "kind": "repair",
+  "modify_code": true,
+  "allow_repair": true,
+  "campaign_id": "nis-ea-independent-20260924-run1",
+  "status": "READY_FOR_REVIEW",
+  "requested_change": "Support canonical reused-image receipts whose stack nonce differs from image tag; preserve exact resources and recoverable image archives.",
+  "revision_before": {
+    "docs/implementation-workloads/reference-example-assumptions-20261017/integration/resume-20261021/inventory-binding-cardinality-repair/progress-decoder-repair/retire_obsolete_stack.py": "8d58242b097b3eb80e3438c0950d8f502c6b5821e135c8319b4f282ae8cc2978"
+  },
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\operator-before\\retire_obsolete_stack.py",
+      "sha256": "8d58242b097b3eb80e3438c0950d8f502c6b5821e135c8319b4f282ae8cc2978"
+    }
+  ],
+  "required_outcomes": [
+    "exact_reused_image_stack_retirement"
+  ],
+  "validation_requirements": [
+    "independent_identity_negatives",
+    "actual_archive_retirement"
+  ],
+  "unresolved_decisions": [],
+  "repair": {
+    "owner": "TOOL_CHECKER",
+    "first_failing_layer": "Host retained diagnostic stack retirement receipt selection",
+    "root_cause": "Retirement derives container nonce from image_tag, but canonical prepare --image preserves an existing image identity while creating a new independent stack nonce. Current 4c11 receipt uses literal sha256 image_tag and exact valid resource names.",
+    "reproduction": "Current receipt image_tag starts sha256, so existing fullmatch12 would fail before any mutation.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\joint-throughput-originals-4da3c74ee7d8\\4c11cefcb644\\receipt.json",
+        "sha256": "666861d6feb1bbc119181246dc86f158798e46a686ec7122e3a8e2862b491bbd"
+      }
+    ],
+    "affected_files": [
+      "docs/implementation-workloads/reference-example-assumptions-20261017/integration/resume-20261021/inventory-binding-cardinality-repair/progress-decoder-repair/retire_obsolete_stack.py"
+    ],
+    "acceptance_criteria": [
+      "All four exact disposable resource names must share nonce derived from receipt app container",
+      "Receipt image_tag must resolve to exact immutable image before and after; original receipt unchanged",
+      "Explicit existing archive is within authorized archive root and all OCI blobs/identity verified again before resource removal",
+      "Production/rollback/image retained; no force/bulk removal"
+    ],
+    "targeted_tests": [
+      "literal image receipt",
+      "existing tag different nonce",
+      "wrong resource nonce rejection",
+      "actual full archive audit and exact resource retirement"
+    ],
+    "weaken_assertions_to_pass": false
+  },
+  "delivery": {
+    "decision": "NOT_APPLICABLE",
+    "reason": "Host evidence tool only; app delivery separately required"
+  },
+  "remaining_findings": [],
+  "files_changed": [
+    "docs/implementation-workloads/reference-example-assumptions-20261017/integration/resume-20261021/inventory-binding-cardinality-repair/progress-decoder-repair/retire_obsolete_stack.py"
+  ],
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\operator-after\\retire_obsolete_stack.py",
+      "sha256": "a8c5937591d1fb475f918fcad03245c8b59ba55c35514658d3c66f9f31ba2dd6"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\retirement-operator.diff",
+      "sha256": "4826ce43f90d05681a3ff3ab5637ac827e489ed843ea3d65c6eb1948eea7bfd9"
+    }
+  ],
+  "outcomes": {
+    "exact_reused_image_stack_retirement": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261021\\inventory-binding-cardinality-repair\\progress-decoder-repair\\retire-4c11cefcb644-stack\\retirement.json",
+          "sha256": "8147c007de682cabbdfdb3972a77215d59e6bbc7d28372a630771d6ea2def760"
+        }
+      ]
+    }
+  },
+  "validations": {
+    "independent_identity_negatives": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\retirement-operator-identity-tests.json",
+          "sha256": "b2998b0cec81a9f13be28bc1d12de52f2ac23ab24e62ba36575035e7fbe73f81"
+        }
+      ]
+    },
+    "actual_archive_retirement": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261021\\inventory-binding-cardinality-repair\\progress-decoder-repair\\retire-4c11cefcb644-stack\\retirement.json",
+          "sha256": "8147c007de682cabbdfdb3972a77215d59e6bbc7d28372a630771d6ea2def760"
+        }
+      ]
+    }
+  }
+}

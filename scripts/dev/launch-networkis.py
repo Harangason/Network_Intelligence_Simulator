@@ -591,6 +591,14 @@ def _ollama_api_root(environment: dict[str, str]) -> str:
     return environment.get("LOCAL_AI_BASE_URL", DEFAULT_LOCAL_AI_URL).rstrip("/").removesuffix("/v1")
 
 
+def _ollama_listener_available(environment: dict[str, str]) -> bool:
+    endpoint = urlparse(_ollama_api_root(environment))
+    return _tcp_endpoint_available(
+        endpoint.hostname or "127.0.0.1",
+        endpoint.port or (443 if endpoint.scheme == "https" else 80),
+    )
+
+
 def _ollama_executable() -> str | None:
     executable = shutil.which("ollama")
     if executable is not None:
@@ -689,6 +697,15 @@ def _ensure_local_ai(
     models = _ollama_models(environment)
     owned_process: subprocess.Popen[object] | None = None
     if models is None:
+        endpoint = urlparse(_ollama_api_root(environment))
+        host = endpoint.hostname or "127.0.0.1"
+        if _ollama_listener_available(environment):
+            raise RuntimeError(
+                "Ollama ist erreichbar, aber die Modell-Metadaten sind vorübergehend "
+                "nicht verfügbar. Der bestehende Dienst bleibt unverändert."
+            )
+        if host not in {"localhost", "127.0.0.1", "::1"}:
+            raise RuntimeError("Der externe Ollama-Dienst ist nicht erreichbar; kein lokaler Ersatzstart.")
         executable = _ollama_executable()
         if executable is None:
             raise RuntimeError(
@@ -898,7 +915,6 @@ def _run_web() -> int:
     backend_process: subprocess.Popen[object] | None = None
     frontend_process: subprocess.Popen[object] | None = None
     ollama_process: subprocess.Popen[object] | None = None
-    local_ai_ready = False
     launcher_error = False
     restart_counts = {"Backend": 0, "Frontend": 0}
     restart_limit = _service_restart_limit(service_environment)
@@ -938,19 +954,8 @@ def _run_web() -> int:
                 "Der Hybridmodus stellt ihn im Hintergrund wieder her.",
                 file=sys.stderr,
             )
-        if ollama_process is not None or _ollama_models(service_environment) is not None:
-            local_ai_ready = True
-            if _local_ai_required_for_startup(service_environment):
-                if _prewarm_local_ai(service_environment):
-                    print(
-                        "Lokales Semantikmodell ist vorgewärmt "
-                        f"({service_environment.get('LOCAL_AI_FAST_MODEL', DEFAULT_LOCAL_AI_FAST_MODEL)})."
-                    )
-                else:
-                    print("Lokales Semantikmodell konnte nicht vorgewärmt werden.", file=sys.stderr)
-            else:
-                _prewarm_local_ai_in_background(service_environment)
-                print("Lokales Semantikmodell wird parallel zum Anwendungsstart vorgewärmt.")
+        # Model loading belongs to actual user requests. Even an empty prewarm
+        # can evict another model's recurrent cache on the shared provider.
         backend_process = start_backend()
         if not _wait_for_url(
             f"{backend_url}/api/health",
@@ -1048,20 +1053,17 @@ def _run_web() -> int:
                 next_dependency_check = now + DEPENDENCY_HEALTH_INTERVAL_SECONDS
                 available_models = _ollama_models(service_environment)
                 if _local_ai_enabled(service_environment) and available_models is None:
-                    local_ai_ready = False
                     if ollama_process is not None and ollama_process.poll() is None:
-                        _terminate_process_tree(ollama_process)
-                    ollama_process = None
-                    try:
-                        ollama_process = _ensure_local_ai(service_environment, ollama_log)
-                        local_ai_ready = _prewarm_local_ai(service_environment)
-                        print("Lokaler AI-Dienst wurde automatisch wiederhergestellt.")
-                    except RuntimeError as error:
-                        print(f"Lokaler AI-Dienst bleibt nicht verfügbar: {error}", file=sys.stderr)
-                elif _local_ai_enabled(service_environment) and not local_ai_ready:
-                    local_ai_ready = _prewarm_local_ai(service_environment)
-                    if local_ai_ready:
-                        print("Lokales Semantikmodell wurde nachträglich vorgewärmt.")
+                        print("Ollama-Metadaten fehlen; der laufende eigene Dienst bleibt unverändert.", file=sys.stderr)
+                    elif _ollama_listener_available(service_environment):
+                        print("Ollama-Metadaten fehlen; der erreichbare externe Dienst bleibt unverändert.", file=sys.stderr)
+                    else:
+                        ollama_process = None
+                        try:
+                            ollama_process = _ensure_local_ai(service_environment, ollama_log)
+                            print("Lokaler AI-Dienst ist wieder erreichbar; Modellladung erst auf Anfrage.")
+                        except RuntimeError as error:
+                            print(f"Lokaler AI-Dienst bleibt nicht verfügbar: {error}", file=sys.stderr)
 
                 database_host, database_port = _database_endpoint(service_environment["DATABASE_URL"])
                 if not _tcp_endpoint_available(database_host, database_port):

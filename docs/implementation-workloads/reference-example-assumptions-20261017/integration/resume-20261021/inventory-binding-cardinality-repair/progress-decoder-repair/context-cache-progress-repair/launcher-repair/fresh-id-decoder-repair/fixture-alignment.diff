@@ -1,0 +1,66 @@
+--- 
++++ 
+@@ -261,6 +261,15 @@
+     return asyncio.run(run())
+ 
+ 
++def offered_new_inventory_id(schema, choice_kind):
++    items = schema['properties']['inventory_choices']['items']
++    choice = next(row for row in items.get('anyOf', [items])
++                  if row['properties']['choice_kind']['enum'] == [choice_kind])
++    identities = choice['properties']['id']['enum']
++    assert len(identities) == 1
++    return identities[0]
++
++
+ def test_stage_catalogs_preserve_originals_and_only_supply_selected_port_schemas(monkeypatch):
+     payloads = []
+     reasoner, prepared, observed = reasoner_with_transport(monkeypatch, capture=payloads)
+@@ -321,9 +330,14 @@
+     owners = lambda field: [row['device_ids_for_this_stage'] for row in stages
+                             if row['output_fields_for_this_stage'] == [field]]
+     compiled_id = next(row['id'] for row in observed[0]['current_candidate']['devices'] if row['kind'] == 'CONTROLLER')
+-    assert owners('ports') == [[compiled_id], ['S'], ['A']]
+-    assert owners('measurements') == [['S']]
+-    assert owners('commands') == [['A']]
++    inventory = stages[0]['current_candidate']['devices']
++    assert [(row['name'], row['kind']) for row in inventory] == [
++        (row['name'], row['kind']) for row in complete_design(prepared)['devices']]
++    sensor_id = next(row['id'] for row in inventory if row['kind'] == 'SENSOR')
++    actuator_id = next(row['id'] for row in inventory if row['kind'] == 'ACTUATOR')
++    assert owners('ports') == [[compiled_id], [sensor_id], [actuator_id]]
++    assert owners('measurements') == [[sensor_id]]
++    assert owners('commands') == [[actuator_id]]
+     assert all(len(row['device_ids_for_this_stage']) == 1 for row in stages)
+     assert len(result['proposal']['ports']) == 3
+     assert len(result['proposal']['measurements']) == len(result['proposal']['commands']) == 1
+@@ -959,7 +973,9 @@
+     target = {'fact_id': fact, 'member': None, 'names': [], 'minimum_rows': 1}
+     schema = _reference_schema_for_stage(prepared, {'devices'}, inventory_target=target, existing_devices=known)
+     binding = {'choice_kind': 'EXISTING', 'device_id': known[0]['id'], 'source_fact_ids': [fact], 'rationale': 'Same source controller', 'field_references': {}}
+-    new = {'choice_kind': 'NEW_CONTROLLER', **deepcopy(known[0]), 'id': 'new-unit-only-device', 'name': 'Additional reference controller', 'source_fact_ids': [fact]}
++    new = {'choice_kind': 'NEW_CONTROLLER', **deepcopy(known[0]),
++           'id': offered_new_inventory_id(schema, 'NEW_CONTROLLER'),
++           'name': 'Additional reference controller', 'source_fact_ids': [fact]}
+     base = {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'inventory_complete': True}
+     validator = Draft202012Validator(schema)
+     for choice in (binding, new):
+@@ -1264,7 +1280,8 @@
+         row = {'choice_kind': kind, 'device_id': known[0]['id'], 'source_fact_ids': selected,
+                'rationale': 'Mocked source binding', 'field_references': {}}
+     else:
+-        row = {**deepcopy(known[0]), 'choice_kind': kind, 'id': 'unit-scoped-sensor', 'name': 'Unit scoped sensor',
++        row = {**deepcopy(known[0]), 'choice_kind': kind,
++               'id': offered_new_inventory_id(schema, kind), 'name': 'Unit scoped sensor',
+                'kind': 'SENSOR', 'owner_device_id': known[0]['id'], 'source_fact_ids': selected}
+     value = {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'inventory_complete': True, 'inventory_choices': [row]}
+     validator = Draft202012Validator(schema)
+@@ -1294,7 +1311,7 @@
+         second['device_id'] = known[1]['id']
+     elif pair == 'new_and_existing':
+         second = {**deepcopy(known[0]), 'choice_kind': 'NEW_SENSOR', 'kind': 'SENSOR',
+-                  'id': 'unit-new-derived-sensor', 'name': 'Unit derived sensor',
++                  'id': offered_new_inventory_id(schema, 'NEW_SENSOR'), 'name': 'Unit derived sensor',
+                   'owner_device_id': known[0]['id'], 'source_fact_ids': [fact]}
+     base = {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'inventory_complete': False}
+     validator = Draft202012Validator(schema)

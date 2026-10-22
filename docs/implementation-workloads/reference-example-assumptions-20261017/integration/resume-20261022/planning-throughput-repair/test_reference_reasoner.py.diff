@@ -1,0 +1,138 @@
+--- before/backend/tests/test_reference_reasoner.py
++++ after/backend/tests/test_reference_reasoner.py
+@@ -19,11 +19,12 @@
+ 
+ def effective_reference_context(messages):
+     """Independent JSON pointer interpreter for the mocked wire, not product code."""
+-    context = json.loads(messages[1]['content'])
++    from backend.tests.test_reference_planning_throughput import unpack_context_message
++    context = unpack_context_message(json.loads(messages[1]['content']))
+     for message in messages[2:]:
+         if message['role'] != 'user' or not message['content'].startswith('{'):
+             continue
+-        for operation in json.loads(message['content']).get('nis_context_patch', []):
++        for operation in unpack_context_message(json.loads(message['content'])).get('nis_context_patch', []):
+             path = operation['path']
+             if path == '':
+                 assert operation['op'] == 'replace'
+@@ -145,7 +146,7 @@
+             eligible = set(content['derivation_fact_ids_for_this_stage'])
+             existing = {row['id'] for row in current}
+             fresh = [row for row in active['devices'] if row['id'] not in existing and set(row['source_fact_ids']) <= eligible]
+-            limit = payload['format']['properties']['inventory_choices']['maxItems']
++            limit = 1  # NEW hardware is still an individual native decision.
+             candidate['devices'] = deepcopy(fresh[:limit])
+             use_offered_new_ids(candidate['devices'], existing)
+             candidate['inventory_complete'] = len(fresh) <= limit
+@@ -201,7 +202,7 @@
+                 *[{'choice_kind': 'EXISTING', **row} for row in candidate.pop('inventory_bindings')]]
+             candidate['devices'] = []
+         native_content = (' \n' if wire_padding else '') + json.dumps(candidate) + ('\n ' if wire_padding else '')
+-        return httpx.Response(200, json={'message': {'content': native_content}, 'done_reason': 'length' if truncate else 'stop',
++        return httpx.Response(200, json={'message': {'content': native_content}, 'done': True, 'done_reason': 'length' if truncate else 'stop',
+                                        'prompt_eval_count': 500, 'eval_count': 500})
+     instance = LocalEngineeringReasoner()
+     asyncio.run(instance.client.aclose())
+@@ -278,14 +279,14 @@
+     assert len(result['proposal']['ports']) == 3
+     assert all(row['parameters'] == {'bitrate_bps': 500000} for row in result['proposal']['ports'])
+     parameter_stages = [row for row in observed if row['port_ids_for_this_stage']]
+-    assert len(parameter_stages) == 3
+-    assert {row['port_ids_for_this_stage'][0] for row in parameter_stages} == {'PC', 'PS', 'PA'}
++    assert len(parameter_stages) == 1
++    assert parameter_stages[0]['port_ids_for_this_stage'] == ['PC', 'PS', 'PA']
+     for row in observed:
+         assert row['original_source'] == prepared['source_evidence']['source_text']
+         assert row['reference_sources'] == prepared['reference_sources']
+         schemas = row['registered_catalogs'].get('technology_parameters')
+         if row['port_ids_for_this_stage']:
+-            assert len(row['port_ids_for_this_stage']) == 1
++            assert 1 <= len(row['port_ids_for_this_stage']) <= 4
+             assert set(schemas) == {'can'}
+             from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+             assert schemas['can']['parameter_roles'] == registry.parameter_roles('can')
+@@ -293,9 +294,8 @@
+             assert schemas['can']['layer'] == registry.profile('can')['layer']
+         else:
+             assert schemas is None
+-    # Known peer ports remain visible when the next native port is configured.
+-    second = parameter_stages[1]['current_candidate']['ports']
+-    assert next(row for row in second if row['id'] == 'PC')['parameters'] == {'bitrate_bps': 500000}
++    # Every peer remains present when the exact selected set is configured.
++    assert {row['id'] for row in parameter_stages[0]['current_candidate']['ports']} == {'PC', 'PS', 'PA'}
+     function_stages = [row for row in observed if row['function_fact_ids_for_this_stage']]
+     expected = {key for key, fact in prepared['facts'].items() if fact['kind'] == 'FUNCTION'}
+     assert {key for row in function_stages for key in row['function_fact_ids_for_this_stage']} == expected
+@@ -431,7 +431,7 @@
+     assert sum(row['inventory_target_for_this_stage'] is not None for row in observed) == 4
+     assert sum(row['derivation_fact_ids_for_this_stage'] is not None for row in observed) == 2
+     assert len(result['declared_inventory_compilation']) == 2  # Same source declaration rechecked for both profile attempts.
+-    assert sum(bool(row['port_ids_for_this_stage']) for row in observed) == 6
++    assert sum(bool(row['port_ids_for_this_stage']) for row in observed) == 2
+     assert all(len(row['output_fields_for_this_stage']) <= 3 for row in observed)
+     assert all(row['original_source'] == prepared['source_evidence']['source_text'] for row in observed)
+     assert any(row['validation_feedback'] for row in observed)
+@@ -1011,7 +1011,8 @@
+         result = run_reference(reasoner, prepared)
+     finally:
+         sink.reset(token)
+-    inventory = [row['metadata'] for row in events if 'inventory_target' in row.get('metadata', {})]
++    inventory = [row['metadata'] for row in events if 'inventory_target' in row.get('metadata', {})
++                 and row['metadata']['source'] == 'document_reference_design']
+     assert len(inventory) == 3
+     first = inventory[0]
+     assert prepared['facts'][first['inventory_target']['fact_id']]['role'] == 'SENSOR'
+@@ -1021,6 +1022,11 @@
+     assert inventory[1]['draft_inventory_by_kind']['SENSOR'] == 1
+     assert inventory[-1]['inventory_target'] is None
+     assert all(row['canonical_writes'] is False for row in inventory)
++    output = [row['metadata'] for row in events if 'inventory_target' in row.get('metadata', {})
++              and row['metadata']['source'] == 'document_reference_output']
++    assert {row['completed_calls'] for row in output} == {row['completed_calls'] for row in inventory}
++    assert sum(row['request_state'] == 'RECEIVED' for row in output) == len(inventory)
++    assert all(row['canonical_writes'] is False for row in output)
+     assert result['canonical_writes'] is False
+ 
+ 
+@@ -1039,7 +1045,8 @@
+     for previous, current in zip(captured, captured[1:]):
+         assert current['messages'][:len(previous['messages'])] == previous['messages']
+         assert current['messages'][-2]['role'] == 'assistant'
+-        assert 'nis_context_patch' in json.loads(current['messages'][-1]['content'])
++        from backend.tests.test_reference_planning_throughput import unpack_context_message
++        assert 'nis_context_patch' in unpack_context_message(json.loads(current['messages'][-1]['content']))
+     assert [effective_reference_context(row['messages']) for row in captured] == observed
+     assert result['canonical_writes'] is False
+ 
+@@ -1297,7 +1304,7 @@
+ 
+ 
+ @pytest.mark.parametrize('pair', ['duplicate_existing', 'distinct_existing', 'new_and_existing'])
+-def test_native_hardware_choice_decides_one_identity_before_continuing(pair):
++def test_native_hardware_choice_batches_distinct_existing_but_keeps_new_separate(pair):
+     from jsonschema import Draft202012Validator, ValidationError
+     prepared = intake.prepare_reference_design(fixture_request())
+     known, _ = _reference_declared_instances(prepared, prepared['facts'])
+@@ -1318,9 +1325,20 @@
+     validator.validate({**base, 'inventory_choices': [first]})
+     validator.validate({**base, 'inventory_choices': [second]})
+     validator.validate({**base, 'inventory_complete': True, 'inventory_choices': []})
+-    with pytest.raises(ValidationError) as error:
++    if pair == 'distinct_existing':
+         validator.validate({**base, 'inventory_choices': [first, second]})
+-    assert list(error.value.path) == ['inventory_choices']
++        before = deepcopy(known)
++        expanded = _reference_expand_inventory_choices(known, [first, second])
++        assert [row['id'] for row in expanded] == [row['id'] for row in known]
++        assert known == before
++    else:
++        with pytest.raises(ValidationError) as error:
++            validator.validate({**base, 'inventory_choices': [first, second]})
++        def inventory_error(finding):
++            return 'inventory_choices' in finding.path or any(inventory_error(child) for child in finding.context)
++        assert inventory_error(error.value)
++        with pytest.raises(ValueError):
++            _reference_expand_inventory_choices(known, [first, second])
+ 
+ 
+ @pytest.mark.parametrize('mode', ['unknown', 'duplicate'])

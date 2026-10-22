@@ -1,0 +1,3696 @@
+{
+  "source_sha256": "86865975c689643d9b07ea73e21d68fa6f4a3a8770402ffb537dba2d7ecdf4d7",
+  "scope": "Deterministic literal source obligations only; no native inference, model write or database access",
+  "rows": [
+    {
+      "source_ref": "R0001",
+      "text": "Das System muss als Straßenfahrzeug sicher, zuverlässig und regelkonform betrieben werden können und alle dafür notwendigen mechanischen, elektrischen, elektronischen und softwarebasierten Funktionen bereitstellen.\r\n"
+    },
+    {
+      "source_ref": "R0002",
+      "text": "Es muss die Anforderungen an Mobilität, Sicherheit, Automatisierung, Komfort, Effizienz und Vernetzung erfüllen.\r\n"
+    },
+    {
+      "source_ref": "R0003",
+      "text": "\r\n1. Systemgrenzen und Systemkontext\r\n"
+    },
+    {
+      "source_ref": "R0004",
+      "text": "Das System muss mit der Umgebung interagieren (Straße, Verkehr, Infrastruktur, Wetter).\r\n"
+    },
+    {
+      "source_ref": "R0005",
+      "text": "Eingaben des Fahrers verarbeiten (Lenken, Bremsen, Beschleunigen, HMI).\r\n"
+    },
+    {
+      "source_ref": "R0006",
+      "text": "mit externen Systemen kommunizieren (Backend, OTA‑Server, Diagnosegeräte).\r\n"
+    },
+    {
+      "source_ref": "R0007",
+      "text": "gesetzliche Vorgaben und Normen erfüllen (UN‑ECE, ISO 26262, ISO 21434, StVZO).\r\n"
+    },
+    {
+      "source_ref": "R0008",
+      "text": "\r\n1. Einleitung und Zweck\r\n"
+    },
+    {
+      "source_ref": "R0009",
+      "text": "Dieses Dokument beschreibt das Straßenfahrzeug als technisches Gesamtsystem.\r\n"
+    },
+    {
+      "source_ref": "R0010",
+      "text": "Das Fahrzeug ist ein cyber‑physisches System, das mechanische, elektrische, elektronische und softwarebasierte Komponenten integriert, um eine sichere, regelkonforme und zuverlässige Teilnahme am Straßenverkehr zu ermöglichen.\r\n"
+    },
+    {
+      "source_ref": "R0011",
+      "text": "Die Beschreibung dient als Grundlage für Systemarchitektur, Safety‑Analysen, Cybersecurity‑Konzepte, E/E‑Design und Requirements‑Engineering.\r\n"
+    },
+    {
+      "source_ref": "R0012",
+      "text": "\r\n2. Systemgrenzen und Systemkontext\r\n"
+    },
+    {
+      "source_ref": "R0013",
+      "text": "2.1 Systemgrenzen\r\n"
+    },
+    {
+      "source_ref": "R0014",
+      "text": "Das System umfasst:\r\n"
+    },
+    {
+      "source_ref": "R0015",
+      "text": "\r\nMechanische Struktur (Karosserie, Fahrwerk, Bremsen, Antrieb)\r\n"
+    },
+    {
+      "source_ref": "R0016",
+      "text": "\r\nElektrische Energieversorgung (12‑V/48‑V, HV‑System)\r\n"
+    },
+    {
+      "source_ref": "R0017",
+      "text": "\r\nElektronische Steuergeräte (Domain‑Controller, Sensor‑ECUs, Aktor‑ECUs)\r\n"
+    },
+    {
+      "source_ref": "R0018",
+      "text": "\r\nSoftware (Basissoftware, Middleware, Applikationen, ADAS‑Funktionen)\r\n"
+    },
+    {
+      "source_ref": "R0019",
+      "text": "\r\nKommunikationsnetzwerke (CAN, CAN‑FD, Ethernet, LIN)\r\n"
+    },
+    {
+      "source_ref": "R0020",
+      "text": "\r\nHMI‑Systeme (Displays, Bedienelemente, Warnanzeigen)\r\n"
+    },
+    {
+      "source_ref": "R0021",
+      "text": "\r\nNicht Bestandteil des Systems sind:\r\n"
+    },
+    {
+      "source_ref": "R0022",
+      "text": "\r\nExterne Backend‑Systeme\r\n"
+    },
+    {
+      "source_ref": "R0023",
+      "text": "\r\nExterne Infrastruktur (Ladesäulen, Verkehrszeichen, Cloud‑Dienste)\r\n"
+    },
+    {
+      "source_ref": "R0024",
+      "text": "\r\nFahrer oder Insassen (als externe Akteure)\r\n"
+    },
+    {
+      "source_ref": "R0025",
+      "text": "\r\n2.2 Systemkontext\r\n"
+    },
+    {
+      "source_ref": "R0026",
+      "text": "Das Fahrzeug interagiert mit:\r\n"
+    },
+    {
+      "source_ref": "R0027",
+      "text": "\r\nFahrer (Bedienung, Eingaben, HMI)\r\n"
+    },
+    {
+      "source_ref": "R0028",
+      "text": "\r\nVerkehrsumgebung (Straße, Objekte, andere Verkehrsteilnehmer)\r\n"
+    },
+    {
+      "source_ref": "R0029",
+      "text": "\r\nInfrastruktur (GPS, Mobilfunk, Verkehrszeichen)\r\n"
+    },
+    {
+      "source_ref": "R0030",
+      "text": "\r\nBackend‑Systemen (OTA‑Updates, Telemetrie, Diagnose)\r\n"
+    },
+    {
+      "source_ref": "R0031",
+      "text": "\r\n3. Systemstruktur (Top‑Level‑Architektur)\r\n"
+    },
+    {
+      "source_ref": "R0032",
+      "text": "Das Fahrzeug besteht aus vier Hauptdomänen:\r\n"
+    },
+    {
+      "source_ref": "R0033",
+      "text": "\r\n3.1 Mechanische Domäne\r\n"
+    },
+    {
+      "source_ref": "R0034",
+      "text": "Karosserie & Crashstruktur\r\n"
+    },
+    {
+      "source_ref": "R0035",
+      "text": "\r\nFahrwerk (Lenkung, Federung, Dämpfung)\r\n"
+    },
+    {
+      "source_ref": "R0036",
+      "text": "\r\nBremsanlage (hydraulisch, Brake‑by‑Wire)\r\n"
+    },
+    {
+      "source_ref": "R0037",
+      "text": "\r\nAntrieb (Verbrenner, Hybrid, Elektro)\r\n"
+    },
+    {
+      "source_ref": "R0038",
+      "text": "\r\nThermomanagement\r\n"
+    },
+    {
+      "source_ref": "R0039",
+      "text": "\r\n3.2 Elektrische Domäne\r\n"
+    },
+    {
+      "source_ref": "R0040",
+      "text": "12‑V/48‑V Bordnetz\r\n"
+    },
+    {
+      "source_ref": "R0041",
+      "text": "\r\nHochvoltsystem (BEV/HEV)\r\n"
+    },
+    {
+      "source_ref": "R0042",
+      "text": "\r\nEnergieverteilung, Sicherungen, Relais\r\n"
+    },
+    {
+      "source_ref": "R0043",
+      "text": "\r\nLadeinfrastruktur (AC/DC, CCS)\r\n"
+    },
+    {
+      "source_ref": "R0044",
+      "text": "\r\n3.3 Elektronische Domäne\r\n"
+    },
+    {
+      "source_ref": "R0045",
+      "text": "Domain‑Controller (Powertrain, Chassis, ADAS, Body, Infotainment)\r\n"
+    },
+    {
+      "source_ref": "R0046",
+      "text": "\r\nSensorik (Radar, Kamera, Lidar, Ultraschall, IMU, Raddrehzahl)\r\n"
+    },
+    {
+      "source_ref": "R0047",
+      "text": "\r\nAktorik (Bremsaktuator, Lenkaktuator, Antriebsaktuator)\r\n"
+    },
+    {
+      "source_ref": "R0048",
+      "text": "\r\nKommunikationsnetzwerke (CAN, CAN‑FD, Ethernet, LIN)\r\n"
+    },
+    {
+      "source_ref": "R0049",
+      "text": "\r\nDiagnosezugänge (UDS, OBD)\r\n"
+    },
+    {
+      "source_ref": "R0050",
+      "text": "\r\n3.4 Softwaredomäne\r\n"
+    },
+    {
+      "source_ref": "R0051",
+      "text": "AUTOSAR Classic Platform (CP)\r\n"
+    },
+    {
+      "source_ref": "R0052",
+      "text": "\r\nAUTOSAR Adaptive Platform (AP)\r\n"
+    },
+    {
+      "source_ref": "R0053",
+      "text": "\r\nMiddleware (SOME/IP, DDS)\r\n"
+    },
+    {
+      "source_ref": "R0054",
+      "text": "\r\nADAS‑Algorithmen (Perception, Fusion, Planning, Control)\r\n"
+    },
+    {
+      "source_ref": "R0055",
+      "text": "\r\nOTA‑Update‑Management\r\n"
+    },
+    {
+      "source_ref": "R0056",
+      "text": "\r\nCybersecurity‑Mechanismen\r\n"
+    },
+    {
+      "source_ref": "R0057",
+      "text": "\r\n4. Systemfunktionen\r\n"
+    },
+    {
+      "source_ref": "R0058",
+      "text": "4.1 Längsführung\r\n"
+    },
+    {
+      "source_ref": "R0059",
+      "text": "Beschleunigen\r\n"
+    },
+    {
+      "source_ref": "R0060",
+      "text": "\r\nVerzögern\r\n"
+    },
+    {
+      "source_ref": "R0061",
+      "text": "\r\nGeschwindigkeitsregelung (ACC, Tempomat)\r\n"
+    },
+    {
+      "source_ref": "R0062",
+      "text": "\r\n4.2 Querführung\r\n"
+    },
+    {
+      "source_ref": "R0063",
+      "text": "Lenken\r\n"
+    },
+    {
+      "source_ref": "R0064",
+      "text": "\r\nSpurhalten (LKA)\r\n"
+    },
+    {
+      "source_ref": "R0065",
+      "text": "\r\nSpurwechselassistenz\r\n"
+    },
+    {
+      "source_ref": "R0066",
+      "text": "\r\n4.3 Wahrnehmung & Umfeldmodell\r\n"
+    },
+    {
+      "source_ref": "R0067",
+      "text": "Objekterkennung (Fahrzeuge, Fußgänger, Radfahrer, Hindernisse)\r\n"
+    },
+    {
+      "source_ref": "R0068",
+      "text": "\r\nSpurdetektion\r\n"
+    },
+    {
+      "source_ref": "R0069",
+      "text": "\r\nFreiraumerkennung\r\n"
+    },
+    {
+      "source_ref": "R0070",
+      "text": "\r\nSzeneninterpretation\r\n"
+    },
+    {
+      "source_ref": "R0071",
+      "text": "\r\nSensorfusion (Radar, Kamera, Lidar, IMU)\r\n"
+    },
+    {
+      "source_ref": "R0072",
+      "text": "\r\n4.4 Fahrzeugsteuerung\r\n"
+    },
+    {
+      "source_ref": "R0073",
+      "text": "Trajektorienplanung\r\n"
+    },
+    {
+      "source_ref": "R0074",
+      "text": "\r\nStabilitätskontrolle (ESP, ABS, TCS)\r\n"
+    },
+    {
+      "source_ref": "R0075",
+      "text": "\r\nFahrdynamikregelung\r\n"
+    },
+    {
+      "source_ref": "R0076",
+      "text": "\r\n4.5 Sicherheit\r\n"
+    },
+    {
+      "source_ref": "R0077",
+      "text": "Funktionale Sicherheit (ISO 26262)\r\n"
+    },
+    {
+      "source_ref": "R0078",
+      "text": "\r\nCybersecurity (ISO 21434)\r\n"
+    },
+    {
+      "source_ref": "R0079",
+      "text": "\r\nCrashschutz (UN‑ECE R94/R95)\r\n"
+    },
+    {
+      "source_ref": "R0080",
+      "text": "\r\nNotbremsassistenz (UN‑ECE R152)\r\n"
+    },
+    {
+      "source_ref": "R0081",
+      "text": "\r\n4.6 Komfort & HMI\r\n"
+    },
+    {
+      "source_ref": "R0082",
+      "text": "Anzeigen, Warnungen, Interaktionen\r\n"
+    },
+    {
+      "source_ref": "R0083",
+      "text": "\r\nKlimatisierung\r\n"
+    },
+    {
+      "source_ref": "R0084",
+      "text": "\r\nInfotainment\r\n"
+    },
+    {
+      "source_ref": "R0085",
+      "text": "\r\nConnectivity (Bluetooth, WLAN, Mobilfunk)\r\n"
+    },
+    {
+      "source_ref": "R0086",
+      "text": "\r\n5. Systemanforderungen (Top‑Level)\r\n"
+    },
+    {
+      "source_ref": "R0087",
+      "text": "Das System muss\r\n"
+    },
+    {
+      "source_ref": "R0088",
+      "text": "\r\nsicher betrieben werden können und alle relevanten UN‑ECE‑Regelungen erfüllen.\r\n"
+    },
+    {
+      "source_ref": "R0089",
+      "text": "\r\neine sichere Längs‑ und Querführung gewährleisten.\r\n"
+    },
+    {
+      "source_ref": "R0090",
+      "text": "\r\neine zuverlässige Bremsfunktion gemäß UN‑ECE R13 bereitstellen.\r\n"
+    },
+    {
+      "source_ref": "R0091",
+      "text": "\r\neine sichere Lenkfunktion gemäß UN‑ECE R79 bereitstellen.\r\n"
+    },
+    {
+      "source_ref": "R0092",
+      "text": "\r\neine robuste Umfeldwahrnehmung bereitstellen.\r\n"
+    },
+    {
+      "source_ref": "R0093",
+      "text": "\r\nSensorfusion mit deterministischer Latenz durchführen.\r\n"
+    },
+    {
+      "source_ref": "R0094",
+      "text": "\r\nfunktionale Sicherheit gemäß ISO 26262 gewährleisten.\r\n"
+    },
+    {
+      "source_ref": "R0095",
+      "text": "\r\nCybersecurity gemäß ISO 21434 gewährleisten.\r\n"
+    },
+    {
+      "source_ref": "R0096",
+      "text": "\r\nDiagnose gemäß ISO 14229 unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0097",
+      "text": "\r\nOTA‑Updates gemäß ISO 24089 unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0098",
+      "text": "\r\nmit Backend‑Systemen sicher kommunizieren.\r\n"
+    },
+    {
+      "source_ref": "R0099",
+      "text": "\r\neinen definierten Safe State erreichen können.\r\n"
+    },
+    {
+      "source_ref": "R0100",
+      "text": "\r\nFahrerinteraktionen über HMI anzeigen und verarbeiten.\r\n"
+    },
+    {
+      "source_ref": "R0101",
+      "text": "\r\nEnergieversorgung für alle Subsysteme sicherstellen.\r\n"
+    },
+    {
+      "source_ref": "R0102",
+      "text": "\r\nRedundanz für sicherheitskritische Funktionen bereitstellen.\r\n"
+    },
+    {
+      "source_ref": "R0103",
+      "text": "\r\nDatenintegrität, Datenqualität und Datenkonsistenz sicherstellen.\r\n"
+    },
+    {
+      "source_ref": "R0104",
+      "text": "\r\ndeterministische Kommunikationslatenzen gewährleisten.\r\n"
+    },
+    {
+      "source_ref": "R0105",
+      "text": "\r\nSensor‑ und Aktorfehler erkennen und behandeln.\r\n"
+    },
+    {
+      "source_ref": "R0106",
+      "text": "\r\nSystemzustände überwachen und protokollieren.\r\n"
+    },
+    {
+      "source_ref": "R0107",
+      "text": "\r\nalle sicherheitsrelevanten Funktionen priorisieren.\r\n"
+    },
+    {
+      "source_ref": "R0108",
+      "text": "\r\n6. Systemverhalten (High‑Level)\r\n"
+    },
+    {
+      "source_ref": "R0109",
+      "text": "6.1 Normalbetrieb\r\n"
+    },
+    {
+      "source_ref": "R0110",
+      "text": "Das System verarbeitet kontinuierlich Sensordaten, führt Fahrfunktionen aus, steuert Aktuatoren und stellt HMI‑Informationen bereit.\r\n"
+    },
+    {
+      "source_ref": "R0111",
+      "text": "\r\n6.2 Fehlerbetrieb\r\n"
+    },
+    {
+      "source_ref": "R0112",
+      "text": "Das System erkennt Fehler, klassifiziert sie und führt definierte Reaktionen aus (Degradation, Safe State, Warnungen).\r\n"
+    },
+    {
+      "source_ref": "R0113",
+      "text": "\r\n6.3 Notbetrieb\r\n"
+    },
+    {
+      "source_ref": "R0114",
+      "text": "Bei kritischen Fehlern führt das System ein kontrolliertes Abbremsen und Stabilisieren durch.\r\n"
+    },
+    {
+      "source_ref": "R0115",
+      "text": "\r\n7. Regulatorische Anforderungen\r\n"
+    },
+    {
+      "source_ref": "R0116",
+      "text": "7.1 UN‑ECE\r\n"
+    },
+    {
+      "source_ref": "R0117",
+      "text": "R13 Bremsen\r\n"
+    },
+    {
+      "source_ref": "R0118",
+      "text": "\r\nR79 Lenkassistenz\r\n"
+    },
+    {
+      "source_ref": "R0119",
+      "text": "\r\nR152 Notbremsassistenz\r\n"
+    },
+    {
+      "source_ref": "R0120",
+      "text": "\r\nR130 Spurverlassenswarnung\r\n"
+    },
+    {
+      "source_ref": "R0121",
+      "text": "\r\nR10 EMV\r\n"
+    },
+    {
+      "source_ref": "R0122",
+      "text": "\r\nR94/R95 Crashschutz\r\n"
+    },
+    {
+      "source_ref": "R0123",
+      "text": "\r\n7.2 ISO‑Normen\r\n"
+    },
+    {
+      "source_ref": "R0124",
+      "text": "ISO 26262 Funktionale Sicherheit\r\n"
+    },
+    {
+      "source_ref": "R0125",
+      "text": "\r\nISO 21434 Cybersecurity\r\n"
+    },
+    {
+      "source_ref": "R0126",
+      "text": "\r\nISO 24089 Software‑Updates\r\n"
+    },
+    {
+      "source_ref": "R0127",
+      "text": "\r\nISO 14229 Diagnose (UDS)\r\n"
+    },
+    {
+      "source_ref": "R0128",
+      "text": "\r\nISO 6469 HV‑Sicherheit\r\n"
+    },
+    {
+      "source_ref": "R0129",
+      "text": "\r\n8. Zusammenfassung\r\n"
+    },
+    {
+      "source_ref": "R0130",
+      "text": "Das Fahrzeug ist ein hochintegriertes, sicherheitskritisches System, das mechanische, elektrische, elektronische und softwarebasierte Komponenten zu einer funktionalen Einheit verbindet.\r\n"
+    },
+    {
+      "source_ref": "R0131",
+      "text": "Es muss eine Vielzahl gesetzlicher, sicherheitstechnischer und funktionaler Anforderungen erfüllen, um einen sicheren, zuverlässigen und regelkonformen Betrieb im Straßenverkehr zu gewährleisten.\r\n"
+    },
+    {
+      "source_ref": "R0132",
+      "text": "\r\n\r\n1. Zielbild der E/E‑Architektur\r\n"
+    },
+    {
+      "source_ref": "R0133",
+      "text": "Ein modernes Fahrzeug nutzt eine domänenbasierte E/E‑Architektur mit zentralen Domain‑Controllern, die Funktionen bündeln, Rechenleistung zentralisieren und Safety‑ sowie Cybersecurity‑Anforderungen erfüllen.\r\n"
+    },
+    {
+      "source_ref": "R0134",
+      "text": "\r\nArchitekturmerkmale:\r\n"
+    },
+    {
+      "source_ref": "R0135",
+      "text": "\r\nZentrale Domain‑Controller (Powertrain, Chassis, ADAS, Body, Infotainment)\r\n"
+    },
+    {
+      "source_ref": "R0136",
+      "text": "\r\nEthernet‑Backbone als Hochgeschwindigkeitsnetz\r\n"
+    },
+    {
+      "source_ref": "R0137",
+      "text": "\r\nCAN/CAN‑FD für klassische Steuergeräte\r\n"
+    },
+    {
+      "source_ref": "R0138",
+      "text": "\r\nLIN für Komfortfunktionen\r\n"
+    },
+    {
+      "source_ref": "R0139",
+      "text": "\r\nOTA‑ und Diagnosefähigkeit über Ethernet\r\n"
+    },
+    {
+      "source_ref": "R0140",
+      "text": "\r\nSafety‑ und Security‑Mechanismen integriert\r\n"
+    },
+    {
+      "source_ref": "R0141",
+      "text": "\r\n2. Domain‑Controller‑Design\r\n"
+    },
+    {
+      "source_ref": "R0142",
+      "text": "2.1 Powertrain Domain Controller (PDC)\r\n"
+    },
+    {
+      "source_ref": "R0143",
+      "text": "Aufgaben:\r\n"
+    },
+    {
+      "source_ref": "R0144",
+      "text": "\r\nMotor-/Invertersteuerung\r\n"
+    },
+    {
+      "source_ref": "R0145",
+      "text": "\r\nGetriebe-/Antriebslogik\r\n"
+    },
+    {
+      "source_ref": "R0146",
+      "text": "\r\nHV‑Management\r\n"
+    },
+    {
+      "source_ref": "R0147",
+      "text": "\r\nThermomanagement\r\n"
+    },
+    {
+      "source_ref": "R0148",
+      "text": "\r\nSchnittstellen:\r\n"
+    },
+    {
+      "source_ref": "R0149",
+      "text": "\r\nPowertrain‑CAN\r\n"
+    },
+    {
+      "source_ref": "R0150",
+      "text": "\r\nEthernet (Backbone)\r\n"
+    },
+    {
+      "source_ref": "R0151",
+      "text": "\r\nDiagnose (UDS)\r\n"
+    },
+    {
+      "source_ref": "R0152",
+      "text": "\r\nAnforderungen:\r\n"
+    },
+    {
+      "source_ref": "R0153",
+      "text": "\r\nREQ‑PDC‑01: PDC MUSS Motor-/Invertersteuerung gemäß ASIL C/D ausführen.\r\n"
+    },
+    {
+      "source_ref": "R0154",
+      "text": "\r\nREQ‑PDC‑02: PDC MUSS HV‑Sicherheitsfunktionen gemäß ISO 6469 überwachen.\r\n"
+    },
+    {
+      "source_ref": "R0155",
+      "text": "\r\nREQ‑PDC‑03: PDC MUSS Echtzeitfähigkeit < 10 ms Zykluszeit gewährleisten.\r\n"
+    },
+    {
+      "source_ref": "R0156",
+      "text": "\r\nREQ‑PDC‑04: PDC MUSS Diagnose gemäß ISO 14229 unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0157",
+      "text": "\r\nREQ‑PDC‑05: PDC MUSS sichere Kommunikation mit ADAS‑Controller gewährleisten.\r\n"
+    },
+    {
+      "source_ref": "R0158",
+      "text": "\r\n2.2 Chassis Domain Controller (CDC)\r\n"
+    },
+    {
+      "source_ref": "R0159",
+      "text": "Aufgaben:\r\n"
+    },
+    {
+      "source_ref": "R0160",
+      "text": "\r\nBremsen (Brake‑by‑Wire, ABS/ESP)\r\n"
+    },
+    {
+      "source_ref": "R0161",
+      "text": "\r\nLenkung (Steer‑by‑Wire, EPS)\r\n"
+    },
+    {
+      "source_ref": "R0162",
+      "text": "\r\nFahrdynamikregelung\r\n"
+    },
+    {
+      "source_ref": "R0163",
+      "text": "\r\nSchnittstellen:\r\n"
+    },
+    {
+      "source_ref": "R0164",
+      "text": "\r\nChassis‑CAN/CAN‑FD\r\n"
+    },
+    {
+      "source_ref": "R0165",
+      "text": "\r\nEthernet (ADAS‑Eingriffe)\r\n"
+    },
+    {
+      "source_ref": "R0166",
+      "text": "\r\nSafety‑Signale (redundant)\r\n"
+    },
+    {
+      "source_ref": "R0167",
+      "text": "\r\nAnforderungen:\r\n"
+    },
+    {
+      "source_ref": "R0168",
+      "text": "\r\nREQ‑CDC‑01: CDC MUSS ASIL‑D‑Bremsfunktionen gemäß ISO 26262 ausführen.\r\n"
+    },
+    {
+      "source_ref": "R0169",
+      "text": "\r\nREQ‑CDC‑02: CDC MUSS redundante Lenkpfade bereitstellen.\r\n"
+    },
+    {
+      "source_ref": "R0170",
+      "text": "\r\nREQ‑CDC‑03: CDC MUSS Notbremsassistenzanforderungen gemäß UN‑ECE R152 umsetzen.\r\n"
+    },
+    {
+      "source_ref": "R0171",
+      "text": "\r\nREQ‑CDC‑04: CDC MUSS Lenkassistenz gemäß UN‑ECE R79 unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0172",
+      "text": "\r\nREQ‑CDC‑05: CDC MUSS Fail‑Operational‑Fähigkeit für Level‑3‑Funktionen bieten.\r\n"
+    },
+    {
+      "source_ref": "R0173",
+      "text": "\r\n2.3 ADAS Domain Controller (ADC)\r\n"
+    },
+    {
+      "source_ref": "R0174",
+      "text": "Aufgaben:\r\n"
+    },
+    {
+      "source_ref": "R0175",
+      "text": "\r\nSensorfusion (Radar, Kamera, Lidar, IMU, Ultraschall)\r\n"
+    },
+    {
+      "source_ref": "R0176",
+      "text": "\r\nPerception (Objekte, Spuren, Freiraum)\r\n"
+    },
+    {
+      "source_ref": "R0177",
+      "text": "\r\nPlanning (Trajektorien, Manöver)\r\n"
+    },
+    {
+      "source_ref": "R0178",
+      "text": "\r\nVehicle Control (Längs-/Querführung)\r\n"
+    },
+    {
+      "source_ref": "R0179",
+      "text": "\r\nPlattform:\r\n"
+    },
+    {
+      "source_ref": "R0180",
+      "text": "\r\nAUTOSAR Adaptive\r\n"
+    },
+    {
+      "source_ref": "R0181",
+      "text": "\r\nPOSIX‑OS\r\n"
+    },
+    {
+      "source_ref": "R0182",
+      "text": "\r\nHochleistungs‑SoC (CPU + GPU/AI‑Beschleuniger)\r\n"
+    },
+    {
+      "source_ref": "R0183",
+      "text": "\r\nSchnittstellen:\r\n"
+    },
+    {
+      "source_ref": "R0184",
+      "text": "\r\nEthernet‑Backbone\r\n"
+    },
+    {
+      "source_ref": "R0185",
+      "text": "\r\nDirekte Sensorlinks (GMSL, FPD‑Link, GigE)\r\n"
+    },
+    {
+      "source_ref": "R0186",
+      "text": "\r\nCDC (Lenk-/Bremsanforderungen)\r\n"
+    },
+    {
+      "source_ref": "R0187",
+      "text": "\r\nPDC (Antriebsanforderungen)\r\n"
+    },
+    {
+      "source_ref": "R0188",
+      "text": "\r\nAnforderungen:\r\n"
+    },
+    {
+      "source_ref": "R0189",
+      "text": "\r\nREQ‑ADC‑01: ADC MUSS Sensorfusion mit < 50 ms Latenz durchführen.\r\n"
+    },
+    {
+      "source_ref": "R0190",
+      "text": "\r\nREQ‑ADC‑02: ADC MUSS Objektliste mit Position, Geschwindigkeit, Klassifikation erzeugen.\r\n"
+    },
+    {
+      "source_ref": "R0191",
+      "text": "\r\nREQ‑ADC‑03: ADC MUSS Spurmodell mit min. 30 m Vorschau generieren.\r\n"
+    },
+    {
+      "source_ref": "R0192",
+      "text": "\r\nREQ‑ADC‑04: ADC MUSS Multi‑Object‑Tracking unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0193",
+      "text": "\r\nREQ‑ADC‑05: ADC MUSS Szeneninterpretation und Situationsbewertung durchführen.\r\n"
+    },
+    {
+      "source_ref": "R0194",
+      "text": "\r\nREQ‑ADC‑06: ADC MUSS AEB gemäß UN‑ECE R152 unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0195",
+      "text": "\r\nREQ‑ADC‑07: ADC MUSS LKA gemäß UN‑ECE R79 unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0196",
+      "text": "\r\nREQ‑ADC‑08: ADC MUSS Fail‑Operational für Level‑3‑Funktionen sein.\r\n"
+    },
+    {
+      "source_ref": "R0197",
+      "text": "\r\nREQ‑ADC‑09: ADC MUSS Sensorzeitstempel synchronisieren.\r\n"
+    },
+    {
+      "source_ref": "R0198",
+      "text": "\r\nREQ‑ADC‑10: ADC MUSS Sensor‑Cross‑Checks durchführen.\r\n"
+    },
+    {
+      "source_ref": "R0199",
+      "text": "\r\n2.4 Body Domain Controller (BDC)\r\n"
+    },
+    {
+      "source_ref": "R0200",
+      "text": "Aufgaben:\r\n"
+    },
+    {
+      "source_ref": "R0201",
+      "text": "\r\nTüren, Fenster, Sitzverstellung\r\n"
+    },
+    {
+      "source_ref": "R0202",
+      "text": "\r\nKlima, Innenbeleuchtung\r\n"
+    },
+    {
+      "source_ref": "R0203",
+      "text": "\r\nKomfortfunktionen\r\n"
+    },
+    {
+      "source_ref": "R0204",
+      "text": "\r\nSchnittstellen:\r\n"
+    },
+    {
+      "source_ref": "R0205",
+      "text": "\r\nLIN‑Cluster\r\n"
+    },
+    {
+      "source_ref": "R0206",
+      "text": "\r\nBody‑CAN\r\n"
+    },
+    {
+      "source_ref": "R0207",
+      "text": "\r\nAnforderungen:\r\n"
+    },
+    {
+      "source_ref": "R0208",
+      "text": "\r\nREQ‑BDC‑01: BDC MUSS LIN‑Cluster mit min. 20 Nodes unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0209",
+      "text": "\r\nREQ‑BDC‑02: BDC MUSS Komfortfunktionen gemäß StVZO steuern.\r\n"
+    },
+    {
+      "source_ref": "R0210",
+      "text": "\r\nREQ‑BDC‑03: BDC MUSS Diagnose gemäß ISO 14229 unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0211",
+      "text": "\r\n2.5 Infotainment Domain Controller (IDC)\r\n"
+    },
+    {
+      "source_ref": "R0212",
+      "text": "Aufgaben:\r\n"
+    },
+    {
+      "source_ref": "R0213",
+      "text": "\r\nHMI (Cluster, Center‑Display)\r\n"
+    },
+    {
+      "source_ref": "R0214",
+      "text": "\r\nNavigation, Media, Connectivity\r\n"
+    },
+    {
+      "source_ref": "R0215",
+      "text": "\r\nSmartphone‑Integration\r\n"
+    },
+    {
+      "source_ref": "R0216",
+      "text": "\r\nSchnittstellen:\r\n"
+    },
+    {
+      "source_ref": "R0217",
+      "text": "\r\nEthernet\r\n"
+    },
+    {
+      "source_ref": "R0218",
+      "text": "\r\nMOST/AVB (optional)\r\n"
+    },
+    {
+      "source_ref": "R0219",
+      "text": "\r\nVerbindung zu ADAS‑HMI\r\n"
+    },
+    {
+      "source_ref": "R0220",
+      "text": "\r\nAnforderungen:\r\n"
+    },
+    {
+      "source_ref": "R0221",
+      "text": "\r\nREQ‑IDC‑01: IDC MUSS HMI‑Status für ADAS anzeigen.\r\n"
+    },
+    {
+      "source_ref": "R0222",
+      "text": "\r\nREQ‑IDC‑02: IDC MUSS OTA‑Updates gemäß ISO 24089 unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0223",
+      "text": "\r\nREQ‑IDC‑03: IDC MUSS sichere Kommunikation gemäß ISO 21434 gewährleisten.\r\n"
+    },
+    {
+      "source_ref": "R0224",
+      "text": "\r\n3. Kommunikationsarchitektur\r\n"
+    },
+    {
+      "source_ref": "R0225",
+      "text": "3.1 Ethernet‑Backbone\r\n"
+    },
+    {
+      "source_ref": "R0226",
+      "text": "100/1000BASE‑T1\r\n"
+    },
+    {
+      "source_ref": "R0227",
+      "text": "\r\nVLAN‑Segmentierung\r\n"
+    },
+    {
+      "source_ref": "R0228",
+      "text": "\r\nService‑orientierte Kommunikation (SOME/IP, DDS)\r\n"
+    },
+    {
+      "source_ref": "R0229",
+      "text": "\r\nAnforderungen:\r\n"
+    },
+    {
+      "source_ref": "R0230",
+      "text": "\r\nREQ‑NET‑01: Backbone MUSS min. 1 Gbit/s unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0231",
+      "text": "\r\nREQ‑NET‑02: Backbone MUSS VLAN‑Segmentierung für Safety/Cybersecurity bieten.\r\n"
+    },
+    {
+      "source_ref": "R0232",
+      "text": "\r\nREQ‑NET‑03: Backbone MUSS SOME/IP‑Kommunikation unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0233",
+      "text": "\r\nREQ‑NET‑04: Backbone MUSS deterministische Latenzen < 5 ms ermöglichen.\r\n"
+    },
+    {
+      "source_ref": "R0234",
+      "text": "\r\n3.2 Sub‑Busse\r\n"
+    },
+    {
+      "source_ref": "R0235",
+      "text": "Powertrain‑CAN\r\n"
+    },
+    {
+      "source_ref": "R0236",
+      "text": "\r\nChassis‑CAN\r\n"
+    },
+    {
+      "source_ref": "R0237",
+      "text": "\r\nBody‑CAN\r\n"
+    },
+    {
+      "source_ref": "R0238",
+      "text": "\r\nLIN‑Busse\r\n"
+    },
+    {
+      "source_ref": "R0239",
+      "text": "\r\nPunkt‑zu‑Punkt‑Links für Kameras/Lidar/Radar\r\n"
+    },
+    {
+      "source_ref": "R0240",
+      "text": "\r\nAnforderungen:\r\n"
+    },
+    {
+      "source_ref": "R0241",
+      "text": "\r\nREQ‑BUS‑01: CAN‑Bus MUSS 500 kbit/s oder CAN‑FD unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0242",
+      "text": "\r\nREQ‑BUS‑02: LIN‑Bus MUSS bis zu 20 Slaves unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0243",
+      "text": "\r\nREQ‑BUS‑03: Punkt‑zu‑Punkt‑Links MUSS min. 2 Gbit/s übertragen.\r\n"
+    },
+    {
+      "source_ref": "R0244",
+      "text": "\r\n4. Safety‑Anforderungen (ISO 26262)\r\n"
+    },
+    {
+      "source_ref": "R0245",
+      "text": "REQ‑SAFE‑01: Alle sicherheitsrelevanten Funktionen MÜSSEN ASIL‑klassifiziert werden.\r\n"
+    },
+    {
+      "source_ref": "R0246",
+      "text": "REQ‑SAFE‑02: Safety‑Mechanismen MÜSSEN Watchdogs, Plausibilisierung, Heartbeats umfassen.\r\n"
+    },
+    {
+      "source_ref": "R0247",
+      "text": "REQ‑SAFE‑03: System MUSS Safe State definieren (z. B. kontrolliertes Abbremsen).\r\n"
+    },
+    {
+      "source_ref": "R0248",
+      "text": "REQ‑SAFE‑04: ADAS‑Funktionen MUSS Fail‑Operational sein (Level‑3).\r\n"
+    },
+    {
+      "source_ref": "R0249",
+      "text": "REQ‑SAFE‑05: Redundante Sensorik MUSS vorhanden sein (Radar + Kamera).\r\n"
+    },
+    {
+      "source_ref": "R0250",
+      "text": "\r\n5. Cybersecurity‑Anforderungen (ISO 21434)\r\n"
+    },
+    {
+      "source_ref": "R0251",
+      "text": "REQ‑SEC‑01: Domain‑Controller MUSS Secure Boot unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0252",
+      "text": "REQ‑SEC‑02: Kommunikation MUSS verschlüsselt sein (TLS, IPsec, SOME/IP‑Sec).\r\n"
+    },
+    {
+      "source_ref": "R0253",
+      "text": "REQ‑SEC‑03: System MUSS Hardware Security Module (HSM) nutzen.\r\n"
+    },
+    {
+      "source_ref": "R0254",
+      "text": "REQ‑SEC‑04: OTA‑Updates MÜSSEN signiert und verifiziert werden.\r\n"
+    },
+    {
+      "source_ref": "R0255",
+      "text": "REQ‑SEC‑05: IDS/IPS MUSS Netzwerkverkehr überwachen.\r\n"
+    },
+    {
+      "source_ref": "R0256",
+      "text": "REQ‑SEC‑06: Schlüsselmanagement MUSS zentralisiert sein.\r\n"
+    },
+    {
+      "source_ref": "R0257",
+      "text": "\r\n6. Diagnose & OTA\r\n"
+    },
+    {
+      "source_ref": "R0258",
+      "text": "REQ‑DIA‑01: Diagnose MUSS ISO 14229 (UDS) unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0259",
+      "text": "REQ‑DIA‑02: Flash‑Programmierung MUSS über Ethernet möglich sein.\r\n"
+    },
+    {
+      "source_ref": "R0260",
+      "text": "REQ‑DIA‑03: OTA‑Updates MUSS Rollback‑Mechanismus besitzen.\r\n"
+    },
+    {
+      "source_ref": "R0261",
+      "text": "REQ‑DIA‑04: OTA‑Updates MUSS ISO 24089 erfüllen.\r\n"
+    },
+    {
+      "source_ref": "R0262",
+      "text": "\r\n\r\n7. Erweiterte Safety‑Requirements (ISO 26262)\r\n"
+    },
+    {
+      "source_ref": "R0263",
+      "text": "(40 neue Anforderungen)\r\n"
+    },
+    {
+      "source_ref": "R0264",
+      "text": "\r\nREQ‑SAFE‑06: System MUSS alle sicherheitsrelevanten Signale plausibilisieren.\r\n"
+    },
+    {
+      "source_ref": "R0265",
+      "text": "REQ‑SAFE‑07: Steuergeräte MÜSSEN zyklische Alive‑Counter verwenden.\r\n"
+    },
+    {
+      "source_ref": "R0266",
+      "text": "REQ‑SAFE‑08: Safety‑Kommunikation MUSS CRC‑geschützt sein.\r\n"
+    },
+    {
+      "source_ref": "R0267",
+      "text": "REQ‑SAFE‑09: System MUSS Fehler innerhalb von 100 ms erkennen.\r\n"
+    },
+    {
+      "source_ref": "R0268",
+      "text": "REQ‑SAFE‑10: System MUSS in einen definierten Safe State übergehen.\r\n"
+    },
+    {
+      "source_ref": "R0269",
+      "text": "REQ‑SAFE‑11: Safe State MUSS für alle Domänen definiert sein.\r\n"
+    },
+    {
+      "source_ref": "R0270",
+      "text": "REQ‑SAFE‑12: System MUSS Watchdog‑Überwachung implementieren.\r\n"
+    },
+    {
+      "source_ref": "R0271",
+      "text": "REQ‑SAFE‑13: System MUSS redundante Pfade für ASIL‑D‑Signale bereitstellen.\r\n"
+    },
+    {
+      "source_ref": "R0272",
+      "text": "REQ‑SAFE‑14: Sensorfusion MUSS bei Ausfall eines Sensors degradieren.\r\n"
+    },
+    {
+      "source_ref": "R0273",
+      "text": "REQ‑SAFE‑15: Lenkung MUSS redundante Positionssensoren besitzen.\r\n"
+    },
+    {
+      "source_ref": "R0274",
+      "text": "REQ‑SAFE‑16: Bremssystem MUSS hydraulischen Fallback besitzen.\r\n"
+    },
+    {
+      "source_ref": "R0275",
+      "text": "REQ‑SAFE‑17: ADAS‑Controller MUSS Fail‑Operational sein.\r\n"
+    },
+    {
+      "source_ref": "R0276",
+      "text": "REQ‑SAFE‑18: System MUSS Fehlerklassen gemäß ISO 26262 definieren.\r\n"
+    },
+    {
+      "source_ref": "R0277",
+      "text": "REQ‑SAFE‑19: System MUSS ASIL‑Decomposition dokumentieren.\r\n"
+    },
+    {
+      "source_ref": "R0278",
+      "text": "REQ‑SAFE‑20: System MUSS Safety‑Mechanismen überwachen.\r\n"
+    },
+    {
+      "source_ref": "R0279",
+      "text": "REQ‑SAFE‑21: System MUSS Fehlerreaktionszeiten einhalten.\r\n"
+    },
+    {
+      "source_ref": "R0280",
+      "text": "REQ‑SAFE‑22: System MUSS interne Selbsttests durchführen.\r\n"
+    },
+    {
+      "source_ref": "R0281",
+      "text": "REQ‑SAFE‑23: System MUSS Boot‑Time‑Checks durchführen.\r\n"
+    },
+    {
+      "source_ref": "R0282",
+      "text": "REQ‑SAFE‑24: System MUSS Memory‑ECC verwenden.\r\n"
+    },
+    {
+      "source_ref": "R0283",
+      "text": "REQ‑SAFE‑25: System MUSS Stack‑Overflow‑Schutz implementieren.\r\n"
+    },
+    {
+      "source_ref": "R0284",
+      "text": "REQ‑SAFE‑26: System MUSS CPU‑Load überwachen.\r\n"
+    },
+    {
+      "source_ref": "R0285",
+      "text": "REQ‑SAFE‑27: System MUSS deterministische Ausführungszeiten garantieren.\r\n"
+    },
+    {
+      "source_ref": "R0286",
+      "text": "REQ‑SAFE‑28: System MUSS Safety‑Logs speichern.\r\n"
+    },
+    {
+      "source_ref": "R0287",
+      "text": "REQ‑SAFE‑29: Safety‑Logs MÜSSEN unveränderbar sein.\r\n"
+    },
+    {
+      "source_ref": "R0288",
+      "text": "REQ‑SAFE‑30: System MUSS Safety‑Zustände an HMI melden.\r\n"
+    },
+    {
+      "source_ref": "R0289",
+      "text": "REQ‑SAFE‑31: System MUSS Safety‑Kommunikation priorisieren.\r\n"
+    },
+    {
+      "source_ref": "R0290",
+      "text": "REQ‑SAFE‑32: System MUSS Safety‑Zustände an Backend melden.\r\n"
+    },
+    {
+      "source_ref": "R0291",
+      "text": "REQ‑SAFE‑33: System MUSS Safety‑Zustände persistent speichern.\r\n"
+    },
+    {
+      "source_ref": "R0292",
+      "text": "REQ‑SAFE‑34: System MUSS Sensor‑Drift erkennen.\r\n"
+    },
+    {
+      "source_ref": "R0293",
+      "text": "REQ‑SAFE‑35: System MUSS Sensor‑Blockaden erkennen.\r\n"
+    },
+    {
+      "source_ref": "R0294",
+      "text": "REQ‑SAFE‑36: System MUSS Sensor‑Verschmutzung erkennen.\r\n"
+    },
+    {
+      "source_ref": "R0295",
+      "text": "REQ‑SAFE‑37: System MUSS Sensor‑Überhitzung erkennen.\r\n"
+    },
+    {
+      "source_ref": "R0296",
+      "text": "REQ‑SAFE‑38: System MUSS Sensor‑Unterspannung erkennen.\r\n"
+    },
+    {
+      "source_ref": "R0297",
+      "text": "REQ‑SAFE‑39: System MUSS Sensor‑Überstrom erkennen.\r\n"
+    },
+    {
+      "source_ref": "R0298",
+      "text": "REQ‑SAFE‑40: System MUSS alle Safety‑Mechanismen dokumentieren.\r\n"
+    },
+    {
+      "source_ref": "R0299",
+      "text": "REQ‑SAFE‑41: System MUSS Safety‑Mechanismen testen.\r\n"
+    },
+    {
+      "source_ref": "R0300",
+      "text": "REQ‑SAFE‑42: System MUSS Safety‑Mechanismen validieren.\r\n"
+    },
+    {
+      "source_ref": "R0301",
+      "text": "REQ‑SAFE‑43: System MUSS Safety‑Mechanismen verifizieren.\r\n"
+    },
+    {
+      "source_ref": "R0302",
+      "text": "REQ‑SAFE‑44: System MUSS Safety‑Mechanismen versionieren.\r\n"
+    },
+    {
+      "source_ref": "R0303",
+      "text": "REQ‑SAFE‑45: System MUSS Safety‑Mechanismen rückverfolgbar machen.\r\n"
+    },
+    {
+      "source_ref": "R0304",
+      "text": "\r\n8. Erweiterte Cybersecurity‑Requirements (ISO 21434)\r\n"
+    },
+    {
+      "source_ref": "R0305",
+      "text": "(40 neue Anforderungen)\r\n"
+    },
+    {
+      "source_ref": "R0306",
+      "text": "\r\nREQ‑SEC‑07: System MUSS Secure Boot mit Hardware‑Root‑of‑Trust verwenden.\r\n"
+    },
+    {
+      "source_ref": "R0307",
+      "text": "REQ‑SEC‑08: System MUSS Secure Flash unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0308",
+      "text": "REQ‑SEC‑09: System MUSS Firmware‑Integrität prüfen.\r\n"
+    },
+    {
+      "source_ref": "R0309",
+      "text": "REQ‑SEC‑10: System MUSS Secure Debug implementieren.\r\n"
+    },
+    {
+      "source_ref": "R0310",
+      "text": "REQ‑SEC‑11: Debug‑Zugänge MÜSSEN deaktivierbar sein.\r\n"
+    },
+    {
+      "source_ref": "R0311",
+      "text": "REQ‑SEC‑12: System MUSS Schlüsselrotation unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0312",
+      "text": "REQ‑SEC‑13: System MUSS Schlüssel sicher speichern.\r\n"
+    },
+    {
+      "source_ref": "R0313",
+      "text": "REQ‑SEC‑14: System MUSS HSM verwenden.\r\n"
+    },
+    {
+      "source_ref": "R0314",
+      "text": "REQ‑SEC‑15: System MUSS IDS/IPS implementieren.\r\n"
+    },
+    {
+      "source_ref": "R0315",
+      "text": "REQ‑SEC‑16: System MUSS Netzwerkverkehr analysieren.\r\n"
+    },
+    {
+      "source_ref": "R0316",
+      "text": "REQ‑SEC‑17: System MUSS Anomalien erkennen.\r\n"
+    },
+    {
+      "source_ref": "R0317",
+      "text": "REQ‑SEC‑18: System MUSS DoS‑Angriffe erkennen.\r\n"
+    },
+    {
+      "source_ref": "R0318",
+      "text": "REQ‑SEC‑19: System MUSS Spoofing erkennen.\r\n"
+    },
+    {
+      "source_ref": "R0319",
+      "text": "REQ‑SEC‑20: System MUSS Replay‑Angriffe verhindern.\r\n"
+    },
+    {
+      "source_ref": "R0320",
+      "text": "REQ‑SEC‑21: System MUSS Man‑in‑the‑Middle verhindern.\r\n"
+    },
+    {
+      "source_ref": "R0321",
+      "text": "REQ‑SEC‑22: System MUSS TLS 1.3 unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0322",
+      "text": "REQ‑SEC‑23: System MUSS SOME/IP‑Sec unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0323",
+      "text": "REQ‑SEC‑24: System MUSS IPsec unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0324",
+      "text": "REQ‑SEC‑25: System MUSS sichere OTA‑Updates unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0325",
+      "text": "REQ‑SEC‑26: OTA‑Updates MÜSSEN signiert sein.\r\n"
+    },
+    {
+      "source_ref": "R0326",
+      "text": "REQ‑SEC‑27: OTA‑Updates MÜSSEN verifiziert werden.\r\n"
+    },
+    {
+      "source_ref": "R0327",
+      "text": "REQ‑SEC‑28: OTA‑Updates MÜSSEN Rollback verhindern.\r\n"
+    },
+    {
+      "source_ref": "R0328",
+      "text": "REQ‑SEC‑29: System MUSS sichere Diagnose unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0329",
+      "text": "REQ‑SEC‑30: Diagnose MUSS Authentifizierung erfordern.\r\n"
+    },
+    {
+      "source_ref": "R0330",
+      "text": "REQ‑SEC‑31: System MUSS sichere Log‑Übertragung unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0331",
+      "text": "REQ‑SEC‑32: System MUSS sichere Backend‑Kommunikation unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0332",
+      "text": "REQ‑SEC‑33: System MUSS sichere Schlüsselverteilung unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0333",
+      "text": "REQ‑SEC‑34: System MUSS sichere Schlüsselentfernung unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0334",
+      "text": "REQ‑SEC‑35: System MUSS sichere Schlüsselrotation unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0335",
+      "text": "REQ‑SEC‑36: System MUSS sichere Schlüsselarchivierung unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0336",
+      "text": "REQ‑SEC‑37: System MUSS sichere Schlüsselzerstörung unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0337",
+      "text": "REQ‑SEC‑38: System MUSS sichere Benutzerverwaltung unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0338",
+      "text": "REQ‑SEC‑39: System MUSS sichere Rollenverwaltung unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0339",
+      "text": "REQ‑SEC‑40: System MUSS sichere Rechteverwaltung unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0340",
+      "text": "REQ‑SEC‑41: System MUSS sichere Passwortverwaltung unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0341",
+      "text": "REQ‑SEC‑42: System MUSS sichere Tokenverwaltung unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0342",
+      "text": "REQ‑SEC‑43: System MUSS sichere Zertifikatsverwaltung unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0343",
+      "text": "REQ‑SEC‑44: System MUSS sichere Firmware‑Verteilung unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0344",
+      "text": "REQ‑SEC‑45: System MUSS sichere Firmware‑Archivierung unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0345",
+      "text": "REQ‑SEC‑46: System MUSS sichere Firmware‑Löschung unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0346",
+      "text": "\r\n9. Erweiterte ADAS‑/Sensorfusion‑Requirements\r\n"
+    },
+    {
+      "source_ref": "R0347",
+      "text": "(40 neue Anforderungen)\r\n"
+    },
+    {
+      "source_ref": "R0348",
+      "text": "\r\nREQ‑FUS‑01: Fusion MUSS Radar‑ und Kameradaten zeitlich synchronisieren.\r\n"
+    },
+    {
+      "source_ref": "R0349",
+      "text": "REQ‑FUS‑02: Fusion MUSS IMU‑Daten integrieren.\r\n"
+    },
+    {
+      "source_ref": "R0350",
+      "text": "REQ‑FUS‑03: Fusion MUSS Raddrehzahldaten integrieren.\r\n"
+    },
+    {
+      "source_ref": "R0351",
+      "text": "REQ‑FUS‑04: Fusion MUSS Lidar‑Daten integrieren.\r\n"
+    },
+    {
+      "source_ref": "R0352",
+      "text": "REQ‑FUS‑05: Fusion MUSS Objektassoziation > 95 % Genauigkeit erreichen.\r\n"
+    },
+    {
+      "source_ref": "R0353",
+      "text": "REQ‑FUS‑06: Fusion MUSS Tracking‑Stabilität > 98 % erreichen.\r\n"
+    },
+    {
+      "source_ref": "R0354",
+      "text": "REQ‑FUS‑07: Fusion MUSS Spurdetektion > 95 % Genauigkeit erreichen.\r\n"
+    },
+    {
+      "source_ref": "R0355",
+      "text": "REQ‑FUS‑08: Fusion MUSS Freiraumerkennung > 90 % Genauigkeit erreichen.\r\n"
+    },
+    {
+      "source_ref": "R0356",
+      "text": "REQ‑FUS‑09: Fusion MUSS Wetterrobustheit gewährleisten.\r\n"
+    },
+    {
+      "source_ref": "R0357",
+      "text": "REQ‑FUS‑10: Fusion MUSS Nachtrobustheit gewährleisten.\r\n"
+    },
+    {
+      "source_ref": "R0358",
+      "text": "REQ‑FUS‑11: Fusion MUSS Sensor‑Dropouts kompensieren.\r\n"
+    },
+    {
+      "source_ref": "R0359",
+      "text": "REQ‑FUS‑12: Fusion MUSS Sensor‑Drift kompensieren.\r\n"
+    },
+    {
+      "source_ref": "R0360",
+      "text": "REQ‑FUS‑13: Fusion MUSS Sensor‑Noise filtern.\r\n"
+    },
+    {
+      "source_ref": "R0361",
+      "text": "REQ‑FUS‑14: Fusion MUSS EKF/UKF unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0362",
+      "text": "REQ‑FUS‑15: Fusion MUSS Multi‑Hypothesen‑Tracking unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0363",
+      "text": "REQ‑FUS‑16: Fusion MUSS Objektklassifikation validieren.\r\n"
+    },
+    {
+      "source_ref": "R0364",
+      "text": "REQ‑FUS‑17: Fusion MUSS Fehlklassifikationen erkennen.\r\n"
+    },
+    {
+      "source_ref": "R0365",
+      "text": "REQ‑FUS‑18: Fusion MUSS Fehlklassifikationen melden.\r\n"
+    },
+    {
+      "source_ref": "R0366",
+      "text": "REQ‑FUS‑19: Fusion MUSS Szeneninterpretation unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0367",
+      "text": "REQ‑FUS‑20: Fusion MUSS Trajektorienvorhersage unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0368",
+      "text": "REQ‑FUS‑21: Fusion MUSS Verkehrsflussmodell erstellen.\r\n"
+    },
+    {
+      "source_ref": "R0369",
+      "text": "REQ‑FUS‑22: Fusion MUSS Hindernisse klassifizieren.\r\n"
+    },
+    {
+      "source_ref": "R0370",
+      "text": "REQ‑FUS‑23: Fusion MUSS Fußgänger erkennen.\r\n"
+    },
+    {
+      "source_ref": "R0371",
+      "text": "REQ‑FUS‑24: Fusion MUSS Radfahrer erkennen.\r\n"
+    },
+    {
+      "source_ref": "R0372",
+      "text": "REQ‑FUS‑25: Fusion MUSS Tiere erkennen.\r\n"
+    },
+    {
+      "source_ref": "R0373",
+      "text": "REQ‑FUS‑26: Fusion MUSS statische Objekte erkennen.\r\n"
+    },
+    {
+      "source_ref": "R0374",
+      "text": "REQ‑FUS‑27: Fusion MUSS dynamische Objekte erkennen.\r\n"
+    },
+    {
+      "source_ref": "R0375",
+      "text": "REQ‑FUS‑28: Fusion MUSS Objektlebenszyklen verwalten.\r\n"
+    },
+    {
+      "source_ref": "R0376",
+      "text": "REQ‑FUS‑29: Fusion MUSS Objektpriorisierung durchführen.\r\n"
+    },
+    {
+      "source_ref": "R0377",
+      "text": "REQ‑FUS‑30: Fusion MUSS Objektkonfidenz berechnen.\r\n"
+    },
+    {
+      "source_ref": "R0378",
+      "text": "REQ‑FUS‑31: Fusion MUSS Datenlatenz überwachen.\r\n"
+    },
+    {
+      "source_ref": "R0379",
+      "text": "REQ‑FUS‑32: Fusion MUSS Datenqualität bewerten.\r\n"
+    },
+    {
+      "source_ref": "R0380",
+      "text": "REQ‑FUS‑33: Fusion MUSS Datenintegrität prüfen.\r\n"
+    },
+    {
+      "source_ref": "R0381",
+      "text": "REQ‑FUS‑34: Fusion MUSS Datenkonsistenz prüfen.\r\n"
+    },
+    {
+      "source_ref": "R0382",
+      "text": "REQ‑FUS‑35: Fusion MUSS Datenvollständigkeit prüfen.\r\n"
+    },
+    {
+      "source_ref": "R0383",
+      "text": "REQ‑FUS‑36: Fusion MUSS Datenverfügbarkeit prüfen.\r\n"
+    },
+    {
+      "source_ref": "R0384",
+      "text": "REQ‑FUS‑37: Fusion MUSS Datenpriorisierung durchführen.\r\n"
+    },
+    {
+      "source_ref": "R0385",
+      "text": "REQ‑FUS‑38: Fusion MUSS Datenkompression unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0386",
+      "text": "REQ‑FUS‑39: Fusion MUSS Datenverschlüsselung unterstützen.\r\n"
+    },
+    {
+      "source_ref": "R0387",
+      "text": "REQ‑FUS‑40: Fusion MUSS Datenpersistenz unterstützen."
+    }
+  ],
+  "units": [
+    {
+      "source_ref": "R0001.G",
+      "text": "Das System muss als Straßenfahrzeug sicher, zuverlässig und regelkonform betrieben werden können und alle dafür notwendigen mechanischen, elektrischen, elektronischen und softwarebasierten Funktionen bereitstellen.\r\nEs muss die Anforderungen an Mobilität, Sicherheit, Automatisierung, Komfort, Effizienz und Vernetzung erfüllen.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0001",
+        "R0002"
+      ]
+    },
+    {
+      "source_ref": "R0004",
+      "text": "Das System muss mit der Umgebung interagieren (Straße, Verkehr, Infrastruktur, Wetter).",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "1. Systemgrenzen und Systemkontext"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0005",
+      "text": "Eingaben des Fahrers verarbeiten (Lenken, Bremsen, Beschleunigen, HMI).",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "1. Systemgrenzen und Systemkontext"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0006",
+      "text": "mit externen Systemen kommunizieren (Backend, OTA‑Server, Diagnosegeräte).",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "1. Systemgrenzen und Systemkontext"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0007",
+      "text": "gesetzliche Vorgaben und Normen erfüllen (UN‑ECE, ISO 26262, ISO 21434, StVZO).",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "1. Systemgrenzen und Systemkontext"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0009",
+      "text": "Dieses Dokument beschreibt das Straßenfahrzeug als technisches Gesamtsystem.",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "1. Einleitung und Zweck"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0011",
+      "text": "Die Beschreibung dient als Grundlage für Systemarchitektur, Safety‑Analysen, Cybersecurity‑Konzepte, E/E‑Design und Requirements‑Engineering.",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "1. Einleitung und Zweck"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0014",
+      "text": "Das System umfasst:",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "2. Systemgrenzen und Systemkontext",
+        "2.1 Systemgrenzen"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0015",
+      "text": "Mechanische Struktur (Karosserie, Fahrwerk, Bremsen, Antrieb)",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "2. Systemgrenzen und Systemkontext",
+        "2.1 Systemgrenzen"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0016",
+      "text": "Elektrische Energieversorgung (12‑V/48‑V, HV‑System)",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "2. Systemgrenzen und Systemkontext",
+        "2.1 Systemgrenzen"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0017",
+      "text": "Elektronische Steuergeräte (Domain‑Controller, Sensor‑ECUs, Aktor‑ECUs)",
+      "policy": {
+        "kind": "CATEGORY",
+        "role": "CONTROLLER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Systemgrenzen und Systemkontext",
+        "2.1 Systemgrenzen"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0018",
+      "text": "Software (Basissoftware, Middleware, Applikationen, ADAS‑Funktionen)",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": false,
+      "source_context": [
+        "2. Systemgrenzen und Systemkontext",
+        "2.1 Systemgrenzen"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0019",
+      "text": "Kommunikationsnetzwerke (CAN, CAN‑FD, Ethernet, LIN)",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "2. Systemgrenzen und Systemkontext",
+        "2.1 Systemgrenzen"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0020",
+      "text": "HMI‑Systeme (Displays, Bedienelemente, Warnanzeigen)",
+      "policy": {
+        "kind": "CATEGORY",
+        "role": "CONTROLLER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Systemgrenzen und Systemkontext",
+        "2.1 Systemgrenzen"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0021",
+      "text": "Nicht Bestandteil des Systems sind:",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "2. Systemgrenzen und Systemkontext",
+        "2.1 Systemgrenzen"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0022",
+      "text": "Externe Backend‑Systeme",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "2. Systemgrenzen und Systemkontext",
+        "2.1 Systemgrenzen"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0023",
+      "text": "Externe Infrastruktur (Ladesäulen, Verkehrszeichen, Cloud‑Dienste)",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "2. Systemgrenzen und Systemkontext",
+        "2.1 Systemgrenzen"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0024",
+      "text": "Fahrer oder Insassen (als externe Akteure)",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "2. Systemgrenzen und Systemkontext",
+        "2.1 Systemgrenzen"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0034",
+      "text": "Karosserie & Crashstruktur",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Systemstruktur (Top‑Level‑Architektur)",
+        "3.1 Mechanische Domäne"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0035",
+      "text": "Fahrwerk (Lenkung, Federung, Dämpfung)",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Systemstruktur (Top‑Level‑Architektur)",
+        "3.1 Mechanische Domäne"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0036",
+      "text": "Bremsanlage (hydraulisch, Brake‑by‑Wire)",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Systemstruktur (Top‑Level‑Architektur)",
+        "3.1 Mechanische Domäne"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0037",
+      "text": "Antrieb (Verbrenner, Hybrid, Elektro)",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Systemstruktur (Top‑Level‑Architektur)",
+        "3.1 Mechanische Domäne"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0038",
+      "text": "Thermomanagement",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Systemstruktur (Top‑Level‑Architektur)",
+        "3.1 Mechanische Domäne"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0040",
+      "text": "12‑V/48‑V Bordnetz",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Systemstruktur (Top‑Level‑Architektur)",
+        "3.2 Elektrische Domäne"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0041",
+      "text": "Hochvoltsystem (BEV/HEV)",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Systemstruktur (Top‑Level‑Architektur)",
+        "3.2 Elektrische Domäne"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0042",
+      "text": "Energieverteilung, Sicherungen, Relais",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Systemstruktur (Top‑Level‑Architektur)",
+        "3.2 Elektrische Domäne"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0043",
+      "text": "Ladeinfrastruktur (AC/DC, CCS)",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Systemstruktur (Top‑Level‑Architektur)",
+        "3.2 Elektrische Domäne"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0045",
+      "text": "Domain‑Controller (Powertrain, Chassis, ADAS, Body, Infotainment)",
+      "policy": {
+        "kind": "CATEGORY",
+        "role": "CONTROLLER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "3. Systemstruktur (Top‑Level‑Architektur)",
+        "3.3 Elektronische Domäne"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0046",
+      "text": "Sensorik (Radar, Kamera, Lidar, Ultraschall, IMU, Raddrehzahl)",
+      "policy": {
+        "kind": "CATEGORY",
+        "role": "SENSOR",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "3. Systemstruktur (Top‑Level‑Architektur)",
+        "3.3 Elektronische Domäne"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0047",
+      "text": "Aktorik (Bremsaktuator, Lenkaktuator, Antriebsaktuator)",
+      "policy": {
+        "kind": "CATEGORY",
+        "role": "ACTUATOR",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "3. Systemstruktur (Top‑Level‑Architektur)",
+        "3.3 Elektronische Domäne"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0048",
+      "text": "Kommunikationsnetzwerke (CAN, CAN‑FD, Ethernet, LIN)",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Systemstruktur (Top‑Level‑Architektur)",
+        "3.3 Elektronische Domäne"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0049",
+      "text": "Diagnosezugänge (UDS, OBD)",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Systemstruktur (Top‑Level‑Architektur)",
+        "3.3 Elektronische Domäne"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0050",
+      "text": "3.4 Softwaredomäne",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": false,
+      "source_context": [
+        "3. Systemstruktur (Top‑Level‑Architektur)",
+        "3.4 Softwaredomäne"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0051",
+      "text": "AUTOSAR Classic Platform (CP)",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Systemstruktur (Top‑Level‑Architektur)",
+        "3.4 Softwaredomäne"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0052",
+      "text": "AUTOSAR Adaptive Platform (AP)",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Systemstruktur (Top‑Level‑Architektur)",
+        "3.4 Softwaredomäne"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0053",
+      "text": "Middleware (SOME/IP, DDS)",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Systemstruktur (Top‑Level‑Architektur)",
+        "3.4 Softwaredomäne"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0054",
+      "text": "ADAS‑Algorithmen (Perception, Fusion, Planning, Control)",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "3. Systemstruktur (Top‑Level‑Architektur)",
+        "3.4 Softwaredomäne"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0055",
+      "text": "OTA‑Update‑Management",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Systemstruktur (Top‑Level‑Architektur)",
+        "3.4 Softwaredomäne"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0056",
+      "text": "Cybersecurity‑Mechanismen",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Systemstruktur (Top‑Level‑Architektur)",
+        "3.4 Softwaredomäne"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0058.F",
+      "text": "4.1 Längsführung\r\nBeschleunigen\r\n\r\nVerzögern\r\n\r\nGeschwindigkeitsregelung (ACC, Tempomat)",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "4. Systemfunktionen",
+        "4.1 Längsführung"
+      ],
+      "function_scope": true,
+      "function_heading": true,
+      "source_rows": [
+        "R0058",
+        "R0059",
+        "R0060",
+        "R0061"
+      ]
+    },
+    {
+      "source_ref": "R0062.F",
+      "text": "4.2 Querführung\r\nLenken\r\n\r\nSpurhalten (LKA)\r\n\r\nSpurwechselassistenz",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "4. Systemfunktionen",
+        "4.2 Querführung"
+      ],
+      "function_scope": true,
+      "function_heading": true,
+      "source_rows": [
+        "R0062",
+        "R0063",
+        "R0064",
+        "R0065"
+      ]
+    },
+    {
+      "source_ref": "R0066.F",
+      "text": "4.3 Wahrnehmung & Umfeldmodell\r\nObjekterkennung (Fahrzeuge, Fußgänger, Radfahrer, Hindernisse)\r\n\r\nSpurdetektion\r\n\r\nFreiraumerkennung\r\n\r\nSzeneninterpretation\r\n\r\nSensorfusion (Radar, Kamera, Lidar, IMU)",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "4. Systemfunktionen",
+        "4.3 Wahrnehmung & Umfeldmodell"
+      ],
+      "function_scope": true,
+      "function_heading": true,
+      "source_rows": [
+        "R0066",
+        "R0067",
+        "R0068",
+        "R0069",
+        "R0070",
+        "R0071"
+      ]
+    },
+    {
+      "source_ref": "R0072.F",
+      "text": "4.4 Fahrzeugsteuerung\r\nTrajektorienplanung\r\n\r\nStabilitätskontrolle (ESP, ABS, TCS)\r\n\r\nFahrdynamikregelung",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "4. Systemfunktionen",
+        "4.4 Fahrzeugsteuerung"
+      ],
+      "function_scope": true,
+      "function_heading": true,
+      "source_rows": [
+        "R0072",
+        "R0073",
+        "R0074",
+        "R0075"
+      ]
+    },
+    {
+      "source_ref": "R0077.G",
+      "text": "Funktionale Sicherheit (ISO 26262)\r\n\r\nCybersecurity (ISO 21434)\r\n\r\nCrashschutz (UN‑ECE R94/R95)\r\n\r\nNotbremsassistenz (UN‑ECE R152)",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "4. Systemfunktionen",
+        "4.5 Sicherheit"
+      ],
+      "function_scope": true,
+      "function_heading": false,
+      "source_rows": [
+        "R0077",
+        "R0078",
+        "R0079",
+        "R0080"
+      ]
+    },
+    {
+      "source_ref": "R0081",
+      "text": "4.6 Komfort & HMI",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "4. Systemfunktionen",
+        "4.6 Komfort & HMI"
+      ],
+      "function_scope": true,
+      "function_heading": true
+    },
+    {
+      "source_ref": "R0082.F01",
+      "text": "Anzeigen",
+      "source_quote": "Anzeigen, Warnungen, Interaktionen",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "4. Systemfunktionen",
+        "4.6 Komfort & HMI"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0082.F02",
+      "text": "Warnungen",
+      "source_quote": "Anzeigen, Warnungen, Interaktionen",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "4. Systemfunktionen",
+        "4.6 Komfort & HMI"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0082.F03",
+      "text": "Interaktionen",
+      "source_quote": "Anzeigen, Warnungen, Interaktionen",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "4. Systemfunktionen",
+        "4.6 Komfort & HMI"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0083",
+      "text": "Klimatisierung",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "4. Systemfunktionen",
+        "4.6 Komfort & HMI"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0084",
+      "text": "Infotainment",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "4. Systemfunktionen",
+        "4.6 Komfort & HMI"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0085",
+      "text": "Connectivity (Bluetooth, WLAN, Mobilfunk)",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "4. Systemfunktionen",
+        "4.6 Komfort & HMI"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0087.G",
+      "text": "Das System muss\r\n\r\nsicher betrieben werden können und alle relevanten UN‑ECE‑Regelungen erfüllen.\r\n\r\neine sichere Längs‑ und Querführung gewährleisten.\r\n\r\neine zuverlässige Bremsfunktion gemäß UN‑ECE R13 bereitstellen.\r\n\r\neine sichere Lenkfunktion gemäß UN‑ECE R79 bereitstellen.\r\n\r\neine robuste Umfeldwahrnehmung bereitstellen.\r\n\r\nSensorfusion mit deterministischer Latenz durchführen.\r\n\r\nfunktionale Sicherheit gemäß ISO 26262 gewährleisten.\r\n\r\nCybersecurity gemäß ISO 21434 gewährleisten.\r\n\r\nDiagnose gemäß ISO 14229 unterstützen.\r\n\r\nOTA‑Updates gemäß ISO 24089 unterstützen.\r\n\r\nmit Backend‑Systemen sicher kommunizieren.\r\n\r\neinen definierten Safe State erreichen können.\r\n\r\nFahrerinteraktionen über HMI anzeigen und verarbeiten.\r\n\r\nEnergieversorgung für alle Subsysteme sicherstellen.\r\n\r\nRedundanz für sicherheitskritische Funktionen bereitstellen.\r\n\r\nDatenintegrität, Datenqualität und Datenkonsistenz sicherstellen.\r\n\r\ndeterministische Kommunikationslatenzen gewährleisten.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "5. Systemanforderungen (Top‑Level)"
+      ],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0087",
+        "R0088",
+        "R0089",
+        "R0090",
+        "R0091",
+        "R0092",
+        "R0093",
+        "R0094",
+        "R0095",
+        "R0096",
+        "R0097",
+        "R0098",
+        "R0099",
+        "R0100",
+        "R0101",
+        "R0102",
+        "R0103",
+        "R0104"
+      ]
+    },
+    {
+      "source_ref": "R0105.G",
+      "text": "Sensor‑ und Aktorfehler erkennen und behandeln.\r\n\r\nSystemzustände überwachen und protokollieren.\r\n\r\nalle sicherheitsrelevanten Funktionen priorisieren.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "5. Systemanforderungen (Top‑Level)"
+      ],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0105",
+        "R0106",
+        "R0107"
+      ]
+    },
+    {
+      "source_ref": "R0110",
+      "text": "Das System verarbeitet kontinuierlich Sensordaten, führt Fahrfunktionen aus, steuert Aktuatoren und stellt HMI‑Informationen bereit.",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "6. Systemverhalten (High‑Level)",
+        "6.1 Normalbetrieb"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0112",
+      "text": "Das System erkennt Fehler, klassifiziert sie und führt definierte Reaktionen aus (Degradation, Safe State, Warnungen).",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "6. Systemverhalten (High‑Level)",
+        "6.2 Fehlerbetrieb"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0114",
+      "text": "Bei kritischen Fehlern führt das System ein kontrolliertes Abbremsen und Stabilisieren durch.",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "6. Systemverhalten (High‑Level)",
+        "6.3 Notbetrieb"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0117",
+      "text": "R13 Bremsen",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "7. Regulatorische Anforderungen",
+        "7.1 UN‑ECE"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0118",
+      "text": "R79 Lenkassistenz",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "7. Regulatorische Anforderungen",
+        "7.1 UN‑ECE"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0119",
+      "text": "R152 Notbremsassistenz",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "7. Regulatorische Anforderungen",
+        "7.1 UN‑ECE"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0120",
+      "text": "R130 Spurverlassenswarnung",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "7. Regulatorische Anforderungen",
+        "7.1 UN‑ECE"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0121",
+      "text": "R10 EMV",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "7. Regulatorische Anforderungen",
+        "7.1 UN‑ECE"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0122",
+      "text": "R94/R95 Crashschutz",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "7. Regulatorische Anforderungen",
+        "7.1 UN‑ECE"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0124",
+      "text": "ISO 26262 Funktionale Sicherheit",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "7. Regulatorische Anforderungen",
+        "7.2 ISO‑Normen"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0125",
+      "text": "ISO 21434 Cybersecurity",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "7. Regulatorische Anforderungen",
+        "7.2 ISO‑Normen"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0126",
+      "text": "ISO 24089 Software‑Updates",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": false,
+      "source_context": [
+        "7. Regulatorische Anforderungen",
+        "7.2 ISO‑Normen"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0127",
+      "text": "ISO 14229 Diagnose (UDS)",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "7. Regulatorische Anforderungen",
+        "7.2 ISO‑Normen"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0128",
+      "text": "ISO 6469 HV‑Sicherheit",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "7. Regulatorische Anforderungen",
+        "7.2 ISO‑Normen"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0131",
+      "text": "Es muss eine Vielzahl gesetzlicher, sicherheitstechnischer und funktionaler Anforderungen erfüllen, um einen sicheren, zuverlässigen und regelkonformen Betrieb im Straßenverkehr zu gewährleisten.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "8. Zusammenfassung"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0133",
+      "text": "Ein modernes Fahrzeug nutzt eine domänenbasierte E/E‑Architektur mit zentralen Domain‑Controllern, die Funktionen bündeln, Rechenleistung zentralisieren und Safety‑ sowie Cybersecurity‑Anforderungen erfüllen.",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "1. Zielbild der E/E‑Architektur"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0134",
+      "text": "Architekturmerkmale:",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "1. Zielbild der E/E‑Architektur"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0135",
+      "text": "Zentrale Domain‑Controller (Powertrain, Chassis, ADAS, Body, Infotainment)",
+      "policy": {
+        "kind": "CATEGORY",
+        "role": "CONTROLLER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "1. Zielbild der E/E‑Architektur"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0136",
+      "text": "Ethernet‑Backbone als Hochgeschwindigkeitsnetz",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "1. Zielbild der E/E‑Architektur"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0139",
+      "text": "OTA‑ und Diagnosefähigkeit über Ethernet",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "1. Zielbild der E/E‑Architektur"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0140",
+      "text": "Safety‑ und Security‑Mechanismen integriert",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "1. Zielbild der E/E‑Architektur"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0142",
+      "text": "2.1 Powertrain Domain Controller (PDC)",
+      "policy": {
+        "kind": "INSTANCE",
+        "role": "CONTROLLER",
+        "quantity": 1
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.1 Powertrain Domain Controller (PDC)"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0144",
+      "text": "Motor-/Invertersteuerung",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.1 Powertrain Domain Controller (PDC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0145",
+      "text": "Getriebe-/Antriebslogik",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.1 Powertrain Domain Controller (PDC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0146",
+      "text": "HV‑Management",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.1 Powertrain Domain Controller (PDC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0147",
+      "text": "Thermomanagement",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.1 Powertrain Domain Controller (PDC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0153.G",
+      "text": "REQ‑PDC‑01: PDC MUSS Motor-/Invertersteuerung gemäß ASIL C/D ausführen.\r\n\r\nREQ‑PDC‑02: PDC MUSS HV‑Sicherheitsfunktionen gemäß ISO 6469 überwachen.\r\n\r\nREQ‑PDC‑03: PDC MUSS Echtzeitfähigkeit < 10 ms Zykluszeit gewährleisten.\r\n\r\nREQ‑PDC‑04: PDC MUSS Diagnose gemäß ISO 14229 unterstützen.\r\n\r\nREQ‑PDC‑05: PDC MUSS sichere Kommunikation mit ADAS‑Controller gewährleisten.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.1 Powertrain Domain Controller (PDC)"
+      ],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0153",
+        "R0154",
+        "R0155",
+        "R0156",
+        "R0157"
+      ]
+    },
+    {
+      "source_ref": "R0158",
+      "text": "2.2 Chassis Domain Controller (CDC)",
+      "policy": {
+        "kind": "INSTANCE",
+        "role": "CONTROLLER",
+        "quantity": 1
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.2 Chassis Domain Controller (CDC)"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0160",
+      "text": "Bremsen (Brake‑by‑Wire, ABS/ESP)",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.2 Chassis Domain Controller (CDC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0161",
+      "text": "Lenkung (Steer‑by‑Wire, EPS)",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.2 Chassis Domain Controller (CDC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0162",
+      "text": "Fahrdynamikregelung",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.2 Chassis Domain Controller (CDC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0168.G",
+      "text": "REQ‑CDC‑01: CDC MUSS ASIL‑D‑Bremsfunktionen gemäß ISO 26262 ausführen.\r\n\r\nREQ‑CDC‑02: CDC MUSS redundante Lenkpfade bereitstellen.\r\n\r\nREQ‑CDC‑03: CDC MUSS Notbremsassistenzanforderungen gemäß UN‑ECE R152 umsetzen.\r\n\r\nREQ‑CDC‑04: CDC MUSS Lenkassistenz gemäß UN‑ECE R79 unterstützen.\r\n\r\nREQ‑CDC‑05: CDC MUSS Fail‑Operational‑Fähigkeit für Level‑3‑Funktionen bieten.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.2 Chassis Domain Controller (CDC)"
+      ],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0168",
+        "R0169",
+        "R0170",
+        "R0171",
+        "R0172"
+      ]
+    },
+    {
+      "source_ref": "R0173",
+      "text": "2.3 ADAS Domain Controller (ADC)",
+      "policy": {
+        "kind": "INSTANCE",
+        "role": "CONTROLLER",
+        "quantity": 1
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.3 ADAS Domain Controller (ADC)"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0175",
+      "text": "Sensorfusion (Radar, Kamera, Lidar, IMU, Ultraschall)",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.3 ADAS Domain Controller (ADC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0176",
+      "text": "Perception (Objekte, Spuren, Freiraum)",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.3 ADAS Domain Controller (ADC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0177",
+      "text": "Planning (Trajektorien, Manöver)",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.3 ADAS Domain Controller (ADC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0178",
+      "text": "Vehicle Control (Längs-/Querführung)",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.3 ADAS Domain Controller (ADC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0189.G",
+      "text": "REQ‑ADC‑01: ADC MUSS Sensorfusion mit < 50 ms Latenz durchführen.\r\n\r\nREQ‑ADC‑02: ADC MUSS Objektliste mit Position, Geschwindigkeit, Klassifikation erzeugen.\r\n\r\nREQ‑ADC‑03: ADC MUSS Spurmodell mit min. 30 m Vorschau generieren.\r\n\r\nREQ‑ADC‑04: ADC MUSS Multi‑Object‑Tracking unterstützen.\r\n\r\nREQ‑ADC‑05: ADC MUSS Szeneninterpretation und Situationsbewertung durchführen.\r\n\r\nREQ‑ADC‑06: ADC MUSS AEB gemäß UN‑ECE R152 unterstützen.\r\n\r\nREQ‑ADC‑07: ADC MUSS LKA gemäß UN‑ECE R79 unterstützen.\r\n\r\nREQ‑ADC‑08: ADC MUSS Fail‑Operational für Level‑3‑Funktionen sein.\r\n\r\nREQ‑ADC‑09: ADC MUSS Sensorzeitstempel synchronisieren.\r\n\r\nREQ‑ADC‑10: ADC MUSS Sensor‑Cross‑Checks durchführen.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.3 ADAS Domain Controller (ADC)"
+      ],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0189",
+        "R0190",
+        "R0191",
+        "R0192",
+        "R0193",
+        "R0194",
+        "R0195",
+        "R0196",
+        "R0197",
+        "R0198"
+      ]
+    },
+    {
+      "source_ref": "R0199",
+      "text": "2.4 Body Domain Controller (BDC)",
+      "policy": {
+        "kind": "INSTANCE",
+        "role": "CONTROLLER",
+        "quantity": 1
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.4 Body Domain Controller (BDC)"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0201.F01",
+      "text": "Türen",
+      "source_quote": "Türen, Fenster, Sitzverstellung",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.4 Body Domain Controller (BDC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0201.F02",
+      "text": "Fenster",
+      "source_quote": "Türen, Fenster, Sitzverstellung",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.4 Body Domain Controller (BDC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0201.F03",
+      "text": "Sitzverstellung",
+      "source_quote": "Türen, Fenster, Sitzverstellung",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.4 Body Domain Controller (BDC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0202.F01",
+      "text": "Klima",
+      "source_quote": "Klima, Innenbeleuchtung",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.4 Body Domain Controller (BDC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0202.F02",
+      "text": "Innenbeleuchtung",
+      "source_quote": "Klima, Innenbeleuchtung",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.4 Body Domain Controller (BDC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0203",
+      "text": "Komfortfunktionen",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.4 Body Domain Controller (BDC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0208.G",
+      "text": "REQ‑BDC‑01: BDC MUSS LIN‑Cluster mit min. 20 Nodes unterstützen.\r\n\r\nREQ‑BDC‑02: BDC MUSS Komfortfunktionen gemäß StVZO steuern.\r\n\r\nREQ‑BDC‑03: BDC MUSS Diagnose gemäß ISO 14229 unterstützen.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.4 Body Domain Controller (BDC)"
+      ],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0208",
+        "R0209",
+        "R0210"
+      ]
+    },
+    {
+      "source_ref": "R0211",
+      "text": "2.5 Infotainment Domain Controller (IDC)",
+      "policy": {
+        "kind": "INSTANCE",
+        "role": "CONTROLLER",
+        "quantity": 1
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.5 Infotainment Domain Controller (IDC)"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0213",
+      "text": "HMI (Cluster, Center‑Display)",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.5 Infotainment Domain Controller (IDC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0214.F01",
+      "text": "Navigation",
+      "source_quote": "Navigation, Media, Connectivity",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.5 Infotainment Domain Controller (IDC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0214.F02",
+      "text": "Media",
+      "source_quote": "Navigation, Media, Connectivity",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.5 Infotainment Domain Controller (IDC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0214.F03",
+      "text": "Connectivity",
+      "source_quote": "Navigation, Media, Connectivity",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.5 Infotainment Domain Controller (IDC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0215",
+      "text": "Smartphone‑Integration",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.5 Infotainment Domain Controller (IDC)"
+      ],
+      "function_scope": true,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0221.G",
+      "text": "REQ‑IDC‑01: IDC MUSS HMI‑Status für ADAS anzeigen.\r\n\r\nREQ‑IDC‑02: IDC MUSS OTA‑Updates gemäß ISO 24089 unterstützen.\r\n\r\nREQ‑IDC‑03: IDC MUSS sichere Kommunikation gemäß ISO 21434 gewährleisten.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "2. Domain‑Controller‑Design",
+        "2.5 Infotainment Domain Controller (IDC)"
+      ],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0221",
+        "R0222",
+        "R0223"
+      ]
+    },
+    {
+      "source_ref": "R0226",
+      "text": "100/1000BASE‑T1",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Kommunikationsarchitektur",
+        "3.1 Ethernet‑Backbone"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0227",
+      "text": "VLAN‑Segmentierung",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Kommunikationsarchitektur",
+        "3.1 Ethernet‑Backbone"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0228",
+      "text": "Service‑orientierte Kommunikation (SOME/IP, DDS)",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Kommunikationsarchitektur",
+        "3.1 Ethernet‑Backbone"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0230.G",
+      "text": "REQ‑NET‑01: Backbone MUSS min. 1 Gbit/s unterstützen.\r\n\r\nREQ‑NET‑02: Backbone MUSS VLAN‑Segmentierung für Safety/Cybersecurity bieten.\r\n\r\nREQ‑NET‑03: Backbone MUSS SOME/IP‑Kommunikation unterstützen.\r\n\r\nREQ‑NET‑04: Backbone MUSS deterministische Latenzen < 5 ms ermöglichen.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "3. Kommunikationsarchitektur",
+        "3.1 Ethernet‑Backbone"
+      ],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0230",
+        "R0231",
+        "R0232",
+        "R0233"
+      ]
+    },
+    {
+      "source_ref": "R0235",
+      "text": "Powertrain‑CAN",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Kommunikationsarchitektur",
+        "3.2 Sub‑Busse"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0236",
+      "text": "Chassis‑CAN",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Kommunikationsarchitektur",
+        "3.2 Sub‑Busse"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0237",
+      "text": "Body‑CAN",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Kommunikationsarchitektur",
+        "3.2 Sub‑Busse"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0238",
+      "text": "LIN‑Busse",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "3. Kommunikationsarchitektur",
+        "3.2 Sub‑Busse"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0239",
+      "text": "Punkt‑zu‑Punkt‑Links für Kameras/Lidar/Radar",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": false,
+      "source_context": [
+        "3. Kommunikationsarchitektur",
+        "3.2 Sub‑Busse"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0241.G",
+      "text": "REQ‑BUS‑01: CAN‑Bus MUSS 500 kbit/s oder CAN‑FD unterstützen.\r\n\r\nREQ‑BUS‑02: LIN‑Bus MUSS bis zu 20 Slaves unterstützen.\r\n\r\nREQ‑BUS‑03: Punkt‑zu‑Punkt‑Links MUSS min. 2 Gbit/s übertragen.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "3. Kommunikationsarchitektur",
+        "3.2 Sub‑Busse"
+      ],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0241",
+        "R0242",
+        "R0243"
+      ]
+    },
+    {
+      "source_ref": "R0245.G",
+      "text": "REQ‑SAFE‑01: Alle sicherheitsrelevanten Funktionen MÜSSEN ASIL‑klassifiziert werden.\r\nREQ‑SAFE‑02: Safety‑Mechanismen MÜSSEN Watchdogs, Plausibilisierung, Heartbeats umfassen.\r\nREQ‑SAFE‑03: System MUSS Safe State definieren (z. B. kontrolliertes Abbremsen).\r\nREQ‑SAFE‑04: ADAS‑Funktionen MUSS Fail‑Operational sein (Level‑3).\r\nREQ‑SAFE‑05: Redundante Sensorik MUSS vorhanden sein (Radar + Kamera).",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "4. Safety‑Anforderungen (ISO 26262)"
+      ],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0245",
+        "R0246",
+        "R0247",
+        "R0248",
+        "R0249"
+      ]
+    },
+    {
+      "source_ref": "R0251.G",
+      "text": "REQ‑SEC‑01: Domain‑Controller MUSS Secure Boot unterstützen.\r\nREQ‑SEC‑02: Kommunikation MUSS verschlüsselt sein (TLS, IPsec, SOME/IP‑Sec).\r\nREQ‑SEC‑03: System MUSS Hardware Security Module (HSM) nutzen.\r\nREQ‑SEC‑04: OTA‑Updates MÜSSEN signiert und verifiziert werden.\r\nREQ‑SEC‑05: IDS/IPS MUSS Netzwerkverkehr überwachen.\r\nREQ‑SEC‑06: Schlüsselmanagement MUSS zentralisiert sein.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "5. Cybersecurity‑Anforderungen (ISO 21434)"
+      ],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0251",
+        "R0252",
+        "R0253",
+        "R0254",
+        "R0255",
+        "R0256"
+      ]
+    },
+    {
+      "source_ref": "R0258.G",
+      "text": "REQ‑DIA‑01: Diagnose MUSS ISO 14229 (UDS) unterstützen.\r\nREQ‑DIA‑02: Flash‑Programmierung MUSS über Ethernet möglich sein.\r\nREQ‑DIA‑03: OTA‑Updates MUSS Rollback‑Mechanismus besitzen.\r\nREQ‑DIA‑04: OTA‑Updates MUSS ISO 24089 erfüllen.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "6. Diagnose & OTA"
+      ],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0258",
+        "R0259",
+        "R0260",
+        "R0261"
+      ]
+    },
+    {
+      "source_ref": "R0263",
+      "text": "(40 neue Anforderungen)",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "7. Erweiterte Safety‑Requirements (ISO 26262)"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0264.G",
+      "text": "REQ‑SAFE‑06: System MUSS alle sicherheitsrelevanten Signale plausibilisieren.\r\nREQ‑SAFE‑07: Steuergeräte MÜSSEN zyklische Alive‑Counter verwenden.\r\nREQ‑SAFE‑08: Safety‑Kommunikation MUSS CRC‑geschützt sein.\r\nREQ‑SAFE‑09: System MUSS Fehler innerhalb von 100 ms erkennen.\r\nREQ‑SAFE‑10: System MUSS in einen definierten Safe State übergehen.\r\nREQ‑SAFE‑11: Safe State MUSS für alle Domänen definiert sein.\r\nREQ‑SAFE‑12: System MUSS Watchdog‑Überwachung implementieren.\r\nREQ‑SAFE‑13: System MUSS redundante Pfade für ASIL‑D‑Signale bereitstellen.\r\nREQ‑SAFE‑14: Sensorfusion MUSS bei Ausfall eines Sensors degradieren.\r\nREQ‑SAFE‑15: Lenkung MUSS redundante Positionssensoren besitzen.\r\nREQ‑SAFE‑16: Bremssystem MUSS hydraulischen Fallback besitzen.\r\nREQ‑SAFE‑17: ADAS‑Controller MUSS Fail‑Operational sein.\r\nREQ‑SAFE‑18: System MUSS Fehlerklassen gemäß ISO 26262 definieren.\r\nREQ‑SAFE‑19: System MUSS ASIL‑Decomposition dokumentieren.\r\nREQ‑SAFE‑20: System MUSS Safety‑Mechanismen überwachen.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "7. Erweiterte Safety‑Requirements (ISO 26262)"
+      ],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0264",
+        "R0265",
+        "R0266",
+        "R0267",
+        "R0268",
+        "R0269",
+        "R0270",
+        "R0271",
+        "R0272",
+        "R0273",
+        "R0274",
+        "R0275",
+        "R0276",
+        "R0277",
+        "R0278"
+      ]
+    },
+    {
+      "source_ref": "R0279.G",
+      "text": "REQ‑SAFE‑21: System MUSS Fehlerreaktionszeiten einhalten.\r\nREQ‑SAFE‑22: System MUSS interne Selbsttests durchführen.\r\nREQ‑SAFE‑23: System MUSS Boot‑Time‑Checks durchführen.\r\nREQ‑SAFE‑24: System MUSS Memory‑ECC verwenden.\r\nREQ‑SAFE‑25: System MUSS Stack‑Overflow‑Schutz implementieren.\r\nREQ‑SAFE‑26: System MUSS CPU‑Load überwachen.\r\nREQ‑SAFE‑27: System MUSS deterministische Ausführungszeiten garantieren.\r\nREQ‑SAFE‑28: System MUSS Safety‑Logs speichern.\r\nREQ‑SAFE‑29: Safety‑Logs MÜSSEN unveränderbar sein.\r\nREQ‑SAFE‑30: System MUSS Safety‑Zustände an HMI melden.\r\nREQ‑SAFE‑31: System MUSS Safety‑Kommunikation priorisieren.\r\nREQ‑SAFE‑32: System MUSS Safety‑Zustände an Backend melden.\r\nREQ‑SAFE‑33: System MUSS Safety‑Zustände persistent speichern.\r\nREQ‑SAFE‑34: System MUSS Sensor‑Drift erkennen.\r\nREQ‑SAFE‑35: System MUSS Sensor‑Blockaden erkennen.\r\nREQ‑SAFE‑36: System MUSS Sensor‑Verschmutzung erkennen.\r\nREQ‑SAFE‑37: System MUSS Sensor‑Überhitzung erkennen.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "7. Erweiterte Safety‑Requirements (ISO 26262)"
+      ],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0279",
+        "R0280",
+        "R0281",
+        "R0282",
+        "R0283",
+        "R0284",
+        "R0285",
+        "R0286",
+        "R0287",
+        "R0288",
+        "R0289",
+        "R0290",
+        "R0291",
+        "R0292",
+        "R0293",
+        "R0294",
+        "R0295"
+      ]
+    },
+    {
+      "source_ref": "R0296.G",
+      "text": "REQ‑SAFE‑38: System MUSS Sensor‑Unterspannung erkennen.\r\nREQ‑SAFE‑39: System MUSS Sensor‑Überstrom erkennen.\r\nREQ‑SAFE‑40: System MUSS alle Safety‑Mechanismen dokumentieren.\r\nREQ‑SAFE‑41: System MUSS Safety‑Mechanismen testen.\r\nREQ‑SAFE‑42: System MUSS Safety‑Mechanismen validieren.\r\nREQ‑SAFE‑43: System MUSS Safety‑Mechanismen verifizieren.\r\nREQ‑SAFE‑44: System MUSS Safety‑Mechanismen versionieren.\r\nREQ‑SAFE‑45: System MUSS Safety‑Mechanismen rückverfolgbar machen.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "7. Erweiterte Safety‑Requirements (ISO 26262)"
+      ],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0296",
+        "R0297",
+        "R0298",
+        "R0299",
+        "R0300",
+        "R0301",
+        "R0302",
+        "R0303"
+      ]
+    },
+    {
+      "source_ref": "R0305",
+      "text": "(40 neue Anforderungen)",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "8. Erweiterte Cybersecurity‑Requirements (ISO 21434)"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0306.G",
+      "text": "REQ‑SEC‑07: System MUSS Secure Boot mit Hardware‑Root‑of‑Trust verwenden.\r\nREQ‑SEC‑08: System MUSS Secure Flash unterstützen.\r\nREQ‑SEC‑09: System MUSS Firmware‑Integrität prüfen.\r\nREQ‑SEC‑10: System MUSS Secure Debug implementieren.\r\nREQ‑SEC‑11: Debug‑Zugänge MÜSSEN deaktivierbar sein.\r\nREQ‑SEC‑12: System MUSS Schlüsselrotation unterstützen.\r\nREQ‑SEC‑13: System MUSS Schlüssel sicher speichern.\r\nREQ‑SEC‑14: System MUSS HSM verwenden.\r\nREQ‑SEC‑15: System MUSS IDS/IPS implementieren.\r\nREQ‑SEC‑16: System MUSS Netzwerkverkehr analysieren.\r\nREQ‑SEC‑17: System MUSS Anomalien erkennen.\r\nREQ‑SEC‑18: System MUSS DoS‑Angriffe erkennen.\r\nREQ‑SEC‑19: System MUSS Spoofing erkennen.\r\nREQ‑SEC‑20: System MUSS Replay‑Angriffe verhindern.\r\nREQ‑SEC‑21: System MUSS Man‑in‑the‑Middle verhindern.\r\nREQ‑SEC‑22: System MUSS TLS 1.3 unterstützen.\r\nREQ‑SEC‑23: System MUSS SOME/IP‑Sec unterstützen.\r\nREQ‑SEC‑24: System MUSS IPsec unterstützen.\r\nREQ‑SEC‑25: System MUSS sichere OTA‑Updates unterstützen.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "8. Erweiterte Cybersecurity‑Requirements (ISO 21434)"
+      ],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0306",
+        "R0307",
+        "R0308",
+        "R0309",
+        "R0310",
+        "R0311",
+        "R0312",
+        "R0313",
+        "R0314",
+        "R0315",
+        "R0316",
+        "R0317",
+        "R0318",
+        "R0319",
+        "R0320",
+        "R0321",
+        "R0322",
+        "R0323",
+        "R0324"
+      ]
+    },
+    {
+      "source_ref": "R0325.G",
+      "text": "REQ‑SEC‑26: OTA‑Updates MÜSSEN signiert sein.\r\nREQ‑SEC‑27: OTA‑Updates MÜSSEN verifiziert werden.\r\nREQ‑SEC‑28: OTA‑Updates MÜSSEN Rollback verhindern.\r\nREQ‑SEC‑29: System MUSS sichere Diagnose unterstützen.\r\nREQ‑SEC‑30: Diagnose MUSS Authentifizierung erfordern.\r\nREQ‑SEC‑31: System MUSS sichere Log‑Übertragung unterstützen.\r\nREQ‑SEC‑32: System MUSS sichere Backend‑Kommunikation unterstützen.\r\nREQ‑SEC‑33: System MUSS sichere Schlüsselverteilung unterstützen.\r\nREQ‑SEC‑34: System MUSS sichere Schlüsselentfernung unterstützen.\r\nREQ‑SEC‑35: System MUSS sichere Schlüsselrotation unterstützen.\r\nREQ‑SEC‑36: System MUSS sichere Schlüsselarchivierung unterstützen.\r\nREQ‑SEC‑37: System MUSS sichere Schlüsselzerstörung unterstützen.\r\nREQ‑SEC‑38: System MUSS sichere Benutzerverwaltung unterstützen.\r\nREQ‑SEC‑39: System MUSS sichere Rollenverwaltung unterstützen.\r\nREQ‑SEC‑40: System MUSS sichere Rechteverwaltung unterstützen.\r\nREQ‑SEC‑41: System MUSS sichere Passwortverwaltung unterstützen.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "8. Erweiterte Cybersecurity‑Requirements (ISO 21434)"
+      ],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0325",
+        "R0326",
+        "R0327",
+        "R0328",
+        "R0329",
+        "R0330",
+        "R0331",
+        "R0332",
+        "R0333",
+        "R0334",
+        "R0335",
+        "R0336",
+        "R0337",
+        "R0338",
+        "R0339",
+        "R0340"
+      ]
+    },
+    {
+      "source_ref": "R0341.G",
+      "text": "REQ‑SEC‑42: System MUSS sichere Tokenverwaltung unterstützen.\r\nREQ‑SEC‑43: System MUSS sichere Zertifikatsverwaltung unterstützen.\r\nREQ‑SEC‑44: System MUSS sichere Firmware‑Verteilung unterstützen.\r\nREQ‑SEC‑45: System MUSS sichere Firmware‑Archivierung unterstützen.\r\nREQ‑SEC‑46: System MUSS sichere Firmware‑Löschung unterstützen.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "8. Erweiterte Cybersecurity‑Requirements (ISO 21434)"
+      ],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0341",
+        "R0342",
+        "R0343",
+        "R0344",
+        "R0345"
+      ]
+    },
+    {
+      "source_ref": "R0346",
+      "text": "9. Erweiterte ADAS‑/Sensorfusion‑Requirements",
+      "policy": {
+        "kind": "FUNCTION",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": false,
+      "source_context": [
+        "9. Erweiterte ADAS‑/Sensorfusion‑Requirements"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0347",
+      "text": "(40 neue Anforderungen)",
+      "policy": null,
+      "required": false,
+      "source_context": [
+        "9. Erweiterte ADAS‑/Sensorfusion‑Requirements"
+      ],
+      "function_scope": false,
+      "function_heading": false
+    },
+    {
+      "source_ref": "R0348.G",
+      "text": "REQ‑FUS‑01: Fusion MUSS Radar‑ und Kameradaten zeitlich synchronisieren.\r\nREQ‑FUS‑02: Fusion MUSS IMU‑Daten integrieren.\r\nREQ‑FUS‑03: Fusion MUSS Raddrehzahldaten integrieren.\r\nREQ‑FUS‑04: Fusion MUSS Lidar‑Daten integrieren.\r\nREQ‑FUS‑05: Fusion MUSS Objektassoziation > 95 % Genauigkeit erreichen.\r\nREQ‑FUS‑06: Fusion MUSS Tracking‑Stabilität > 98 % erreichen.\r\nREQ‑FUS‑07: Fusion MUSS Spurdetektion > 95 % Genauigkeit erreichen.\r\nREQ‑FUS‑08: Fusion MUSS Freiraumerkennung > 90 % Genauigkeit erreichen.\r\nREQ‑FUS‑09: Fusion MUSS Wetterrobustheit gewährleisten.\r\nREQ‑FUS‑10: Fusion MUSS Nachtrobustheit gewährleisten.\r\nREQ‑FUS‑11: Fusion MUSS Sensor‑Dropouts kompensieren.\r\nREQ‑FUS‑12: Fusion MUSS Sensor‑Drift kompensieren.\r\nREQ‑FUS‑13: Fusion MUSS Sensor‑Noise filtern.\r\nREQ‑FUS‑14: Fusion MUSS EKF/UKF unterstützen.\r\nREQ‑FUS‑15: Fusion MUSS Multi‑Hypothesen‑Tracking unterstützen.\r\nREQ‑FUS‑16: Fusion MUSS Objektklassifikation validieren.\r\nREQ‑FUS‑17: Fusion MUSS Fehlklassifikationen erkennen.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "9. Erweiterte ADAS‑/Sensorfusion‑Requirements"
+      ],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0348",
+        "R0349",
+        "R0350",
+        "R0351",
+        "R0352",
+        "R0353",
+        "R0354",
+        "R0355",
+        "R0356",
+        "R0357",
+        "R0358",
+        "R0359",
+        "R0360",
+        "R0361",
+        "R0362",
+        "R0363",
+        "R0364"
+      ]
+    },
+    {
+      "source_ref": "R0365.G",
+      "text": "REQ‑FUS‑18: Fusion MUSS Fehlklassifikationen melden.\r\nREQ‑FUS‑19: Fusion MUSS Szeneninterpretation unterstützen.\r\nREQ‑FUS‑20: Fusion MUSS Trajektorienvorhersage unterstützen.\r\nREQ‑FUS‑21: Fusion MUSS Verkehrsflussmodell erstellen.\r\nREQ‑FUS‑22: Fusion MUSS Hindernisse klassifizieren.\r\nREQ‑FUS‑23: Fusion MUSS Fußgänger erkennen.\r\nREQ‑FUS‑24: Fusion MUSS Radfahrer erkennen.\r\nREQ‑FUS‑25: Fusion MUSS Tiere erkennen.\r\nREQ‑FUS‑26: Fusion MUSS statische Objekte erkennen.\r\nREQ‑FUS‑27: Fusion MUSS dynamische Objekte erkennen.\r\nREQ‑FUS‑28: Fusion MUSS Objektlebenszyklen verwalten.\r\nREQ‑FUS‑29: Fusion MUSS Objektpriorisierung durchführen.\r\nREQ‑FUS‑30: Fusion MUSS Objektkonfidenz berechnen.\r\nREQ‑FUS‑31: Fusion MUSS Datenlatenz überwachen.\r\nREQ‑FUS‑32: Fusion MUSS Datenqualität bewerten.\r\nREQ‑FUS‑33: Fusion MUSS Datenintegrität prüfen.\r\nREQ‑FUS‑34: Fusion MUSS Datenkonsistenz prüfen.\r\nREQ‑FUS‑35: Fusion MUSS Datenvollständigkeit prüfen.\r\nREQ‑FUS‑36: Fusion MUSS Datenverfügbarkeit prüfen.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "9. Erweiterte ADAS‑/Sensorfusion‑Requirements"
+      ],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0365",
+        "R0366",
+        "R0367",
+        "R0368",
+        "R0369",
+        "R0370",
+        "R0371",
+        "R0372",
+        "R0373",
+        "R0374",
+        "R0375",
+        "R0376",
+        "R0377",
+        "R0378",
+        "R0379",
+        "R0380",
+        "R0381",
+        "R0382",
+        "R0383"
+      ]
+    },
+    {
+      "source_ref": "R0384.G",
+      "text": "REQ‑FUS‑37: Fusion MUSS Datenpriorisierung durchführen.\r\nREQ‑FUS‑38: Fusion MUSS Datenkompression unterstützen.\r\nREQ‑FUS‑39: Fusion MUSS Datenverschlüsselung unterstützen.\r\nREQ‑FUS‑40: Fusion MUSS Datenpersistenz unterstützen.",
+      "policy": {
+        "kind": "REQUIREMENT",
+        "role": "OTHER",
+        "quantity": null
+      },
+      "required": true,
+      "source_context": [
+        "9. Erweiterte ADAS‑/Sensorfusion‑Requirements"
+      ],
+      "function_scope": false,
+      "function_heading": false,
+      "source_rows": [
+        "R0384",
+        "R0385",
+        "R0386",
+        "R0387"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,128 @@
+--- before/docs/implementation-workloads/reference-example-assumptions-20261017/integration/resume-20261020/document-stream-lifecycle-repair/transfer_waitress_source_only_projects.py
++++ after/docs/implementation-workloads/reference-example-assumptions-20261017/integration/resume-20261020/document-stream-lifecycle-repair/transfer_waitress_source_only_projects.py
+@@ -25,9 +25,12 @@
+ repair.add_argument('--fresh-id-repair-dir', type=Path)
+ repair.add_argument('--throughput-repair-dir', type=Path)
+ repair.add_argument('--source-binding-repair-dir', type=Path)
++repair.add_argument('--selected-identity-repair-dir', type=Path)
+ parser.add_argument('--destination-prefix', default='native-waitress-lifecycle')
+ args = parser.parse_args()
+-source_binding_dir = args.source_binding_repair_dir.resolve() if args.source_binding_repair_dir else None
++selected_identity_dir = args.selected_identity_repair_dir.resolve() if args.selected_identity_repair_dir else None
++source_binding_dir = (selected_identity_dir.parent if selected_identity_dir else
++                      args.source_binding_repair_dir.resolve() if args.source_binding_repair_dir else None)
+ if source_binding_dir:
+     # Keep the verified4da3 chain immutable. Its prior snapshots are evidence,
+     # never a claim that the newly repaired app has the old source identity.
+@@ -40,10 +43,13 @@
+ assert re.fullmatch('[a-z0-9-]+', args.destination_prefix)
+ repair_dir = source_binding_dir or args.context_repair_dir or args.inventory_cardinality_repair_dir or args.inventory_progress_repair_dir or args.context_cache_progress_repair_dir or args.launcher_repair_dir or args.fresh_id_repair_dir or args.throughput_repair_dir
+ evidence_dir = repair_dir.resolve() if repair_dir else OUT
++transfer_evidence_dir = selected_identity_dir or evidence_dir
+ historical_dir = args.throughput_repair_dir.resolve() if source_binding_dir else evidence_dir
+ assert evidence_dir.is_relative_to(BASE.resolve())
++assert transfer_evidence_dir.is_relative_to(BASE.resolve())
+ fresh_id_dir = (BASE / 'resume-20261021/inventory-binding-cardinality-repair/progress-decoder-repair/context-cache-progress-repair/launcher-repair/fresh-id-decoder-repair') if args.throughput_repair_dir else evidence_dir
+-identity = json.loads((evidence_dir / ('current-input-identity.json' if repair_dir else 'waitress-candidate-input-identity.json')).read_text(encoding='utf-8'))
++identity = json.loads((transfer_evidence_dir / ('current-input-identity.json' if repair_dir else 'waitress-candidate-input-identity.json')).read_text(encoding='utf-8'))
++source_binding_identity = json.loads((evidence_dir / 'current-input-identity.json').read_text()) if selected_identity_dir else identity
+ assert receipt['status'] == 'PREPARED' and not receipt.get('development_only')
+ assert receipt['initial_source_sha256'] == identity['source_sha256']
+ assert receipt['initial_commit_id'] == identity['commit_id']
+@@ -63,6 +69,12 @@
+         return (fresh_id_dir / ('before-' + Path(name).name)).read_bytes()
+     if args.throughput_repair_dir and (historical_dir / 'before' / name).is_file():
+         return (historical_dir / 'before' / name).read_bytes()
++    return (ROOT / name).read_bytes()
++
++
++def source_binding_baseline_bytes(name):
++    if selected_identity_dir and (selected_identity_dir / 'before' / name).is_file():
++        return (selected_identity_dir / 'before' / name).read_bytes()
+     return (ROOT / name).read_bytes()
+ 
+ 
+@@ -248,7 +260,7 @@
+ if source_binding_dir:
+     proof = json.loads((evidence_dir / 'source-scope-proof.json').read_text())
+     assert proof['canonical_before']['source_sha256'] == throughput_identity['source_sha256']
+-    assert proof['canonical_after']['source_sha256'] == identity['source_sha256']
++    assert proof['canonical_after']['source_sha256'] == source_binding_identity['source_sha256']
+     assert set(proof['application_delta']) == {'backend/nis/agent/orchestration/local_reasoner.py',
+                                             'backend/nis/domain/inventory-vocabulary.json',
+                                             'frontend/src/features/agent/lib/inventory-vocabulary.json'}
+@@ -256,8 +268,11 @@
+     assert (ROOT / 'frontend/src/features/agent/lib/inventory-vocabulary.json').read_bytes() == (ROOT / 'backend/nis/domain/inventory-vocabulary.json').read_bytes()
+     projected = json.loads((evidence_dir / 'projection-sync-repair/independent-image-source-proof.json').read_text())
+     assert projected['all_normalized_application_files_exact'] and projected['source_file_count'] == 2313
+-    assert projected['host_source_sha256'] == projected['actual_image_source_sha256'] == identity['source_sha256']
+-    assert projected['image_id'] == receipt['image_id']
++    assert projected['host_source_sha256'] == projected['actual_image_source_sha256'] == source_binding_identity['source_sha256']
++    previous_candidate = json.loads((evidence_dir / 'prepared-candidate.json').read_text()) if selected_identity_dir else None
++    assert projected['image_id'] == (previous_candidate['image_id'] if previous_candidate else receipt['image_id'])
++    if previous_candidate:
++        assert previous_candidate['status'] == 'PREPARED' and previous_candidate['source_sha256'] == source_binding_identity['source_sha256']
+     for key in ('all_other_reasoner_methods_including_model_provider_context_timeout_AST_unchanged',
+                 'complete_UTF8_guard_and_output_reserve_AST_unchanged',
+                 'exact_port_parameter_merge_AST_unchanged',
+@@ -276,15 +291,50 @@
+     binding = json.loads((evidence_dir / 'native-scope-binding.json').read_text())
+     assert binding['all_module_level_decoder_runtime_transport_helpers_AST_exact']
+     assert binding['exact_whole_module_bytes_for_both_native_controls']
+-    assert binding['current_local_reasoner_sha256'] == sha((ROOT / 'backend/nis/agent/orchestration/local_reasoner.py').read_bytes())
++    assert binding['current_local_reasoner_sha256'] == sha(source_binding_baseline_bytes('backend/nis/agent/orchestration/local_reasoner.py'))
+     freeze = json.loads((evidence_dir / 'candidate-prepare-freeze.json').read_text())
+-    assert {key: freeze[key] for key in identity} == identity
++    assert {key: freeze[key] for key in source_binding_identity} == source_binding_identity
+     assert freeze['complete_regression_cases'] > 587 and freeze['complete_regressions_passed'] is True
+     assert freeze['validation_evidence']
+     for saved in freeze['validation_evidence']:
+         assert sha(Path(saved['path']).read_bytes()) == saved['sha256']
+     assert json.loads((evidence_dir / 'candidate-prepare-result.json').read_text())['exit_code'] == 0
+     for name, digest in freeze['frozen_affected_files'].items():
++        assert sha(source_binding_baseline_bytes(name)) == digest
++        frozen[name] = digest
++if selected_identity_dir:
++    proof = json.loads((selected_identity_dir / 'source-scope-proof.json').read_text())
++    assert proof['canonical_before']['source_sha256'] == source_binding_identity['source_sha256']
++    assert proof['canonical_after']['source_sha256'] == identity['source_sha256']
++    assert proof['application_delta'] == ['backend/nis/agent/orchestration/local_reasoner.py']
++    for key in ('all_other_module_and_class_definitions_AST_exact',
++                'entire_reference_pipeline_AST_exact_except_private_selected_output_expansion_instruction_and_progress',
++                'public_port_merge_and_source_inventory_guards_AST_exact',
++                'model_provider_context_output_timeout_request_AST_exact'):
++        assert proof[key] is True
++    for name in ('backend/nis/agent/orchestration/local_reasoner.py', 'backend/tests/test_reference_reasoner.py'):
++        assert (selected_identity_dir / 'before' / name).read_bytes() == (evidence_dir / 'after' / name).read_bytes()
++    freeze = json.loads((selected_identity_dir / 'candidate-prepare-freeze.json').read_text())
++    assert {key: freeze[key] for key in identity} == identity
++    assert freeze['complete_regression_cases'] == 616 and freeze['complete_regressions_passed'] is True
++    for saved in freeze['validation_evidence']:
++        assert sha(Path(saved['path']).read_bytes()) == saved['sha256']
++    controls = json.loads((selected_identity_dir / 'native-selected-controls.json').read_text())
++    assert controls['status'] == 'PASS' and controls['actual_native_responses'] == 4
++    assert {row['case'] for row in controls['results']} == {
++        'ports-positive', 'ports-counter', 'functions-positive', 'functions-counter'}
++    current_module_hash = sha((ROOT / 'backend/nis/agent/orchestration/local_reasoner.py').read_bytes())
++    assert controls['local_reasoner_sha256'] == current_module_hash
++    for row in controls['results']:
++        for key in ('result', 'request', 'response'):
++            assert sha(Path(row[key]['path']).read_bytes()) == row[key]['sha256']
++        result = json.loads(Path(row['result']['path']).read_text())
++        assert result['status'] == 'PASS' and result['actual_native_responses'] == 1
++        assert result['local_reasoner_sha256'] == current_module_hash and result['complete_original_acceptance'] is False
++    assert json.loads((selected_identity_dir / 'candidate-prepare-result.json').read_text())['exit_code'] == 0
++    for name, digest in freeze['frozen_affected_files'].items():
++        assert name in {'backend/nis/agent/orchestration/local_reasoner.py', 'backend/tests/test_reference_reasoner.py',
++                        'backend/tests/test_reference_selected_identity.py'}
+         assert sha((ROOT / name).read_bytes()) == digest
+         frozen[name] = digest
+ assert all(sha((ROOT / name).read_bytes()) == digest for name, digest in frozen.items())
+@@ -400,6 +450,6 @@
+     finally:
+         (destination / 'source-only-transfer.json').write_text(json.dumps(record, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+ assert inspect('NetworkIS')['Image'] == production
+-(evidence_dir / 'waitress-source-only-transfer-result.json').write_text(json.dumps({'scope': __doc__,
++(transfer_evidence_dir / 'waitress-source-only-transfer-result.json').write_text(json.dumps({'scope': __doc__,
+     'transfers': transfers, 'production_changed': False}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+ print(json.dumps({'transfers': transfers, 'production_changed': False}, ensure_ascii=False))

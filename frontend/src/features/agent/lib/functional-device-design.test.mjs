@@ -77,6 +77,21 @@ test('imported reviewed signal encodings stay unchanged', () => {
   assert.equal(completeFunctionalDeviceDesign(input, 'per Wizard-Uebernehmen bestaetigt'), input);
 });
 
+test('a generic controller with source-scoped camera processing gets a reviewable object output', () => {
+  for (const domain of ['automotive', 'robotics_ros', 'building_automation', 'custom']) {
+    const input = [chain('ControlAlpha', 'ECU', domain, { source_scoped_functions: [
+      { name: 'Kamera auswerten', source_quote: 'Kamera auswerten' },
+    ] }), chain('Kamera', 'SensorController', domain, { functional_owner: 'ControlAlpha', sensor_measurement: 'image_frame' })];
+    const result = completeFunctionalDeviceDesign(input);
+    const output = result.find(item => item.configuration.functional_output_template);
+    assert.ok(output);
+    assert.equal(output.hardware_name, 'ControlAlpha');
+    assert.deepEqual(output.configuration.functional_device_contract.input_names, ['Kamera']);
+    assert.equal(output.configuration.functional_device_contract.source_functions[0].source_quote, 'Kamera auswerten');
+    assert.equal(output.configuration.processing_contract.evidence, 'NONE');
+  }
+});
+
 test('object outputs keep an explicitly selected narrow transport and remain oversized for validation', () => {
   const source = { ...chain('RadarProcessing', 'IndustrialPC'), interface_type: 'CAN', interface_name: 'explicit_CAN' };
   const result = completeFunctionalDeviceDesign([source]);
@@ -84,4 +99,17 @@ test('object outputs keep an explicitly selected narrow transport and remain ove
   assert.equal(output.interface_type, 'CAN');
   assert.equal(output.length_bits, 1168 * 8);
   assert.equal(OBJECT_LIST_SCHEMA.header.find(field => field.name === 'timestamp').time_base, 'SOURCE_CLOCK_REQUIRES_REVIEW');
+});
+
+test('co-located perception and planning remain distinct reviewed functions without a fake external receiver', () => {
+  const host = chain('ControlAlpha', 'ECU', 'robotics_ros', { source_scoped_functions: [
+    { name: 'Kamera auswerten', source_quote: 'Kamera auswerten' },
+    { name: 'Motion Planning', source_quote: 'Motion Planning' },
+  ] });
+  const clusters = buildEquipmentClusters([host, chain('Kamera', 'SensorController', 'robotics_ros',
+    { functional_owner: 'ControlAlpha', sensor_measurement: 'image_frame' })], [], 'robotics_ros');
+  const branch = clusters.flatMap(cluster => cluster.controllers).find(controller => controller.name === 'ControlAlpha');
+  assert.ok(branch.functions.some(fn => fn.name === 'ControlAlpha_Motion Planning' && fn.signals.length === 0));
+  assert.equal(clusters.flatMap(cluster => cluster.functionalRoutes).length, 0);
+  assert.ok(clusters.flatMap(cluster => cluster.functionalIssues).some(issue => issue.includes('innerhalb desselben Controllers') && issue.includes('Motion Planning')));
 });

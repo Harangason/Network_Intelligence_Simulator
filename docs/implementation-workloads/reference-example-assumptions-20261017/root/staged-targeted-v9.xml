@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="107" time="167.269" timestamp="2026-10-17T17:38:27.544046+02:00" hostname="Haranga"><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_complete_original_and_short_ids_survive_detached_review" time="2.328" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_primary_source_evidence_cannot_be_replaced[source_hash]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_primary_source_evidence_cannot_be_replaced[source_chars]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_primary_source_evidence_cannot_be_replaced[fact_quote]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_primary_source_evidence_cannot_be_replaced[fact_kind]" time="0.557" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_reference_inventory_is_not_promoted_and_field_scope_is_enforced" time="2.741" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_reference_manifest_rejects_corruption[hash]" time="0.607" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_reference_manifest_rejects_corruption[duplicate_id]" time="0.480" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_reference_manifest_rejects_corruption[bad_role]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_reference_manifest_rejects_corruption[duplicate_scope]" time="0.414" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_model_cannot_claim_approval_or_source_authority" time="4.439" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_stale_request_and_untrusted_prepared_facts" time="2.653" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_identity_quantity_and_known_role_guards[unknown_fact]" time="1.882" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_identity_quantity_and_known_role_guards[duplicate_device]" time="1.739" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_identity_quantity_and_known_role_guards[name_collision]" time="1.834" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_identity_quantity_and_known_role_guards[instance_quantity]" time="1.576" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_identity_quantity_and_known_role_guards[known_role]" time="1.679" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_identity_quantity_and_known_role_guards[float_quantity]" time="1.521" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_composite_preserves_source_binding_without_own_executor" time="2.443" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_confirmed_atomic_owner_cannot_be_hidden_by_composite" time="1.568" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_missing_source_items_are_explicit_findings_not_deleted" time="1.673" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_existing_measurement_and_wire_invariants[unknown_measurement]" time="1.510" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_existing_measurement_and_wire_invariants[bits]" time="1.657" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_existing_measurement_and_wire_invariants[raw_overlap]" time="2.042" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_existing_measurement_and_wire_invariants[semantic_unit]" time="2.096" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_existing_measurement_and_wire_invariants[nan]" time="2.102" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_physical_context_cannot_serve_as_controller" time="3.345" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_reviewed_counts_remain_exact_or_minimum" time="3.394"><failure message="ValueError: Elektronische Referenzteilnehmer benötigen einzelne Identitäten, Anschlüsse und Ausführer; Gruppenmenge ist keine Adressierung.">def test_reviewed_counts_remain_exact_or_minimum():
+        answer = {'id': 'reviewed-sensors', 'label': 'Sensorik (Temperatursensoren)', 'source_context': [],
+                  'role': 'SENSOR', 'quantity': 3, 'minimum': True}
+        prepared = intake.prepare_reference_design(fixture_request(answers=[answer]))
+        candidate = fixture_design(prepared)
+        with pytest.raises(ValueError, match='Gerätemenge'): intake.validate_reference_design(candidate, prepared)
+        candidate['devices'][1]['quantity'] = 4
+&gt;       intake.validate_reference_design(candidate, prepared)
+
+docs\implementation-workloads\reference-example-assumptions-20261017\root\test_reference_design.py:210: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+result = {'devices': [{'id': 'C', 'name': 'Controller (ECU)', 'kind': 'CONTROLLER', 'quantity': 1, ...}, {'id': 'S', 'name': 'T...ngth_bits': 1, 'data_type': 'unsigned', 'unit': 'code', 'factor': 1, ...}, 'rationale': 'Schaltendes Referenzventil'}]}
+prepared = {'request': {'mode': 'EXAMPLE_PROJECT', 'prompt': 'Controller (ECU)\nSensorik (Temperatursensoren)\nAktorik (Ventile)\...ned', 'unit': '%', 'factor': 0.1, ...}}, 'technology_ids': ['5g', 'adc', 'afdx', 'amqp', 'arinc429', 'avb', ...]}, ...}
+
+    def validate_reference_design(result: dict, prepared: dict) -&gt; dict:
+        """Stamp a detached review candidate; no approval, model writes or readiness."""
+        from copy import deepcopy
+        from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
+        # Revalidate the complete primary input, not caller-supplied prepared facts.
+        current = prepare_reference_design(prepared['request'])
+        if current['request_sha256'] != prepared.get('request_sha256'):
+            raise ValueError('Der Referenzentwurf gehört zu einer veralteten Auftragsrevision.')
+        value = ReferenceDesignProposal.model_validate(result).model_dump(mode='json')
+        _reference_digest(value)  # Reject non-JSON or nonfinite nested data as well.
+        facts, sources = current['facts'], current['reference_sources']
+        devices = _reference_unique(value['devices'], 'id', 'Teilnehmer')
+        functions = _reference_unique(value['functions'], 'source_fact_id', 'Funktionen')
+        ports = _reference_unique(value['ports'], 'id', 'Anschlüsse')
+        _reference_unique(value['communication'], 'id', 'Kommunikation')
+        _reference_unique(value['functional_dependencies'], 'id', 'Funktionsabhängigkeiten')
+        _reference_unique(value['measurements'], 'device_id', 'Messgrößen')
+        _reference_unique(value['commands'], 'device_id', 'Stellbefehle')
+        findings = value['unresolved']
+        scopes, bound = {}, {}
+        decision_evidence = []
+        aliases = current['catalog'].get('name_aliases', {})
+    
+        def name_identity(name):
+            return aliases.get(name, name.casefold())
+    
+        def scope(fact_id):
+            if fact_id not in facts:
+                raise ValueError(f'Unbekannter ursprünglicher Quellenbefund {fact_id}.')
+            return tuple(document_system_scope(facts[fact_id].get('source_context', [])))
+    
+        def same_scope(ids, expected):
+            if any(scope(fact_id) != expected for fact_id in ids):
+                raise ValueError('Referenzentwurf überschreitet ursprüngliche System-/Profilgrenzen.')
+    
+        def stamp(item, fields, target, fact_ids):
+            if not item['rationale'].strip():
+                raise ValueError('Jede Referenzannahme benötigt eine fachliche Begründung.')
+            if set(item['field_references']) - set(fields):
+                raise ValueError('Referenzbeleg wurde einem fremden Entscheidungsfeld zugeordnet.')
+            for field in fields:
+                reference_ids = item['field_references'].get(field, [])
+                if len(reference_ids) != len(set(reference_ids)):
+                    raise ValueError('Doppelte Referenzbelege für ein Entscheidungsfeld.')
+                for reference_id in reference_ids:
+                    if reference_id not in sources or field not in sources[reference_id]['allowed_fields']:
+                        raise ValueError('Referenzquelle darf dieses Entscheidungsfeld nicht ergänzen.')
+                decision_evidence.append({'kind': 'REFERENCE_ASSUMPTION', 'target_ref': target,
+                    'field': field, 'rationale': item['rationale'], 'source_fact_ids': fact_ids,
+                    'source_fact_kinds': {fact_id: facts[fact_id]['kind'] for fact_id in fact_ids},
+                    'reference_sources': [{'id': reference_id, 'role': sources[reference_id]['role'],
+                        'source_sha256': sources[reference_id]['source_sha256']} for reference_id in reference_ids]})
+    
+        for device_id, device in devices.items():
+            ids = device['source_fact_ids']
+            if len(ids) != len(set(ids)):
+                raise ValueError('Teilnehmer besitzt doppelte Quellenbindungen.')
+            device_scope = scope(ids[0])
+            same_scope(ids, device_scope)
+            scopes[device_id] = device_scope
+            if not device['name'].strip():
+                raise ValueError('Ein Referenzteilnehmer benötigt einen Namen.')
+            physical = device['kind'] == 'PHYSICAL_CONTEXT'
+            if not physical and device['quantity'] != 1:
+&gt;               raise ValueError('Elektronische Referenzteilnehmer benötigen einzelne Identitäten, Anschlüsse und Ausführer; Gruppenmenge ist keine Adressierung.')
+E               ValueError: Elektronische Referenzteilnehmer benötigen einzelne Identitäten, Anschlüsse und Ausführer; Gruppenmenge ist keine Adressierung.
+
+docs\implementation-workloads\reference-example-assumptions-20261017\root\staged\backend\nis\agent\orchestration\project_intake.py:1580: ValueError</failure></testcase><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_additional_hardware_is_a_reference_derivation_not_a_source_fact[FUNCTION]" time="2.218" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_additional_hardware_is_a_reference_derivation_not_a_source_fact[REQUIREMENT]" time="2.255" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_controller_fact_cannot_be_relabelled_as_derived_sensor" time="2.013" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_port_and_event_design_is_reviewed_without_qualifying_physical_parameters" time="3.231" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_transport_and_function_bindings_cannot_be_faked[sender_port]" time="2.119" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_transport_and_function_bindings_cannot_be_faked[receiver_port]" time="1.517" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_transport_and_function_bindings_cannot_be_faked[unknown_protocol]" time="1.797" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_transport_and_function_bindings_cannot_be_faked[cycle]" time="1.784" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_transport_and_function_bindings_cannot_be_faked[event_rate]" time="2.036" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_transport_and_function_bindings_cannot_be_faked[event_trigger]" time="1.902" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_transport_and_function_bindings_cannot_be_faked[physical_traffic]" time="1.833" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_transport_and_function_bindings_cannot_be_faked[function_host]" time="1.466" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_transport_and_function_bindings_cannot_be_faked[local_owner]" time="1.644" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_numeric_encoding_retains_sign_scale_and_width[unsigned_negative]" time="1.543" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_numeric_encoding_retains_sign_scale_and_width[too_narrow]" time="1.697" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_numeric_encoding_retains_sign_scale_and_width[float_width]" time="1.712" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_numeric_encoding_retains_sign_scale_and_width[nonaligned_range]" time="1.987" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_candidate_cannot_move_between_projects" time="1.767" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_live_catalog_revision_and_known_source_host_are_protected" time="3.635" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_same_labels_do_not_merge_independent_source_profiles[host]" time="2.580" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_same_labels_do_not_merge_independent_source_profiles[derived_device]" time="2.767" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_same_labels_do_not_merge_independent_source_profiles[owner]" time="2.432" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_same_labels_do_not_merge_independent_source_profiles[network_identity]" time="2.396" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_generic_chapter_scope_is_not_an_independent_source_system[6. Systemverhalten (High-Level)]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_generic_chapter_scope_is_not_an_independent_source_system[3. Kommunikationsarchitektur]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_generic_chapter_scope_is_not_an_independent_source_system[5. Systemanforderungen (Top-Level)]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_generic_chapter_scope_is_not_an_independent_source_system[4. Safety-Anforderungen (ISO 26262)]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_generic_chapter_scope_is_not_an_independent_source_system[5. Cybersecurity-Anforderungen (ISO 21434)]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_generic_chapter_scope_is_not_an_independent_source_system[7. Erweiterte Safety-Requirements (ISO 26262)]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_generic_chapter_scope_is_not_an_independent_source_system[8. Erweiterte Cybersecurity-Requirements (ISO 21434)]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_generic_chapter_scope_is_not_an_independent_source_system[9. Erweiterte ADAS-/Sensorfusion-Requirements]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_generic_chapter_scope_is_not_an_independent_source_system[6. Diagnose &amp; OTA]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_generic_chapter_scope_is_not_an_independent_source_system[8. Zusammenfassung]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_generic_chapter_scope_is_not_an_independent_source_system[5. Schnittstellen und Daten]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_generic_chapter_scope_is_not_an_independent_source_system[8. Safety, Security, Qualit\xe4t und Betrieb]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_generic_chapter_scope_is_not_an_independent_source_system[Interfaces and Data]" time="0.000" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_generic_chapter_scope_is_not_an_independent_source_system[Safety, Security, Quality and Operations]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_generic_chapter_scope_is_not_an_independent_source_system[Extended Safety Requirements]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_named_system_identity_is_never_removed_as_a_generic_chapter[054. Kollaborativer Roboterarm]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_named_system_identity_is_never_removed_as_a_generic_chapter[056. Mobiler Service-Roboter mit Greifarm]" time="0.000" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_named_system_identity_is_never_removed_as_a_generic_chapter[062. Digitale Fabriklinie / Montagewerk]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_named_system_identity_is_never_removed_as_a_generic_chapter[Safety PLC]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_named_system_identity_is_never_removed_as_a_generic_chapter[Cybersecurity Gateway]" time="0.001" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_malformed_wire_fields_are_actionable_validation_errors[factor-True]" time="1.568" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_malformed_wire_fields_are_actionable_validation_errors[unit- ]" time="1.646" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_malformed_wire_fields_are_actionable_validation_errors[semantic-value2]" time="1.829" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_malformed_wire_fields_are_actionable_validation_errors[semantic-value3]" time="1.671" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_malformed_wire_fields_are_actionable_validation_errors[data-value4]" time="1.495" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_local_function_dependency_preserves_no_physical_self_transport" time="1.619" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_function_dependency_cannot_fake_function_or_host_binding[unknown]" time="1.533" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_function_dependency_cannot_fake_function_or_host_binding[composite]" time="1.584" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_function_dependency_cannot_fake_function_or_host_binding[different_host]" time="1.509" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_function_dependency_cannot_fake_function_or_host_binding[self]" time="1.794" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_function_dependency_cannot_fake_function_or_host_binding[duplicate]" time="1.485" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_function_dependency_cannot_fake_function_or_host_binding[physical_port]" time="1.649" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_unchanged_confirmed_choices_are_inherited_instead_of_regenerated" time="1.529" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_reference_proposals_cannot_overwrite_previously_confirmed_fields[rename]" time="1.654" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_reference_proposals_cannot_overwrite_previously_confirmed_fields[command_width]" time="1.879" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_reference_proposals_cannot_overwrite_previously_confirmed_fields[command_vocab]" time="2.150" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_reference_proposals_cannot_overwrite_previously_confirmed_fields[measurement]" time="1.992" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_reference_proposals_cannot_overwrite_previously_confirmed_fields[connection]" time="1.993" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_reference_proposals_cannot_overwrite_previously_confirmed_fields[owner]" time="1.766" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_additional_ports_keep_all_confirmed_ports" time="2.188" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_native_release_contracts_do_not_invent_periodic_requests[EVENT]" time="2.075" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_native_release_contracts_do_not_invent_periodic_requests[MIXED]" time="2.343" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_native_release_contracts_do_not_invent_periodic_requests[ON_REQUEST]" time="2.306" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_invalid_release_inputs_are_not_replaced_with_cycles[missing_request]" time="2.334" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_invalid_release_inputs_are_not_replaced_with_cycles[independent_times]" time="2.205" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_invalid_release_inputs_are_not_replaced_with_cycles[negative_time]" time="2.105" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_invalid_release_inputs_are_not_replaced_with_cycles[too_close]" time="2.125" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_command_encoding_is_bound_to_actuator_and_keeps_raw_vocabulary" time="3.171" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_command_and_measurement_encodings_cannot_diverge_from_selected_quantity[width]" time="2.311" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_command_and_measurement_encodings_cannot_diverge_from_selected_quantity[unit]" time="2.159" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_command_and_measurement_encodings_cannot_diverge_from_selected_quantity[missing]" time="2.323" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_command_and_measurement_encodings_cannot_diverge_from_selected_quantity[semantic]" time="1.965" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_status_is_separate_from_sensor_measurement" time="2.313" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_inherited_command_encoding_is_still_checked" time="3.280" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_electronics_are_individually_addressed_and_unplanned_confirmed_ports_remain_findings" time="3.294" /><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.root.test_reference_design" name="test_multiple_explicit_instances_keep_their_total_without_implicit_group_endpoints" time="0.539"><failure message="ValueError: Controller (ECU): Die Stückzahl ist nicht ausdrücklich belegt.">with pytest.raises(ValueError, match='einzelne Identitäten'): intake.validate_reference_design(candidate, prepared)
+    
+    
+    def test_multiple_explicit_instances_keep_their_total_without_implicit_group_endpoints():
+        request = fixture_request()
+        source, serialized = request['prompt'].split('\n- Dokument-Geräte: ')
+&gt;       envelope = json.loads(serialized)
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+
+docs\implementation-workloads\reference-example-assumptions-20261017\root\test_reference_design.py:578: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+docs\implementation-workloads\reference-example-assumptions-20261017\root\staged\backend\nis\agent\orchestration\project_intake.py:1367: in prepare_reference_design
+    evidence = reviewed_document_evidence(request.prompt, include_source=True)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+docs\implementation-workloads\reference-example-assumptions-20261017\root\staged\backend\nis\agent\orchestration\project_intake.py:1184: in reviewed_document_evidence
+    interpretation = validate_document_interpretation({
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+value = {'summary': 'Geprüfte quellengebundene Dokumentbefunde.', 'components': [{'name': 'Controller (ECU)', 'kind': 'INSTANC...roposed_task': 'Quellenbefunde im normalen Modellvorschlag prüfen; offene Zuordnungen und Mengen nicht ergänzen.', ...}
+source = 'Controller (ECU)\nSensorik (Temperatursensoren)\nAktorik (Ventile)\nFunktion: Regelung\nFunktion: Diagnose\nFunktion: Gesamtfunktion\nREQ-001: Das System MUSS diagnostizierbar sein.'
+context_aliases = {'ECU'}, scope_prefix = '', aggregate = True
+
+    def validate_document_interpretation(value, source: str, *, context_aliases=None, scope_prefix='', aggregate=False):
+        """Reject invented source claims before displaying a local-model proposal."""
+        model = DocumentProposalInterpretation if aggregate else DocumentInterpretation
+        result = model.model_validate(value)
+        from backend.nis.agent.tools.inventory_quantities import quantities
+        from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
+        count_keys = {'SENSOR': 'sensors', 'ACTUATOR': 'actuators', 'CONTROLLER': 'ecus', 'GATEWAY': 'gateways'}
+        punctuation = str.maketrans({char: '-' for char in '\u2010\u2011\u2012\u2013\u2014\u2212'})
+        def normalized_label(text):
+            return text.translate(punctuation).casefold()
+        profiles = DEFAULT_TECHNOLOGY_REGISTRY.profiles()
+        if context_aliases is None:
+            context_aliases = document_device_aliases(source)
+        def transport_citation(item):
+            identity = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(normalized_label(item.name))
+            target = [p for p in profiles if p['id'] == identity]
+            return bool(document_transport_candidates(item.source_quote, profiles, context_aliases=context_aliases, candidates=target))
+        eligible_source = document_technology_source(source, scope_prefix=scope_prefix)
+        semantic_errors = []
+        for technology in result.technologies:
+            if technology.source_quote not in eligible_source:
+                semantic_errors.append(f'{technology.name}: Test-/Indexzitat belegt keine Projektschnittstelle.')
+        citation_errors = []
+        quote_suggestions = {}
+        source_punctuation = source.translate(punctuation)
+        for item in [*result.components, *result.technologies]:
+            if item.source_quote not in source:
+                citation_errors.append(item.name)
+                # Suggest the original text only for a unique, character-preserving
+                # punctuation match. The changed quote is still rejected.
+                candidate = item.source_quote.translate(punctuation)
+                position = source_punctuation.find(candidate)
+                if position &gt;= 0 and source_punctuation.find(candidate, position + 1) &lt; 0:
+                    quote_suggestions[item.source_quote] = source[position:position + len(candidate)]
+            cited = normalized_label(item.name) in normalized_label(item.source_quote)
+            if isinstance(item, DocumentTechnology) and item.kind == 'TRANSPORT':
+                try:
+                    DEFAULT_TECHNOLOGY_REGISTRY.profile(normalized_label(item.name))
+                except KeyError:
+                    pass  # The collected unsupported-transport finding below owns this case.
+                else:
+                    cited = transport_citation(item)
+            if not cited:
+                semantic_errors.append(f'{item.name}: Die benannte Aussage ist im Quellenzitat nicht belegt.')
+        if citation_errors:
+            semantic_errors.append('Quellenzitat ist nicht im vollständigen Dokument enthalten: ' + ', '.join(dict.fromkeys(citation_errors)))
+            if quote_suggestions:
+                semantic_errors.append('Wortgetreue Originalzitate verwenden: ' + repr(list(quote_suggestions.values())))
+        # Citation grouping may differ at a window boundary. Bind the context to
+        # original character positions rather than to a particular grouping.
+        from bisect import bisect_right
+        context_offsets, context_values = document_source_contexts(scope_prefix + source)
+        context_cache = {}
+        for component in result.components:
+            if component.source_quote not in context_cache:
+                contexts = []
+                position = source.find(component.source_quote)
+                while position &gt;= 0:
+                    contexts.append(context_values[bisect_right(context_offsets, len(scope_prefix) + position) - 1])
+                    position = source.find(component.source_quote, position + 1)
+                context_cache[component.source_quote] = contexts
+            contexts = context_cache[component.source_quote]
+            unique_contexts = {tuple(context) for context in contexts}
+            if not component.source_context and len(unique_contexts) == 1:
+                component.source_context = list(next(iter(unique_contexts)))
+            elif 'source_context' not in component.model_fields_set and len(unique_contexts) &gt; 1:
+                semantic_errors.append(f'{component.name}: Abschnittskontext fehlt bei mehrdeutiger Quellenangabe.')
+            if component.source_context and component.source_context not in contexts:
+                semantic_errors.append(f'{component.name}: unbelegter Abschnittskontext.')
+            if any(contexts) and component.source_context not in contexts:
+                semantic_errors.append(f'{component.name}: Abschnittskontext fehlt oder ist veraltet.')
+            if component.kind in {'INSTANCE', 'CATEGORY'} and component.source_quote not in eligible_source:
+                semantic_errors.append(f'{component.name}: Test-/Indexzitat belegt keine installierte Hardware.')
+            policy = document_component_policy(component.source_quote)
+            if policy is None and component.kind in {'INSTANCE', 'CATEGORY'} and component.role != 'OTHER':
+                semantic_errors.append(f'{component.name}: unbelegte Geräterolle; OTHER und explizite Klärung erforderlich.')
+            if component.kind == 'INSTANCE' and policy is None:
+                semantic_errors.append(f'{component.name}: keine belegte individuelle Geräteidentität oder Stückzahl; keine INSTANCE bilden.')
+            if policy and component.kind in {'INSTANCE', 'CATEGORY'}:
+                if policy['kind'] in {'FUNCTION', 'REQUIREMENT'}:
+                    semantic_errors.append(f'{component.name}: logische Verarbeitung/Anforderung ist keine Hardware.')
+                elif component.role != policy['role']:
+                    semantic_errors.append(f'{component.name}: role {policy["role"]} erforderlich.')
+                elif component.kind == 'INSTANCE' and policy['kind'] == 'CATEGORY':
+                    semantic_errors.append(f'{component.name}: Geräteart, Alternative oder Mengenbereich bestätigt keine individuelle Instanz; CATEGORY und quantity null erforderlich.')
+            logical = re.match(r'\s*(?:Funktion|Function)\s*:', component.source_quote, re.I) or re.search(r'\b[\w-]*(?:fusion|regelung|planung|kontrolle)\b', normalized_label(component.name))
+            if component.kind == 'CATEGORY' and component.role == 'OTHER' and logical:
+                semantic_errors.append(f'{component.name}: CATEGORY bezeichnet eine Gerätekategorie mit Geräterolle, keine logische Funktion. Funktionen als FUNCTION/OTHER einordnen; keine Hardware aus Funktionslisten ableiten.')
+            if component.kind in {'FUNCTION', 'REQUIREMENT'} and component.role != 'OTHER':
+                semantic_errors.append(f'{component.name}: Funktionen und Anforderungen benötigen role OTHER; sie bestätigen keine Geräterolle.')
+            if component.kind != 'INSTANCE' and component.quantity is not None:
+                raise ValueError('Kategorien, Funktionen und Anforderungen bestätigen keine Gerätestückzahl.')
+            if component.kind == 'INSTANCE' and re.search(r'^\s*REQ\b|\b(?:muss|müssen|must|shall)\b', component.source_quote, re.I):
+                raise ValueError('Ein Anforderungssatz bestätigt keine konkrete Geräteinstanz.')
+            if component.quantity and component.quantity &gt; 1:
+                key = count_keys.get(component.role)
+                if not key or quantities(component.source_quote).get(key, 0) != component.quantity:
+&gt;                   raise ValueError(f'{component.name}: Die Stückzahl ist nicht ausdrücklich belegt.')
+E                   ValueError: Controller (ECU): Die Stückzahl ist nicht ausdrücklich belegt.
+
+docs\implementation-workloads\reference-example-assumptions-20261017\root\staged\backend\nis\agent\orchestration\project_intake.py:975: ValueError</failure></testcase></testsuite></testsuites>

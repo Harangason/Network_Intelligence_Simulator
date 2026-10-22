@@ -18,7 +18,8 @@ LAYER_ORDER = {layer.value: index for index, layer in enumerate(Layer)}
 
 
 def _identity_token(value: Any) -> str:
-    token = str(value or "custom_protocol").strip().lower().replace("-", "_").replace("/", "_").replace(" ", "_")
+    value = str(value or "custom_protocol").translate(str.maketrans({char: "-" for char in "\u2010\u2011\u2012\u2013\u2014\u2212"}))
+    token = value.strip().lower().replace("-", "_").replace("/", "_").replace(" ", "_")
     while "__" in token:
         token = token.replace("__", "_")
     return token

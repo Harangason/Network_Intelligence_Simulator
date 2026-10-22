@@ -45,7 +45,11 @@ for (const scenario of [
     await page.locator('#edit_bitrate').fill('9600');
     await page.getByRole('button',{name:'Änderungen speichern',exact:true}).click();
     await expect(page.locator('#edit_technology')).toHaveCount(0);
+    await expect.poll(() => new URL(page.url()).searchParams.get('edit')).toBeNull();
     await page.reload();
+    await expect(page.getByRole('button',{name:'Bearbeiten',exact:true})).toBeVisible();
+    await expect(page.locator('#edit_technology')).toHaveCount(0);
+    await page.getByRole('button',{name:'Bearbeiten',exact:true}).click();
     await expect(page.locator('#edit_bitrate')).toHaveValue('9600');
     const saved=await (await page.request.get(`/api/engineering/hardware-interfaces/${port.id}`,{headers})).json();
     expect(saved.bitrate).toBeNull();
@@ -444,6 +448,10 @@ test('hardware editor uses the selected profile and saves proposals without inve
   await page.locator('#edit_local_i2c_mode').selectOption('FAST_PLUS');
   await expect(page.locator('[name="edit_local_confirmed"]')).not.toBeChecked();
   await page.getByRole('button', {name:'Änderungen speichern',exact:true}).click();
+  await expect(page.locator('#edit_technology')).toHaveCount(0);
+  await expect.poll(() => new URL(page.url()).searchParams.get('edit')).toBeNull();
+  await page.reload();
+  await expect(page.getByRole('button',{name:'Bearbeiten',exact:true})).toBeVisible();
   await expect(page.locator('#edit_technology')).toHaveCount(0);
   const changed = await (await page.request.get(`/api/engineering/hardware-interfaces/${port.id}`, {headers})).json();
   expect(changed.capabilities.local_timing_evidence).toMatchObject({i2c_mode:'FAST_PLUS',confirmed:false});

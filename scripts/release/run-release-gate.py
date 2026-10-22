@@ -56,6 +56,14 @@ def verification_manifest():
 
 
 def main():
+    spec = importlib.util.spec_from_file_location('gate_delivery', ROOT / 'scripts/release-and-deploy.py')
+    delivery = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(delivery)
+    with delivery.gate_lock(ROOT):
+        return run_gate(delivery)
+
+
+def run_gate(delivery):
     parser = argparse.ArgumentParser()
     parser.add_argument('--image', help='Already built candidate image; must contain the current source manifest.')
     parser.add_argument('--output', type=Path, default=ROOT / 'backend/test-output/release-gates')
@@ -81,6 +89,23 @@ def main():
     initial_source_sha256 = initial_manifest['source_sha256']
     initial_commit_id = initial_manifest['commit_id']
     docker = isolation.docker_executable()
+    paths = list(delivery.receipt_paths())
+    if args.output.resolve() != (ROOT / 'backend/test-output/release-gates').resolve() and args.output.exists():
+        paths.extend(args.output.rglob('receipt.json'))
+    ai_url = os.environ.get('NIS_E2E_LOCAL_AI_BASE_URL', 'http://127.0.0.1:1/v1').strip()
+    existing = delivery.prepared_stack(docker, paths, initial_source_sha256, initial_commit_id,
+                                      prepare=args.prepare, keep=args.keep, ai_url=ai_url,
+                                      image=args.image, development_base=args.development_base)
+    if existing:
+        current = info.build_manifest()
+        if (current['source_sha256'], current['commit_id']) != (initial_source_sha256, initial_commit_id):
+            raise RuntimeError('Sources changed while checking the prepared stack; no build was started.')
+        path, previous = existing
+        print(json.dumps({'status': 'PREPARED', 'reused_stack': True,
+                          'receipt': str(path), 'base_url': previous['base_url']}), flush=True)
+        return 0
+    if not args.image and not args.development_base:
+        args.image = delivery.reusable_image(paths, initial_source_sha256, initial_commit_id)
     token = secrets.token_hex(6)
     output = args.output.resolve() / token; output.mkdir(parents=True, exist_ok=True)
     names = {key: 'nis-e2e-' + key + '-' + token for key in ('db', 'app', 'network', 'runtime')}
@@ -179,7 +204,7 @@ def main():
             app_port = reservation.getsockname()[1]
         # Record an explicit host port. Docker's "::13500" dynamic publication
         # selects a different port after restart, invalidating browser recovery.
-        local_ai_base_url = os.environ.get('NIS_E2E_LOCAL_AI_BASE_URL', 'http://127.0.0.1:1/v1').strip()
+        local_ai_base_url = ai_url
         control('run', '-d', '--name', names['app'], '--network', names['network'], '--label', 'networkis.test=disposable',
                 '-e', 'DATABASE_URL', '-e', 'NETWORKIS_ALLOW_NON_CANONICAL_ROOT=1', '-e', 'NUMERIC_ACCELERATOR=cpu',
                 '-e', 'NIS_DATA_DIR=/app/var/data', '-e', 'NIS_RUNTIME_DIR=/app/var/runtime', '-e', 'SIMULATION_EXECUTOR=thread',
@@ -227,7 +252,12 @@ def main():
                     subprocess.run([docker,'logs',name],stdout=log,stderr=subprocess.STDOUT)
             if not (receipt['status'] == 'PREPARED' or (args.keep and receipt['status'] != 'PASS')):
                 cleanup = [docker, 'rm', '-f', name] if kind=='container' else [docker, kind, 'rm', name]
-                subprocess.run(cleanup,capture_output=True)
+                result = subprocess.run(cleanup, capture_output=True)
+                receipt.setdefault('cleanup', []).append({'kind': kind, 'name': name, 'exit_code': result.returncode})
+                if result.returncode:
+                    receipt['cleanup_incomplete'] = True
+        if receipt.get('cleanup_incomplete'):
+            receipt.update(status='FAIL', error='Test stack cleanup failed; reconcile the exact retained resources before another gate.')
         save_receipt()
         print(json.dumps({'status':receipt['status'],'receipt':str(output/'receipt.json')}),flush=True)
     return 0 if receipt['status']=='PASS' else 1

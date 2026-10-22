@@ -1,0 +1,142 @@
+--- before
++++ I:\PycharmProjects\My_first_Network_Simulator\docs\implementation-workloads\reference-example-assumptions-20261017\integration\resume-20261020\document-stream-lifecycle-repair\transfer_waitress_source_only_projects.py
+@@ -24,16 +24,23 @@
+ repair.add_argument('--launcher-repair-dir', type=Path)
+ repair.add_argument('--fresh-id-repair-dir', type=Path)
+ repair.add_argument('--throughput-repair-dir', type=Path)
++repair.add_argument('--source-binding-repair-dir', type=Path)
+ parser.add_argument('--destination-prefix', default='native-waitress-lifecycle')
+ args = parser.parse_args()
++source_binding_dir = args.source_binding_repair_dir.resolve() if args.source_binding_repair_dir else None
++if source_binding_dir:
++    # Keep the verified4da3 chain immutable. Its prior snapshots are evidence,
++    # never a claim that the newly repaired app has the old source identity.
++    args.throughput_repair_dir = source_binding_dir.parent
+ OUT = Path(__file__).resolve().parent
+ BASE = OUT.parents[1]
+ ROOT = OUT.parents[5]
+ D = 'C:/Users/marti/AppData/Local/Programs/DockerDesktop/resources/bin/docker.exe'
+ receipt = json.loads(args.receipt.read_text(encoding='utf-8'))
+ assert re.fullmatch('[a-z0-9-]+', args.destination_prefix)
+-repair_dir = args.context_repair_dir or args.inventory_cardinality_repair_dir or args.inventory_progress_repair_dir or args.context_cache_progress_repair_dir or args.launcher_repair_dir or args.fresh_id_repair_dir or args.throughput_repair_dir
++repair_dir = source_binding_dir or args.context_repair_dir or args.inventory_cardinality_repair_dir or args.inventory_progress_repair_dir or args.context_cache_progress_repair_dir or args.launcher_repair_dir or args.fresh_id_repair_dir or args.throughput_repair_dir
+ evidence_dir = repair_dir.resolve() if repair_dir else OUT
++historical_dir = args.throughput_repair_dir.resolve() if source_binding_dir else evidence_dir
+ assert evidence_dir.is_relative_to(BASE.resolve())
+ fresh_id_dir = (BASE / 'resume-20261021/inventory-binding-cardinality-repair/progress-decoder-repair/context-cache-progress-repair/launcher-repair/fresh-id-decoder-repair') if args.throughput_repair_dir else evidence_dir
+ identity = json.loads((evidence_dir / ('current-input-identity.json' if repair_dir else 'waitress-candidate-input-identity.json')).read_text(encoding='utf-8'))
+@@ -54,8 +61,8 @@
+     if (args.fresh_id_repair_dir or args.throughput_repair_dir) and name in {
+             'backend/nis/agent/orchestration/local_reasoner.py', 'backend/tests/test_reference_reasoner.py'}:
+         return (fresh_id_dir / ('before-' + Path(name).name)).read_bytes()
+-    if args.throughput_repair_dir and (evidence_dir / 'before' / name).is_file():
+-        return (evidence_dir / 'before' / name).read_bytes()
++    if args.throughput_repair_dir and (historical_dir / 'before' / name).is_file():
++        return (historical_dir / 'before' / name).read_bytes()
+     return (ROOT / name).read_bytes()
+ 
+ 
+@@ -180,8 +187,8 @@
+         name = snapshot.relative_to(context_dir.parent / 'after').as_posix()
+         before = context_dir / ('before-' + Path(name).name)
+         baseline = before if before.exists() else ROOT / name
+-        if args.throughput_repair_dir and not before.exists() and (evidence_dir / 'before' / name).is_file():
+-            baseline = evidence_dir / 'before' / name
++        if args.throughput_repair_dir and not before.exists() and (historical_dir / 'before' / name).is_file():
++            baseline = historical_dir / 'before' / name
+         assert sha(snapshot.read_bytes()) == row['sha256'] == sha(baseline.read_bytes())
+         frozen[name] = row['sha256']
+     current_work = json.loads((context_dir / 'workload.json').read_text())
+@@ -209,13 +216,14 @@
+     grammar = json.loads((fresh_id_dir / 'native-grammar-enum/result.json').read_text())
+     assert grammar['status'] == 'PASSED' and len(grammar['results']) == 6
+     for name, digest in freeze['frozen_affected_files'].items():
+-        baseline = evidence_dir / 'before' / name if args.throughput_repair_dir else ROOT / name
++        baseline = historical_dir / 'before' / name if args.throughput_repair_dir else ROOT / name
+         assert sha((baseline if baseline.exists() else ROOT / name).read_bytes()) == digest
+         frozen[name] = digest
+ if args.throughput_repair_dir:
+-    proof = json.loads((evidence_dir / 'source-scope-proof.json').read_text())
++    throughput_identity = json.loads((historical_dir / 'current-input-identity.json').read_text()) if source_binding_dir else identity
++    proof = json.loads((historical_dir / 'source-scope-proof.json').read_text())
+     assert proof['canonical_before']['source_sha256'] == fresh_identity['source_sha256']
+-    assert proof['canonical_after']['source_sha256'] == identity['source_sha256']
++    assert proof['canonical_after']['source_sha256'] == throughput_identity['source_sha256']
+     assert proof['only_application_delta'] == 'backend/nis/agent/orchestration/local_reasoner.py'
+     for key in ('all_other_reasoner_methods_including_model_provider_context_timeout_AST_unchanged',
+                 'complete_UTF8_guard_and_output_reserve_AST_unchanged',
+@@ -223,16 +231,59 @@
+                 'source_fact_worklists_and_declared_inventory_loops_AST_unchanged',
+                 'all_existing_identity_source_member_reference_checks_preserved_AST'):
+         assert proof[key] is True
+-    freeze = json.loads((evidence_dir / 'candidate-prepare-freeze.json').read_text())
+-    assert {key: freeze[key] for key in identity} == identity
++    freeze = json.loads((historical_dir / 'candidate-prepare-freeze.json').read_text())
++    assert {key: freeze[key] for key in throughput_identity} == throughput_identity
+     assert freeze['complete_regression_cases'] > 568 and freeze['complete_regressions_passed'] is True
+     assert freeze['validation_evidence']
+     for saved in freeze['validation_evidence']:
+         assert sha(Path(saved['path']).read_bytes()) == saved['sha256']
+-    assert json.loads((evidence_dir / 'candidate-prepare-result.json').read_text())['exit_code'] == 0
+-    native = json.loads((evidence_dir / 'native-continuous-anchor/result.json').read_text())
++    assert json.loads((historical_dir / 'candidate-prepare-result.json').read_text())['exit_code'] == 0
++    native = json.loads((historical_dir / 'native-continuous-anchor/result.json').read_text())
+     assert native['status'] == 'PASS_CONTINUOUS_WORKER_APPEND_AND_ANCHORED_REBASE'
+     assert native['actual_worker_continuity_all3'] and native['all_sources_copies_and_expected_values_exact']
++    for name, digest in freeze['frozen_affected_files'].items():
++        baseline = evidence_dir / 'before' / name if source_binding_dir else ROOT / name
++        assert sha((baseline if baseline.exists() else ROOT / name).read_bytes()) == digest
++        frozen[name] = digest
++if source_binding_dir:
++    proof = json.loads((evidence_dir / 'source-scope-proof.json').read_text())
++    assert proof['canonical_before']['source_sha256'] == throughput_identity['source_sha256']
++    assert proof['canonical_after']['source_sha256'] == identity['source_sha256']
++    assert set(proof['application_delta']) == {'backend/nis/agent/orchestration/local_reasoner.py',
++                                            'backend/nis/domain/inventory-vocabulary.json',
++                                            'frontend/src/features/agent/lib/inventory-vocabulary.json'}
++    assert proof['derived_frontend_vocabulary_exact_authoritative_backend_bytes']
++    assert (ROOT / 'frontend/src/features/agent/lib/inventory-vocabulary.json').read_bytes() == (ROOT / 'backend/nis/domain/inventory-vocabulary.json').read_bytes()
++    projected = json.loads((evidence_dir / 'projection-sync-repair/independent-image-source-proof.json').read_text())
++    assert projected['all_normalized_application_files_exact'] and projected['source_file_count'] == 2313
++    assert projected['host_source_sha256'] == projected['actual_image_source_sha256'] == identity['source_sha256']
++    assert projected['image_id'] == receipt['image_id']
++    for key in ('all_other_reasoner_methods_including_model_provider_context_timeout_AST_unchanged',
++                'complete_UTF8_guard_and_output_reserve_AST_unchanged',
++                'exact_port_parameter_merge_AST_unchanged',
++                'all_existing_identity_source_member_reference_checks_preserved_AST',
++                'complete_fact_worklist_preserved_with_explicit16_batch',
++                'lossless_profile_source_intervals_and_independent_profiles'):
++        assert proof[key] is True
++    original_scope = json.loads((evidence_dir / 'actual-original-projection-proof.json').read_text())
++    assert len(original_scope) == 2 and all(row['all_intervals_have_owners'] for row in original_scope)
++    assert original_scope[0]['whole_source_equal'] and len(original_scope[1]['profiles']) == 10
++    native = json.loads((evidence_dir / 'native-ordered-bindings/result.json').read_text())
++    assert native['status'] == 'PASS' and native['identities'] == 2 and native['fact_bindings'] == 4
++    boundary = json.loads((evidence_dir / 'native-ordered-boundary/result.json').read_text())
++    assert boundary['status'] == 'PASS' and boundary['identities'] == 8 and boundary['fact_bindings'] == 16
++    assert boundary['local_reasoner_sha256'] == native['local_reasoner_sha256']
++    binding = json.loads((evidence_dir / 'native-scope-binding.json').read_text())
++    assert binding['all_module_level_decoder_runtime_transport_helpers_AST_exact']
++    assert binding['exact_whole_module_bytes_for_both_native_controls']
++    assert binding['current_local_reasoner_sha256'] == sha((ROOT / 'backend/nis/agent/orchestration/local_reasoner.py').read_bytes())
++    freeze = json.loads((evidence_dir / 'candidate-prepare-freeze.json').read_text())
++    assert {key: freeze[key] for key in identity} == identity
++    assert freeze['complete_regression_cases'] > 587 and freeze['complete_regressions_passed'] is True
++    assert freeze['validation_evidence']
++    for saved in freeze['validation_evidence']:
++        assert sha(Path(saved['path']).read_bytes()) == saved['sha256']
++    assert json.loads((evidence_dir / 'candidate-prepare-result.json').read_text())['exit_code'] == 0
+     for name, digest in freeze['frozen_affected_files'].items():
+         assert sha((ROOT / name).read_bytes()) == digest
+         frozen[name] = digest
+@@ -279,6 +330,10 @@
+             assert sha((ROOT / name).read_bytes()) == intake_frozen[name]
+         elif (args.context_cache_progress_repair_dir or args.launcher_repair_dir or args.fresh_id_repair_dir or args.throughput_repair_dir) and name == 'frontend/src/features/agent/lib/engineering-specification.ts':
+             assert sha((context_dir / 'before-preview-engineering-specification.ts').read_bytes()) == digest
++            assert sha((ROOT / name).read_bytes()) == frozen[name]
++        elif source_binding_dir and name in {'backend/nis/domain/inventory-vocabulary.json',
++                                             'frontend/src/features/agent/lib/inventory-vocabulary.json'}:
++            assert sha((evidence_dir / 'before' / name).read_bytes()) == digest
+             assert sha((ROOT / name).read_bytes()) == frozen[name]
+         else:
+             assert sha((ROOT / name).read_bytes()) == digest

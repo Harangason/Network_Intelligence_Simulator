@@ -11,6 +11,13 @@ test('wizard documents retain requirements after the former 12000 character cuto
   assert.throws(() => completeWizardDocumentText('x'.repeat(MAX_WIZARD_DOCUMENT_CHARS + 1)), /nicht gekürzt/);
 });
 
+test('large wizard documents preserve late evidence beyond 80000 characters and count Unicode characters', () => {
+  const source = 'Äußere Quelle 😀\r\n' + 'x'.repeat(100_000) + '\r\nController: FinalControl\r\n';
+  assert.equal(completeWizardDocumentText(source), source);
+  assert.equal(completeWizardDocumentText('😀'.repeat(MAX_WIZARD_DOCUMENT_CHARS)), '😀'.repeat(MAX_WIZARD_DOCUMENT_CHARS));
+  assert.throws(() => completeWizardDocumentText('😀'.repeat(MAX_WIZARD_DOCUMENT_CHARS + 1)), /nicht gekürzt/);
+});
+
 const source = { name: 'spec.dbc', size: 100, format: 'DBC', text: 'SG_ Fahrersitz links', truncated: false };
 test('preserves extracted engineering content and source boundaries', () => {
   assert.deepEqual(validateChatAttachment(source), source);

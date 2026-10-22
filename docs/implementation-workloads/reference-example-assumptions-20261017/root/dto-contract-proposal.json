@@ -1,0 +1,220 @@
+{
+  "version": 1,
+  "status": "STAGED_REVIEW_SOURCE_FREEZE_ENDED",
+  "request": {
+    "mode": "EXAMPLE_PROJECT",
+    "prompt": "complete existing reviewed-document envelope, validated server-side",
+    "source_request_id": "optional idempotency/source selection id",
+    "reference_sources": [
+      {
+        "id": "stable reference id",
+        "name": "display name",
+        "role": [
+          "REFERENCE_SUPPLEMENT",
+          "USER_CLARIFICATION"
+        ],
+        "text": "complete untrusted source, never primary inventory",
+        "source_sha256": "exact UTF-8 digest",
+        "allowed_fields": [
+          "quantity",
+          "device_type",
+          "function_hosts",
+          "ports",
+          "measurements",
+          "commands",
+          "communication"
+        ]
+      }
+    ]
+  },
+  "machine_result": {
+    "devices": [
+      {
+        "id": "local immutable candidate id",
+        "name": "proposed scoped name",
+        "kind": [
+          "CONTROLLER",
+          "GATEWAY",
+          "SENSOR",
+          "ACTUATOR",
+          "PHYSICAL_CONTEXT"
+        ],
+        "context_kind": [
+          "PASSIVE",
+          "ASSEMBLY",
+          "SOFTWARE_SERVICE",
+          null
+        ],
+        "quantity": "Electronic participants individually named quantity=1; physical/software context quantity1..1000.",
+        "source_fact_ids": [
+          "original fact ids; supplement references never replace these"
+        ],
+        "contained_device_ids": [
+          "optional physical-context assembly membership"
+        ],
+        "rationale": "mandatory design explanation",
+        "field_references": {
+          "quantity": [
+            "reference_source_id"
+          ],
+          "device_type": []
+        },
+        "owner_device_id": "optional controller candidate id for local endpoint owner",
+        "purpose": "optional500charpurpose"
+      }
+    ],
+    "functions": [
+      {
+        "source_fact_id": "original FUNCTION fact id",
+        "realization": [
+          "ATOMIC",
+          "COMPOSITE"
+        ],
+        "executor_device_ids": [
+          "ATOMIC executors; electronic controller/gateway candidates only"
+        ],
+        "realized_by_fact_ids": [
+          "COMPOSITE references to source FUNCTION facts within same profile"
+        ],
+        "rationale": "mandatory",
+        "field_references": {
+          "function_hosts": []
+        }
+      }
+    ],
+    "ports": [
+      {
+        "id": "local port id",
+        "device_id": "electronic device id",
+        "technology": "canonical TechnologyRegistry ID",
+        "role": [
+          "LOCAL",
+          "BACKBONE"
+        ],
+        "network_scope": "candidate network segment identity within source profile",
+        "parameters": "existing technology-specific parameters dictionary",
+        "rationale": "mandatory",
+        "field_references": {
+          "ports": []
+        }
+      }
+    ],
+    "measurements": [
+      {
+        "device_id": "SENSOR candidate id",
+        "measurement_id": "existing SENSOR_MEASUREMENTS ID; no new registry",
+        "rationale": "mandatory",
+        "field_references": {
+          "measurements": []
+        }
+      }
+    ],
+    "commands": [
+      {
+        "device_id": "ACTUATOR candidate id",
+        "definition": "existing actuator wire definition: length_bits,data_type,unit,factor,offset_value,min_value,max_value,semantic,data",
+        "rationale": "mandatory",
+        "field_references": {
+          "commands": []
+        }
+      }
+    ],
+    "communication": [
+      {
+        "id": "candidate communication id",
+        "producer_device_id": "producer candidate id",
+        "consumer_device_ids": [
+          "electronic candidates"
+        ],
+        "consumer_port_ids": [
+          "matching ports"
+        ],
+        "scope": [
+          "LOCAL_IO",
+          "DEVICE_IO",
+          "FUNCTION_OUTPUT"
+        ],
+        "signal_name": "explicit meaning",
+        "encoding": "same existing signal-wire definition",
+        "transmission_mode": [
+          "CYCLIC",
+          "EVENT",
+          "ON_REQUEST",
+          "MIXED"
+        ],
+        "cycle_ms": "positive if cyclic",
+        "min_interval_ms": "positive if noncyclic",
+        "trigger": "explicit trigger if noncyclic",
+        "rationale": "mandatory",
+        "field_references": {
+          "communication": []
+        },
+        "producer_fact_id": "optional original FUNCTION opaque fact id",
+        "consumer_fact_ids": [
+          "original FUNCTION opaque fact ids"
+        ],
+        "source_port_id": "actual producer port id"
+      }
+    ],
+    "unresolved": [
+      {
+        "code": "stable code",
+        "target_ref": "fact/candidate id or full source scope",
+        "message": "concrete remaining issue"
+      }
+    ]
+  },
+  "server_envelope": {
+    "schema_version": 1,
+    "request_sha256": "server-computed immutable full request",
+    "source_sha256": "server-computed original source digest",
+    "reference_sources": "server-verified manifest; sources remain complete in accepted draft",
+    "decision_evidence": "server stamps all candidate choices REFERENCE_ASSUMPTION, field path, rationale, source fact ids, source profile context and reference digests; machine cannot claim SOURCE_FACT, USER or APPROVED",
+    "coverage": "all original components and full REQUIREMENT facts preserved with bindings; incomplete design remains a review finding rather than fake readiness"
+  },
+  "validation_rules": [
+    "Validate existing reviewed_document_evidence; do not trust a client replacement fact snapshot.",
+    "Exact reference hash, allowed role/field scope, unique reference/candidate ids, no unknown or dangling ids.",
+    "Source INSTANCE quantities/roles and previous explicit review decisions remain protected.",
+    "All inventory facts covered by electronic devices or explicit PHYSICAL_CONTEXT bindings.",
+    "All FUNCTION facts covered; composite graph acyclic, nonempty same-profile links, no executors on composites, no atomic-ref links on atomics.",
+    "Host/device/port/consumer profile boundaries preserved; no passive network traffic or false ECU role.",
+    "Use TechnologyRegistry and existing signal_integrity checks, physical ranges/raw bit fit/reserved-code separation; do not create parallel registries/calculators.",
+    "No position preset for torque/speed semantic commands; physical units/meaning preserved.",
+    "Field-scoped references checked per actual field so a communication-only supplement cannot supply device counts.",
+    "Primary source and full requirement evidence are copied from validated input, never rewritten from model output.",
+    "Persisted accepted candidates retain REFERENCE_ASSUMPTION provenance through normal model review and reload."
+  ],
+  "root_exports_proposal": [
+    "ReferenceDesignRequest",
+    "ReferenceDesignProposal",
+    "prepare_reference_design(arguments): validated context/facts/manifest/request digest",
+    "validate_reference_design(result, prepared): validated server-stamped detached proposal",
+    "reference_design_schema(): schema for local Qwen output"
+  ],
+  "open_adapter_detail": "Peer confirms communication field names and whether full communication candidates are in v1 or held as unresolved for existing generator; no silent incomplete simulation readiness.",
+  "not_a_model": "No candidate here is applied or substituted for NIS inference.",
+  "decided_with_peer": [
+    "ATOMIC/COMPOSITE function realization with acyclic same-profile coverage",
+    "PHYSICAL_CONTEXT for passive/assembly/software source coverage",
+    "Separate original reviewed prompt and role-tagged complete references",
+    "All machine-chosen fields remain REFERENCE_ASSUMPTION",
+    "Reuse common generation/proposal review/apply, not a second generator"
+  ],
+  "fact_id_protocol": "F + sha256(document_fact_identity(fact).encode(UTF8))[:12]; full LegacyIdentity and complete original fact remain server-side in fact_id_map/facts. No full quote JSON repeated as Qwen output IDs.",
+  "reference_measurement_registry": "Pending existing TS-bridge read export; no duplicate Python ID list.",
+  "authoritative_schema": "backend/nis/agent/orchestration/project_intake.py:ReferenceDesignProposal (staged owned manifest)",
+  "profile_feedback": "Internal shared validator only; whole original request revalidated, exact source profile checked; final project acceptance always checks all facts.",
+  "transport_contract": {
+    "roles": [
+      "MEASUREMENT",
+      "COMMAND",
+      "FEEDBACK",
+      "STATUS",
+      "FUNCTION_OUTPUT"
+    ],
+    "release": "Existing native CYCLIC/EVENT/MIXED/ON_REQUEST transmission.profile; no fabricated request/event timestamps.",
+    "encoding": "Actuator commands bind to selected or inherited encoding; measurement wire unit/type/payload binds to the existing catalog.",
+    "ports": "Separate stable physical port identities, receive-only without synthetic messages; no-port electronics explicit."
+  }
+}

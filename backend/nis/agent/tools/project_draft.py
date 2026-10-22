@@ -316,6 +316,174 @@ def resolve_devices(draft, updates):
     return draft
 
 
+REFERENCE_DESIGN_MARKER = '- Dokument-Referenzentwurf: '
+
+
+def inspect_reference_design():
+    """Inspect the shared draft's reference candidate without creating a model."""
+    state = conversation.snapshot(current_project_id())
+    return deepcopy((state.get('engineering_draft') or {}).get('reference_design'))
+
+
+def generate_reference_design(arguments):
+    """Use the native local planner, preserving its draft and source revision."""
+    import asyncio
+    from datetime import datetime, timezone
+    from backend.nis.agent.orchestration.project_intake import prepare_reference_design
+    from backend.nis.agent.orchestration.local_reasoner import LocalEngineeringReasoner
+    prepared = prepare_reference_design({key: value for key, value in arguments.items() if not key.startswith('_')})
+    operation_id = prepared['request'].get('source_request_id') or str(uuid4())
+    state = conversation.read()
+    draft = deepcopy(state.get('engineering_draft') or {
+        'schema_version': 2, 'source_format': 'REFERENCE_DOCUMENT', 'draft_id': str(uuid4()),
+        'revision': 0, 'project_id': current_project_id(), 'mode': 'EXAMPLE_PROJECT',
+        'original_requirement': prepared['source_evidence']['source_text'],
+        'devices': [], 'issues': [], 'sources': [{'source': 'REVIEWED_DOCUMENT', 'text': prepared['source_evidence']['source_text'],
+            'source_sha256': prepared['source_sha256']}], 'removed_device_ids': [],
+    })
+    pending = draft.get('reference_generation') or {}
+    if pending.get('operation_id') == operation_id and pending.get('request_sha256') != prepared['request_sha256']:
+        raise ConcurrentUpdateError('Dieselbe Referenzoperation darf nicht andere Quellen verwenden.')
+    if pending.get('status') == 'RUNNING' and pending.get('request_sha256') == prepared['request_sha256']:
+        raise ConcurrentUpdateError('Dieser Referenzauftrag läuft bereits. Den gespeicherten Stand abwarten.')
+    existing = draft.get('reference_design')
+    if existing and existing.get('request_sha256') == prepared['request_sha256']:
+        return deepcopy(existing)
+    if existing:
+        history = draft.setdefault('reference_design_history', [])
+        history.append(deepcopy(existing))
+        del history[:-20]
+    draft.pop('reference_design', None)
+    generation_token = str(uuid4())
+    draft['reference_generation'] = {'token': generation_token, 'operation_id': operation_id,
+        'request_sha256': prepared['request_sha256'], 'source_sha256': prepared['source_sha256'], 'status': 'RUNNING'}
+    draft['revision'] += 1
+    if draft.get('source_format') == 'REFERENCE_DOCUMENT':
+        draft['status'] = 'REFERENCE_PLANNING'
+    state['engineering_draft'] = draft
+    conversation.write(state)
+    from backend.nis.agent.tools.runtime import PostCommitAction
+    def dispatch():
+        async def infer():
+            reasoner = LocalEngineeringReasoner()
+            try:
+                return await reasoner.plan_reference_design(prepared)
+            finally:
+                await reasoner.client.aclose()
+        try:
+            candidate = asyncio.run(infer())
+        except (Exception, asyncio.CancelledError) as error:
+            cancelled = isinstance(error, asyncio.CancelledError)
+            message = 'Referenzplanung abgebrochen; kein unvollständiger Entwurf wurde übernommen.' if cancelled else str(error)
+            failed = conversation.read()
+            current = failed.get('engineering_draft') or {}
+            generation = current.get('reference_generation') or {}
+            if generation.get('token') == generation_token:
+                generation.update(status='CANCELED' if cancelled else 'FAILED', error=message[:2000])
+                if current.get('source_format') == 'REFERENCE_DOCUMENT':
+                    current['status'] = 'REFERENCE_CANCELED' if cancelled else 'REFERENCE_FAILED'
+                conversation.write(failed)
+            if cancelled:
+                from backend.nis.agent.api.tool_contract import ToolResult, ToolStatus
+                return ToolResult(success=False, status=ToolStatus.BLOCKED,
+                                  findings=[{'code': 'DOCUMENT_REQUEST_CANCELED', 'severity': 'ERROR', 'message': message}])
+            raise
+        state = conversation.read()
+        draft = state.get('engineering_draft') or {}
+        generation = draft.get('reference_generation') or {}
+        if generation.get('token') != generation_token or generation.get('request_sha256') != candidate['request_sha256']:
+            raise ConcurrentUpdateError('Ein neuerer Referenzauftrag hat diesen Entwurf abgelöst. Aktuellen Quellenstand prüfen.')
+        record = {**deepcopy(candidate), 'design_id': str(uuid4()), 'revision': 1,
+                  'draft_id': draft['draft_id'], 'operation_id': operation_id,
+                  'created_at': datetime.now(timezone.utc).isoformat()}
+        draft['reference_design'] = record
+        generation['status'] = 'REVIEW_REQUIRED'
+        draft['revision'] += 1
+        record['draft_revision'] = draft['revision']
+        if draft.get('source_format') == 'REFERENCE_DOCUMENT':
+            draft['status'] = 'REFERENCE_REVIEW_REQUIRED'
+        conversation.write(state)
+        return deepcopy(record)
+    return PostCommitAction(dispatch, lambda: None)
+
+
+def accept_reference_design(arguments):
+    """Human-facing draft review only; deliberately not exposed as MCP approval."""
+    from datetime import datetime, timezone
+    from backend.nis.agent.orchestration.project_intake import prepare_reference_design, validate_reference_design
+    class AcceptReference(BaseModel):
+        model_config = ConfigDict(extra='forbid')
+        design_id: str = Field(min_length=1, max_length=80)
+        revision: int = Field(strict=True, ge=1)
+        request_sha256: str = Field(pattern=r'^[a-f0-9]{64}$')
+    request = AcceptReference.model_validate({key: value for key, value in arguments.items() if not key.startswith('_')})
+    state = conversation.read()
+    draft = state.get('engineering_draft') or {}
+    record = draft.get('reference_design') or {}
+    if (record.get('project_id') != current_project_id() or record.get('design_id') != request.design_id
+            or record.get('revision') not in ({request.revision, request.revision + 1} if record.get('status') == 'ACCEPTED' else {request.revision})
+            or record.get('request_sha256') != request.request_sha256):
+        raise ConcurrentUpdateError('Der Referenzentwurf wurde geändert oder gehört zu einem anderen Projekt. Aktuelle Revision prüfen.')
+    if record.get('status') == 'ACCEPTED':
+        return deepcopy(record)
+    if record.get('status') != 'REVIEW_REQUIRED':
+        raise ValueError('Nur ein aktueller geprüfter Referenzvorschlag darf übernommen werden.')
+    checked = validate_reference_design(record['proposal'], prepare_reference_design(record['request']))
+    if checked['request_sha256'] != record['request_sha256'] or checked['catalog_sha256'] != record['catalog_sha256']:
+        raise ConcurrentUpdateError('Quellen oder registrierte Referenzkataloge wurden geändert. Referenzvorschlag neu erzeugen.')
+    if checked['proposal']['unresolved']:
+        raise ValueError('Der Referenzentwurf enthält offene Auslegungsangaben: '
+                         + '; '.join(item['message'] for item in checked['proposal']['unresolved'][:8]))
+    record.update(status='ACCEPTED', revision=record['revision'] + 1,
+                  reviewed_at=datetime.now(timezone.utc).isoformat(), review_source='EXPLICIT_DRAFT_REVIEW')
+    draft['revision'] += 1
+    record['draft_revision'] = draft['revision']
+    if draft.get('source_format') == 'REFERENCE_DOCUMENT':
+        draft['status'] = 'REFERENCE_ACCEPTED'
+    conversation.write(state)
+    return deepcopy(record)
+
+
+def reference_design_for_prompt(prompt):
+    """Resolve only the accepted current server design, never client replacements."""
+    from backend.nis.agent.orchestration.project_intake import prepare_reference_design, reviewed_document_evidence, validate_reference_design
+    matches = re.findall(r'^- Dokument-Referenzentwurf:\s*(\{[^\r\n]*\})\s*$', prompt, re.M)
+    if not matches:
+        return None
+    if len(matches) != 1:
+        raise ValueError('Der Auftrag enthält mehrere widersprüchliche Referenzentwürfe.')
+    marker = json.loads(matches[0])
+    expected_fields = {'schema_version', 'design_id', 'revision', 'request_sha256', 'source_sha256',
+                       'status', 'proposal', 'fact_id_map', 'decision_evidence', 'protected_fields'}
+    if (not isinstance(marker, dict) or set(marker) != expected_fields
+            or marker.get('schema_version') != 1 or marker.get('status') != 'ACCEPTED'):
+        raise ValueError('Ungültige oder ungeprüfte Referenzmetadaten im Auftrag.')
+    record = inspect_reference_design() or {}
+    if (record.get('project_id') != current_project_id() or record.get('status') != 'ACCEPTED'
+            or marker.get('design_id') != record.get('design_id') or marker.get('revision') != record.get('revision')
+            or marker.get('request_sha256') != record.get('request_sha256')):
+        raise ConcurrentUpdateError('Der Referenzentwurf ist nicht aktuell bestätigt. Seine normale Review-Revision übernehmen.')
+    if any(marker.get(key) != record.get(key) for key in ('proposal', 'fact_id_map', 'decision_evidence', 'protected_fields', 'source_sha256')):
+        raise ValueError('Der Auftrag darf die serverseitig geprüften Referenzannahmen nicht ersetzen.')
+    evidence = reviewed_document_evidence(prompt)
+    original = reviewed_document_evidence(record['request']['prompt'])
+    if evidence is None or evidence != original or evidence['source_sha256'] != record['source_sha256']:
+        raise ConcurrentUpdateError('Die ursprüngliche Dokumentquelle wurde nach der Referenzplanung geändert.')
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+    primary_prompt = re.sub(r'^- Dokument-Referenzentwurf:[^\r\n]*$', '', prompt, flags=re.M)
+    actual_catalog = reference_design_catalog(primary_prompt)
+    if any(actual_catalog.get('confirmed_' + field, {}) != record['protected_fields'].get(field, {})
+           for field in ('commands', 'measurements', 'connections', 'owners')):
+        raise ConcurrentUpdateError('Bestätigte Gerätefelder wurden nach der Referenzplanung geändert. Den Referenzentwurf mit den aktuellen Entscheidungen neu prüfen.')
+    checked = validate_reference_design(record['proposal'], prepare_reference_design(record['request']))
+    if checked['proposal']['unresolved']:
+        raise ConcurrentUpdateError('Der bestätigte Referenzentwurf erfüllt die aktuellen Entwurfsanforderungen nicht mehr. Erneut prüfen: '
+            + '; '.join(item['message'] for item in checked['proposal']['unresolved'][:8]))
+    if checked['request_sha256'] != record['request_sha256'] or checked['catalog_sha256'] != record['catalog_sha256']:
+        raise ConcurrentUpdateError('Die Quellen- oder Katalogrevision des Referenzentwurfs ist veraltet.')
+    return deepcopy(record)
+
+
 def command(arguments):
     """Atomically persist source, revision and operation receipt, never a model."""
     request = DraftCommand.model_validate({k: v for k, v in arguments.items() if not k.startswith('_')})
@@ -329,6 +497,8 @@ def command(arguments):
             raise ConcurrentUpdateError('Diese Operations-ID gehört zu einer anderen Eingabe.')
         return deepcopy(previous['result'])
     old = migrate_draft(state.get('engineering_draft'))
+    if old and old.get('source_format') == 'REFERENCE_DOCUMENT':
+        raise ValueError('Den vollständigen Dokumententwurf über seine Referenzprüfung und den normalen Wizard bearbeiten; der kleine Inventarparser darf ihn nicht ersetzen.')
     if request.action == 'CREATE' and old:
         raise ConcurrentUpdateError('Ein Entwurf ist vorhanden. Diesen ergänzen oder ein neues Projekt anlegen.')
     if request.action != 'CREATE' and (not old or old['revision'] != request.revision):
@@ -419,6 +589,8 @@ def assert_proposal_source(row):
 
 def planning_prompt(draft):
     """Versioned adapter into the shared model generator, not a second generator."""
+    if draft.get('source_format') == 'REFERENCE_DOCUMENT':
+        raise ValueError('Den geprüften Referenzentwurf im vollständigen Wizard übernehmen.')
     if draft.get('source_format') == 'WIZARD_V2':
         from backend.nis.agent.tools.wizard_commands import effective_wizard_prompt
         return effective_wizard_prompt(draft['structured_source']['prompt'])

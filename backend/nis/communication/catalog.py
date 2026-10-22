@@ -107,6 +107,9 @@ def parameter_value_role(name: str, spec: dict[str, Any]) -> str:
     """Identity and evidence references cannot be invented as scenario values."""
     if spec.get('value_role'):
         return spec['value_role']
+    if (spec.get('type') == 'boolean' or spec.get('boolean')) and name.endswith(
+            ('_confirmed', '_verified', '_proven', '_validated')):
+        return 'EVIDENCE'
     if spec.get('type') in {'text', 'string'} or not spec.get('type') and not spec.get('numeric') and not spec.get('boolean') and not spec.get('options'):
         if name.endswith('_source') or name.endswith('_revision') or name == 'revision':
             return 'EVIDENCE'

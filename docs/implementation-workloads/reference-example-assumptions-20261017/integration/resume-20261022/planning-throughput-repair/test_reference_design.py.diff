@@ -1,0 +1,31 @@
+--- before/backend/tests/test_reference_design.py
++++ after/backend/tests/test_reference_design.py
+@@ -954,6 +954,7 @@
+ 
+ def test_local_reference_planner_uses_decoder_projection_but_rejects_oversized_response(prepared):
+     import asyncio
++    from contextlib import asynccontextmanager
+     from backend.nis.agent.orchestration.local_reasoner import LocalEngineeringReasoner
+     candidate = {'devices': [{**fixture_design(prepared)['devices'][0], 'rationale': 'x' * 2001}]}
+     encoded_candidate = json.dumps({'devices': [], 'inventory_complete': True,
+@@ -963,12 +964,17 @@
+         is_error = False
+         def __init__(self, body): self.body = body
+         def json(self): return self.body
++        async def aiter_lines(self):
++            yield json.dumps(self.body)
+     class Client:
+         async def post(self, url, *, json):
+-            if url.endswith('/show'):
+-                return Response({'details': {'family': 'qwen35'}, 'model_info': {'general.parameter_count': 27_000_000_000}})
++            assert url.endswith('/show')
++            return Response({'details': {'family': 'qwen35'}, 'model_info': {'general.parameter_count': 27_000_000_000}})
++        @asynccontextmanager
++        async def stream(self, method, url, *, json):
++            assert method == 'POST' and url.endswith('/chat') and json['stream'] is True
+             requests.append(json)
+-            return Response({'message': {'content': encoded_candidate}})
++            yield Response({'message': {'content': encoded_candidate}, 'done': True})
+     async def run():
+         reasoner = LocalEngineeringReasoner()
+         await reasoner.client.aclose()

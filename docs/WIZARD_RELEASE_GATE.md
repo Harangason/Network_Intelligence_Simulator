@@ -118,7 +118,8 @@ the full gate against an existing immutable image with the same application sour
 and Git revision. Otherwise it builds a new candidate once. After
 deployment it checks the running immutable image, readiness and live source ID.
 Use `--receipt <receipt.json>` to select an existing matching PASS explicitly,
-or `--no-reuse` when a fresh gate is required. Failed candidates and historical
+or `--no-reuse` when a fresh gate is required (the exact-source image is still
+reused; this flag invalidates test reuse, not image reuse). Failed candidates and historical
 images remain subject to the audited retention policy in `scripts/release_storage.py`;
 the delivery command never prunes Docker images.
 
@@ -136,6 +137,35 @@ cannot replace newer canonical corrections.
 
 `python scripts/run-release-gate.py --prepare` retains a disposable stack for
 interactive diagnosis and returns its isolated URL in a PREPARED receipt.
+Repeated preparation reuses the same healthy stack only when application source,
+Git revision, image, isolated storage/network and AI endpoint agree. The existing
+receipt remains PREPARED; reuse never constitutes a new test or release PASS.
+An existing non-development PREPARED image can also be reused for a full gate;
+the full gate still executes every required check. Direct gate calls select
+existing exact-source images before considering a new build.
+
+All gate calls hold one OS lock for the canonical checkout, independent of
+`--output`. A concurrent call fails before building. At most one retained
+diagnostic stack is allowed: `--prepare` and `--keep` refuse to create another
+when old, stopped, unknown or orphaned test resources exist. Resume the existing
+stack or archive and retire its exact receipt resources first; a new output
+directory or an explicit `--image` does not bypass this bound. Normal full gates
+use transient stacks and record cleanup failures as FAIL, preserving evidence
+for reconciliation. No script automatically deletes historical images.
+
+Bundle application repairs and run the relevant host/unit checks before building
+the next candidate. Test-only and host release-tool changes require verification,
+not a new application image. For retirement, record the explicit authorization,
+fresh running/stopped-container inventory, production and rollback identities,
+original receipts, logs and recoverable data/image archive hashes. Verify the
+archive index, configuration and every referenced layer before exact image
+removal with `docker image rm --no-prune`. Preserve active, PASS and unknown
+images unless a separate applicable retention audit authorizes removal. Retiring
+a PREPARED stack does not change its original receipt to FAIL or claim feature
+delivery. The authorized 2026-10-21 cleanup is recorded in
+`docs/implementation-workloads/test-stack-retention-20261021`; it does not grant
+blanket permission to delete future PREPARED candidates.
+
 `--development-base <existing-image>` can reuse installed dependencies only with
 `--prepare`; the image is labeled as development and cannot pass a release gate.
 Production images must be built using the Dockerfile and locked dependency files.

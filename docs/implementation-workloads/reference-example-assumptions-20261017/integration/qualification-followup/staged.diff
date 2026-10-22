@@ -1,0 +1,59 @@
+--- before/backend/nis/agent/tools/wizard_generation.py
++++ after/backend/nis/agent/tools/wizard_generation.py
+@@ -870,7 +870,8 @@
+     stamp = {'source': 'REFERENCE_ASSUMPTION', 'design_id': reference['design_id'],
+              'revision': reference['revision'], 'request_sha256': reference['request_sha256'],
+              'source_sha256': reference['source_sha256'], 'review_source': reference['review_source'],
+-             'processing_evidence': 'NONE', 'timing_evidence': 'NONE'}
++             'processing_evidence': 'NONE', 'timing_evidence': 'NONE',
++             'hardware_evidence': False, 'qualification': 'UNVERIFIED'}
+     created = {('$' + item['local_ref']): item for item in changes}
+ 
+     def row_for(ref, kind):
+@@ -1006,8 +1007,8 @@
+     def assumptions(port):
+         technology = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(port['technology'])
+         roles = DEFAULT_TECHNOLOGY_REGISTRY.parameter_roles(technology)
+-        aliases = DEFAULT_TECHNOLOGY_REGISTRY.profile(technology, fields=('parameter_aliases',)).get('parameter_aliases') or {}
+-        values = {aliases.get(key, key): value for key, value in port['parameters'].items() if roles.get(aliases.get(key, key)) == 'CONFIGURATION'}
++        normalized = DEFAULT_TECHNOLOGY_REGISTRY.normalize_parameters(technology, port['parameters'])
++        values = {key: value for key, value in normalized.items() if roles.get(key) == 'CONFIGURATION'}
+         return {technology: {'values': values, 'provenance': {key: {
+             'source': 'NIS_SIMULATION_ASSUMPTION', 'status': 'ASSUMED', 'technology': technology,
+             'hardware_evidence': False, 'value': deepcopy(value), 'reference_origin': stamp,
+@@ -1170,7 +1171,9 @@
+                         **contract, 'input_refs': inputs,
+                         'actuator_refs': [device_refs[key] for key, row in by_device.items()
+                                           if row['kind'] == 'ACTUATOR' and row.get('owner_device_id') == device_id]}
+-    document_evidence['reference_design'] = {**stamp, 'coverage': deepcopy(reference['coverage']),
++    document_evidence['reference_design'] = {**stamp,
++        'qualification_findings': deepcopy(reference.get('qualification_findings', [])),
++        'coverage': deepcopy(reference['coverage']),
+         'decision_evidence': deepcopy(reference['decision_evidence']), 'context_bindings': context_bindings}
+ 
+ 
+--- before/frontend/src/features/agent/lib/engineering-agent.ts
++++ after/frontend/src/features/agent/lib/engineering-agent.ts
+@@ -131,6 +131,9 @@
+   schema_version: 1; design_id: string; revision: number;
+   project_id: string; source_sha256: string; request_sha256: string;
+   status: 'REVIEW_REQUIRED' | 'ACCEPTED'; canonical_writes: false;
++  qualification?: 'UNVERIFIED'; hardware_evidence?: false;
++  qualification_findings?: { target_ref: string; technology: string; parameter: string; value_role: string;
++    qualification: 'UNVERIFIED'; hardware_evidence: false; finding: Record<string, unknown> }[];
+   request: { mode: 'EXAMPLE_PROJECT'; prompt: string; reference_sources: ReferenceSource[]; source_request_id?: string };
+   fact_id_map: Record<string, string>;
+   proposal: {
+--- before/frontend/src/features/agent/ui/agent-chat-core.tsx
++++ after/frontend/src/features/agent/ui/agent-chat-core.tsx
+@@ -2269,6 +2269,10 @@
+           <p role="status">{currentReference.status === 'ACCEPTED' ? 'Referenzannahmen übernommen' : 'Referenzannahmen zur Prüfung'} · {currentReference.proposal.devices.length} Teilnehmerentwürfe · {currentReference.proposal.functions.length} Funktionen · {currentReference.proposal.communication.length} Kommunikationsbeziehungen</p>
+           <details><summary>Alle Referenzannahmen mit Begründung prüfen</summary>
+             <p>Belegart: REFERENCE_ASSUMPTION. Keine bestätigte Hardwareeignung, Verarbeitungsausführung oder funktionale Zeitbewertung.</p>
++            <p>Hardware- und Zeitnachweise bleiben ungeprüft. Die Freigabe dieses Beispielentwurfs ersetzt weder Preflight noch die technische Qualifikation.</p>
++            {(currentReference.qualification_findings?.length ?? 0) > 0 && <details><summary>Offene technische Nachweise ({currentReference.qualification_findings?.length})</summary>
++              <ul>{currentReference.qualification_findings?.map((row, index) => <li key={index}>{row.target_ref} · {row.technology} · {row.parameter} · {row.value_role}: {String(row.finding.message ?? row.finding.code ?? 'Nachweis offen')}</li>)}</ul>
++            </details>}
+             <h4>Teilnehmer und Umfang</h4><ul>{currentReference.proposal.devices.map(row => <li key={row.id}>{row.quantity} × {row.name} · {row.kind}: {row.rationale}</li>)}</ul>
+             <h4>Funktionszuordnung</h4><ul>{currentReference.proposal.functions.map(row => <li key={row.source_fact_id}>{row.source_fact_id} · {row.realization} · {row.executor_device_ids.join(', ') || row.realized_by_fact_ids.join(', ')}: {row.rationale}</li>)}</ul>
+             <h4>Anschlüsse und technische Parameter</h4><ul>{currentReference.proposal.ports.map(row => <li key={row.id}>{row.device_id} · {row.technology} · {row.network_scope}: {JSON.stringify(row.parameters)} · {row.rationale}</li>)}</ul>

@@ -1,0 +1,68 @@
+--- before
++++ docs\implementation-workloads\reference-example-assumptions-20261017\integration\resume-20261021\inventory-binding-cardinality-repair\progress-decoder-repair\retire_obsolete_stack.py
+@@ -28,22 +28,32 @@
+ STATE_PREFIX = 'native-single-choice'
+ CAPTURE = 'retirement-6d4-20261021'
+ 
++
++def receipt_resources(selected):
++    """A canonical reused image and its disposable stack have independent IDs."""
++    names = selected['containers']
++    match = re.fullmatch(r'nis-e2e-app-([0-9a-f]{12})', names['app'])
++    assert match, 'Receipt must identify an exact disposable app container.'
++    nonce = match[1]
++    assert names == {key: 'nis-e2e-' + key + '-' + nonce for key in ('app', 'db', 'network', 'runtime')}
++    assert re.fullmatch(r'sha256:[0-9a-f]{64}', selected['image_id'])
++    return nonce, selected['image_id'], names
++
+ # Reuse the audited backup/retirement path for an explicitly selected retained
+ # PREPARED receipt. Never infer a different target or replace its receipt.
+ parser = argparse.ArgumentParser(description=__doc__)
+ parser.add_argument('--receipt', type=Path)
+ parser.add_argument('--state-prefix', default=STATE_PREFIX)
+ parser.add_argument('--capture', default=CAPTURE)
++parser.add_argument('--verified-image-archive', type=Path,
++                    help='Existing recoverable image archive; all identity/layer hashes are verified again.')
+ args = parser.parse_args()
+ if args.receipt:
+     RECEIPT = args.receipt.resolve(strict=True)
+     assert RECEIPT.is_relative_to((ROOT / 'backend/test-output/release-gates').resolve())
+     selected = json.loads(RECEIPT.read_text(encoding='utf-8'))
+     assert selected['status'] == 'PREPARED'
+-    nonce = selected['image_tag'].removeprefix('networkis:candidate-')
+-    assert re.fullmatch('[0-9a-f]{12}', nonce)
+-    IMAGE, NAMES = selected['image_id'], selected['containers']
+-    assert NAMES == {key: 'nis-e2e-' + key + '-' + nonce for key in ('app', 'db', 'network', 'runtime')}
++    nonce, IMAGE, NAMES = receipt_resources(selected)
+     assert re.fullmatch('native-[a-z-]+', args.state_prefix)
+     assert re.fullmatch('retirement-[a-z0-9-]+', args.capture)
+     STATE_PREFIX, CAPTURE = args.state_prefix, args.capture
+@@ -134,6 +144,8 @@
+     before = containers()
+     app, db = inspect(NAMES['app']), inspect(NAMES['db'])
+     assert app['Image'] == IMAGE
++    if args.receipt:
++        assert inspect(selected['image_tag'])['Id'] == IMAGE
+     assert db['Image'] == 'sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685'
+     for c in (app, db):
+         assert c['Config']['Labels'].get('networkis.test') == 'disposable'
+@@ -180,7 +192,9 @@
+                 with tar.extractfile(member) as stream:
+                     members.append({'name': member.name, 'bytes': member.size, 'sha256': hashlib.file_digest(stream, 'sha256').hexdigest()})
+     backups.append({**ref(volume), 'members': members})
+-    image_path = ARCHIVE / (NAMES['app'].replace('nis-e2e-app-', 'candidate-') + '.tar')
++    image_path = args.verified_image_archive.resolve(strict=True) if args.verified_image_archive else ARCHIVE / (NAMES['app'].replace('nis-e2e-app-', 'candidate-') + '.tar')
++    if args.verified_image_archive:
++        assert image_path.is_file() and image_path.is_relative_to(ARCHIVE.parent.resolve())
+     if not image_path.exists():
+         subprocess.run([DOCKER, 'image', 'save', '--output', str(image_path), IMAGE], check=True)
+     image_audit = verify_image_archive(image_path)
+@@ -202,7 +216,7 @@
+         assert resource.get('Labels', {}).get('networkis.test') == 'disposable'
+         operations.append({'command': [kind, 'rm', name], 'result': call(kind, 'rm', name)})
+     assert protected() == baseline and ref(RECEIPT) == original_receipt
+-    assert inspect('networkis:candidate-' + NAMES['app'].removeprefix('nis-e2e-app-'))['Id'] == IMAGE
++    assert inspect(selected['image_tag'] if args.receipt else 'networkis:candidate-' + NAMES['app'].removeprefix('nis-e2e-app-'))['Id'] == IMAGE
+     assert not any(c['Id'] in (app['Id'], db['Id']) for c in containers())
+     write('retirement.json', {'at_utc': datetime.now(timezone.utc).isoformat(), 'status': 'EXACT_OBSOLETE_STACK_RETIRED',
+           'operations': operations, 'backups': ref(OUT / 'backup-audit.json'), 'image_preserved': IMAGE,

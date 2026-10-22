@@ -242,8 +242,9 @@ def test_real_generator_review_apply_preserves_functional_chain(industry, model_
         target_function = next(row for row in actual['Function'].values() if str(row['hardware_node_id']) == str(target['id']))
         assert target_function['configuration']['functional_device_contract']['role'] == 'PROCESSOR'
         assert target_function['configuration']['functional_device_contract']['input_refs'] == [str(camera['id'])]
-        function = next(row for row in actual['Function'].values() if
-                        (row.get('configuration') or {}).get('functional_device_contract'))
+        function = next(row for row in actual['Function'].values()
+                        if str(row['hardware_node_id']) == str(camera['id']))
+        assert function['configuration']['functional_device_contract']['role'] == 'PERCEPTION'
         assert function['configuration']['functional_device_contract']['input_refs'] == [str(sensor['id'])]
         output = next(row for row in actual['Signal'].values() if row['name'] == 'KameraverarbeitungObjektdaten')
         message = actual['Message'][str(output['message_id'])]

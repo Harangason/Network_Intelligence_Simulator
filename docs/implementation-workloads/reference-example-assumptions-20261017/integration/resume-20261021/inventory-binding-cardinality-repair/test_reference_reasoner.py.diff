@@ -1,0 +1,79 @@
+--- before/backend/tests/test_reference_reasoner.py
++++ after/backend/tests/test_reference_reasoner.py
+@@ -103,7 +103,7 @@
+             eligible = set(content['derivation_fact_ids_for_this_stage'])
+             existing = {row['id'] for row in current}
+             fresh = [row for row in active['devices'] if row['id'] not in existing and set(row['source_fact_ids']) <= eligible]
+-            limit = 1 if instance_derived_ids else 2
++            limit = payload['format']['properties']['inventory_choices']['maxItems']
+             candidate['devices'] = deepcopy(fresh[:limit])
+             candidate['inventory_complete'] = len(fresh) <= limit
+             if derivation_mutator:
+@@ -693,7 +693,7 @@
+     assert schema['properties']['devices']['minItems'] == 0
+     assert schema['properties']['devices']['maxItems'] == 0
+     assert schema['properties']['inventory_choices']['minItems'] == 0
+-    assert schema['properties']['inventory_choices']['maxItems'] == 2
++    assert schema['properties']['inventory_choices']['maxItems'] == 1
+     assert 'inventory_complete' in schema['required']
+     for row in schema['$defs']['ReferenceDevice']['anyOf']:
+         assert set(row['properties']['source_fact_ids']['items']['enum']) <= set(supported)
+@@ -1086,8 +1086,8 @@
+     result = run_reference(reasoner, prepared)
+     stages = [row for row in observed if row['derivation_fact_ids_for_this_stage'] is not None]
+     scopes = [tuple(row['derivation_fact_ids_for_this_stage']) for row in stages]
+-    assert scopes[0] == scopes[1] and len(set(scopes)) > 1
+-    assert all(scope != scopes[0] for scope in scopes[2:])
++    assert scopes[0] == scopes[1] == scopes[2] and len(set(scopes)) > 1
++    assert all(scope != scopes[0] for scope in scopes[3:])
+     assert {key for scope in scopes for key in scope} == {
+         key for key, fact in prepared['facts'].items() if fact['kind'] in {'FUNCTION', 'REQUIREMENT'}}
+     assert len(result['proposal']['measurements']) == 4
+@@ -1139,3 +1139,47 @@
+     foreign['inventory_choices'][0]['source_fact_ids'][-1] = eligible[4]
+     with pytest.raises(ValidationError):
+         validator.validate(foreign)
++
++
++@pytest.mark.parametrize('pair', ['duplicate_existing', 'distinct_existing', 'new_and_existing'])
++def test_native_hardware_choice_decides_one_identity_before_continuing(pair):
++    from jsonschema import Draft202012Validator, ValidationError
++    prepared = intake.prepare_reference_design(fixture_request())
++    known, _ = _reference_declared_instances(prepared, prepared['facts'])
++    known.append({**deepcopy(known[0]), 'id': 'unit-second-existing', 'name': 'Second unit executor'})
++    fact = next(key for key, row in prepared['facts'].items() if row['kind'] == 'FUNCTION')
++    schema = _reference_schema_for_stage(prepared, {'devices'}, derivation_fact_ids=[fact], existing_devices=known)
++    first = {'choice_kind': 'EXISTING', 'device_id': known[0]['id'], 'source_fact_ids': [fact],
++             'rationale': 'Authored unit identity selection, not a native original response', 'field_references': {}}
++    second = deepcopy(first)
++    if pair == 'distinct_existing':
++        second['device_id'] = known[1]['id']
++    elif pair == 'new_and_existing':
++        second = {**deepcopy(known[0]), 'choice_kind': 'NEW_SENSOR', 'kind': 'SENSOR',
++                  'id': 'unit-new-derived-sensor', 'name': 'Unit derived sensor',
++                  'owner_device_id': known[0]['id'], 'source_fact_ids': [fact]}
++    base = {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'inventory_complete': False}
++    validator = Draft202012Validator(schema)
++    validator.validate({**base, 'inventory_choices': [first]})
++    validator.validate({**base, 'inventory_choices': [second]})
++    validator.validate({**base, 'inventory_complete': True, 'inventory_choices': []})
++    with pytest.raises(ValidationError) as error:
++        validator.validate({**base, 'inventory_choices': [first, second]})
++    assert list(error.value.path) == ['inventory_choices']
++
++
++@pytest.mark.parametrize('mode', ['unknown', 'duplicate'])
++def test_invalid_binding_feedback_identifies_the_actual_unknown_or_repeated_id(mode):
++    prepared = intake.prepare_reference_design(fixture_request())
++    known, _ = _reference_declared_instances(prepared, prepared['facts'])
++    choice = {'device_id': known[0]['id'], 'source_fact_ids': known[0]['source_fact_ids'],
++              'rationale': 'Authored invalid binding', 'field_references': {}}
++    if mode == 'unknown':
++        choice['device_id'] = 'unit-missing-identity'
++        choices, expected = [choice], 'Unbekannte Teilnehmer-ID.*unit-missing-identity'
++    else:
++        choices, expected = [choice, deepcopy(choice)], 'Mehrfache Inventarbindung.*' + known[0]['id']
++    before = deepcopy(known)
++    with pytest.raises(ValueError, match=expected):
++        _reference_expand_inventory_bindings(known, [], choices)
++    assert known == before

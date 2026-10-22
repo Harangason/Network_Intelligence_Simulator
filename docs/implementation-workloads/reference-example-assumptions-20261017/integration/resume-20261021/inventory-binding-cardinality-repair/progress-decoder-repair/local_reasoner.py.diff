@@ -1,0 +1,59 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -1,6 +1,7 @@
+ """Local Qwen/OpenAI-compatible inference; model output carries no authority."""
+ from __future__ import annotations
+ import json
++import logging
+ import os
+ import re
+ from urllib.parse import urlparse
+@@ -200,8 +201,17 @@
+                                     **tagged['properties']}
+             tagged['required'] = ['choice_kind', *tagged.get('required', [])]
+             choices.append(tagged)
+-        if binding_devices:
+-            properties = {'choice_kind': {'type': 'string', 'enum': ['EXISTING']}, **binding_properties}
++        for device in binding_devices:
++            # A binding is a delta, not another declaration of covered facts.
++            # Earlier bindings are preserved by the existing scoped merge.
++            missing = sorted(available - set(device['source_fact_ids']))
++            if not missing:
++                continue
++            properties = {'choice_kind': {'type': 'string', 'enum': ['EXISTING']},
++                          **deepcopy(binding_properties)}
++            properties['device_id']['enum'] = [device['id']]
++            properties['source_fact_ids']['items']['enum'] = missing
++            properties['source_fact_ids'].update(minItems=1, maxItems=len(missing))
+             choices.append({'type': 'object', 'properties': properties,
+                             'required': list(properties), 'additionalProperties': False})
+         schema['properties']['inventory_choices'] = {
+@@ -213,6 +223,14 @@
+             'items': choices[0] if len(choices) == 1 else {'anyOf': choices}}
+         schema['properties']['inventory_complete'] = {'type': 'boolean'}
+         schema.setdefault('required', []).extend(['inventory_complete', 'inventory_choices'])
++        # Use complete object alternatives rather than conditional keywords:
++        # the native grammar must enforce empty => complete as well as JSON Schema.
++        complete = deepcopy({key: value for key, value in schema.items() if key != '$defs'})
++        incomplete = deepcopy(complete)
++        complete['properties']['inventory_complete'] = {'type': 'boolean', 'enum': [True]}
++        incomplete['properties']['inventory_complete'] = {'type': 'boolean', 'enum': [False]}
++        incomplete['properties']['inventory_choices']['minItems'] = 1
++        schema['anyOf'] = [complete, incomplete]
+     return schema
+ 
+ 
+@@ -956,6 +974,13 @@
+                         return result
+                     except (ValueError, TypeError, KeyError) as error:
+                         if attempt:
++                            logging.getLogger(__name__).warning(
++                                'Native reference validation failed: %s',
++                                json.dumps({'stage': stage, 'profile': list(profile),
++                                            'inventory_target': inventory_target,
++                                            'derivation_fact_ids': derivation_fact_ids,
++                                            'error': str(error), 'response': raw,
++                                            'response_sha256': calls[-1]['response_sha256']}, ensure_ascii=False))
+                             raise ValueError(f'Kein gültiger strukturierter Referenzvorschlag: {error}') from error
+                         payload['messages'] = [*messages, {'role': 'assistant', 'content': raw},
+                                                {'role': 'user', 'content': f'Validierungsfehler: {error}. Vollständigen JSON-Entwurf dieser Stufe korrigieren, keine Quellen ändern.'}]

@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="6" time="1.340" timestamp="2026-10-20T18:35:18.180992+02:00" hostname="Haranga"><testcase classname="tests.test_reference_reasoner" name="test_context_counts_model_text_not_escaped_http_json" time="0.006"><failure message="ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.">def test_context_counts_model_text_not_escaped_http_json():
+        # The provider decodes its HTTP JSON before tokenizing the message text.
+        # Nested JSON and quoted source text must not be charged for escaping twice.
+        source = '"\\\n ä漢🚗' * 6000
+        messages = [{'role': 'user', 'content': json.dumps({'source': source}, ensure_ascii=False)}]
+        before = deepcopy(messages)
+        actual = len(messages[0]['content'].encode('utf-8')) + 8192 + 2048
+        wire = len(json.dumps(messages, ensure_ascii=False).encode('utf-8')) + 8192 + 2048
+        assert actual &lt; 131072 &lt; wire
+&gt;       window = _reference_context_window(messages, 131072)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_reasoner.py:405: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+messages = [{'role': 'user', 'content': '{"source": "\\"\\\\\\n ä漢🚗\\"\\\\\\n ä漢🚗\\"\\\\\\n ä漢🚗\\"\\\\\\n ä漢🚗\\"\\\\\\n ä漢🚗\\"\\\...漢🚗\\"\\\\\\n ä漢🚗\\"\\\\\\n ä漢🚗\\"\\\\\\n ä漢🚗\\"\\\\\\n ä漢🚗\\"\\\\\\n ä漢🚗\\"\\\\\\n ä漢🚗\\"\\\\\\n ä漢🚗\\"\\\\\\n ä漢🚗"}'}]
+maximum = 131072
+
+    def _reference_context_window(messages, maximum):
+        """Reserve complete UTF-8 input plus output; never shorten a source to fit."""
+        # Byte fallback tokenization cannot need more content tokens than UTF-8
+        # bytes. Include the full retry history and room for native chat framing.
+        required = len(json.dumps(messages, ensure_ascii=False).encode('utf-8')) + 8192 + 2048
+        if required &gt; maximum:
+&gt;           raise ValueError('Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten '
+                             'das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.')
+E           ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.
+
+backend\nis\agent\orchestration\local_reasoner.py:388: ValueError</failure></testcase><testcase classname="tests.test_reference_reasoner" name="test_context_reserves_full_utf8_text_output_and_framing[x]" time="0.001"><failure message="ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.">text = 'x'
+
+    @pytest.mark.parametrize('text', ['x', 'ä', '漢', '🚗', '"\\\n'])
+    def test_context_reserves_full_utf8_text_output_and_framing(text):
+        # One byte below the true configured input limit succeeds. One byte above
+        # fails even if this is a validation retry rather than the first request.
+        maximum = 32768
+        prefix = text * 100
+        content = prefix + 'x' * (maximum - 8192 - 2048 - len(prefix.encode('utf-8')) - 1)
+        messages = [{'role': 'system', 'content': ''}, {'role': 'user', 'content': content}]
+        before = deepcopy(messages)
+&gt;       assert _reference_context_window(messages, maximum) == maximum
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_reasoner.py:419: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+messages = [{'role': 'system', 'content': ''}, {'role': 'user', 'content': 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'}]
+maximum = 32768
+
+    def _reference_context_window(messages, maximum):
+        """Reserve complete UTF-8 input plus output; never shorten a source to fit."""
+        # Byte fallback tokenization cannot need more content tokens than UTF-8
+        # bytes. Include the full retry history and room for native chat framing.
+        required = len(json.dumps(messages, ensure_ascii=False).encode('utf-8')) + 8192 + 2048
+        if required &gt; maximum:
+&gt;           raise ValueError('Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten '
+                             'das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.')
+E           ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.
+
+backend\nis\agent\orchestration\local_reasoner.py:388: ValueError</failure></testcase><testcase classname="tests.test_reference_reasoner" name="test_context_reserves_full_utf8_text_output_and_framing[\xe4]" time="0.001"><failure message="ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.">text = 'ä'
+
+    @pytest.mark.parametrize('text', ['x', 'ä', '漢', '🚗', '"\\\n'])
+    def test_context_reserves_full_utf8_text_output_and_framing(text):
+        # One byte below the true configured input limit succeeds. One byte above
+        # fails even if this is a validation retry rather than the first request.
+        maximum = 32768
+        prefix = text * 100
+        content = prefix + 'x' * (maximum - 8192 - 2048 - len(prefix.encode('utf-8')) - 1)
+        messages = [{'role': 'system', 'content': ''}, {'role': 'user', 'content': content}]
+        before = deepcopy(messages)
+&gt;       assert _reference_context_window(messages, maximum) == maximum
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_reasoner.py:419: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+messages = [{'role': 'system', 'content': ''}, {'role': 'user', 'content': 'äääääääääääääääääääääääääääääääääääääääääääääääääääää...xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'}]
+maximum = 32768
+
+    def _reference_context_window(messages, maximum):
+        """Reserve complete UTF-8 input plus output; never shorten a source to fit."""
+        # Byte fallback tokenization cannot need more content tokens than UTF-8
+        # bytes. Include the full retry history and room for native chat framing.
+        required = len(json.dumps(messages, ensure_ascii=False).encode('utf-8')) + 8192 + 2048
+        if required &gt; maximum:
+&gt;           raise ValueError('Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten '
+                             'das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.')
+E           ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.
+
+backend\nis\agent\orchestration\local_reasoner.py:388: ValueError</failure></testcase><testcase classname="tests.test_reference_reasoner" name="test_context_reserves_full_utf8_text_output_and_framing[\u6f22]" time="0.001"><failure message="ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.">text = '漢'
+
+    @pytest.mark.parametrize('text', ['x', 'ä', '漢', '🚗', '"\\\n'])
+    def test_context_reserves_full_utf8_text_output_and_framing(text):
+        # One byte below the true configured input limit succeeds. One byte above
+        # fails even if this is a validation retry rather than the first request.
+        maximum = 32768
+        prefix = text * 100
+        content = prefix + 'x' * (maximum - 8192 - 2048 - len(prefix.encode('utf-8')) - 1)
+        messages = [{'role': 'system', 'content': ''}, {'role': 'user', 'content': content}]
+        before = deepcopy(messages)
+&gt;       assert _reference_context_window(messages, maximum) == maximum
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_reasoner.py:419: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+messages = [{'role': 'system', 'content': ''}, {'role': 'user', 'content': '漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢漢...xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'}]
+maximum = 32768
+
+    def _reference_context_window(messages, maximum):
+        """Reserve complete UTF-8 input plus output; never shorten a source to fit."""
+        # Byte fallback tokenization cannot need more content tokens than UTF-8
+        # bytes. Include the full retry history and room for native chat framing.
+        required = len(json.dumps(messages, ensure_ascii=False).encode('utf-8')) + 8192 + 2048
+        if required &gt; maximum:
+&gt;           raise ValueError('Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten '
+                             'das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.')
+E           ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.
+
+backend\nis\agent\orchestration\local_reasoner.py:388: ValueError</failure></testcase><testcase classname="tests.test_reference_reasoner" name="test_context_reserves_full_utf8_text_output_and_framing[\U0001f697]" time="0.001"><failure message="ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.">text = '🚗'
+
+    @pytest.mark.parametrize('text', ['x', 'ä', '漢', '🚗', '"\\\n'])
+    def test_context_reserves_full_utf8_text_output_and_framing(text):
+        # One byte below the true configured input limit succeeds. One byte above
+        # fails even if this is a validation retry rather than the first request.
+        maximum = 32768
+        prefix = text * 100
+        content = prefix + 'x' * (maximum - 8192 - 2048 - len(prefix.encode('utf-8')) - 1)
+        messages = [{'role': 'system', 'content': ''}, {'role': 'user', 'content': content}]
+        before = deepcopy(messages)
+&gt;       assert _reference_context_window(messages, maximum) == maximum
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_reasoner.py:419: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+messages = [{'role': 'system', 'content': ''}, {'role': 'user', 'content': '🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗...xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'}]
+maximum = 32768
+
+    def _reference_context_window(messages, maximum):
+        """Reserve complete UTF-8 input plus output; never shorten a source to fit."""
+        # Byte fallback tokenization cannot need more content tokens than UTF-8
+        # bytes. Include the full retry history and room for native chat framing.
+        required = len(json.dumps(messages, ensure_ascii=False).encode('utf-8')) + 8192 + 2048
+        if required &gt; maximum:
+&gt;           raise ValueError('Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten '
+                             'das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.')
+E           ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.
+
+backend\nis\agent\orchestration\local_reasoner.py:388: ValueError</failure></testcase><testcase classname="tests.test_reference_reasoner" name="test_context_reserves_full_utf8_text_output_and_framing[&quot;\\\n]" time="0.001"><failure message="ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.">text = '"\\\n'
+
+    @pytest.mark.parametrize('text', ['x', 'ä', '漢', '🚗', '"\\\n'])
+    def test_context_reserves_full_utf8_text_output_and_framing(text):
+        # One byte below the true configured input limit succeeds. One byte above
+        # fails even if this is a validation retry rather than the first request.
+        maximum = 32768
+        prefix = text * 100
+        content = prefix + 'x' * (maximum - 8192 - 2048 - len(prefix.encode('utf-8')) - 1)
+        messages = [{'role': 'system', 'content': ''}, {'role': 'user', 'content': content}]
+        before = deepcopy(messages)
+&gt;       assert _reference_context_window(messages, maximum) == maximum
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_reasoner.py:419: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+messages = [{'role': 'system', 'content': ''}, {'role': 'user', 'content': '"\\\n"\\\n"\\\n"\\\n"\\\n"\\\n"\\\n"\\\n"\\\n"\\\n"\\...xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'}]
+maximum = 32768
+
+    def _reference_context_window(messages, maximum):
+        """Reserve complete UTF-8 input plus output; never shorten a source to fit."""
+        # Byte fallback tokenization cannot need more content tokens than UTF-8
+        # bytes. Include the full retry history and room for native chat framing.
+        required = len(json.dumps(messages, ensure_ascii=False).encode('utf-8')) + 8192 + 2048
+        if required &gt; maximum:
+&gt;           raise ValueError('Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten '
+                             'das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.')
+E           ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.
+
+backend\nis\agent\orchestration\local_reasoner.py:388: ValueError</failure></testcase></testsuite></testsuites>

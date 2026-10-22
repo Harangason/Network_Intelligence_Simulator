@@ -1,0 +1,463 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ backend/nis/agent/orchestration/local_reasoner.py
+@@ -413,7 +413,67 @@
+     if required > maximum:
+         raise ValueError('Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten '
+                          'das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.')
+-    return min(maximum, ((required + 4095) // 4096) * 4096)
++    # Keep the already configured capacity stable across the whole native
++    # workflow. A different allocation loses the reusable provider KV prefix.
++    # The complete-input guard above remains mandatory on every retry.
++    return maximum
++
++
++def _reference_context_patch(previous, current, path=''):
++    """Encode the complete private context losslessly as RFC6902 updates."""
++    from copy import deepcopy
++    if isinstance(previous, dict) and isinstance(current, dict):
++        patch = []
++        def pointer(key):
++            return path + '/' + key.replace('~', '~0').replace('/', '~1')
++        for key in previous:
++            if key not in current:
++                patch.append({'op': 'remove', 'path': pointer(key)})
++        for key, value in current.items():
++            if key not in previous:
++                patch.append({'op': 'add', 'path': pointer(key), 'value': deepcopy(value)})
++            else:
++                patch.extend(_reference_context_patch(previous[key], value, pointer(key)))
++        return patch
++    if isinstance(previous, list) and isinstance(current, list):
++        patch = []
++        for index in range(min(len(previous), len(current))):
++            patch.extend(_reference_context_patch(previous[index], current[index], path + '/' + str(index)))
++        for index in range(len(previous) - 1, len(current) - 1, -1):
++            patch.append({'op': 'remove', 'path': path + '/' + str(index)})
++        for value in current[len(previous):]:
++            patch.append({'op': 'add', 'path': path + '/-', 'value': deepcopy(value)})
++        return patch
++    if type(previous) is not type(current) or previous != current:
++        return [{'op': 'replace', 'path': path, 'value': deepcopy(current)}]
++    return []
++
++
++def _reference_context_messages(history, previous, current, system, maximum):
++    """Append exact native replies; rebase only to a complete current snapshot."""
++    import json
++    protocol = (
++        ' NIS-Kontextfortsetzung: Die erste Nutzernachricht enthält den vollständigen Planungskontext. '
++        'Nachrichten mit nis_context_patch aktualisieren diesen vollständig nach RFC6902; nicht genannte '
++        'Werte bleiben unverändert. Maßgeblich ist der daraus rekonstruierte aktuelle NIS-Kontext mit '
++        'planning_stage und output_fields_for_this_stage. Vorherige Modellantworten sind Vorschläge; '
++        'nur die NIS-Kontextupdates bestätigen den serverseitig geprüften Zwischenstand. '
++        'Keine ursprünglichen Fakten, Teilnehmer oder offenen Quellenbereiche verwerfen. '
++        'Weiter ausschließlich im aktuellen Antwortschema antworten.')
++    full = [{'role': 'system', 'content': system + protocol},
++            {'role': 'user', 'content': json.dumps(current, ensure_ascii=False, separators=(',', ':'))}]
++    if history and previous is not None:
++        appended = [*history, {'role': 'user', 'content': json.dumps(
++            {'nis_context_patch': _reference_context_patch(previous, current)},
++            ensure_ascii=False, separators=(',', ':'))}]
++        try:
++            _reference_context_window(appended, maximum)
++        except ValueError:
++            pass  # The full snapshot below must still pass the unchanged guard.
++        else:
++            return appended, full, False
++    _reference_context_window(full, maximum)
++    return full, full, bool(history)
+ 
+ 
+ def _reference_merge_port_parameters(ports, proposed, selected):
+@@ -832,6 +892,7 @@
+                              for key, fact in facts.items()
+                              if key in profile_facts or fact['kind'] == 'REQUIREMENT' and tuple(document_system_scope(fact.get('source_context', []))) in {profile, ()}}
+             current = {field: [] for field in fields}
++            reference_messages, reference_prompt = [], None
+             content = {'original_source': profile_text, 'original_facts': visible_facts,
+                        'source_profile': list(profile), 'reserved_project_device_names': [row['name'] for row in combined['devices']], 'reference_sources': prepared['reference_sources'],
+                        'registered_catalogs': catalog,
+@@ -844,6 +905,7 @@
+                     raise ValueError('Ungültige Teilnehmerbindung: ' + json.dumps(blocking, ensure_ascii=False))
+ 
+             async def infer(stage, allowed, producer_ids=(), feedback=None, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None):
++                nonlocal reference_messages, reference_prompt
+                 inventory_stage = inventory_target is not None or derivation_fact_ids is not None
+                 if device_ids:
+                     kinds = {'ports': {'CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR'},
+@@ -881,18 +943,32 @@
+                               + ('Prüfe jetzt die physische Hardware für die ausdrücklich angeforderten FUNCTION-/REQUIREMENT-FactIDs. Vollständige Quelle und sämtliche Nachbarfunktionen bleiben Konsistenzkontext; weitere Quellenbefunde werden in eigenen Hardwarestufen bearbeitet. Sensoren und Aktoren sind echte Teilnehmer, keine bloßen Werte im Controller. Vorhandene Geräte wiederverwenden oder fehlende Messquellen, Verarbeitung, Verbraucher und Aktoren ergänzen; unabhängige Messgrößen und Stellwirkungen berücksichtigen. Ports/Messgrößen/Befehle/Funktionen/Kommunikation folgen erst nach ALLEN Hardwarestufen und erzeugen KEINE Geräte mehr. Notwendige Peripherie dieses Quellenbereichs niemals in spätere IO-Schritte verschieben. source_fact_ids enthält nur passende angeforderte FUNCTION-/REQUIREMENT-FactIDs, jede höchstens einmal; keine neuen Bindungen an Quelleninventar. Alte Bindungen wiederverwendeter IDs bleiben serverseitig erhalten. Keine Originalmenge erhöhen oder Hardwarebelege/Defaults erfinden. Pro Antwort höchstens ein echtes Gerät oder eine vorhandene ID-Bindung, niemals Duplikat-Platzhalter. Mehrere passende Quellenbelege desselben Teilnehmers gemeinsam in dieser einen Bindung angeben. Weiteren Hardwarebedarf mit inventory_complete=false für die normale nächste Antwort offenhalten; die Gesamtzahl notwendiger Geräte ist dadurch nicht begrenzt. inventory_complete bewertet ausschließlich den Bedarf der angeforderten FactIDs und wird erst true, wenn vorhandene plus ergänzte Hardware diesen vollständig abdeckt; ohne Ergänzungsbedarf inventory_choices=[] und true. False verlangt neue Geräte/Quellenbindungen. Unklare Fachentscheidungen konkret unresolved nennen. ' if derivation_fact_ids is not None else '')
+                               + ('Genau die angeforderten Port-IDs liefern. id, device_id, technology, role und network_scope unverändert übernehmen; nur parameters und ports-spezifische Begründung/Referenzbelege auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
+                               + ('Genau die angeforderten Funktions-FactIDs abdecken; Abhängigkeiten nur mit diesen Senderfunktionen liefern. Andere ursprüngliche Funktions-FactIDs dürfen bewusste Empfänger oder COMPOSITE-Bestandteile sein. ' if function_ids else ''))}
+-                messages = [{'role': 'system', 'content': system}, {'role': 'user', 'content': json.dumps(prompt, ensure_ascii=False, separators=(',', ':'))}]
+-                progress = sink.get()
+-                if progress:
+-                    metadata = {'source': 'document_reference_design', 'completed_calls': len(calls), 'canonical_writes': False}
+-                    if inventory_stage:
+-                        metadata.update(inventory_target=deepcopy(inventory_target), draft_inventory_by_kind={
+-                            kind: sum(row['kind'] == kind for row in current['devices'])
+-                            for kind in ('CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR', 'PHYSICAL_CONTEXT')})
+-                        if derivation_fact_ids is not None:
+-                            metadata['derivation_fact_ids'] = list(derivation_fact_ids)
+-                    progress({'type': 'PROGRESS', 'text': f'Lokaler Qwen plant Referenzprofil {profile_index} von {len(groups)}: {stage}.',
+-                              'status': 'RUNNING', 'metadata': metadata})
++                messages, full_messages, context_rebased = _reference_context_messages(
++                    reference_messages, reference_prompt, prompt, system, self.context_tokens)
++                def report_progress(attempt):
++                    progress = sink.get()
++                    if progress:
++                        metadata = {'source': 'document_reference_design', 'completed_calls': len(calls), 'canonical_writes': False,
++                                    'planning_stage': stage, 'profile_index': profile_index, 'profile_count': len(groups),
++                                    'attempt': attempt}
++                        if inventory_stage:
++                            metadata.update(inventory_target=deepcopy(inventory_target), draft_inventory_by_kind={
++                                kind: sum(row['kind'] == kind for row in current['devices'])
++                                for kind in ('CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR', 'PHYSICAL_CONTEXT')})
++                            if derivation_fact_ids is not None:
++                                metadata['derivation_fact_ids'] = list(derivation_fact_ids)
++                        scope_text = ''
++                        if derivation_fact_ids:
++                            fact_ids = [key for key, fact in prepared['facts'].items()
++                                if fact['kind'] in {'FUNCTION', 'REQUIREMENT'}
++                                and tuple(document_system_scope(fact.get('source_context', []))) == profile]
++                            scope_index = fact_ids.index(derivation_fact_ids[0]) // 4 + 1
++                            scope_count = (len(fact_ids) + 3) // 4
++                            metadata.update(scope_index=scope_index, scope_count=scope_count)
++                            scope_text = f'; Quellenbereich {scope_index} von {scope_count}'
++                        attempt_text = 'Planung' if attempt == 1 else f'Korrekturversuch {attempt}'
++                        progress({'type': 'PROGRESS', 'text': f'Lokaler Qwen plant Referenzprofil {profile_index} von {len(groups)}: {stage}. {len(calls)} Modellantworten empfangen; {attempt_text}{scope_text}.',
++                                  'status': 'RUNNING', 'metadata': metadata})
+                 payload = {'model': self.model, 'messages': messages,
+                            'format': _reference_schema_for_stage(prepared, allowed, port_ids=port_ids,
+                                function_ids=function_ids, port_intent=port_intent, device_ids=device_ids,
+@@ -901,7 +977,17 @@
+                            'think': False, 'stream': False, 'keep_alive': self.keep_alive,
+                            'options': {'temperature': 0, 'num_predict': 8192, 'num_ctx': self.context_tokens}}
+                 for attempt in range(2):
+-                    payload['options']['num_ctx'] = _reference_context_window(payload['messages'], self.context_tokens)
++                    try:
++                        payload['options']['num_ctx'] = _reference_context_window(payload['messages'], self.context_tokens)
++                    except ValueError:
++                        if not reference_messages:
++                            raise
++                        # Preserve actual invalid reply and exact validation feedback on retry.
++                        payload['messages'] = [*full_messages, *payload['messages'][-2:]] if attempt else full_messages
++                        payload['options']['num_ctx'] = _reference_context_window(payload['messages'], self.context_tokens)
++                        messages = full_messages
++                        context_rebased = True
++                    report_progress(attempt + 1)
+                     try:
+                         response = await self.client.post(self.chat_url, json=payload)
+                     except httpx.TimeoutException as error:
+@@ -912,16 +998,19 @@
+                     body = response.json()
+                     if body.get('done_reason') == 'length':
+                         raise ValueError('Die lokale Referenzantwort wurde an der Ausgabegrenze abgeschnitten. Es wurde kein unvollständiger Entwurf übernommen.')
+-                    raw = str((body.get('message') or {}).get('content') or '').strip()
++                    native_content = str((body.get('message') or {}).get('content') or '')
++                    raw = native_content.strip()
+                     calls.append({'profile': list(profile), 'stage': stage, 'attempt': attempt + 1,
+                                   'request_sha256': hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True).encode()).hexdigest(),
+                                   'response_sha256': hashlib.sha256(raw.encode()).hexdigest(),
+                                   'context_tokens': payload['options']['num_ctx'],
++                                  'context_rebased': context_rebased, 'context_message_count': len(payload['messages']),
+                                   'port_ids': list(port_ids), 'function_fact_ids': list(function_ids),
+                                   'device_ids': list(device_ids),
+                                   'inventory_target': inventory_target,
+                                   'derivation_fact_ids': list(derivation_fact_ids) if derivation_fact_ids is not None else None,
+-                                  'prompt_eval_count': body.get('prompt_eval_count'), 'eval_count': body.get('eval_count')})
++                                  'prompt_eval_count': body.get('prompt_eval_count'), 'eval_count': body.get('eval_count'),
++                                  **{key: body.get(key) for key in ('load_duration', 'prompt_eval_duration', 'eval_duration', 'total_duration')}})
+                     try:
+                         decoded = document_response_json(raw)
+                         inventory_complete = decoded.pop('inventory_complete', None) if inventory_stage else None
+@@ -971,6 +1060,8 @@
+                         if inventory_stage:
+                             result['inventory_complete'] = inventory_complete
+                             calls[-1]['inventory_complete'] = inventory_complete
++                        reference_messages = [*deepcopy(payload['messages']), {'role': 'assistant', 'content': native_content}]
++                        reference_prompt = deepcopy(prompt)
+                         return result
+                     except (ValueError, TypeError, KeyError) as error:
+                         if attempt:
+@@ -982,10 +1073,12 @@
+                                             'error': str(error), 'response': raw,
+                                             'response_sha256': calls[-1]['response_sha256']}, ensure_ascii=False))
+                             raise ValueError(f'Kein gültiger strukturierter Referenzvorschlag: {error}') from error
+-                        payload['messages'] = [*messages, {'role': 'assistant', 'content': raw},
++                        payload['messages'] = [*messages, {'role': 'assistant', 'content': native_content},
+                                                {'role': 'user', 'content': f'Validierungsfehler: {error}. Vollständigen JSON-Entwurf dieser Stufe korrigieren, keine Quellen ändern.'}]
+                 raise AssertionError('Reference inference did not return')
+             async def plan_profile(feedback=None):
++                nonlocal reference_messages, reference_prompt
++                reference_messages, reference_prompt = [], None
+                 # Intermediate results remain internal native choices. No
+                 # incomplete profile can reach draft review or canonical apply.
+                 current['unresolved'] = []
+--- before/backend/tests/test_reference_reasoner.py
++++ backend/tests/test_reference_reasoner.py
+@@ -15,6 +15,38 @@
+     _reference_expand_inventory_choices,
+ )
+ from backend.tests.test_reference_design import fixture_request, fixture_design, wire, reference
++
++
++def effective_reference_context(messages):
++    """Independent JSON pointer interpreter for the mocked wire, not product code."""
++    context = json.loads(messages[1]['content'])
++    for message in messages[2:]:
++        if message['role'] != 'user' or not message['content'].startswith('{'):
++            continue
++        for operation in json.loads(message['content']).get('nis_context_patch', []):
++            path = operation['path']
++            if path == '':
++                assert operation['op'] == 'replace'
++                context = deepcopy(operation['value'])
++                continue
++            keys = [part.replace('~1', '/').replace('~0', '~') for part in path[1:].split('/')]
++            parent = context
++            for key in keys[:-1]:
++                parent = parent[int(key)] if isinstance(parent, list) else parent[key]
++            key = keys[-1]
++            if isinstance(parent, list):
++                index = len(parent) if key == '-' else int(key)
++                if operation['op'] == 'remove':
++                    parent.pop(index)
++                elif operation['op'] == 'add':
++                    parent.insert(index, deepcopy(operation['value']))
++                else:
++                    parent[index] = deepcopy(operation['value'])
++            elif operation['op'] == 'remove':
++                del parent[key]
++            else:
++                parent[key] = deepcopy(operation['value'])
++    return context
+ 
+ 
+ def complete_design(prepared):
+@@ -42,7 +74,8 @@
+ def reasoner_with_transport(monkeypatch, *, family='qwen3', truncate=False, capture=None, timeout=False,
+                             foreign_io=None, duplicate_port_ids=False, retry_foreign_port=False, omit_inventory_role=None,
+                             request=None, design_factory=complete_design, never_complete_inventory_role=None,
+-                            instance_derived_ids=(), inventory_mutator=None, derivation_mutator=None, binding_mutator=None):
++                            instance_derived_ids=(), inventory_mutator=None, derivation_mutator=None, binding_mutator=None,
++                            wire_padding=False):
+     prepared = intake.prepare_reference_design(request or fixture_request())
+     design = design_factory(prepared)
+     observed = []
+@@ -55,7 +88,7 @@
+             capture.append(deepcopy(payload))
+         if timeout:
+             raise httpx.ReadTimeout('Unit provider deadline', request=request)
+-        content = json.loads(payload['messages'][1]['content'])
++        content = effective_reference_context(payload['messages'])
+         observed.append(content)
+         allowed = set(content['output_fields_for_this_stage'])
+         # A native provider must use the opaque identities supplied by NIS,
+@@ -157,7 +190,8 @@
+                 *[{'choice_kind': 'NEW_' + row['kind'], **row} for row in candidate['devices']],
+                 *[{'choice_kind': 'EXISTING', **row} for row in candidate.pop('inventory_bindings')]]
+             candidate['devices'] = []
+-        return httpx.Response(200, json={'message': {'content': json.dumps(candidate)}, 'done_reason': 'length' if truncate else 'stop',
++        native_content = (' \n' if wire_padding else '') + json.dumps(candidate) + ('\n ' if wire_padding else '')
++        return httpx.Response(200, json={'message': {'content': native_content}, 'done_reason': 'length' if truncate else 'stop',
+                                        'prompt_eval_count': 500, 'eval_count': 500})
+     instance = LocalEngineeringReasoner()
+     asyncio.run(instance.client.aclose())
+@@ -863,7 +897,7 @@
+     assert all(saved[0][key] == old[key]
+                for key in ('name', 'kind', 'quantity', 'context_kind', 'purpose', 'owner_device_id', 'contained_device_ids'))
+     native = next(row for row in captured if 'inventory_choices' in row['format']['properties']
+-                  and json.loads(row['messages'][1]['content'])['derivation_fact_ids_for_this_stage'] is not None)
++                  and effective_reference_context(row['messages'])['derivation_fact_ids_for_this_stage'] is not None)
+     variants = native['format']['properties']['inventory_choices']['items']['anyOf']
+     binding = next(row for row in variants if 'device_id' in row.get('properties', {}))
+     assert set(binding['properties']) == {
+@@ -962,6 +996,96 @@
+     assert inventory[-1]['inventory_target'] is None
+     assert all(row['canonical_writes'] is False for row in inventory)
+     assert result['canonical_writes'] is False
++
++
++def test_reference_capacity_stays_at_configured_maximum_without_weakening_overflow():
++    for length in (10, 5000, 22000):
++        assert _reference_context_window([{'content': 'x' * length}], 131072) == 131072
++    with pytest.raises(ValueError, match='keine Quelle gekürzt'):
++        _reference_context_window([{'content': 'ä' * 66000}], 131072)
++
++
++def test_reference_continuation_keeps_prior_native_wire_prefix(monkeypatch):
++    captured = []
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch, capture=captured)
++    result = run_reference(reasoner, prepared)
++    assert len(captured) > 3
++    for previous, current in zip(captured, captured[1:]):
++        assert current['messages'][:len(previous['messages'])] == previous['messages']
++        assert current['messages'][-2]['role'] == 'assistant'
++        assert 'nis_context_patch' in json.loads(current['messages'][-1]['content'])
++    assert [effective_reference_context(row['messages']) for row in captured] == observed
++    assert result['canonical_writes'] is False
++
++
++def test_reference_visible_progress_reports_actual_calls_scope_and_retry(monkeypatch):
++    from backend.nis.engineering.goal_execution.progress import sink
++    events, captured = [], []
++    reasoner, prepared, _ = reasoner_with_transport(monkeypatch, capture=captured, retry_foreign_port=True, wire_padding=True)
++    token = sink.set(events.append)
++    try:
++        with pytest.raises(ValueError, match='nicht ausgewählten Teilnehmers'):
++            run_reference(reasoner, prepared)
++    finally:
++        sink.reset(token)
++    progress = [event for event in events if event.get('metadata', {}).get('source') == 'document_reference_design']
++    assert len(progress) == len(captured)
++    for index, event in enumerate(progress):
++        assert event['metadata']['completed_calls'] == index
++        assert f'{index} Modellantworten empfangen' in event['text']
++        assert event['metadata']['canonical_writes'] is False
++    scopes = [event for event in progress if event['metadata'].get('derivation_fact_ids')]
++    assert scopes and all('Quellenbereich 1 von 1' in event['text'] for event in scopes)
++    assert progress[-1]['metadata']['attempt'] == 2
++    assert 'Korrekturversuch 2' in progress[-1]['text']
++
++
++@pytest.mark.parametrize(('previous', 'current'), [
++    ({'a/b~c': {'old': 1, 'list': [1, 2, 3]}, 'removed': None},
++     {'a/b~c': {'list': [False, None]}, 'new': 'Gerät ä 🦾'}),
++    ({'items': [1]}, {'items': [1, {'nested': ['µ', True]}, 3]}),
++    ({'items': [1, 2, 3]}, {'items': []}),
++    ({'value': True}, {'value': 1}),
++    ({'value': 1}, {'value': 1.0}),
++    ({}, {'': {'~/': None}}),
++    ({'old': ['all original source', 42]}, {'old': ['all original source', 42]}),
++])
++def test_reference_context_patch_roundtrip_is_lossless_and_does_not_mutate(previous, current):
++    from backend.nis.agent.orchestration.local_reasoner import _reference_context_patch
++    old, new = deepcopy(previous), deepcopy(current)
++    messages = [{'role': 'system', 'content': 'unit'}, {'role': 'user', 'content': json.dumps(previous)},
++                {'role': 'user', 'content': json.dumps({'nis_context_patch': _reference_context_patch(previous, current)})}]
++    assert json.dumps(effective_reference_context(messages), sort_keys=True) == json.dumps(current, sort_keys=True)
++    assert previous == old and current == new
++
++
++def test_reference_history_rebase_keeps_full_current_sources_and_catalogs():
++    from backend.nis.agent.orchestration.local_reasoner import _reference_context_messages
++    current = {'original_source': 'Quelle vollständig µ', 'registered_catalogs': {'all': [1, 2]},
++               'current_candidate': {'devices': [{'id': 'C'}]}}
++    history = [{'role': 'system', 'content': 'system'}, {'role': 'user', 'content': 'x' * 120000},
++               {'role': 'assistant', 'content': 'y' * 10000}]
++    messages, full, rebased = _reference_context_messages(history, {}, current, 'system', 131072)
++    assert rebased and messages == full
++    assert effective_reference_context(messages) == current
++    assert _reference_context_window(messages, 131072) == 131072
++    with pytest.raises(ValueError, match='keine Quelle gekürzt'):
++        _reference_context_messages(history, {}, {**current, 'original_source': 'x' * 131072}, 'system', 131072)
++
++
++def test_reference_retry_keeps_exact_invalid_reply_and_same_current_context(monkeypatch):
++    captured = []
++    reasoner, prepared, _ = reasoner_with_transport(monkeypatch, capture=captured, retry_foreign_port=True, wire_padding=True)
++    with pytest.raises(ValueError, match='nicht ausgewählten Teilnehmers'):
++        run_reference(reasoner, prepared)
++    previous, retry = captured[-2:]
++    assert retry['messages'][:-2] == previous['messages']
++    assert retry['messages'][-2]['role'] == 'assistant'
++    assert retry['messages'][-2]['content'].startswith(' \n')
++    assert retry['messages'][-2]['content'].endswith('\n ')
++    assert 'Validierungsfehler:' in retry['messages'][-1]['content']
++    assert effective_reference_context(retry['messages']) == effective_reference_context(previous['messages'])
++    assert retry['format'] == previous['format']
+ 
+ 
+ @pytest.mark.parametrize('bad', ['missing', 'unknown', 'mismatched_role', 'existing_with_new_fields', 'new_with_existing_id', 'unregistered_role'])
+--- before/frontend/src/features/agent/lib/engineering-specification.ts
++++ frontend/src/features/agent/lib/engineering-specification.ts
+@@ -1,5 +1,5 @@
+ import technologyProjection from '../../communication/lib/technology-projection.json' with { type: 'json' };
+-import { documentDeviceQuestions, documentParticipantName, documentFactIdentity, readReviewedDocumentEquipment } from './document-clarification.ts';
++import { documentDeviceQuestions, documentParticipantName, documentFactIdentity, documentSystemScope, readReviewedDocumentEquipment } from './document-clarification.ts';
+ import { industryTemplateLabel, industryTemplateProfile } from "./industry-templates/index.ts";
+ import { conciseGeneratedName } from "../../engineering/lib/engineering-names.ts";
+ import { automotiveFunctionOutputs } from "./industry-templates/automotive-functions.ts";
+@@ -1516,7 +1516,8 @@
+ 
+ function requirementOnlyLine(line: string) {
+   const explicitDeclaration = /^\s*(?:[-*]\s*)?(?:Sensor|Aktor|Aktuator|Actuator|ECU|Controller|Gateway|PLC|SPS)\s*:/iu.test(line);
+-  return /^\s*REQ\b/iu.test(line) || (!explicitDeclaration && /\b(?:muss|müssen|must|shall)\b/iu.test(line));
++  return /^\s*(?:[-*]\s*)?(?:\*\*)?(?:REQ|TC)[-_\s]/iu.test(line)
++    || (!explicitDeclaration && /\b(?:muss|müssen|must|shall)\b/iu.test(line));
+ }
+ 
+ function groupedHardwareNames(lines: string[]): HardwareOccurrence[] {
+@@ -2133,6 +2134,19 @@
+   // Structured review selections are metadata, not natural-language hardware
+   // inventory. Their JSON numbers and role names must not create extra nodes.
+   const lines = specificationBody(text).replace(/^- (?:Sensor-Messgrößen|Aktor-Befehle|Geräteanschlüsse|Gerätezuordnungen|Geräte-Spezifikationen|Dokument-Geräte):[^\r\n]*$/gm, '').split(/\r?\n/);
++  // Reuse the document chapter/system contract for the raw preview as well.
++  // A physical-device heading is not a new independent system profile.
++  const headingStack: { level: number; label: string }[] = [];
++  const sourceScopes = lines.map(line => {
++    const heading = line.match(/^\s*(#{1,6})\s+(.+?)\s*$/);
++    if (heading) {
++      const level = heading[1].length;
++      while (headingStack.length && headingStack.at(-1)!.level >= level) headingStack.pop();
++      headingStack.push({ level, label: heading[2].replace(/\s+#+\s*$/, '') });
++    }
++    return documentSystemScope(headingStack.map(item => item.label))
++      .filter(label => !hardwareName(headingLabel(label)));
++  });
+   const confirmedCounts = { ...confirmedHardwareCounts(text), ...overrides };
+   const grouped = groupedHardwareNames(lines);
+   const groupedLineIndexes = new Set(grouped.map((item) => item.index));
+@@ -2147,7 +2161,9 @@
+     const candidates = [...names.map(name => ({ index, name })), ...declaredHardwareNames(line).map(item => ({ index, ...item })), ...singularControllers.map(item => ({ index, ...item }))];
+     return [...new Map(candidates.map(item => [normalized(normalizeHardwareName(item.name)), item])).values()];
+   }), ...grouped].sort((left, right) => left.index - right.index);
+-  const contexts = new Map<string, { name: string; lines: string[]; declaredType?: string; declaredInterface?: string; documentEvidence?: Record<string, unknown> }>();
++  const occurrenceScopes = new Set(occurrences.map(item => JSON.stringify(sourceScopes[item.index])));
++  const scopedPortfolio = occurrenceScopes.size > 1;
++  const contexts = new Map<string, { name: string; lines: string[]; declaredType?: string; declaredInterface?: string; sourceContext?: string[]; documentEvidence?: Record<string, unknown> }>();
+   occurrences.forEach((occurrence, occurrenceIndex) => {
+     const nextIndex = occurrences[occurrenceIndex + 1]?.index ?? lines.length;
+     const sectionBoundary = lines.findIndex((line, index) => index > occurrence.index && index < nextIndex
+@@ -2156,9 +2172,20 @@
+         || (/^\s*(?:#{1,6}\s+)?[^-*].*:\s*$/.test(line)
+           && !/^\s*(?:Aufgaben|Tasks|Schnittstellen|Interfaces|Anforderungen|Requirements|Plattform|Platform)\s*:/i.test(line))));
+     const inlineList = /\([^)]*,[^)]*\)/.test(lines[occurrence.index]);
+-    const contextEnd = inlineList ? occurrence.index + 1 : sectionBoundary >= 0 ? sectionBoundary : nextIndex;
+-    const key = normalized(normalizeHardwareName(occurrence.name));
+-    const existing = contexts.get(key) ?? { name: occurrence.name, lines: [] };
++    const scope = sourceScopes[occurrence.index];
++    const profileBoundary = lines.findIndex((_, index) => index > occurrence.index
++      && JSON.stringify(sourceScopes[index]) !== JSON.stringify(scope));
++    const contextEnd = Math.min(inlineList ? occurrence.index + 1 : sectionBoundary >= 0 ? sectionBoundary : nextIndex,
++      profileBoundary < 0 ? lines.length : profileBoundary);
++    const baseName = normalizeHardwareName(occurrence.name);
++    const key = scopedPortfolio ? JSON.stringify([scope, normalized(baseName)]) : normalized(baseName);
++    const sameCaptionInOtherRoot = occurrences.some(peer => peer !== occurrence
++      && sourceScopes[peer.index].at(-1) === scope.at(-1)
++      && JSON.stringify(sourceScopes[peer.index]) !== JSON.stringify(scope));
++    const caption = sameCaptionInOtherRoot ? scope.join('/') : scope.at(-1);
++    const name = scopedPortfolio && caption ? `${baseName} [${caption}]` : occurrence.name;
++    const existing = contexts.get(key) ?? { name, lines: [], declaredType: deviceType(occurrence.name),
++      ...(scope.length ? { sourceContext: scope } : {}) };
+     if (occurrence.declaredType) existing.declaredType = occurrence.declaredType;
+     if (occurrence.declaredInterface) existing.declaredInterface = occurrence.declaredInterface;
+     existing.lines.push(...lines.slice(occurrence.index, Math.max(occurrence.index + 1, contextEnd)));
+@@ -2279,7 +2306,7 @@
+     const maxValue = range.max ?? (objectDetectionSignal ? 1 : defaults.max);
+     const hardwareId = identifier(hardwareName);
+     const explicitConnection = deviceConnections[hardwareName.toLocaleLowerCase('de')];
+-    const mayUseProjectInterface = !entry.documentEvidence && (isEngineeringControllerDevice(declaredType)
++    const mayUseProjectInterface = !entry.documentEvidence && !scopedPortfolio && (isEngineeringControllerDevice(declaredType)
+       || declaredType === "Gateway"
+       || (safetyParticipant && Boolean(safetyProfile) && communicationSystems.length === 1)
+       || exampleRequested
+@@ -2363,6 +2390,7 @@
+             data: { enum_values: { RUN: 0, SAFE_STOP: 1 }, default_value: 'RUN' } },
+         } : {}),
+         ...(entry.documentEvidence ? { document_equipment_evidence: entry.documentEvidence } : {}),
++        ...(entry.sourceContext ? { source_context: entry.sourceContext, source_context_status: 'unreviewed_raw_preview' } : {}),
+         ...(explicitConnection ? { connection_source: 'explicit_device_connection' } : {}),
+         ...(scopedDuties.get(hardwareName)?.length ? { source_scoped_functions: scopedDuties.get(hardwareName) } : {}),
+         ...(functionalOwner ? { functional_owner: functionalOwner,

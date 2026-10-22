@@ -1,9 +1,11 @@
 """Thread-safe cancellation of this server's active wizard tasks."""
 import asyncio
 import threading
+from contextvars import ContextVar
 
 _lock = threading.Lock()
 _runs = {}
+active_document_request = ContextVar('active_document_request', default=None)
 
 
 class RunCancellation:
@@ -37,3 +39,10 @@ def request_cancel(project_id, wizard_run_id):
             if control.loop and not control.loop.is_closed():
                 control.loop.call_soon_threadsafe(control.task.cancel)
     return control is not None
+
+
+def bind_document_request():
+    """Bind only transient document work; durable wizard turns own their lifecycle."""
+    control = active_document_request.get()
+    if control is not None:
+        control.bind()

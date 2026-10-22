@@ -1,0 +1,55 @@
+{
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "kind": "repair",
+  "modify_code": true,
+  "allow_repair": true,
+  "campaign_id": "nis-ea-independent-20260924-run1",
+  "revision_before": {
+    "backend/tests/test_reference_reasoner.py": "933de56532c85147b68c49ca8a7848d8e673209a0949677b2bbf3661fab505a2",
+    "backend/tests/test_reference_design.py": "eacf2578cfd4550b79b66949049d4f8715bb6796e3c0ab470e3192f8d3070c72"
+  },
+  "unresolved_decisions": [],
+  "repair": {
+    "owner": "TEST_DATA",
+    "first_failing_layer": "Progress selector and fake client in two tests do not implement the new already native-verified streaming transport",
+    "root_cause": "Progress test counts output-receive observations as planning starts. Oversized-response fake exposes only post(), while actual httpx native reference transport uses stream(). Public oversized2000 limit remains intact.",
+    "reproduction": "Full actual isolated run81610 normally ended585PASS/2FAIL; exact XML retained. Failures are len9-vs3 and fakeClient missing stream, before exercising intended oversized rejection.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\final-complete-regressions.xml",
+        "sha256": "c92bc836798672411c4569338a871b3f22c9c44c55a0b5db2cd6ac62a2a99a49"
+      }
+    ],
+    "affected_files": [
+      "backend/tests/test_reference_reasoner.py",
+      "backend/tests/test_reference_design.py"
+    ],
+    "acceptance_criteria": [
+      "Retain all original source/role/quantity/count/canonical_writes assertions for actual planning-start events",
+      "Additionally verify actual receive states and one RECEIVED per planning call",
+      "Fake stream must produce normal terminal doneTrue native framing; two attempts and every decoder/public2000 rejection assertion unchanged",
+      "No application source change or gate weakening"
+    ],
+    "targeted_tests": [
+      "Both failed tests",
+      "Adjacent explicit oversized native/schema negatives and streamed progress/timeout/cancellation checks"
+    ],
+    "weaken_assertions_to_pass": false
+  },
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\fixture-before\\backend\\tests\\test_reference_reasoner.py",
+      "sha256": "933de56532c85147b68c49ca8a7848d8e673209a0949677b2bbf3661fab505a2"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\fixture-before\\backend\\tests\\test_reference_design.py",
+      "sha256": "eacf2578cfd4550b79b66949049d4f8715bb6796e3c0ab470e3192f8d3070c72"
+    }
+  ],
+  "required_outcomes": [
+    "fixture_contract_alignment_without_assertion_loss"
+  ],
+  "validation_requirements": [
+    "targeted_failed_and_negative_cases"
+  ]
+}

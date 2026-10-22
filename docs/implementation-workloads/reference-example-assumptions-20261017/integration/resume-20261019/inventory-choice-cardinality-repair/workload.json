@@ -1,0 +1,217 @@
+{
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "kind": "repair",
+  "modify_code": true,
+  "allow_repair": true,
+  "status": "VALIDATING",
+  "requested_change": "Make private native inventory choice cardinality express source coverage before inference, retaining all existing identity/source/quantity guards.",
+  "owned_files": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_reasoner.py",
+    "backend/tests/test_reference_design.py"
+  ],
+  "revision_before": {
+    "backend/nis/agent/orchestration/local_reasoner.py": "fe0fe917fbcc6632602fb19a37b2e6d66f0f4496bb1e29fa984c380a90ea500f",
+    "backend/tests/test_reference_reasoner.py": "aa2e9ee313a61206b321d99e73ae449255b791be1be9a3576dc2d1dd70dc8856",
+    "backend/tests/test_reference_design.py": "c04d1cba1aef76fc4c9cc040b9d98eab1a976c972f0d72faab97bbb22977213d"
+  },
+  "files_inspected": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_reasoner.py",
+    "backend/tests/test_reference_design.py",
+    "backend/nis/agent/orchestration/project_intake.py"
+  ],
+  "repair": {
+    "finding_ids": [
+      "UNCOVERED_SOURCE_ACCEPTS_ZERO_CHOICES_IN_PRIVATE_GRAMMAR",
+      "UNTAGGED_NATIVE_UNION_MISENCODES_KNOWN_ID_AND_NEW_ROLE"
+    ],
+    "owner": "PROJECT_PRODUCT",
+    "first_failing_layer": "Private inventory decoder has two independent zero-minimum arrays instead of one bounded source choice.",
+    "root_cause": "When a compatible existing device exists, devices.minItems=0 and inventory_bindings.minItems=0. Both can be empty even when target.minimum_rows=1. Choice cardinality is enforced too late after grammar generation. Native controlled evidence: known-ID-only grammar returns correct binding; both nested and flattened untagged unions return NEW_DEVICE with the known id even under exact JSON instruction. Proposed inline variants with first explicit choice_kind select EXISTING last branch and NEW_SENSOR middle branch correctly on actual local Qwen. Use explicit disjoint tags derived from public device kinds, not an industry-specific fallback.",
+    "reproduction": "Source cursor max_rows=1; binding expansion first rejects more than1 combined rows, and infer rejects duplicate new IDs. The later merge error therefore identifies an empty expanded delta while the requested source/name is not yet covered. Native raw rows are not exposed by normal failed API; no exact raw body/flag is invented.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\inventory-choice-cardinality-repair\\root-cause-proof.json",
+        "sha256": "ea054ad23aab9c628f3ec877c34666a5ccc25fb4215669d1eb2bc3ac66440891"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-binding-vehicle\\plan-reference\\response.json",
+        "sha256": "bc0c4d8de650846c8c490ed8ed218ee5a537ef27fe8da0f02eb0d3ae06444119"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-binding-vehicle\\after-native-empty-choice-failure\\manifest.json",
+        "sha256": "5a8565f8385da9638c5f5bce3671cb0a647f5acc306cff7752edb3293d9388ea"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-binding-vehicle\\after-native-empty-choice-failure\\project-bundle.json",
+        "sha256": "80f95568b8eca2c45f76bcce258610b451ada75a11e398144357940a3be735bc"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\inventory-choice-cardinality-repair\\before\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+        "sha256": "c1281b7ff185ebf9e1a362460271ba853ef6da650265ce99ff6820a3aca873b0"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\inventory-choice-cardinality-repair\\empty-choice-reproduction.json",
+        "sha256": "d1703a6eb64b77335489aca3e906e614f28e4ab321365e401b946615a3e15b22"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\inventory-choice-cardinality-repair\\native-binding-fixture-first-observation.json",
+        "sha256": "abcb0c20ae954bd68b0cce709ebf8f3461d57206f33ca1f079fc04ac31401f3b"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\inventory-choice-cardinality-repair\\choice-union-structural-diagnostic.json",
+        "sha256": "5ff8563d813f7bce2030162413a017aab1a971fdebc6fd6cc2cdc61cb34cc840"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\inventory-choice-cardinality-repair\\tagged-choice-structural-diagnostic.json",
+        "sha256": "5982991bbb846a682c594cb3fc0f535cae595cb935de8da9cffa3f45006a5526"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\inventory-choice-cardinality-repair\\targeted-reference-regressions.xml",
+        "sha256": "5ff97cfbcd544ccad8ff28915f0f4208ad0c8f14c6bc788312f32db2eabda278"
+      }
+    ],
+    "affected_files": [
+      "backend/nis/agent/orchestration/local_reasoner.py",
+      "backend/tests/test_reference_reasoner.py",
+      "backend/tests/test_reference_design.py"
+    ],
+    "acceptance_criteria": [
+      "Missing source coverage or required canonical name forces exactly one new-device or existing-binding choice in the actual private schema; one source step cannot emit zero or two choices.",
+      "Covered source closures and functional zero-delta closures remain valid only through native explicit completion and authoritative coverage/progress checks.",
+      "Existing four-field binding preserves all immutable fields; unknown/duplicate IDs, foreign/duplicate metadata, original roles/names/counts/context and all public final checks remain unchanged.",
+      "Progress records requested cursor and draft role counts as unaccepted planning diagnostics; no canonical writes or manual model corrections.",
+      "Both originals and saved simulations plus complete final release/exact production delivery still mandatory.",
+      "Every native variant has a first required explicit choice_kind: EXISTING or NEW_<public kind>. Runtime validates tag/kind and strips only that private field before unchanged public model validation. Unknown/missing/mismatched tags never silently convert roles."
+    ],
+    "targeted_tests": [
+      "backend/tests/test_reference_reasoner.py",
+      "backend/tests/test_reference_design.py::test_local_reference_planner_uses_decoder_projection_but_rejects_oversized_response",
+      "backend/tests/test_reference_design_integration.py",
+      "backend/tests/test_reference_model_persistence.py"
+    ],
+    "weaken_assertions_to_pass": false
+  },
+  "implementation_plan": [
+    "Unify new-device/binding selections under a single bounded private inventory_choices array.",
+    "Expand choices through the existing strict binding resolver and unchanged metadata/identity/count/full validation.",
+    "Add targeted scope/bounds/runtime counterexamples and small source-cursor diagnostics, verify actual local grammar, freeze/build normal candidate and rerun actual originals."
+  ],
+  "required_outcomes": [
+    "source_coverage_choice_cardinality",
+    "both_originals_and_verified_productive_delivery"
+  ],
+  "validation_requirements": [
+    "targeted_isolated_regressions",
+    "native_schema_checks",
+    "both_normal_original_workflows",
+    "complete_release_gate",
+    "production_identity_health_function"
+  ],
+  "unresolved_decisions": [],
+  "constraints": [
+    "Native58716 ended exit1; no own inference/test/build/release now.",
+    "Other chats remain archived; no model/context/timeout/registry/gate override."
+  ],
+  "initial_revision_before": {
+    "backend/nis/agent/orchestration/local_reasoner.py": "c1281b7ff185ebf9e1a362460271ba853ef6da650265ce99ff6820a3aca873b0",
+    "backend/tests/test_reference_reasoner.py": "9c06177eb9069603d9a4d65dea5f6b7a328ded5dfabfc88f8f40152f9ab0e8db",
+    "backend/tests/test_reference_design.py": "b31545f3d47c029d9aefb612ae3e85bca12fab65fe8bc3039f15379bdf023159"
+  },
+  "active_native_session": 23591,
+  "active_stage": "NATIVE_VEHICLE_REFERENCE_PLANNING",
+  "active_test_session": null,
+  "active_affected_test_session": null,
+  "active_prepare_session": null,
+  "active_compiler_session": null,
+  "active_diagnostic_session": null,
+  "current_application_source_sha256": "cfb1298e47b3640b0a98e3088de9be949737731c8056200a53d21ba3c6e05537",
+  "next_candidate_required": false,
+  "updated_at_utc": "2026-10-20T07:58:04.554390+00:00",
+  "completion_status": "Wiederaufnahme20.10.2026: Zeitplan pausiert, beide Altchats ruhen. Quellen/HEAD/Verification und54Code-Snapshots unverändert. Exakte isolierte DB-Sicherung nach Hostneustart in leere TestDB wiederhergestellt; beide Modelle/Jobs weiterhin leer. Kandidat7f7e/Quellecfb129 PREPARED wiederverwendet, kein Neubau. Prüfoperator erkennt belegten Benutzerabbruch nach App-Neustart (22Gegen-/PositivfällePASS, übrigeASTgleich). Echte lokale Fahrzeug-Referenzplanung läuft seriell Session23591; Robotik wartet. Aktuelle States integration/native-resumed-20261020-{vehicle,robot}/state.json. Kein neuer Originalmodell-/Simulations-/Vollgate-/Produktiv-PASS. Produktion3792gesund/unverändert.",
+  "current_repair_workload": "docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\inventory-choice-cardinality-repair\\workload.json",
+  "pending_source_freeze_file": "docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\inventory-choice-cardinality-repair\\validation-source-freeze.json",
+  "frozen_identity": {
+    "commit_id": "70f0c160bc4f08bd23437f6b3c175523d1e5859c",
+    "source_sha256": "cfb1298e47b3640b0a98e3088de9be949737731c8056200a53d21ba3c6e05537",
+    "verification_sha256": "7717be70072feed2ab025aa2a6166e71cc84cf5a8559e93dd4091c5ec8ca5903"
+  },
+  "current_candidate": {
+    "receipt": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\joint-tagged-inventory-originals-cfb1298e47b3\\7f7e56f67ca2\\receipt.json",
+    "image_tag": "networkis:candidate-7f7e56f67ca2",
+    "image_id": "sha256:e7b55386ef39497db425a4467ed85c34a64257e0ca36c06ed4a12fdb88a521b7",
+    "source_sha256": "cfb1298e47b3640b0a98e3088de9be949737731c8056200a53d21ba3c6e05537",
+    "base_url": "http://127.0.0.1:62607",
+    "status": "PREPARED"
+  },
+  "paused_at_utc": "2026-10-19T17:10:30.145238+00:00",
+  "pause_checkpoint": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\inventory-choice-cardinality-repair\\pause-20261019.json",
+  "resume_at_europe_berlin": "2026-10-20T09:00:00+02:00",
+  "resume_checkpoint": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\database-restore-review.json",
+  "resume_at_utc": "2026-10-20T07:09:08.183221+00:00",
+  "candidate": {
+    "receipt": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\joint-tagged-inventory-originals-cfb1298e47b3\\7f7e56f67ca2\\receipt.json",
+    "image_tag": "networkis:candidate-7f7e56f67ca2",
+    "image_id": "sha256:e7b55386ef39497db425a4467ed85c34a64257e0ca36c06ed4a12fdb88a521b7",
+    "source_sha256": "cfb1298e47b3640b0a98e3088de9be949737731c8056200a53d21ba3c6e05537",
+    "base_url": "http://127.0.0.1:62607",
+    "status": "PREPARED"
+  },
+  "candidate_receipt": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\joint-tagged-inventory-originals-cfb1298e47b3\\7f7e56f67ca2\\receipt.json",
+  "candidate_image_id": "sha256:e7b55386ef39497db425a4467ed85c34a64257e0ca36c06ed4a12fdb88a521b7",
+  "candidate_image_tag": "networkis:candidate-7f7e56f67ca2",
+  "candidate_base_url": "http://127.0.0.1:62607",
+  "active_vehicle_state": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-resumed-20261020-vehicle\\state.json",
+  "active_robot_state": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-resumed-20261020-robot\\state.json",
+  "active_repair_workload": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\inventory-choice-cardinality-repair\\workload.json",
+  "active_repair_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\inventory-choice-cardinality-repair\\workload.json",
+  "current_operator_workload": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\driver-paused-resume-repair\\workload.json",
+  "actual_native_completed_calls": 7,
+  "native_progress_observed_at_utc": "2026-10-20T08:14:14.570902+00:00",
+  "latest_native_progress": {
+    "type": "PROGRESS",
+    "text": "Lokaler Qwen plant Referenzprofil 1 von 1: Physisches Quelleninventar.",
+    "status": "RUNNING",
+    "metadata": {
+      "source": "document_reference_design",
+      "completed_calls": 7,
+      "canonical_writes": false,
+      "inventory_target": {
+        "fact_id": "Fc778aa8aa79a",
+        "member": "Radar",
+        "names": [],
+        "minimum_rows": 1,
+        "max_rows": 1
+      },
+      "draft_inventory_by_kind": {
+        "CONTROLLER": 5,
+        "GATEWAY": 0,
+        "SENSOR": 0,
+        "ACTUATOR": 0,
+        "PHYSICAL_CONTEXT": 0
+      }
+    }
+  },
+  "intentional_native_stop": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\inventory-choice-cardinality-repair\\pause-20261019.json",
+    "sha256": "e93576132b9342300673491df1b24a97892a986dec1b1f70a38dfdcd386bcf37"
+  },
+  "last_native_failure": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-binding-vehicle\\plan-reference\\response.json",
+    "sha256": "bc0c4d8de650846c8c490ed8ed218ee5a537ef27fe8da0f02eb0d3ae06444119"
+  },
+  "current_owned_source_sha256": {
+    "backend/nis/agent/orchestration/local_reasoner.py": "9f9f652d179734064b78f17dead8f58a9d98a05ff4b0404fc8d9492721616f3f",
+    "backend/tests/test_reference_reasoner.py": "2f29e49d7a2e56a950d399aad1b26e030ff81daa775045634650ade238555587",
+    "backend/tests/test_reference_design.py": "f6bd313cb8a5c172059de58354aa257c97572bebdd8fa5aacb986318ca1b357a"
+  },
+  "controller_inventory_subprogress": {
+    "scope": "Internal unaccepted native planning only; compiled five literal controllers retained, five controller category bindings traversed. Returned call count includes validation retries. No complete model/simulation/release PASS.",
+    "status": "OBSERVED_INTERNAL_ONLY",
+    "evidence": {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\vehicle-controller-sources-covered-review.json",
+      "sha256": "5638de24c08cdd639384ed5d27b0efa684a0d02e8f02e260e713a43d41a7136a"
+    }
+  }
+}

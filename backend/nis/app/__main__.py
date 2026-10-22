@@ -78,7 +78,8 @@ def main() -> int:
         try:
             with _exclusive_listener(host, port) as listener:
                 serve(app, sockets=[listener], threads=settings.api_threads,
-                      clear_untrusted_proxy_headers=True)
+                      clear_untrusted_proxy_headers=True,
+                      channel_request_lookahead=1)
         except OSError as error:
             print(
                 f"Simulator-Backend nicht gestartet: {host}:{port} ist bereits belegt.",

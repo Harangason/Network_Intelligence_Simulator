@@ -605,6 +605,11 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
             WorkflowStatusService(current_project_id()).save_parameters(capacity_network_batch, actor=actor)
             capacity_network_batch = None
     contract.update(status="APPLIED", canonical_ids=canonical, revision=str(uuid4()))
+    if row['proposal_type'] == 'WIZARD_ENGINEERING_MODEL' and any(
+            item.get('source') == 'REFERENCE_ASSUMPTION' and item.get('reference_design')
+            for item in row.get('evidence') or []):
+        # The exact saved model, not the pre-apply source fingerprint, owns replay.
+        contract['applied_model_revision'] = model_revision()
     # Keep existing workload persistence able to discover approved canonical IDs.
     original = deepcopy(row["proposed_objects"])
     for index, item in enumerate(original):

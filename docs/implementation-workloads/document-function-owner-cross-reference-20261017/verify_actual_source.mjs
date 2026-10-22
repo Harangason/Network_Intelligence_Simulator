@@ -1,0 +1,36 @@
+import {readFile,writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {pathToFileURL} from 'node:url';
+import assert from 'node:assert/strict';
+const root=process.cwd().replaceAll('\\','/');
+const out=root+'/docs/implementation-workloads/document-function-owner-cross-reference-20261017';
+const evidence=root+'/docs/implementation-workloads/document-clarification-repair-20261016/production-be82385-20261017-attempt2';
+const old=await import(pathToFileURL(out+'/before/frontend/src/features/agent/lib/document-clarification.ts').href);
+const current=await import(pathToFileURL(root+'/frontend/src/features/agent/lib/document-clarification.ts').href);
+const raw=await readFile('C:/Users/marti/PycharmProjects/Benchmark_Modelle/Fahrzeug komplett.txt');
+assert.equal(createHash('sha256').update(raw).digest('hex'),'86865975c689643d9b07ea73e21d68fa6f4a3a8770402ffb537dba2d7ecdf4d7');
+const source=raw.toString('utf8');
+const humanDescription=await readFile(evidence+'/user-description.txt','utf8');
+const captured=JSON.parse(await readFile(evidence+'/native-proposal-facts.json','utf8'));
+const units=JSON.parse(await readFile(evidence+'/source-component-units.json','utf8'));
+const contexts=new Map([['',[]]]);
+for(const unit of units.units){const context=unit.source_context??[];const key=context.join(' / ');if(contexts.has(key))assert.deepEqual(contexts.get(key),context);contexts.set(key,context);}
+const facts=captured.map(f=>{assert(source.includes(f.quote)||humanDescription.includes(f.quote));assert(contexts.has(f.context));return {name:f.name,kind:f.kind,role:f.role,quantity:f.quantity,source_quote:f.quote,source_context:contexts.get(f.context)};});
+const functions=facts.filter(f=>f.kind==='FUNCTION');
+const owners=facts.filter(f=>f.kind==='INSTANCE'&&f.role==='CONTROLLER').map(owner=>{
+ const scope=current.documentSourceScope(owner.source_context);
+ const duties=functions.filter(f=>{const s=current.documentSourceScope(f.source_context);return scope.length>0&&scope.every((v,i)=>s[i]===v);}).map(f=>({source_quote:f.source_quote}));
+ return {name:owner.name,source_context:owner.source_context,duties};
+});
+assert.equal(owners.length,5);assert.equal(owners.reduce((n,o)=>n+o.duties.length,0),22);
+const before=old.documentSourceFunctionAssignments(facts,owners),after=current.documentSourceFunctionAssignments(facts,owners);
+assert.equal(Object.keys(before).length,22);assert.equal(Object.keys(after).length,23);
+for(const [id,owner]of Object.entries(before))assert.equal(after[id],owner);
+const additions=functions.filter(f=>!before[current.documentFactIdentity(f)]&&after[current.documentFactIdentity(f)]).map(f=>({fact:f,owner:after[current.documentFactIdentity(f)]}));
+assert.equal(additions.length,1);assert.equal(additions[0].fact.name,'Fahrdynamikregelung');assert.equal(additions[0].owner,'Chassis Domain Controller (CDC)');
+assert.equal(functions.filter(f=>!after[current.documentFactIdentity(f)]).length,15);
+assert(!functions.some(f=>f.name==='Connectivity (Bluetooth, WLAN, Mobilfunk)'&&after[current.documentFactIdentity(f)]));
+const report={status:'PASSED',at_utc:new Date().toISOString(),scope:'Actual original source plus exact human amendment and saved native facts evaluated by exact old/current product source-assignment functions. Read-only CPU counterprobe, no SQL/model writes or simulation claim.',source_sha256:createHash('sha256').update(raw).digest('hex'),functions:38,controllers:5,before_assignments:22,after_assignments:23,existing_assignments_preserved:true,additional_source_owner:additions[0],unresolved:15};
+await writeFile(out+'/actual-source-counterprobe.json',JSON.stringify(report,null,2)+'\n');
+await writeFile(out+'/actual-source-counterprobe-inputs.json',JSON.stringify({facts,owners},null,2)+'\n');
+console.log(JSON.stringify(report));

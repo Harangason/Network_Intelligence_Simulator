@@ -1,0 +1,63 @@
+--- before/backend/nis/agent/tools/proposal_service.py
++++ after/backend/nis/agent/tools/proposal_service.py
+@@ -605,6 +605,11 @@
+             WorkflowStatusService(current_project_id()).save_parameters(capacity_network_batch, actor=actor)
+             capacity_network_batch = None
+     contract.update(status="APPLIED", canonical_ids=canonical, revision=str(uuid4()))
++    if row['proposal_type'] == 'WIZARD_ENGINEERING_MODEL' and any(
++            item.get('source') == 'REFERENCE_ASSUMPTION' and item.get('reference_design')
++            for item in row.get('evidence') or []):
++        # The exact saved model, not the pre-apply source fingerprint, owns replay.
++        contract['applied_model_revision'] = model_revision()
+     # Keep existing workload persistence able to discover approved canonical IDs.
+     original = deepcopy(row["proposed_objects"])
+     for index, item in enumerate(original):
+--- before/backend/nis/agent/tools/wizard_generation.py
++++ after/backend/nis/agent/tools/wizard_generation.py
+@@ -1215,6 +1215,23 @@
+     existing = {kind: model.objects(kind) for kind in kinds}
+     proposal_identity = _proposal_identity('engineering_model', prompt, existing, state, MODEL_GENERATOR_VERSION)
+     proposals = proposal_store.list_proposals(limit=100)
++    if reference:
++        for prior in proposals:
++            contract = prior.get('engineering_contract') or {}
++            if prior['proposal_type'] != 'WIZARD_ENGINEERING_MODEL' or contract.get('status') != 'APPLIED':
++                continue
++            saved_reference = next((item.get('reference_design') for item in prior.get('evidence') or []
++                if item.get('source') == 'REFERENCE_ASSUMPTION'), None)
++            if not saved_reference or any(saved_reference.get(key) != reference[key]
++                    for key in ('design_id', 'revision', 'request_sha256', 'source_sha256', 'proposal')):
++                continue
++            same_generator = any(item.get('generator_version') == MODEL_GENERATOR_VERSION
++                                 for item in prior.get('evidence') or [])
++            if same_generator and contract.get('applied_model_revision') == model.model_revision():
++                return proposal_service.envelope(prior)
++            from backend.nis.infrastructure.persistence.db import ConcurrentUpdateError
++            raise ConcurrentUpdateError('Der bereits übernommene Referenzentwurf gehört zu einem geänderten Modell- oder Generatorstand. '
++                'Änderungen müssen als neuer geprüfter Modellvorschlag übernommen werden; keine doppelte Modellanlage.')
+     reusable = _reusable_proposal('WIZARD_ENGINEERING_MODEL', proposal_identity, proposals)
+     if reusable:
+         return reusable
+--- before/backend/tests/test_reference_model_persistence.py
++++ after/backend/tests/test_reference_model_persistence.py
+@@ -114,4 +114,19 @@
+         assert config['transport_unit']['consumer_refs'] == contract['consumer_refs']
+     # Repeating generation may propose nothing but must never duplicate canonical objects.
+     repeated = call('repeat', wizard_generation.generate, {'prompt': prompt})
+-    assert not [row for row in repeated.get('changes', []) if row.get('action', 'CREATE') == 'CREATE']
++    assert repeated['status'] == 'APPLIED'
++    assert repeated['proposal_id'] == applied['proposal_id']
++    assert repeated['canonical_ids'] == applied['canonical_ids']
++    assert call('read-again', saved_model) == objects
++    # A legitimate reviewed model change invalidates the old exact replay proof.
++    edited = call('edit', lambda _: proposal_service.create('TEST_MODEL_EDIT', [{'object_type': 'Function',
++        'action': 'UPDATE', 'object_id': str(functions[0]['id']), 'local_ref': 'reviewed-function-edit',
++        'data': {'description': 'Explicit reviewed isolated test modification'}}], 'Test canonical revision guard'))
++    edited = call('edit-validate', lambda _: proposal_service.validate(edited['proposal_id']))
++    assert edited['status'] == 'VALIDATED', edited['validation_result']
++    edited = call('edit-review', lambda _: proposal_service.review(edited['proposal_id'], revision=edited['revision'],
++        decision='approve', actor='test-human', trace_id=uuid4().hex))
++    assert call('edit-apply', lambda _: proposal_service.apply(edited['proposal_id'], actor='test-human', trace_id=uuid4().hex))['status'] == 'APPLIED'
++    rejected = execute(authority, 'stale-repeat', Permission.GENERATE_PROPOSAL, {'prompt': prompt}, wizard_generation.generate)
++    assert not rejected.success
++    assert any('geänderten Modell- oder Generatorstand' in row['message'] for row in rejected.findings)

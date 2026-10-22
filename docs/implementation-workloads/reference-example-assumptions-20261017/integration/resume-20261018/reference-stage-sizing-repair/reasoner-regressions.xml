@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="16" time="16.744" timestamp="2026-10-18T20:10:45.314685+02:00" hostname="Haranga"><testcase classname="tests.test_reference_reasoner" name="test_local_request_ids_are_remapped_with_actual_communication_ids" time="4.438"><failure message="KeyError: 'functional_dependencies'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001DEE4CDA650&gt;
+
+    def test_local_request_ids_are_remapped_with_actual_communication_ids(monkeypatch):
+        reasoner, prepared, observed = reasoner_with_transport(monkeypatch)
+        async def run():
+            try:
+                return await reasoner.plan_reference_design(prepared)
+            finally:
+                await reasoner.client.aclose()
+&gt;       result = asyncio.run(run())
+                 ^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_reasoner.py:84: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:196: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:119: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\base_events.py:725: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+backend\tests\test_reference_reasoner.py:81: in run
+    return await reasoner.plan_reference_design(prepared)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\local_reasoner.py:679: in plan_reference_design
+    await plan_profile()
+backend\nis\agent\orchestration\local_reasoner.py:666: in plan_profile
+    functions = await infer('Atomare und zusammengesetzte Funktionen',
+backend\nis\agent\orchestration\local_reasoner.py:597: in infer
+    response = await self.client.post(self.chat_url, json=payload)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\httpx\_client.py:1859: in post
+    return await self.request(
+backend\.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+backend\.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+backend\.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\httpx\_transports\mock.py:34: in handle_async_request
+    response = self.handler(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+request = &lt;Request('POST', 'http://127.0.0.1:11434/api/chat')&gt;
+
+    def handler(request):
+        if request.url.path.endswith('/show'):
+            return httpx.Response(200, json={'details': {'family': family}, 'model_info': {'general.parameter_count': 27000000000}})
+        payload = json.loads(request.content)
+        if capture is not None:
+            capture.append(deepcopy(payload))
+        if timeout:
+            raise httpx.ReadTimeout('Unit provider deadline', request=request)
+        content = json.loads(payload['messages'][1]['content'])
+        observed.append(content)
+        allowed = set(content['output_fields_for_this_stage'])
+        candidate = {key: deepcopy(value) for key, value in design.items() if key in allowed}
+        if content.get('port_ids_for_this_stage'):
+            selected = set(content['port_ids_for_this_stage'])
+            candidate['ports'] = [row for row in candidate['ports'] if row['id'] in selected]
+        elif content['planning_stage'] == 'Portabsicht, Messgrößen und Stellbefehle':
+            for row in candidate['ports']:
+                row['parameters'] = {}
+        if content.get('function_fact_ids_for_this_stage'):
+            selected = set(content['function_fact_ids_for_this_stage'])
+            candidate['functions'] = [row for row in candidate['functions'] if row['source_fact_id'] in selected]
+&gt;           candidate['functional_dependencies'] = [row for row in candidate['functional_dependencies'] if row['producer_fact_id'] in selected]
+                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'functional_dependencies'
+
+backend\tests\test_reference_reasoner.py:65: KeyError</failure></testcase><testcase classname="tests.test_reference_reasoner" name="test_reference_planner_rejects_non_qwen_instead_of_changing_provider" time="1.915" /><testcase classname="tests.test_reference_reasoner" name="test_truncated_local_response_never_becomes_a_reviewable_candidate" time="1.856" /><testcase classname="tests.test_reference_reasoner" name="test_stage_catalogs_preserve_originals_and_only_supply_selected_port_schemas" time="1.795"><failure message="KeyError: 'functional_dependencies'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001DEED570F30&gt;
+
+    def test_stage_catalogs_preserve_originals_and_only_supply_selected_port_schemas(monkeypatch):
+        payloads = []
+        reasoner, prepared, observed = reasoner_with_transport(monkeypatch, capture=payloads)
+&gt;       result = run_reference(reasoner, prepared)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_reasoner.py:132: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_reasoner.py:126: in run_reference
+    return asyncio.run(run())
+           ^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:196: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:119: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\base_events.py:725: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+backend\tests\test_reference_reasoner.py:123: in run
+    return await reasoner.plan_reference_design(prepared)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\local_reasoner.py:679: in plan_reference_design
+    await plan_profile()
+backend\nis\agent\orchestration\local_reasoner.py:666: in plan_profile
+    functions = await infer('Atomare und zusammengesetzte Funktionen',
+backend\nis\agent\orchestration\local_reasoner.py:597: in infer
+    response = await self.client.post(self.chat_url, json=payload)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\httpx\_client.py:1859: in post
+    return await self.request(
+backend\.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+backend\.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+backend\.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\httpx\_transports\mock.py:34: in handle_async_request
+    response = self.handler(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+request = &lt;Request('POST', 'http://127.0.0.1:11434/api/chat')&gt;
+
+    def handler(request):
+        if request.url.path.endswith('/show'):
+            return httpx.Response(200, json={'details': {'family': family}, 'model_info': {'general.parameter_count': 27000000000}})
+        payload = json.loads(request.content)
+        if capture is not None:
+            capture.append(deepcopy(payload))
+        if timeout:
+            raise httpx.ReadTimeout('Unit provider deadline', request=request)
+        content = json.loads(payload['messages'][1]['content'])
+        observed.append(content)
+        allowed = set(content['output_fields_for_this_stage'])
+        candidate = {key: deepcopy(value) for key, value in design.items() if key in allowed}
+        if content.get('port_ids_for_this_stage'):
+            selected = set(content['port_ids_for_this_stage'])
+            candidate['ports'] = [row for row in candidate['ports'] if row['id'] in selected]
+        elif content['planning_stage'] == 'Portabsicht, Messgrößen und Stellbefehle':
+            for row in candidate['ports']:
+                row['parameters'] = {}
+        if content.get('function_fact_ids_for_this_stage'):
+            selected = set(content['function_fact_ids_for_this_stage'])
+            candidate['functions'] = [row for row in candidate['functions'] if row['source_fact_id'] in selected]
+&gt;           candidate['functional_dependencies'] = [row for row in candidate['functional_dependencies'] if row['producer_fact_id'] in selected]
+                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'functional_dependencies'
+
+backend\tests\test_reference_reasoner.py:65: KeyError</failure></testcase><testcase classname="tests.test_reference_reasoner" name="test_stage_decoder_narrows_outputs_but_does_not_modify_public_schema" time="1.464" /><testcase classname="tests.test_reference_reasoner" name="test_parameter_merge_rejects_wrong_batch_membership[missing]" time="0.001" /><testcase classname="tests.test_reference_reasoner" name="test_parameter_merge_rejects_wrong_batch_membership[duplicate]" time="0.001" /><testcase classname="tests.test_reference_reasoner" name="test_parameter_merge_rejects_wrong_batch_membership[foreign]" time="0.001" /><testcase classname="tests.test_reference_reasoner" name="test_parameter_merge_cannot_reassign_port_identity[device_id-other]" time="0.001" /><testcase classname="tests.test_reference_reasoner" name="test_parameter_merge_cannot_reassign_port_identity[technology-lin]" time="0.001" /><testcase classname="tests.test_reference_reasoner" name="test_parameter_merge_cannot_reassign_port_identity[role-BACKBONE]" time="0.001" /><testcase classname="tests.test_reference_reasoner" name="test_parameter_merge_cannot_reassign_port_identity[network_scope-other]" time="0.001" /><testcase classname="tests.test_reference_reasoner" name="test_parameter_merge_preserves_prior_port_reference_sources_without_mutating_input" time="0.001" /><testcase classname="tests.test_reference_reasoner" name="test_full_profile_repair_reuses_bounded_phases_and_complete_source" time="1.954"><failure message="KeyError: 'functional_dependencies'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001DEECED2B50&gt;
+
+    def test_full_profile_repair_reuses_bounded_phases_and_complete_source(monkeypatch):
+        original = intake.validate_reference_design_profile
+        checks = []
+        def require_repair(value, prepared, profile):
+            checks.append(deepcopy(value))
+            if len(checks) == 1:
+                raise ValueError('Unit finding requires another complete native profile review')
+            return original(value, prepared, profile)
+        monkeypatch.setattr(intake, 'validate_reference_design_profile', require_repair)
+        reasoner, prepared, observed = reasoner_with_transport(monkeypatch)
+&gt;       result = run_reference(reasoner, prepared)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_reasoner.py:225: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_reasoner.py:126: in run_reference
+    return asyncio.run(run())
+           ^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:196: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:119: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\base_events.py:725: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+backend\tests\test_reference_reasoner.py:123: in run
+    return await reasoner.plan_reference_design(prepared)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\local_reasoner.py:679: in plan_reference_design
+    await plan_profile()
+backend\nis\agent\orchestration\local_reasoner.py:666: in plan_profile
+    functions = await infer('Atomare und zusammengesetzte Funktionen',
+backend\nis\agent\orchestration\local_reasoner.py:597: in infer
+    response = await self.client.post(self.chat_url, json=payload)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\httpx\_client.py:1859: in post
+    return await self.request(
+backend\.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+backend\.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+backend\.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\httpx\_transports\mock.py:34: in handle_async_request
+    response = self.handler(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+request = &lt;Request('POST', 'http://127.0.0.1:11434/api/chat')&gt;
+
+    def handler(request):
+        if request.url.path.endswith('/show'):
+            return httpx.Response(200, json={'details': {'family': family}, 'model_info': {'general.parameter_count': 27000000000}})
+        payload = json.loads(request.content)
+        if capture is not None:
+            capture.append(deepcopy(payload))
+        if timeout:
+            raise httpx.ReadTimeout('Unit provider deadline', request=request)
+        content = json.loads(payload['messages'][1]['content'])
+        observed.append(content)
+        allowed = set(content['output_fields_for_this_stage'])
+        candidate = {key: deepcopy(value) for key, value in design.items() if key in allowed}
+        if content.get('port_ids_for_this_stage'):
+            selected = set(content['port_ids_for_this_stage'])
+            candidate['ports'] = [row for row in candidate['ports'] if row['id'] in selected]
+        elif content['planning_stage'] == 'Portabsicht, Messgrößen und Stellbefehle':
+            for row in candidate['ports']:
+                row['parameters'] = {}
+        if content.get('function_fact_ids_for_this_stage'):
+            selected = set(content['function_fact_ids_for_this_stage'])
+            candidate['functions'] = [row for row in candidate['functions'] if row['source_fact_id'] in selected]
+&gt;           candidate['functional_dependencies'] = [row for row in candidate['functional_dependencies'] if row['producer_fact_id'] in selected]
+                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'functional_dependencies'
+
+backend\tests\test_reference_reasoner.py:65: KeyError</failure></testcase><testcase classname="tests.test_reference_reasoner" name="test_timeout_identifies_actual_stage_without_returning_partial_design" time="1.814" /><testcase classname="tests.test_reference_reasoner" name="test_complete_retry_history_must_fit_without_source_truncation" time="0.001" /></testsuite></testsuites>

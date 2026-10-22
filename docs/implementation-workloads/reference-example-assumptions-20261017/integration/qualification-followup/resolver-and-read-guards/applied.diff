@@ -1,0 +1,54 @@
+--- before/backend/nis/agent/tools/project_draft.py
++++ after/backend/nis/agent/tools/project_draft.py
+@@ -470,6 +470,9 @@
+            for field in ('commands', 'measurements', 'connections', 'owners')):
+         raise ConcurrentUpdateError('Bestätigte Gerätefelder wurden nach der Referenzplanung geändert. Den Referenzentwurf mit den aktuellen Entscheidungen neu prüfen.')
+     checked = validate_reference_design(record['proposal'], prepare_reference_design(record['request']))
++    if checked['proposal']['unresolved']:
++        raise ConcurrentUpdateError('Der bestätigte Referenzentwurf erfüllt die aktuellen Entwurfsanforderungen nicht mehr. Erneut prüfen: '
++            + '; '.join(item['message'] for item in checked['proposal']['unresolved'][:8]))
+     if checked['request_sha256'] != record['request_sha256'] or checked['catalog_sha256'] != record['catalog_sha256']:
+         raise ConcurrentUpdateError('Die Quellen- oder Katalogrevision des Referenzentwurfs ist veraltet.')
+     return deepcopy(record)
+--- before/backend/tests/test_reference_model_persistence.py
++++ after/backend/tests/test_reference_model_persistence.py
+@@ -98,8 +98,16 @@
+     assert len(objects['DataObject']) == 1
+     assert len(objects['Message']) == len(record['proposal']['communication'])
+     assert len(objects['Signal']) == len(record['proposal']['communication'])
++    hardware_ids = {row['name']: str(row['id']) for row in objects['HardwareNode']}
++    device_ids = {row['id']: hardware_ids[row['name']] for row in record['proposal']['devices']}
++    expected_communication = {row['id']: row for row in record['proposal']['communication']}
+     for message in objects['Message']:
+-        assert message.get('consumer_refs'), message
++        config = message['configuration']
++        expected = expected_communication[config['reference_design']['communication_id']]
++        contract = config['communication_contract']
++        assert contract['producer_ref'] == device_ids[expected['producer_device_id']]
++        assert contract['consumer_refs'] == [device_ids[key] for key in expected['consumer_device_ids']]
++        assert config['transport_unit']['consumer_refs'] == contract['consumer_refs']
+     # Repeating generation may propose nothing but must never duplicate canonical objects.
+     repeated = call('repeat', wizard_generation.generate, {'prompt': prompt})
+     assert not [row for row in repeated.get('changes', []) if row.get('action', 'CREATE') == 'CREATE']
+--- before/backend/tests/test_reference_design_integration.py
++++ after/backend/tests/test_reference_design_integration.py
+@@ -117,3 +117,19 @@
+     assert 'inspect_reference_design' in TOOLS
+     assert 'accept_reference_design' not in TOOLS
+ 
++
++
++def test_accepted_plan_cannot_bypass_new_validation_findings(reference, monkeypatch):
++    authority, request, record, _calls = reference
++    accepted = run(authority, drafts.accept_reference_design,
++                   {key: record[key] for key in ('design_id', 'revision', 'request_sha256')}).data
++    original = intake.validate_reference_design
++    def newly_required(proposal, prepared):
++        checked = original(proposal, prepared)
++        checked['proposal']['unresolved'].append({'code': 'NEW_REQUIRED_CONFIGURATION',
++            'target_ref': 'PC', 'message': 'New mandatory configuration remains unresolved'})
++        return checked
++    monkeypatch.setattr(intake, 'validate_reference_design', newly_required)
++    result = run(authority, lambda _: drafts.reference_design_for_prompt(request['prompt'] + '\n' + marker(accepted)))
++    assert not result.success
++    assert any('aktuellen Entwurfsanforderungen' in row['message'] for row in result.findings)

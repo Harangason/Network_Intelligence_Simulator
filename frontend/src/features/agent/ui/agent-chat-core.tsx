@@ -1,4 +1,6 @@
 "use client";
+
+import { DOCUMENT_EQUIPMENT_MARKER, documentSourceFunctionAssignments, documentFactIdentity, documentEvidenceCounts, documentDeviceQuestions, documentRequestSource, reviewDocumentEquipment, type ReviewedDocumentEquipment } from '@/features/agent/lib/document-clarification';
 import type { AgentInput } from "@/features/agent/lib/agent-response";
 import { readConversation, type ConversationSnapshot } from '@/features/agent/lib/conversation-client';
 import { wizardContextForRequest, wizardConversationMatches, wizardQuestionFromConversation, wizardReceipt, wizardRequestRevision, wizardTargets, type WizardCommand } from '@/features/agent/lib/wizard-protocol';
@@ -6,7 +8,7 @@ import { readAssistantContext } from "@/features/agent/lib/assistant-context";
 import type { AssistantGraphState } from "@/shared/lib/index.ts";
 import type { ChatAttachment } from "@/features/agent/lib/chat-attachments";
 import { completeWizardDocumentText, MAX_CHAT_FILE_BYTES } from "@/features/agent/lib/chat-attachments";
-import { readDocumentIntakeResponse, type DocumentIntakeProposal } from '@/features/agent/lib/engineering-agent';
+import { readDocumentIntakeResponse, documentRequestErrorMessage, referenceDesignMarker, type ReferenceDesignRecord, type ReferenceSource, type DocumentIntakeProposal } from '@/features/agent/lib/engineering-agent';
 import { AgentChatComposer } from "./agent-chat-composer";
 import { ProjectDraftEditor, type ProjectDraftStatus } from '../../projects/ui/project-draft-editor';
 
@@ -70,7 +72,7 @@ import { approveRoutes, listRoutes } from "@/features/routing/lib/routing-api";
 import { routingApprovalProgress } from "@/features/routing/lib/routing-approval";
 import type { EngineeringObject, EngineeringResource, RoutingEntry, Technology, TechnologyDomain } from "@/shared/api/types";
 import { DEFAULT_BUS_PARTICIPANT_LIMITS, busBranchCapacity } from "@/features/communication/lib/bus-settings";
-import { readActiveProjectId, withProjectParam } from "@/features/settings/lib/user-settings";
+import { readActiveProjectId, withProjectParam, SETTINGS_EVENT } from "@/features/settings/lib/user-settings";
 import {
   defaultWizardTechnologyIds,
   normalizeEngineeringWizardSettings,
@@ -603,7 +605,7 @@ type TaskAttachment = {
   kind: string;
   content?: string;
   previewDataUrl?: string;
-  source: "task" | "architecture";
+  source: "task" | "architecture" | "reference";
   analysisHint: string;
 };
 
@@ -727,7 +729,7 @@ type AgentWizardContext = {
   engineering_draft_ref?: { draft_id: string; revision: number };
   structured_draft_ref?: { draft_id: string; revision: number };
   agent_prompt?: string;
-  attachments: Array<{ kind: string; name: string; size: number; source?: "task" | "architecture" }>;
+  attachments: Array<{ kind: string; name: string; size: number; source?: "task" | "architecture" | "reference" }>;
   confirmed_at: string;
   industry: string;
   model_type: string;
@@ -1148,6 +1150,8 @@ export function EngineeringAgentWizard({
   const [taskFiles, setTaskFiles] = useState<TaskAttachment[]>([]);
   const [taskAttachmentError, setTaskAttachmentError] = useState('');
   const [documentIntakeBusy, setDocumentIntakeBusy] = useState(false);
+  const documentRequestRef = useRef<AbortController | null>(null);
+  const referenceRequestRef = useRef<AbortController | null>(null);
   const [documentIntakeProgress, setDocumentIntakeProgress] = useState('');
   const [documentIntakeError, setDocumentIntakeError] = useState('');
   const [documentIntake, setDocumentIntake] = useState<{ source: string; project: string; proposal: DocumentIntakeProposal } | null>(null);
@@ -1173,8 +1177,73 @@ export function EngineeringAgentWizard({
     target: string;
   }>(null);
   const [activeEquipmentClusterId, setActiveEquipmentClusterId] = useState("");
+  const [projectId] = useState(() => readActiveProjectId());
   const [acceptedDomainMismatch, setAcceptedDomainMismatch] = useState("");
-  const taskSource = `${taskText}\n${taskFiles.map(formatTaskAttachment).join("\n")}`;
+  const [reviewedDocument, setReviewedDocument] = useState<{ source: string; project: string; equipment: ReviewedDocumentEquipment } | null>(null);
+  const [documentAnswers, setDocumentAnswers] = useState<{ source: string; project: string; values: Record<string, string> }>({ source: '', project: '', values: {} });
+  const [documentMinimum, setDocumentMinimum] = useState(false);
+  const [documentFunctions, setDocumentFunctions] = useState<{ source: string; project: string; values: Record<string, string> }>({ source: '', project: '', values: {} });
+  const [documentRoles, setDocumentRoles] = useState<{ source: string; project: string; values: Record<string, string> }>({ source: '', project: '', values: {} });
+  const [referenceExample, setReferenceExample] = useState(false);
+  const [referenceClarification, setReferenceClarification] = useState('');
+  const [referenceBusy, setReferenceBusy] = useState(false);
+  const [referenceProgress, setReferenceProgress] = useState('');
+  const [referenceError, setReferenceError] = useState('');
+  const [referenceDesign, setReferenceDesign] = useState<{ signature: string; project: string; record: ReferenceDesignRecord } | null>(null);
+  const primaryFiles = taskFiles.filter(file => file.source !== 'reference');
+  const referenceFiles = taskFiles.filter(file => file.source === 'reference');
+  const originalTaskSource = `${taskText}\n${primaryFiles.map(formatTaskAttachment).join("\n")}`;
+  const documentSourceIdentity = documentRequestSource(taskText, primaryFiles.map(formatTaskAttachment));
+  const currentDocumentProposal = documentIntake?.source === documentSourceIdentity && documentIntake.project === projectId ? documentIntake.proposal : null;
+  const activeDocumentEquipment = reviewedDocument?.source === documentSourceIdentity && reviewedDocument.project === projectId ? reviewedDocument.equipment : null;
+  const sourceTask = originalTaskSource + (activeDocumentEquipment ? `\n${DOCUMENT_EQUIPMENT_MARKER}${JSON.stringify(activeDocumentEquipment)}` : '');
+  const referenceSignature = JSON.stringify([sourceTask, notes, referenceFiles, referenceClarification, referenceExample]);
+  useEffect(() => () => { documentRequestRef.current?.abort(); }, [documentSourceIdentity, projectId]);
+  useEffect(() => () => { referenceRequestRef.current?.abort(); }, [referenceSignature, projectId]);
+  useEffect(() => {
+    const changedProject = () => {
+      if (readActiveProjectId() !== projectId) {
+        documentRequestRef.current?.abort();
+        referenceRequestRef.current?.abort();
+      }
+    };
+    window.addEventListener(SETTINGS_EVENT, changedProject);
+    return () => {
+      window.removeEventListener(SETTINGS_EVENT, changedProject);
+      documentRequestRef.current?.abort(); documentRequestRef.current = null;
+      referenceRequestRef.current?.abort(); referenceRequestRef.current = null;
+    };
+  }, [projectId]);
+  const currentReference = referenceExample && referenceDesign?.project === projectId && referenceDesign.signature === referenceSignature ? referenceDesign.record : null;
+  const acceptedReference = currentReference?.status === 'ACCEPTED' ? currentReference : null;
+  const referenceMarker = acceptedReference ? referenceDesignMarker(acceptedReference) : '';
+  const taskSource = sourceTask + (referenceMarker ? '\n' + referenceMarker : '');
+  const documentQuestions = documentDeviceQuestions(originalTaskSource, currentDocumentProposal);
+  const activeDocumentAnswers = documentAnswers.source === documentSourceIdentity && documentAnswers.project === projectId ? documentAnswers.values : {};
+  const activeDocumentRoles = documentRoles.source === documentSourceIdentity && documentRoles.project === projectId ? documentRoles.values : {};
+  const activeDocumentFunctions = { ...(activeDocumentEquipment?.function_assignments ?? {}), ...(documentFunctions.source === documentSourceIdentity && documentFunctions.project === projectId ? documentFunctions.values : {}) };
+  function adoptDocumentEquipment() {
+    try {
+      const equipment = reviewDocumentEquipment(documentSourceIdentity, currentDocumentProposal, activeDocumentAnswers, documentMinimum, activeDocumentRoles, { ...documentScopedFunctionAssignments, ...activeDocumentFunctions });
+      setReviewedDocument({ source: documentSourceIdentity, project: projectId, equipment });
+      setDocumentIntakeError('');
+    } catch (error) { setDocumentIntakeError(error instanceof Error ? error.message : 'Dokumentangaben konnten nicht übernommen werden.'); }
+  }
+  function reviewedDocumentEvidence() {
+    if (!activeDocumentEquipment?.facts) return null;
+    const counts = documentEvidenceCounts(activeDocumentEquipment);
+    return <section className="agent-cluster-review" aria-label="Übernommene Dokumentbefunde">
+      <h3>Quellenbefunde im Wizard</h3>
+      <p role="status">{counts.total} Befunde übernommen: {counts.devices} Gerätebefunde, {counts.functions} Funktionsbefunde, {counts.requirements} Anforderungsblöcke mit {counts.requirementIds} Anforderungs-IDs.</p>
+      <p>Geräteart, Stückzahl und Funktionszuordnung bleiben offen, soweit die Quelle sie nicht festlegt. Anforderungen und Funktionen bleiben mit ihren vollständigen Quellenbelegen im Auftrag erhalten.</p>
+      <details><summary>Übernommene Aussagen und Quellen</summary><ul>{activeDocumentEquipment.facts.map((item, index) => <li key={index} data-document-kind={item.kind} data-document-role={item.role}>
+        <strong>{item.name}</strong> · {({ INSTANCE: 'Geräteinstanz', CATEGORY: 'Geräteart', FUNCTION: 'Funktion', REQUIREMENT: 'Anforderung' })[item.kind]}
+        {item.quantity !== null && ` · Anzahl ${item.quantity}`}
+        {item.source_context?.length ? <p>Kontext: {item.source_context.join(' / ')}</p> : null}
+        <blockquote>{item.source_quote}</blockquote>
+      </li>)}</ul></details>
+    </section>;
+  }
   const detectedDomain = useMemo(() => engineeringDomainEvidence(taskSource), [taskSource]);
   const selectedDomainId = canonicalWizardDomain(selectedIndustry);
   const domainMismatch = detectedDomain.domain !== "generic"
@@ -1204,6 +1273,14 @@ export function EngineeringAgentWizard({
     () => extractEngineeringSpecification(taskSource, equipmentCounts, previewDomain),
     [equipmentCounts.actuators, equipmentCounts.ecus, equipmentCounts.gateways, equipmentCounts.sensors, previewDomain, taskSource],
   );
+  const documentControllerChains = plannedEquipment.chains.filter(chain => isEngineeringControllerDevice(chain.device_type));
+  const documentFunctionHosts = [...new Set(documentControllerChains.map(chain => chain.hardware_name))];
+  const documentFunctionFacts = activeDocumentEquipment?.facts?.filter(fact => fact.kind === 'FUNCTION') ?? [];
+  const documentScopedFunctionAssignments = documentSourceFunctionAssignments(currentDocumentProposal?.interpretation.components ?? activeDocumentEquipment?.facts ?? [], documentControllerChains.map(chain => {
+    const configuration = (chain.configuration ?? {}) as { source_scoped_functions?: { source_quote: string }[]; document_equipment_evidence?: { source_context?: string[] } };
+    return { name: chain.hardware_name, source_context: configuration.document_equipment_evidence?.source_context, duties: configuration.source_scoped_functions ?? [] };
+  }));
+  const unresolvedDocumentFunctions = acceptedReference ? [] : documentFunctionFacts.filter(fact => !documentFunctionHosts.includes(activeDocumentEquipment?.function_assignments?.[documentFactIdentity(fact)] ?? ''));
   const plannedInventory = new Map(plannedEquipment.chains.map(chain => [chain.hardware_name, chain.device_type]));
   const identifiedCounts = { sensors: 0, actuators: 0, gateways: 0, ecus: 0 };
   for (const type of plannedInventory.values()) {
@@ -1268,14 +1345,13 @@ export function EngineeringAgentWizard({
       return;
     }
     const nextText = `${taskText}\nController namens "${name}".`;
-    const nextSource = `${nextText}\n${taskFiles.map(formatTaskAttachment).join("\n")}`;
+    const nextSource = `${nextText}\n${primaryFiles.map(formatTaskAttachment).join("\n")}`;
     controllerExtensionRef.current = nextSource;
     setEquipmentEdits({ source: nextSource, values: { ...equipmentValues, ecus: String(Math.max(equipmentCounts.ecus, identifiedCounts.ecus + 1)) } });
     setTaskText(nextText);
     setNewControllerName('');
     setControllerAdditionError('');
   }
-  const [projectId] = useState(() => readActiveProjectId());
   const wizardRunRef = useRef('');
   const requestRevisionRef = useRef<string | undefined>(undefined);
   const pendingCommandRef = useRef<{ signature: string; command: WizardCommand } | null>(null);
@@ -2034,8 +2110,7 @@ export function EngineeringAgentWizard({
   const atLastStep = phase === "questionnaire" && step === questionnaireSteps.length - 1;
   const projectReady = projectName.trim().length > 0;
   const taskReady = taskText.trim().length > 0 || taskFiles.length > 0;
-  const effectiveBusy = busy || submitting || documentIntakeBusy || !wizardPreferencesReady || Boolean(wizardRestoreError);
-  const currentDocumentProposal = documentIntake?.source === taskSource && documentIntake.project === projectId ? documentIntake.proposal : null;
+  const effectiveBusy = busy || submitting || documentIntakeBusy || referenceBusy || !wizardPreferencesReady || Boolean(wizardRestoreError);
   const selectedArchitecture = architectureOption(networkArchitecture);
   const plannedNetworkConnections = plannedNetworkConnectionCount({
     architectureId: selectedArchitecture?.id,
@@ -2128,21 +2203,26 @@ export function EngineeringAgentWizard({
 
   async function reviewDocumentWithQwen() {
     if (documentIntakeBusy || !taskSource.trim()) return;
-    const source = taskSource;
+    documentRequestRef.current?.abort();
+    const controller = new AbortController();
+    documentRequestRef.current = controller;
+    const source = documentSourceIdentity;
     const sourceRequestId = Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join('');
     setDocumentIntakeBusy(true); setDocumentIntakeProgress('Lokaler Qwen startet …'); setDocumentIntakeError(''); setDocumentIntake(null);
     try {
       completeWizardDocumentText(source);
       if (readActiveProjectId() !== projectId) throw new Error('Das aktive Projekt wurde gewechselt.');
-      const sessionResponse = await fetch('/api/engineering/agent/review-session', { cache: 'no-store' });
+      const sessionResponse = await fetch('/api/engineering/agent/review-session', { cache: 'no-store', signal: controller.signal });
       if (!sessionResponse.ok) throw new Error('Die Dokumentauswertung konnte nicht vorbereitet werden.');
       const session = await sessionResponse.json();
       const response = await fetch('/api/engineering/agent/document-intake', {
+        signal: controller.signal,
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/x-ndjson', 'X-Project-ID': projectId,
           'X-Human-Review': 'confirmed', 'X-Review-CSRF': session.csrf_token },
-        body: JSON.stringify({ source, source_request_id: sourceRequestId, source_name: taskFiles.map(file => file.name).join(', ').slice(0, 180) || 'Projektbeschreibung' }),
+        body: JSON.stringify({ source, source_request_id: sourceRequestId, source_name: primaryFiles.map(file => file.name).join(', ').slice(0, 180) || 'Projektbeschreibung' }),
       });
-      const proposal = await readDocumentIntakeResponse(response, text => setDocumentIntakeProgress(text));
+      const proposal = await readDocumentIntakeResponse(response, text => setDocumentIntakeProgress(text), 2_000_000, controller.signal);
+      if (documentRequestRef.current !== controller) return;
       if (readActiveProjectId() !== projectId || proposal.source_request_id !== sourceRequestId
           || !/^[0-9a-f]{64}$/.test(proposal.source_sha256) || !proposal.source_complete
           || proposal.source_chars !== Array.from(source).length || proposal.canonical_writes !== false || proposal.status !== 'REVIEW_REQUIRED') {
@@ -2150,8 +2230,104 @@ export function EngineeringAgentWizard({
       }
       setDocumentIntake({ source, project: projectId, proposal });
     } catch (error) {
-      setDocumentIntakeError(error instanceof Error ? error.message : 'Die lokale Dokumentauswertung ist fehlgeschlagen.');
-    } finally { setDocumentIntakeBusy(false); }
+      if (!controller.signal.aborted && documentRequestRef.current === controller) {
+        controller.abort();
+        setDocumentIntakeError(documentRequestErrorMessage(error));
+      }
+    } finally {
+      if (documentRequestRef.current === controller) { documentRequestRef.current = null; setDocumentIntakeBusy(false); }
+    }
+  }
+
+  async function referenceAction(accept = false) {
+    if (effectiveBusy || !activeDocumentEquipment || !referenceExample) return;
+    referenceRequestRef.current?.abort();
+    const controller = new AbortController();
+    referenceRequestRef.current = controller;
+    const signature = referenceSignature;
+    setReferenceBusy(true); setReferenceError('');
+    setReferenceProgress(accept ? 'Referenzprüfung wird gespeichert …' : 'Lokaler Qwen plant die vollständigen fachlichen Ketten …');
+    try {
+      const sha = async (value: string) => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))), byte => byte.toString(16).padStart(2, '0')).join('');
+      const sources: ReferenceSource[] = await Promise.all(referenceFiles.map(async (file, index) => {
+        if (!file.content) throw new Error(`${file.name}: Die Referenz muss vollständig als Text gelesen werden.`);
+        return { id: 'reference-' + index, name: file.name, role: 'REFERENCE_SUPPLEMENT', text: file.content,
+          source_sha256: await sha(file.content), allowed_fields: ['function_hosts', 'ports', 'measurements', 'commands', 'communication'] };
+      }));
+      if (referenceClarification.trim()) sources.push({ id: 'user-clarification', name: 'Ergänzende Nutzeranforderung', role: 'USER_CLARIFICATION',
+        text: referenceClarification, source_sha256: await sha(referenceClarification),
+        allowed_fields: ['quantity', 'device_type', 'function_hosts', 'ports', 'measurements', 'commands', 'communication'] });
+      if (readActiveProjectId() !== projectId) throw new Error('Das aktive Projekt wurde gewechselt.');
+      const sessionResponse = await fetch('/api/engineering/agent/review-session', { cache: 'no-store', signal: controller.signal });
+      if (!sessionResponse.ok) throw new Error('Die Referenzprüfung konnte nicht vorbereitet werden.');
+      const session = await sessionResponse.json();
+      if (accept && !currentReference) throw new Error('Der aktuelle Referenzentwurf fehlt.');
+      const response = await fetch('/api/engineering/agent/document-reference-design' + (accept ? '/accept' : ''), {
+        signal: controller.signal,
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/x-ndjson', 'X-Project-ID': projectId,
+          'X-Human-Review': 'confirmed', 'X-Review-CSRF': session.csrf_token },
+        body: JSON.stringify(accept ? { design_id: currentReference!.design_id, revision: currentReference!.revision,
+          request_sha256: currentReference!.request_sha256 } : { mode: 'EXAMPLE_PROJECT', prompt: sourceTask + (notes ? '\n' + notes : ''),
+          source_request_id: crypto.randomUUID(), reference_sources: sources }),
+      });
+      const record = await readDocumentIntakeResponse<ReferenceDesignRecord>(response, setReferenceProgress, 24_000_000, controller.signal);
+      if (referenceRequestRef.current !== controller) return;
+      if (readActiveProjectId() !== projectId || record.canonical_writes !== false || record.schema_version !== 1
+          || record.source_sha256 !== activeDocumentEquipment.source_sha256 || !record.design_id
+          || !['REVIEW_REQUIRED', 'ACCEPTED'].includes(record.status)) throw new Error('Die Referenzantwort passt nicht zur aktuellen vollständigen Quelle.');
+      setReferenceDesign({ signature, project: projectId, record });
+      // No canonical writes here. Starting the ordinary wizard is a separate
+      // action and retains validate/review/apply, preflight and simulation.
+    } catch (error) {
+      if (!controller.signal.aborted && referenceRequestRef.current === controller) {
+        controller.abort();
+        setReferenceError(documentRequestErrorMessage(error, 'reference'));
+      }
+    } finally {
+      if (referenceRequestRef.current === controller) { referenceRequestRef.current = null; setReferenceBusy(false); }
+    }
+  }
+
+  function referenceReview() {
+    return <section className="agent-cluster-review" aria-label="Beispiel und Referenzannahmen">
+      <h3>Beispielprojekt mit Referenzentwurf</h3>
+      <label><input type="checkbox" disabled={effectiveBusy} checked={referenceExample} onChange={event => setReferenceExample(event.target.checked)} />
+        Fehlende Beispieldaten von NIS als prüfbare Referenzannahmen planen lassen</label>
+      {referenceExample && <>
+        <p>Die Originalquelle bleibt erhalten. Ergänzende Referenzen bestimmen keine neuen Stückzahlen. Neue Auslegungsdaten bleiben Referenzannahmen, auch nach ihrer Übernahme.</p>
+        <label>Ergänzende Nutzeranforderung<textarea aria-label="Ergänzende Nutzeranforderung" rows={3} disabled={effectiveBusy} value={referenceClarification} onChange={event => setReferenceClarification(event.target.value)} /></label>
+        <label>Ergänzende Referenzdatei<input aria-label="Ergänzende Referenzdatei" type="file" accept=".txt,.md,.json,.csv" multiple disabled={effectiveBusy}
+          onChange={event => { void handleTaskFiles(event.target.files, 'reference'); event.currentTarget.value = ''; }} /></label>
+        <ul>{referenceFiles.map(file => <li key={file.name}>{file.name} · {file.content?.length.toLocaleString('de-DE')} Zeichen · nur Funktionszuordnung, Anschlüsse, Messdaten, Befehle und Kommunikation
+          <button type="button" disabled={effectiveBusy} onClick={() => setTaskFiles(taskFiles.filter(item => item !== file))}>Referenz entfernen</button></li>)}</ul>
+        <button type="button" className="button secondary" disabled={effectiveBusy || !activeDocumentEquipment} onClick={() => void referenceAction()}>NIS-Referenzentwurf mit lokalem Qwen erstellen</button>
+        {!activeDocumentEquipment && <p>Die vollständigen Dokumentbefunde zuerst prüfen und übernehmen.</p>}
+        {referenceBusy && <p role="status">{referenceProgress} <button className="button secondary tiny" type="button"
+          onClick={() => { referenceRequestRef.current?.abort(); setReferenceError('Referenzprüfung abgebrochen.'); }}>Abbrechen</button></p>}
+        {referenceError && <p role="alert">{referenceError}</p>}
+        {currentReference && <>
+          <p role="status">{currentReference.status === 'ACCEPTED' ? 'Referenzannahmen übernommen' : 'Referenzannahmen zur Prüfung'} · {currentReference.proposal.devices.length} Teilnehmerentwürfe · {currentReference.proposal.functions.length} Funktionen · {currentReference.proposal.communication.length} Kommunikationsbeziehungen</p>
+          <details><summary>Alle Referenzannahmen mit Begründung prüfen</summary>
+            <p>Belegart: REFERENCE_ASSUMPTION. Keine bestätigte Hardwareeignung, Verarbeitungsausführung oder funktionale Zeitbewertung.</p>
+            <p>Hardware- und Zeitnachweise bleiben ungeprüft. Die Freigabe dieses Beispielentwurfs ersetzt weder Preflight noch die technische Qualifikation.</p>
+            {(currentReference.qualification_findings?.length ?? 0) > 0 && <details><summary>Offene technische Nachweise ({currentReference.qualification_findings?.length})</summary>
+              <ul>{currentReference.qualification_findings?.map((row, index) => <li key={index}>{row.target_ref} · {row.technology} · {row.parameter} · {row.value_role}: {String(row.finding.message ?? row.finding.code ?? 'Nachweis offen')}</li>)}</ul>
+            </details>}
+            <h4>Teilnehmer und Umfang</h4><ul>{currentReference.proposal.devices.map(row => <li key={row.id}>{row.quantity} × {row.name} · {row.kind}: {row.rationale}</li>)}</ul>
+            <h4>Funktionszuordnung</h4><ul>{currentReference.proposal.functions.map(row => <li key={row.source_fact_id}>{row.source_fact_id} · {row.realization} · {row.executor_device_ids.join(', ') || row.realized_by_fact_ids.join(', ')}: {row.rationale}</li>)}</ul>
+            <h4>Anschlüsse und technische Parameter</h4><ul>{currentReference.proposal.ports.map(row => <li key={row.id}>{row.device_id} · {row.technology} · {row.network_scope}: {JSON.stringify(row.parameters)} · {row.rationale}</li>)}</ul>
+            <h4>Messgrößen und Stellbefehle</h4><ul>{currentReference.proposal.measurements.map((row, index) => <li key={'m' + index}>{row.device_id}: {row.measurement_id} · {row.rationale}</li>)}
+              {currentReference.proposal.commands.map((row, index) => <li key={'c' + index}>{row.device_id}: {JSON.stringify(row.definition)} · {row.rationale}</li>)}</ul>
+            <h4>Daten und Empfänger</h4><ul>{currentReference.proposal.communication.map(row => <li key={row.id}>{row.producer_device_id} → {row.consumer_device_ids.join(', ')} · {row.signal_name}: {JSON.stringify(row.encoding)} · {row.rationale}</li>)}</ul>
+            <h4>Logische Daten innerhalb eines Controllers</h4><ul>{currentReference.proposal.functional_dependencies.map(row => <li key={row.id}>{row.producer_fact_id} → {row.consumer_fact_ids.join(', ')} · {row.signal_name} · {row.rationale}</li>)}</ul>
+            <details><summary>Vollständiger Entwurf und Herkunft aller Felder</summary><pre>{JSON.stringify(currentReference, null, 2)}</pre></details>
+          </details>
+          {currentReference.proposal.unresolved.length > 0 && <ul role="alert">{currentReference.proposal.unresolved.map((row, index) => <li key={index}>{row.message}</li>)}</ul>}
+          {currentReference.status === 'REVIEW_REQUIRED' && <button type="button" className="button secondary" disabled={effectiveBusy || currentReference.proposal.unresolved.length > 0}
+            onClick={() => void referenceAction(true)}>Geprüfte Referenzannahmen übernehmen</button>}
+        </>}
+      </>}
+    </section>;
   }
 
   async function handleTaskFiles(files: FileList | null, source: TaskAttachment["source"] = "task") {
@@ -2266,13 +2442,13 @@ export function EngineeringAgentWizard({
       ? "Technologie-Defaults verwenden"
       : `Nutzerdefiniert: Bitrate=${customParameters.bitrate || "Default"}; Payload=${customParameters.payload || "Default"}; Cycle=${customParameters.cycleMs || "Default"} ms; SamplePoint=${customParameters.samplePoint || "Default"} %`;
     const note = notes.trim() ? `- Weitere Hinweise: ${notes.trim()}\n` : "";
-    const attachments = taskFiles.length
-      ? `\n\nAufgaben-Anlagen:\n${taskFiles.map((file) => formatTaskAttachment(file)).join("\n")}`
+    const attachments = primaryFiles.length
+      ? `\n\nAufgaben-Anlagen:\n${primaryFiles.map((file) => formatTaskAttachment(file)).join("\n")}`
       : "";
-    const confirmedTaskText = selectSensorMeasurements(taskText, resolvedSensorMeasurements);
-    const confirmedTaskSource = `${confirmedTaskText}\n${taskFiles.map(formatTaskAttachment).join("\n")}`;
+    const confirmedTaskText = acceptedReference ? taskText : selectSensorMeasurements(taskText, resolvedSensorMeasurements);
+    const confirmedTaskSource = `${confirmedTaskText}\n${primaryFiles.map(formatTaskAttachment).join("\n")}`;
     setTaskText(confirmedTaskText);
-    const concreteTask = `${confirmedTaskText.trim() || "Aufgabe wurde als Datei uebergeben."}${attachments}`;
+    const concreteTask = `${confirmedTaskText.trim() || "Aufgabe wurde als Datei uebergeben."}${attachments}${activeDocumentEquipment ? `\n${DOCUMENT_EQUIPMENT_MARKER}${JSON.stringify(activeDocumentEquipment)}` : ""}${referenceMarker ? `\n${referenceMarker}` : ""}`;
     const nextRunId = crypto.randomUUID();
     const confirmedAt = new Date().toISOString();
     const topologyKnowledge = topologyClusterKnowledgeSummary(projectId, mode === "can" ? selectedIndustry : selectedDomain?.id ?? selectedIndustry);
@@ -2310,7 +2486,7 @@ export function EngineeringAgentWizard({
     const clusterSummary = equipmentClusterSummary(equipmentClusterAssignments);
     const prompt =
       "Strukturierte Vorgaben fuer den Engineering-Agenten:\n" +
-        `- Generierungsmodus: ${engineeringGenerationMode(confirmedTaskSource)}\n` +
+        `- Generierungsmodus: ${acceptedReference ? 'EXAMPLE_PROJECT' : engineeringGenerationMode(confirmedTaskSource)}\n` +
         `- Lauf-ID: ${nextRunId}\n` +
         `- Projektname: ${projectName.trim()}\n` +
         `- Abfrage erfolgt: true\n` +
@@ -2325,7 +2501,9 @@ export function EngineeringAgentWizard({
         `- Bus-Teilnehmergrenzen: ${JSON.stringify(normalizeEngineeringWizardSettings(workflow?.context.engineering_wizard_settings).bus_participant_limits)}\n` +
         (Object.keys(selectedActuatorCommands).length ? `- Aktor-Befehle: ${JSON.stringify(selectedActuatorCommands)}\n` : '') +
         `- Funktionaler Generierungsvertrag: sensor-actuator-v1\n` +
-        `- Systemcluster-Graph: ${JSON.stringify(equipmentClusterGraphPrompt(equipmentClusterAssignments, networkArchitecture))}\n` +
+        // A typed reference plan already fixes concrete ports and recipients.
+        // Legacy template suggestions may not add extra display/status routes.
+        `- Systemcluster-Graph: ${JSON.stringify(acceptedReference ? [] : equipmentClusterGraphPrompt(equipmentClusterAssignments, networkArchitecture))}\n` +
         `- Topologie-Cluster-Profil: ${topologyKnowledge.profile}\n` +
         `- Topologie-Cluster-Regeln: ${topologyKnowledge.ruleSummary.join("; ") || "generische Systemnaehe verwenden"}\n` +
         `- Gelernte Topologie-Nachbarschaften: ${topologyKnowledge.lessonSummary.join("; ") || "noch keine Projektkorrekturen gelernt"}\n` +
@@ -2802,17 +2980,19 @@ export function EngineeringAgentWizard({
     </div>;
   };
   const startBlockers = [
+    ...(referenceExample && !acceptedReference ? [{ step: 'project', text: 'Die aktuellen Referenzannahmen vollständig prüfen und übernehmen.' }] : []),
+    ...(unresolvedDocumentFunctions.length ? [{ step: 'equipment', text: `Ausführenden Controller für ${unresolvedDocumentFunctions.length} Funktionsbefunde festlegen und übernehmen.` }] : []),
     ...(!projectReady ? [{ step: 'project', text: 'Bitte einen Projektnamen eingeben.' }] : []),
     ...(!taskReady ? [{ step: 'project', text: 'Bitte die Projektbeschreibung ergänzen.' }] : []),
     ...(!architectureReady ? [{ step: 'architecture', text: 'Bitte die Architektur auswählen und vervollständigen.' }] : []),
     ...(!equipmentReady ? [{ step: 'equipment', text: intakeRequirement && equipmentValues.actuators === ''
       ? 'Die Anzahl der Ventile bzw. Aktoren ist noch offen.' : 'Die verbindlichen Geräteanzahlen fehlen oder sind ungültig.' }] : []),
-    ...(!equipmentOwnershipReady ? [{ step: 'equipment', text: 'Die Zuordnung der Teilnehmer zu ihren Controllern ist noch offen.' }] : []),
+    ...(!acceptedReference && !equipmentOwnershipReady ? [{ step: 'equipment', text: 'Die Zuordnung der Teilnehmer zu ihren Controllern ist noch offen.' }] : []),
     ...(!equipmentIdentityReady ? [{ step: 'equipment', text: 'Geräteanzahl und konkret benannte Geräte stimmen noch nicht überein. Bitte Geräte in der Anforderung benennen; fehlende Geräte werden nicht erfunden.' }] : []),
-    ...(unresolvedConnections.length ? [{ step: 'equipment', text: `Anschlüsse festlegen: ${unresolvedConnections.map(chain => chain.hardware_name).join(', ')}. Eine Auswahl für den Controller ersetzt nicht die Anschlüsse seiner Sensoren und Aktoren.` }] : []),
-    ...(unresolvedSensorMeasurements.length ? [{ step: 'equipment', text: `Messgrößen festlegen: ${unresolvedSensorMeasurements.map(row => row.name).join(', ')}.` }] : []),
-    ...(unresolvedCommands.length ? [{ step: 'equipment', text: `Stellbefehl und Kodierung festlegen: ${unresolvedCommands.join(', ')}.` }] : []),
-    ...(!equipmentClusterValidationReady ? [{ step: 'equipment', text: 'Die markierten Cluster benötigen eine zulässige Buswahl.' }] : []),
+    ...(!acceptedReference && unresolvedConnections.length ? [{ step: 'equipment', text: `Anschlüsse festlegen: ${unresolvedConnections.map(chain => chain.hardware_name).join(', ')}. Eine Auswahl für den Controller ersetzt nicht die Anschlüsse seiner Sensoren und Aktoren.` }] : []),
+    ...(!acceptedReference && unresolvedSensorMeasurements.length ? [{ step: 'equipment', text: `Messgrößen festlegen: ${unresolvedSensorMeasurements.map(row => row.name).join(', ')}.` }] : []),
+    ...(!acceptedReference && unresolvedCommands.length ? [{ step: 'equipment', text: `Stellbefehl und Kodierung festlegen: ${unresolvedCommands.join(', ')}.` }] : []),
+    ...(!acceptedReference && !equipmentClusterValidationReady ? [{ step: 'equipment', text: 'Die markierten Cluster benötigen eine zulässige Buswahl.' }] : []),
     ...(!communicationSystemReady ? [{ step: 'equipment', text: 'Bitte die Anzahl der Kommunikationssysteme korrigieren.' }] : []),
     ...(domainMismatch && !domainMismatchAccepted ? [{ step: 'equipment', text: 'Industrieangabe und Geräte passen noch nicht zusammen.' }] : []),
   ];
@@ -3175,17 +3355,19 @@ export function EngineeringAgentWizard({
           </label>
           {taskAttachmentError && <p className="notice error" role="alert">{taskAttachmentError}</p>}
           <button className="button secondary" type="button" disabled={effectiveBusy || documentIntakeBusy || !taskReady || !!taskAttachmentError}
-            onClick={() => void reviewDocumentWithQwen()}>{documentIntakeBusy ? 'Lokaler Qwen prüft das Dokument …' : 'Lokalen Qwen-Vorschlag erstellen'}</button>
-          {documentIntakeBusy && <p role="status">{documentIntakeProgress}</p>}
+            onClick={() => void reviewDocumentWithQwen()}>{documentIntakeBusy ? 'Lokaler Qwen prüft das Dokument …' : documentIntakeError ? 'Dokument erneut prüfen' : 'Lokalen Qwen-Vorschlag erstellen'}</button>
+          {referenceReview()}
+          {documentIntakeBusy && <p role="status">{documentIntakeProgress} <button className="button secondary tiny" type="button"
+            onClick={() => { documentRequestRef.current?.abort(); setDocumentIntakeError('Dokumentauswertung abgebrochen.'); }}>Abbrechen</button></p>}
           {documentIntakeError && <p className="notice error" role="alert">{documentIntakeError}</p>}
           {currentDocumentProposal && <section className="agent-cluster-review" aria-label="Qwen-Dokumentvorschlag">
             <h3>Lokaler Dokumentvorschlag zur Prüfung</h3>
             <p>{currentDocumentProposal.interpretation.summary}</p>
             <p>{currentDocumentProposal.model} · vollständige Quelle ({currentDocumentProposal.source_chars.toLocaleString('de-DE')} Zeichen). Es wurde kein Modell geändert.</p>
             <details><summary>Erkannte Aussagen und Quellen</summary><ul>
-              {currentDocumentProposal.interpretation.components.map((item, index) => <li key={index}>
+              {currentDocumentProposal.interpretation.components.map((item, index) => <li key={index} data-document-kind={item.kind} data-document-role={item.role}>
                 <strong>{item.name}</strong> · {({ INSTANCE: 'konkretes Gerät', CATEGORY: 'Gerätekategorie ohne Stückzahl', FUNCTION: 'Funktion', REQUIREMENT: 'Anforderung' })[item.kind]}
-                {item.quantity !== null && ' · Anzahl ' + item.quantity}<blockquote>{item.source_quote}</blockquote>
+                {item.quantity !== null && ' · Anzahl ' + item.quantity}{item.source_context?.length ? <p>Kontext: {item.source_context.join(' / ')}</p> : null}<blockquote>{item.source_quote}</blockquote>
               </li>)}
               {currentDocumentProposal.interpretation.technologies.map((item, index) => <li key={'technology-' + index}>
                 {item.name} · {({ TRANSPORT: 'Kommunikationstechnik', DEVICE_ALIAS: 'Gerätekürzel', UNRESOLVED: 'Technik noch offen' })[item.kind]}<blockquote>{item.source_quote}</blockquote>
@@ -3194,12 +3376,11 @@ export function EngineeringAgentWizard({
             <h4>Entwurfsidee</h4><p style={{ whiteSpace: 'pre-wrap' }}>{currentDocumentProposal.interpretation.proposed_task}</p>
             {currentDocumentProposal.interpretation.assumptions.length > 0 && <><h4>Annahmen zur Prüfung</h4><ul>{currentDocumentProposal.interpretation.assumptions.map((item, index) => <li key={index}>{item}</li>)}</ul></>}
             {currentDocumentProposal.interpretation.open_questions.length > 0 && <><h4>Offene Angaben</h4><ul>{currentDocumentProposal.interpretation.open_questions.map((item, index) => <li key={index}>{item}</li>)}</ul></>}
-            <p>Du kannst die Entwurfsidee in der Projektbeschreibung ausarbeiten. Geräteumfang, Anschlüsse und Modellvorschlag werden anschließend im normalen Wizard geprüft; dieser Dokumentvorschlag erteilt keine Freigabe.</p>
-            <button className="button secondary" type="button" disabled={effectiveBusy} onClick={() => {
-              const choices = taskText.split(/\r?\n/).filter(line => /^[ \t]*- (?:Sensor-Messgrößen|Aktor-Befehle|Geräteanschlüsse|Gerätezuordnungen|Geräte-Spezifikationen):/.test(line));
-              setTaskText([currentDocumentProposal.interpretation.proposed_task, ...choices].join('\n'));
-            }}>Entwurfstext in Projektbeschreibung übernehmen</button>
+            <p>Geräte, Funktionen und Anforderungen werden als getrennte Quellenbefunde in den Wizard übernommen. Fehlende Gerätearten und Stückzahlen klärst du im Geräteumfang. Modelländerungen benötigen weiterhin die normale Prüfung und Freigabe.</p>
+            <button className="button secondary" type="button" disabled={effectiveBusy} onClick={adoptDocumentEquipment}>Geprüfte Dokumentangaben übernehmen</button>
+            {activeDocumentEquipment && <p role="status">Dokumentangaben im Wizard übernommen. Offene Rückfragen und Anschlüsse bleiben zu prüfen.</p>}
           </section>}
+          {reviewedDocumentEvidence()}
           {taskFiles.some((file) => file.source === "task") && (
             <ul className="agent-file-list">
               {taskFiles.filter((file) => file.source === "task").map((file) => (
@@ -3398,6 +3579,39 @@ export function EngineeringAgentWizard({
           {domainMismatchAccepted && (
             <p className="agent-domain-override"><strong>Bewusste Abweichung:</strong> {selectedDomain?.label ?? selectedIndustry} wird trotz erkannter {detectedDomainOption?.label ?? detectedDomain.domain}-Evidence verwendet.</p>
           )}
+          {reviewedDocumentEvidence()}
+          {documentFunctionFacts.length > 0 && <section className="agent-cluster-review" aria-label="Funktionen zuordnen">
+            <h3>Ausführende Controller der Funktionen</h3>
+            <p>Quellengebundene Aufgaben behalten ihren belegten Controller. Wähle bei offenen Zuordnungen den ausführenden Controller.</p>
+            {documentFunctionFacts.map(fact => <label key={documentFactIdentity(fact)} className="agent-device-choice"><span>{fact.name}</span>
+              {fact.source_context?.length ? <small>{fact.source_context.join(' / ')}</small> : null}
+              <select aria-label={`Controller für Funktion ${fact.name}`} disabled={effectiveBusy}
+                value={activeDocumentFunctions[documentFactIdentity(fact)] ?? activeDocumentEquipment?.function_assignments?.[documentFactIdentity(fact)] ?? ''}
+                onChange={event => setDocumentFunctions({ source: documentSourceIdentity, project: projectId, values: { ...activeDocumentFunctions, [documentFactIdentity(fact)]: event.target.value } })}>
+                <option value="">Zuordnung offen</option>{documentFunctionHosts.map(host => <option key={host} value={host}>{host}</option>)}
+              </select>
+            </label>)}
+            <button className="button secondary" type="button" disabled={effectiveBusy} onClick={adoptDocumentEquipment}>Funktionszuordnungen übernehmen</button>
+          </section>}
+          {documentQuestions.length > 0 && <section className="agent-cluster-review" aria-label="Gezielte Dokument-Rückfragen">
+            <h3>Geräteangaben gezielt klären</h3>
+            <p>Wie viele Teilnehmer sollen aus jeder genannten Geräteart in das Kommunikationsmodell aufgenommen werden? Eine leere Angabe bleibt offen. Bei 0 wird kein Teilnehmer daraus erzeugt; der Quellenbefund bleibt erhalten. Geräteart, Anschlüsse und Funktionen werden im normalen Review geprüft.</p>
+            <label><input type="checkbox" checked={documentMinimum} disabled={effectiveBusy} onChange={event => setDocumentMinimum(event.target.checked)} /> Angaben sind ein Mindestumfang; zusätzlicher fachlicher Bedarf muss getrennt vorgeschlagen und bestätigt werden.</label>
+            {documentQuestions.map(question => <div key={question.id} className="agent-device-choice"><label><span>{question.label}</span>
+              {question.source_context?.length ? <small>Kontext: {question.source_context.join(' / ')}</small> : null}
+              {question.role === 'OTHER' ? <select aria-label={`Geräteart ${question.label}`} disabled={effectiveBusy} value={activeDocumentRoles[question.id] ?? ''}
+                onChange={event => setDocumentRoles({ source: documentSourceIdentity, project: projectId, values: { ...activeDocumentRoles, [question.id]: event.target.value } })}>
+                <option value="">Geräteart offen</option><option value="CONTROLLER">Controller</option><option value="GATEWAY">Gateway</option><option value="SENSOR">Sensor</option><option value="ACTUATOR">Aktor</option>
+              </select> : null}
+              <input type="number" min="0" max="1000" step="1" aria-label={`Anzahl ${question.label}`} disabled={effectiveBusy}
+                value={activeDocumentAnswers[question.id] === 'covered' ? '' : activeDocumentAnswers[question.id] ?? ''} onChange={event => setDocumentAnswers({ source: documentSourceIdentity, project: projectId, values: { ...activeDocumentAnswers, [question.id]: event.target.value } })} /></label>
+              {question.covered_by?.length ? <label><input type="checkbox" checked={activeDocumentAnswers[question.id] === 'covered'} disabled={effectiveBusy}
+                onChange={event => setDocumentAnswers({ source: documentSourceIdentity, project: projectId, values: { ...activeDocumentAnswers, [question.id]: event.target.checked ? 'covered' : '' } })} />
+                Vorhandene Teilnehmer und getrennt beantwortete Gerätegruppen decken diese Übersicht ab: {question.covered_by.map(reference => documentQuestions.find(item => item.id === reference)?.label ?? reference).join(', ')}</label> : null}
+              <small>Quelle: {question.source_quote}</small></div>)}
+            <button className="button secondary" type="button" disabled={effectiveBusy} onClick={adoptDocumentEquipment}>Geprüfte Dokumentangaben übernehmen</button>
+            {documentIntakeError && <p role="alert">{documentIntakeError}</p>}
+          </section>}
           {plannedEquipment.unresolvedInventoryGroups.length > 0 && <section className="agent-cluster-review" aria-label="Offene Gerätegruppen" role="alert">
             <h3>Geräteumfang aus dem Dokument noch offen</h3>
             <ul>{plannedEquipment.unresolvedInventoryGroups.map(finding => <li key={finding}>{finding}</li>)}</ul>
@@ -3483,7 +3697,7 @@ export function EngineeringAgentWizard({
             ))}</tbody>
           </table>
           {!equipmentReady && <p role="alert">Die Anzahl muss je Gerätetyp zwischen 0 und 1000 liegen. Mindestens ein Gerät ist erforderlich.</p>}
-          {!equipmentIdentityReady && <p role="alert">Geräteumfang noch unvollständig: {EQUIPMENT_CATEGORIES.filter(({ key }) => identifiedCounts[key] !== equipmentCounts[key]).map(({ key, label }) => `${label}: ${identifiedCounts[key]} erkannt, ${equipmentCounts[key]} vorgegeben`).join('; ')}. Eine Anzahl allein beschreibt noch keine Gerätefunktion. Ergänze in der Anforderung, was die Sensoren messen und was die Aktoren steuern, zum Beispiel „3 Temperatursensoren und 4 Ventilaktoren“.{networkArchitecture === 'sensor_ecu_actuator' && equipmentCounts.gateways === 0 && ' Für diesen lokalen Regelkreis ist kein Gateway erforderlich.'}</p>}
+          {!equipmentIdentityReady && EQUIPMENT_CATEGORIES.some(({ key }) => identifiedCounts[key] !== equipmentCounts[key]) && <p role="alert">Geräteumfang noch unvollständig: {EQUIPMENT_CATEGORIES.filter(({ key }) => identifiedCounts[key] !== equipmentCounts[key]).map(({ key, label }) => `${label}: ${identifiedCounts[key]} erkannt, ${equipmentCounts[key]} vorgegeben`).join('; ')}. Eine Anzahl allein beschreibt noch keine Gerätefunktion. Ergänze in der Anforderung, was die Sensoren messen und was die Aktoren steuern, zum Beispiel „3 Temperatursensoren und 4 Ventilaktoren“.{networkArchitecture === 'sensor_ecu_actuator' && equipmentCounts.gateways === 0 && ' Für diesen lokalen Regelkreis ist kein Gateway erforderlich.'}</p>}
           {identifiedCounts.ecus < equipmentCounts.ecus && <section aria-label="Controller ergänzen" className="agent-cluster-review">
             <label>Controller im Auftrag ergänzen<input aria-label="Name des zusätzlichen Controllers" value={newControllerName} disabled={effectiveBusy} onChange={event => setNewControllerName(event.target.value)} placeholder="z. B. RaspberryPi" /></label>
             <button type="button" disabled={effectiveBusy || !newControllerName.trim()} onClick={addRequestedController}>Controller ergänzen</button>
@@ -3695,7 +3909,8 @@ export function EngineeringAgentWizard({
 
           <p>Es wurde noch kein Auftrag gestartet. Prüfe die Beschreibung und ergänze offene Angaben.</p>
           <h4>{projectName || 'Projektname fehlt'}</h4>
-          <p style={{ whiteSpace: 'pre-wrap' }}>{taskText || 'Projektbeschreibung fehlt'}</p>
+          {reviewedDocumentEvidence()}
+          <p style={{ whiteSpace: 'pre-wrap' }}>{taskText || (taskFiles.length ? `Vollständige Aufgabenquelle: ${primaryFiles.map(file => file.name).join(', ')}` : 'Projektbeschreibung fehlt')}</p>
           {startBlockers.length ? <ul>{startBlockers.map((blocker) => <li key={blocker.text}>
             <span>{blocker.text} </span><button type="button" className="button secondary tiny"
               onClick={() => setStep(questionnaireSteps.findIndex((item) => item.id === blocker.step))}>Angabe ergänzen</button>
@@ -3919,7 +4134,7 @@ function toggleSelection(values: string[], optionId: string) {
 function mergeTaskAttachments(current: TaskAttachment[], incoming: TaskAttachment[]) {
   const merged = [...current];
   incoming.forEach((attachment) => {
-    const index = merged.findIndex((item) => item.name === attachment.name && item.size === attachment.size);
+    const index = merged.findIndex((item) => item.name === attachment.name && item.size === attachment.size && item.source === attachment.source);
     if (index >= 0) {
       merged[index] = attachment;
     } else {

@@ -1,0 +1,1196 @@
+diff --git a/backend/nis/agent/orchestration/local_reasoner.py b/backend/nis/agent/orchestration/local_reasoner.py
+index e1d52dac..0c7540cf 100644
+--- a/backend/nis/agent/orchestration/local_reasoner.py
++++ b/backend/nis/agent/orchestration/local_reasoner.py
+@@ -110,7 +110,7 @@ def _tool_parameters(schema):
+     return resolve(root)
+ 
+ 
+-def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False):
++def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None, existing_devices=()):
+     """Narrow the native decoder, without changing public proposal validation."""
+     from backend.nis.agent.orchestration.project_intake import reference_model_output_schema
+     schema = reference_model_output_schema(prepared)
+@@ -125,6 +125,9 @@ def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=
+     if port_intent:
+         item('ports')['properties']['parameters'] = {
+             'type': 'object', 'properties': {}, 'additionalProperties': False}
++    if device_ids:
++        for field in allowed & {'ports', 'measurements', 'commands'}:
++            item(field)['properties']['device_id']['enum'] = list(device_ids)
+     if port_ids:
+         schema['properties']['ports'].update(minItems=len(port_ids), maxItems=len(port_ids))
+         item('ports')['properties']['id']['enum'] = list(port_ids)
+@@ -132,14 +135,257 @@ def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=
+         schema['properties']['functions'].update(minItems=len(function_ids), maxItems=len(function_ids))
+         item('functions')['properties']['source_fact_id']['enum'] = list(function_ids)
+         item('functional_dependencies')['properties']['producer_fact_id']['enum'] = list(function_ids)
++    if inventory_target or derivation_fact_ids is not None:
++        from copy import deepcopy
++        available = {inventory_target['fact_id']} if inventory_target else set(derivation_fact_ids)
++        binding_devices = [row for row in existing_devices
++                           if any(prepared['facts'][key]['role'] in {row['kind'], 'OTHER'} for key in available)
++                           and (not inventory_target or not inventory_target.get('names')
++                                or row['name'] in inventory_target['names'])
++                           and (not inventory_target or not inventory_target.get('member')
++                                or row.get('source_member_bindings', {}).get(inventory_target['fact_id'])
++                                in {None, inventory_target['member']})]
++        definition = deepcopy(item('devices'))
++        variants = []
++        for kind in definition['properties']['kind']['enum']:
++            fact_ids = [key for key, fact in prepared['facts'].items() if key in available and fact['role'] in {kind, 'OTHER'}]
++            if not fact_ids:
++                continue
++            variant = deepcopy(definition)
++            properties = variant['properties']
++            properties['kind'] = {'type': 'string', 'enum': [kind]}
++            properties['source_fact_ids']['items']['enum'] = fact_ids
++            if derivation_fact_ids is not None:
++                properties['source_fact_ids']['maxItems'] = len(fact_ids)
++            if inventory_target:
++                properties['source_fact_ids'].update(minItems=1, maxItems=1)
++                if inventory_target.get('names'):
++                    properties['name']['enum'] = inventory_target['names']
++            member = inventory_target.get('member') if inventory_target else None
++            properties['source_member_bindings'] = {'type': 'object', 'properties': {
++                inventory_target['fact_id']: {'type': 'string', 'enum': [member]}}
++                if member else {},
++                'additionalProperties': False}
++            if member:
++                properties['source_member_bindings']['required'] = [inventory_target['fact_id']]
++                if 'source_member_bindings' not in variant.setdefault('required', []):
++                    variant['required'].append('source_member_bindings')
++            if kind == 'PHYSICAL_CONTEXT':
++                properties['context_kind'] = {'type': 'string', 'enum': ['PASSIVE', 'ASSEMBLY', 'SOFTWARE_SERVICE']}
++                variant.setdefault('required', []).append('context_kind')
++            else:
++                properties['quantity'] = {'type': 'integer', 'enum': [1]}
++                properties['context_kind'] = {'type': 'null'}
++                properties['contained_device_ids']['maxItems'] = 0
++                if kind in {'CONTROLLER', 'GATEWAY'}:
++                    properties['owner_device_id'] = {'type': 'null'}
++            variants.append(variant)
++        schema['$defs'][schema['properties']['devices']['items']['$ref'].rsplit('/', 1)[-1]] = {'anyOf': variants}
++        schema['properties']['devices'].update(minItems=0, maxItems=0)
++        binding_properties = {key: deepcopy(definition['properties'][key])
++                              for key in ('source_fact_ids', 'rationale', 'field_references')}
++        binding_properties['source_fact_ids']['items']['enum'] = sorted(available)
++        if derivation_fact_ids is not None and available:
++            binding_properties['source_fact_ids']['maxItems'] = len(available)
++        if inventory_target:
++            binding_properties['source_fact_ids'].update(minItems=1, maxItems=1)
++        binding_properties['device_id'] = {'type': 'string', 'minLength': 1}
++        if binding_devices:
++            binding_properties['device_id']['enum'] = [row['id'] for row in binding_devices]
++        choices = []
++        for variant in variants:
++            tagged = deepcopy(variant)
++            kind = variant['properties']['kind']['enum'][0]
++            tagged['properties'] = {'choice_kind': {'type': 'string', 'enum': ['NEW_' + kind]},
++                                    **tagged['properties']}
++            tagged['required'] = ['choice_kind', *tagged.get('required', [])]
++            choices.append(tagged)
++        if binding_devices:
++            properties = {'choice_kind': {'type': 'string', 'enum': ['EXISTING']}, **binding_properties}
++            choices.append({'type': 'object', 'properties': properties,
++                            'required': list(properties), 'additionalProperties': False})
++        schema['properties']['inventory_choices'] = {
++            'type': 'array',
++            'minItems': 1 if inventory_target and (inventory_target['minimum_rows'] or inventory_target.get('names')) else 0,
++            'maxItems': 1 if inventory_target else 2,
++            'items': choices[0] if len(choices) == 1 else {'anyOf': choices}}
++        schema['properties']['inventory_complete'] = {'type': 'boolean'}
++        schema.setdefault('required', []).extend(['inventory_complete', 'inventory_choices'])
+     return schema
+ 
+ 
++def _reference_expand_inventory_bindings(devices, proposed, bindings, *, inventory_target=None):
++    """Resolve an existing-ID choice without asking inference to rewrite identity."""
++    from copy import deepcopy
++    current = {row['id']: row for row in devices}
++    limit = 1 if inventory_target else 2
++    if (not isinstance(proposed, list) or not isinstance(bindings, list)
++            or len(proposed) + len(bindings) > limit or any(not isinstance(row, dict) for row in proposed)):
++        raise ValueError('Neue Geräte und Inventarbindungen überschreiten die gemeinsame Stufengrenze.')
++    if any(row.get('id') in current for row in proposed):
++        raise ValueError('Vorhandene Teilnehmer ausschließlich als ID-Bindung in inventory_choices auswählen; keine Gerätedefinition ersetzen.')
++    selected = set()
++    expanded = deepcopy(proposed)
++    for binding in bindings:
++        if not isinstance(binding, dict) or set(binding) != {'device_id', 'source_fact_ids', 'rationale', 'field_references'}:
++            raise ValueError('Inventarbindung erlaubt nur vorhandene ID, Quellenbelege und begründete Referenzmetadaten.')
++        key = binding['device_id']
++        if not isinstance(key, str) or key not in current or key in selected:
++            raise ValueError('Inventarbindung benötigt eine eindeutige vorhandene Teilnehmer-ID.')
++        selected.add(key)
++        row = deepcopy(current[key])
++        row.update({field: deepcopy(binding[field]) for field in ('source_fact_ids', 'rationale', 'field_references')})
++        row['source_member_bindings'] = ({inventory_target['fact_id']: inventory_target['member']}
++                                         if inventory_target and inventory_target.get('member') else {})
++        expanded.append(row)
++    return expanded
++
++
++def _reference_expand_inventory_choices(devices, choices, *, inventory_target=None):
++    """Apply one shared bound before resolving new rows or known-ID bindings."""
++    minimum = 1 if inventory_target and (inventory_target['minimum_rows'] or inventory_target.get('names')) else 0
++    maximum = 1 if inventory_target else 2
++    if not isinstance(choices, list) or not minimum <= len(choices) <= maximum:
++        raise ValueError('Inventarstufe benötigt eindeutige Geräte innerhalb ihrer Grenze; leer ist nur ein bereits abgedeckter Bereich zulässig. Auswahl über inventory_choices liefern.')
++    if any(not isinstance(row, dict) for row in choices):
++        raise ValueError('Inventarauswahl benötigt neue Geräteobjekte oder vorhandene ID-Bindungen.')
++    from copy import deepcopy
++    from typing import get_args
++    from backend.nis.agent.orchestration.project_intake import ReferenceDevice
++    new_types = {'NEW_' + kind: kind for kind in get_args(ReferenceDevice.model_fields['kind'].annotation)}
++    proposed, bindings = [], []
++    for incoming in choices:
++        row = deepcopy(incoming)
++        selected = row.pop('choice_kind', None)
++        if selected == 'EXISTING':
++            bindings.append(row)
++        elif isinstance(selected, str) and selected in new_types and row.get('kind') == new_types[selected]:
++            proposed.append(row)
++        else:
++            raise ValueError('Inventarauswahl benötigt EXISTING oder eine zum Gerät passende NEW_<Geräteart>-Kennzeichnung.')
++    return _reference_expand_inventory_bindings(
++        devices, proposed, bindings, inventory_target=inventory_target)
++
++
++def _reference_merge_inventory_devices(devices, proposed, target, facts):
++    """Accumulate native inventory without replacing existing identities."""
++    from copy import deepcopy
++    by_id = {row['id']: deepcopy(row) for row in devices}
++    ids = [row['id'] for row in proposed]
++    derived = 'derivation_fact_ids' in target
++    previous_selected = [] if derived else [row for row in devices if target['fact_id'] in row['source_fact_ids']
++        and (not target.get('member') or row['source_member_bindings'].get(target['fact_id']) == target['member'])]
++    required = 0 if derived else (facts[target['fact_id']]['quantity'] if facts[target['fact_id']]['kind'] == 'INSTANCE' else 1)
++    empty_allowed = target['minimum_rows'] == 0 and not target.get('names') and (derived or len(previous_selected) >= required)
++    if (not ids and not empty_allowed) or len(ids) > target.get('max_rows', 2) or len(ids) != len(set(ids)):
++        raise ValueError('Inventarstufe benötigt eindeutige Geräte innerhalb ihrer Grenze; leer ist nur ein bereits abgedeckter Bereich zulässig.')
++    selected = proposed if derived else [row for row in proposed if target['fact_id'] in row['source_fact_ids']
++                and (not target.get('member') or row['source_member_bindings'].get(target['fact_id']) == target['member'])]
++    if len(selected) < target['minimum_rows']:
++        raise ValueError('Inventarstufe deckt den angeforderten ursprünglichen Gerätebefund oder Typ nicht ab.')
++    if target.get('names') and {row['name'] for row in selected} != set(target['names']):
++        raise ValueError('Inventarstufe muss genau ihre angeforderten ursprünglichen Instanznamen erhalten.')
++    for row in proposed:
++        previous = by_id.get(row['id'])
++        if any(key not in facts for key in row['source_fact_ids']):
++            raise ValueError('Inventarergänzung enthält einen unbekannten ursprünglichen Quellenbefund.')
++        inventory_ids = {key for key in row['source_fact_ids'] if facts[key]['kind'] in {'INSTANCE', 'CATEGORY'}}
++        previous_inventory = {key for key in (previous or {}).get('source_fact_ids', []) if facts[key]['kind'] in {'INSTANCE', 'CATEGORY'}}
++        if inventory_ids - previous_inventory - ({target['fact_id']} if not derived else set()):
++            raise ValueError('Inventarstufe enthält eine fremde ursprüngliche Inventardeklaration. Nur das angeforderte Quellgerät und daraus begründete zusätzliche Hardware planen.')
++        if previous is not None:
++            extensible = {'source_fact_ids', 'source_member_bindings', 'rationale', 'field_references'}
++            if any(row[key] != previous[key] for key in row if key not in extensible):
++                raise ValueError('Inventarergänzung darf bestehende Teilnehmeridentität oder Realisierung nicht ersetzen.')
++            if not set(previous['source_fact_ids']) <= set(row['source_fact_ids']):
++                raise ValueError('Inventarergänzung darf bestehende Quellenbindungen nicht entfernen.')
++            if any(row['source_member_bindings'].get(key) != value for key, value in previous['source_member_bindings'].items()):
++                raise ValueError('Inventarergänzung darf bestehende Typenbindungen nicht ersetzen.')
++            if any(not set(values) <= set(row['field_references'].get(key, []))
++                   for key, values in previous['field_references'].items()):
++                raise ValueError('Inventarergänzung darf bestehende Referenzbelege nicht entfernen.')
++        by_id[row['id']] = deepcopy(row)
++    return list(by_id.values())
++
++
++def _reference_scoped_inventory_delta(devices, proposed, *, inventory_target=None, derivation_fact_ids=None):
++    """Append cursor metadata; never reinterpret or remove an earlier decision."""
++    from copy import deepcopy
++    current = {row['id']: row for row in devices}
++    if len(proposed) > (1 if inventory_target else 2):
++        raise ValueError('Ein Quelleninventarschritt liefert höchstens ein Gerät; funktionale Ergänzungen höchstens zwei.')
++    result = []
++    for incoming in proposed:
++        row = deepcopy(incoming)
++        if len(row['source_fact_ids']) != len(set(row['source_fact_ids'])):
++            raise ValueError('Teilnehmer besitzt doppelte Quellenbindungen.')
++        if any(len(values) != len(set(values)) for values in row['field_references'].values()):
++            raise ValueError('Doppelte Referenzbelege für ein Entscheidungsfeld.')
++        if inventory_target:
++            expected = {inventory_target['fact_id']: inventory_target['member']} if inventory_target.get('member') else {}
++            if row['source_fact_ids'] != [inventory_target['fact_id']] or row['source_member_bindings'] != expected:
++                raise ValueError('Quellendelta benötigt genau den angeforderten Quellenbefund und sein wörtliches Typmitglied.')
++        elif (not row['source_fact_ids'] or not set(row['source_fact_ids']) <= set(derivation_fact_ids or ())
++              or row['source_member_bindings']):
++            raise ValueError('Funktionale Hardwareergänzung benötigt ausschließlich die angeforderten Funktions-/Anforderungsbelege.')
++        previous = current.get(row['id'])
++        if previous:
++            if any(key in previous['source_member_bindings'] and previous['source_member_bindings'][key] != value
++                   for key, value in row['source_member_bindings'].items()):
++                raise ValueError('Ein Quellendelta darf bestehende Typenbindungen nicht ersetzen.')
++            row['source_fact_ids'] = list(dict.fromkeys([*previous['source_fact_ids'], *row['source_fact_ids']]))
++            row['source_member_bindings'] = {**previous['source_member_bindings'], **row['source_member_bindings']}
++            row['field_references'] = {key: list(dict.fromkeys([
++                *previous['field_references'].get(key, []), *row['field_references'].get(key, [])]))
++                for key in dict.fromkeys([*previous['field_references'], *row['field_references']])}
++        result.append(row)
++    return result
++
++
++def _reference_declared_instances(prepared, profile_facts):
++    """Compile only literal C/G identities already resolved by the source catalog."""
++    import hashlib
++    from backend.nis.agent.orchestration.project_intake import ReferenceDevice
++    devices, events = [], []
++    used_names = set()
++    for fact_id, fact in profile_facts.items():
++        if fact['kind'] != 'INSTANCE' or fact['role'] not in {'CONTROLLER', 'GATEWAY'}:
++            continue
++        names = [row['name'] for row in prepared['catalog'].get('source_devices', [])
++                 if (row.get('evidence') or {}).get('source_quote') == fact['source_quote']
++                 and (row.get('evidence') or {}).get('source_context', []) == fact.get('source_context', [])]
++        if (len(names) != fact['quantity'] or len({name.casefold() for name in names}) != len(names)
++                or any(name.casefold() in used_names for name in names)):
++            continue  # An ambiguous declaration still needs the ordinary native review.
++        rows = [ReferenceDevice(id='source-' + hashlib.sha256(
++                    (prepared['fact_id_map'][fact_id] + ':' + name).encode()).hexdigest()[:24],
++                name=name, kind=fact['role'], quantity=1, source_fact_ids=[fact_id],
++                rationale='Eindeutige deklarierte Rolle, Anzahl und kanonische Identität aus dem Originalinventar; kein Hardware- oder Timingnachweis.')
++                .model_dump(mode='json') for name in names]
++        devices.extend(rows)
++        used_names.update(name.casefold() for name in names)
++        events.append({'fact_id': fact_id, 'source_kind': 'INSTANCE', 'role': fact['role'],
++            'quantity': fact['quantity'], 'canonical_names': names, 'local_device_ids': [row['id'] for row in rows],
++            'source': 'DECLARED_SOURCE_COMPILATION', 'native_model_call': False, 'hardware_evidence': False})
++    return devices, events
++
++
++def _reference_inventory_progress(devices, merged):
++    """Count actual identities/bindings, never changed explanation prose."""
++    previous = {row['id']: row for row in devices}
++    return len(merged) > len(previous) or any(
++        set(row['source_fact_ids']) != set(previous[row['id']]['source_fact_ids'])
++        or row['source_member_bindings'] != previous[row['id']]['source_member_bindings']
++        for row in merged if row['id'] in previous)
++
++
+ def _reference_context_window(messages, maximum):
+     """Reserve complete UTF-8 input plus output; never shorten a source to fit."""
+     # Byte fallback tokenization cannot need more content tokens than UTF-8
+-    # bytes. Include the full retry history and room for native chat framing.
+-    required = len(json.dumps(messages, ensure_ascii=False).encode('utf-8')) + 8192 + 2048
++    # bytes. The provider tokenizes decoded message content, not the HTTP JSON
++    # wrapper and its additional string escaping. Include every retry message;
++    # the existing framing reserve also covers roles and chat-template tokens.
++    required = sum(len(message['content'].encode('utf-8')) for message in messages) + 8192 + 2048
+     if required > maximum:
+         raise ValueError('Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten '
+                          'das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.')
+@@ -295,6 +541,8 @@ class LocalEngineeringReasoner:
+         return str((response.json().get('message') or {}).get('content') or '').strip()
+ 
+     async def interpret_document(self, source: str, source_name: str):
++        from backend.nis.agent.tools.cancellation import bind_document_request
++        bind_document_request()
+         from backend.nis.agent.orchestration.project_intake import DocumentInterpretation
+         from backend.nis.agent.orchestration.project_intake import DocumentIntakeRequest
+         from backend.nis.agent.orchestration.project_intake import validate_document_interpretation
+@@ -447,11 +695,14 @@ class LocalEngineeringReasoner:
+ 
+     async def plan_reference_design(self, prepared: dict):
+         """Propose example choices separately from immutable source facts."""
++        from backend.nis.agent.tools.cancellation import bind_document_request
++        bind_document_request()
+         from copy import deepcopy
+         import hashlib
+         from datetime import datetime, timezone
+         from backend.nis.agent.orchestration.project_intake import document_source_contexts, document_system_scope
+         from backend.nis.agent.orchestration.project_intake import ReferenceDesignProposal, validate_reference_design, validate_reference_design_profile, document_response_json
++        from backend.nis.agent.orchestration.project_intake import _validate_reference_inventory, reference_inventory_members
+         from backend.nis.engineering.goal_execution.progress import sink
+         from backend.nis.engineering.communication.device_communication import FUNCTIONAL_DEVICE_REASONING_RULES
+         from backend.nis.engineering.structure.spatial_architecture import REASONING_RULES
+@@ -547,6 +798,7 @@ class LocalEngineeringReasoner:
+         combined = {field: [] for field in fields}
+         calls = []
+         normalization_events = []
++        declared_inventory_events = []
+         for profile_index, (profile, profile_facts) in enumerate(groups.items(), start=1):
+             sections = [text for scope, text in intervals if scope == profile or scope not in groups and profile[:len(scope)] == scope]
+             profile_text = ''.join(sections)
+@@ -560,7 +812,22 @@ class LocalEngineeringReasoner:
+                        'source_profile': list(profile), 'reserved_project_device_names': [row['name'] for row in combined['devices']], 'reference_sources': prepared['reference_sources'],
+                        'registered_catalogs': catalog,
+                        'protected_review_decisions': {key: prepared['source_evidence'].get(key) for key in ('answers', 'function_assignments', 'excluded_questions')}}
+-            async def infer(stage, allowed, producer_ids=(), feedback=None, *, port_ids=(), function_ids=(), port_intent=False):
++            def check_inventory(devices):
++                pending = _validate_reference_inventory({'devices': devices}, prepared, profile, partial=True)
++                blocking = [finding for finding in pending if finding['code'] not in {
++                    'REFERENCE_INVENTORY_UNCOVERED', 'REFERENCE_INVENTORY_MEMBER_UNCOVERED', 'REFERENCE_INVENTORY_QUANTITY_PENDING'}]
++                if blocking:
++                    raise ValueError('Ungültige Teilnehmerbindung: ' + json.dumps(blocking, ensure_ascii=False))
++
++            async def infer(stage, allowed, producer_ids=(), feedback=None, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None):
++                inventory_stage = inventory_target is not None or derivation_fact_ids is not None
++                if device_ids:
++                    kinds = {'ports': {'CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR'},
++                             'measurements': {'SENSOR'}, 'commands': {'ACTUATOR'}}
++                    owners = {row['id']: row['kind'] for row in current['devices']}
++                    if (len(device_ids) != 1 or not allowed <= kinds.keys()
++                            or any(owners.get(device_ids[0]) not in kinds[field] for field in allowed)):
++                        raise ValueError('Die IO-Stufe benötigt genau einen bestehenden Teilnehmer passender Geräteart.')
+                 stage_catalog = deepcopy(catalog)
+                 if port_ids:
+                     stage_catalog['technology_parameters'] = technology_schemas_for(
+@@ -573,22 +840,40 @@ class LocalEngineeringReasoner:
+                           'validation_feedback': feedback, 'planning_stage': stage,
+                           'producer_device_ids_for_this_stage': list(producer_ids),
+                           'port_ids_for_this_stage': list(port_ids),
++                          'device_ids_for_this_stage': list(device_ids),
+                           'function_fact_ids_for_this_stage': list(function_ids),
++                          'inventory_target_for_this_stage': inventory_target,
++                          'derivation_fact_ids_for_this_stage': list(derivation_fact_ids) if derivation_fact_ids is not None else None,
+                           'output_fields_for_this_stage': list(allowed),
+-                          'instruction': ('Nur die genannten Outputfelder füllen; alle anderen Arrays leer. '
+-                              'Diese Felder vollständig neu liefern; vorhandene eindeutige IDs erhalten, soweit kein Befund ihre Änderung verlangt. '
++                          'instruction': ('Nur die genannten Outputfelder füllen; alle anderen Modellarrays leer. Echte offene Entscheidungen dürfen immer in unresolved stehen. '
++                              + ('Inventarstufen liefern inventory_choices und inventory_complete; devices und alle anderen Modelllisten bleiben leer, echte Rückfragen bleiben in unresolved zulässig. inventory_choices enthält gemeinsam neue Geräte ODER Bindungen an vorhandene Geräte. ' if inventory_stage else '')
++                              + 'Nur den ausdrücklich ausgewählten Stufenbereich vollständig liefern; vorhandene eindeutige IDs erhalten. '
+                               'Jede Auswahl begründen; echte offene Auslegung explizit unresolved halten. '
+                               + ('Zunächst ausschließlich konkrete Portabsicht planen: parameters bleibt {}. Die folgende eigene Parameterstufe legt jeden Anschluss aus; diese Zwischenstufe ist keine vollständige Prüfung. ' if port_intent else '')
++                              + ('Ausschließlich IO für die angeforderte vorhandene Teilnehmer-ID liefern; keine anderen Geräte, Anschlüsse, Messgrößen oder Befehle überschreiben. Alle Nachbarteilnehmer bleiben als Planungskontext sichtbar. ' if device_ids else '')
++                              + ('Jeder inventory_choices-Eintrag beginnt mit choice_kind: EXISTING für eine vorhandene ID-Bindung, NEW_<Geräteart> für wirklich neue Hardware (z.B. NEW_SENSOR passend zu kind=SENSOR). Bei EXISTING danach ausschließlich device_id, source_fact_ids, rationale und field_references auswählen; niemals id/name/kind eines alten Geräts neu schreiben. NIS erhält sämtliche unveränderlichen Gerätedaten und ergänzt nur die Quellen-/Typ-/Referenzbindung. Bei NEW_<Geräteart> danach die vollständigen neuen Gerätedaten liefern, niemals eine vorhandene ID. choice_kind wird nur intern geprüft und nicht als Modellfeld gespeichert. Die gemeinsame Stufengrenze gilt für alle Einträge zusammen. ' if inventory_stage else '')
++                              + ('Nur ein echtes Gerät oder eine vorhandene Gerätebindung für den angeforderten Quellenbefund/das Typmitglied liefern, keine zweite Platzhalterzeile. source_fact_ids enthält ausschließlich diese eine FactID; source_member_bindings neuer Geräte ausschließlich das angeforderte wörtliche Mitglied. Bei vorhandenen Geräten setzt NIS die angeforderte Typbindung selbst. Funktional zusätzlich notwendige Hardware wird danach in einem eigenen Schritt geplant. ' if inventory_target else '')
++                              + ('inventory_complete bewertet nur diesen deklarierten Quellenbereich. Bei vollständiger Abdeckung true; wenn er bereits abgedeckt ist, ist ein leeres Delta mit true zulässig. False verlangt eine echte weitere Instanz/Bindung dieses Bereichs. ' if inventory_target else '')
++                              + ('Prüfe jetzt die physische Hardware für die ausdrücklich angeforderten FUNCTION-/REQUIREMENT-FactIDs. Vollständige Quelle und sämtliche Nachbarfunktionen bleiben Konsistenzkontext; weitere Quellenbefunde werden in eigenen Hardwarestufen bearbeitet. Sensoren und Aktoren sind echte Teilnehmer, keine bloßen Werte im Controller. Vorhandene Geräte wiederverwenden oder fehlende Messquellen, Verarbeitung, Verbraucher und Aktoren ergänzen; unabhängige Messgrößen und Stellwirkungen berücksichtigen. Ports/Messgrößen/Befehle/Funktionen/Kommunikation folgen erst nach ALLEN Hardwarestufen und erzeugen KEINE Geräte mehr. Notwendige Peripherie dieses Quellenbereichs niemals in spätere IO-Schritte verschieben. source_fact_ids enthält nur passende angeforderte FUNCTION-/REQUIREMENT-FactIDs, jede höchstens einmal; keine neuen Bindungen an Quelleninventar. Alte Bindungen wiederverwendeter IDs bleiben serverseitig erhalten. Keine Originalmenge erhöhen oder Hardwarebelege/Defaults erfinden. Höchstens zwei echte Ergänzungen, niemals Duplikat-Platzhalter. inventory_complete bewertet ausschließlich den Bedarf der angeforderten FactIDs und wird erst true, wenn vorhandene plus ergänzte Hardware diesen vollständig abdeckt; ohne Ergänzungsbedarf inventory_choices=[] und true. False verlangt neue Geräte/Quellenbindungen. Unklare Fachentscheidungen konkret unresolved nennen. ' if derivation_fact_ids is not None else '')
+                               + ('Genau die angeforderten Port-IDs liefern. id, device_id, technology, role und network_scope unverändert übernehmen; nur parameters und ports-spezifische Begründung/Referenzbelege auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
+                               + ('Genau die angeforderten Funktions-FactIDs abdecken; Abhängigkeiten nur mit diesen Senderfunktionen liefern. Andere ursprüngliche Funktions-FactIDs dürfen bewusste Empfänger oder COMPOSITE-Bestandteile sein. ' if function_ids else ''))}
+-                messages = [{'role': 'system', 'content': system}, {'role': 'user', 'content': json.dumps(prompt, ensure_ascii=False)}]
++                messages = [{'role': 'system', 'content': system}, {'role': 'user', 'content': json.dumps(prompt, ensure_ascii=False, separators=(',', ':'))}]
+                 progress = sink.get()
+                 if progress:
++                    metadata = {'source': 'document_reference_design', 'completed_calls': len(calls), 'canonical_writes': False}
++                    if inventory_stage:
++                        metadata.update(inventory_target=deepcopy(inventory_target), draft_inventory_by_kind={
++                            kind: sum(row['kind'] == kind for row in current['devices'])
++                            for kind in ('CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR', 'PHYSICAL_CONTEXT')})
++                        if derivation_fact_ids is not None:
++                            metadata['derivation_fact_ids'] = list(derivation_fact_ids)
+                     progress({'type': 'PROGRESS', 'text': f'Lokaler Qwen plant Referenzprofil {profile_index} von {len(groups)}: {stage}.',
+-                              'status': 'RUNNING', 'metadata': {'source': 'document_reference_design', 'completed_calls': len(calls), 'canonical_writes': False}})
++                              'status': 'RUNNING', 'metadata': metadata})
+                 payload = {'model': self.model, 'messages': messages,
+                            'format': _reference_schema_for_stage(prepared, allowed, port_ids=port_ids,
+-                               function_ids=function_ids, port_intent=port_intent),
++                               function_ids=function_ids, port_intent=port_intent, device_ids=device_ids,
++                               inventory_target=inventory_target, derivation_fact_ids=derivation_fact_ids,
++                               existing_devices=current['devices'] if inventory_stage else ()),
+                            'think': False, 'stream': False, 'keep_alive': self.keep_alive,
+                            'options': {'temperature': 0, 'num_predict': 8192, 'num_ctx': self.context_tokens}}
+                 for attempt in range(2):
+@@ -609,22 +894,49 @@ class LocalEngineeringReasoner:
+                                   'response_sha256': hashlib.sha256(raw.encode()).hexdigest(),
+                                   'context_tokens': payload['options']['num_ctx'],
+                                   'port_ids': list(port_ids), 'function_fact_ids': list(function_ids),
++                                  'device_ids': list(device_ids),
++                                  'inventory_target': inventory_target,
++                                  'derivation_fact_ids': list(derivation_fact_ids) if derivation_fact_ids is not None else None,
+                                   'prompt_eval_count': body.get('prompt_eval_count'), 'eval_count': body.get('eval_count')})
+                     try:
+-                        result = ReferenceDesignProposal.model_validate(document_response_json(raw)).model_dump(mode='json')
++                        decoded = document_response_json(raw)
++                        inventory_complete = decoded.pop('inventory_complete', None) if inventory_stage else None
++                        if inventory_stage:
++                            if decoded.get('devices', []) != []:
++                                raise ValueError('Inventarstufe liefert Geräte ausschließlich über inventory_choices, nicht über devices.')
++                            decoded['devices'] = _reference_expand_inventory_choices(
++                                current['devices'], decoded.pop('inventory_choices'),
++                                inventory_target=inventory_target)
++                        result = ReferenceDesignProposal.model_validate(decoded).model_dump(mode='json')
++                        if inventory_stage and type(inventory_complete) is not bool:
++                            raise ValueError('Inventarstufe benötigt eine ausdrückliche inventory_complete-Entscheidung.')
+                         if any(result[field] for field in fields if field not in allowed and field != 'unresolved'):
+                             raise ValueError('Eine Planungsstufe darf keine Felder anderer Stufen überschreiben.')
+                         if producer_ids and any(row['producer_device_id'] not in producer_ids for row in result['communication']):
+                             raise ValueError('Die Kommunikationsstufe enthält einen nicht ausgewählten Sender.')
++                        if device_ids and any(row['device_id'] not in device_ids
++                                              for field in allowed for row in result[field]):
++                            raise ValueError('Die IO-Stufe enthält Daten eines nicht ausgewählten Teilnehmers.')
+                         if allowed == {'devices'}:
+                             ids = [row['id'] for row in result['devices']]
+                             if len(ids) != len(set(ids)):
+                                 raise ValueError('Teilnehmer benötigen eindeutige IDs.')
++                            if inventory_stage:
++                                result['devices'] = _reference_scoped_inventory_delta(current['devices'], result['devices'],
++                                    inventory_target=inventory_target, derivation_fact_ids=derivation_fact_ids)
++                                merge_target = inventory_target if inventory_target is not None else {
++                                    'derivation_fact_ids': list(derivation_fact_ids), 'minimum_rows': 0}
++                                merged = _reference_merge_inventory_devices(current['devices'], result['devices'], merge_target, prepared['facts'])
++                                check_inventory(merged)
++                                if not inventory_complete and not _reference_inventory_progress(current['devices'], merged):
++                                    raise ValueError('Inventarergänzung hat keine fehlende ursprüngliche Geräteabdeckung ergänzt. Ist der angeforderte Bereich bereits vollständig, inventory_complete=true liefern; andere noch offene Stufen sind kein fehlendes Inventar dieses Bereichs.')
+                         if port_intent:
+                             ids = [row['id'] for row in result['ports']]
+-                            device_ids = {row['id'] for row in current['devices'] if row['kind'] != 'PHYSICAL_CONTEXT'}
+-                            if (len(ids) != len(set(ids)) or any(row['parameters'] or row['device_id'] not in device_ids for row in result['ports'])):
++                            electronic_ids = {row['id'] for row in current['devices'] if row['kind'] != 'PHYSICAL_CONTEXT'}
++                            if (len(ids) != len(set(ids)) or any(row['parameters'] or row['device_id'] not in electronic_ids for row in result['ports'])):
+                                 raise ValueError('Portabsichten benötigen eindeutige IDs, bestehende elektronische Teilnehmer und zunächst leere parameters.')
++                            if set(ids) & {row['id'] for row in current['ports']}:
++                                raise ValueError('Die Portabsicht darf keine bereits geplante Port-ID überschreiben.')
+                         if port_ids:
+                             _reference_merge_port_parameters(current['ports'], result['ports'], port_ids)
+                         if function_ids:
+@@ -632,6 +944,9 @@ class LocalEngineeringReasoner:
+                             if (len(actual) != len(set(actual)) or set(actual) != set(function_ids)
+                                     or any(row['producer_fact_id'] not in function_ids for row in result['functional_dependencies'])):
+                                 raise ValueError('Die Funktionsstufe muss genau ihre ursprünglichen Funktions-FactIDs abdecken; keine fremden Senderabhängigkeiten.')
++                        if inventory_stage:
++                            result['inventory_complete'] = inventory_complete
++                            calls[-1]['inventory_complete'] = inventory_complete
+                         return result
+                     except (ValueError, TypeError, KeyError) as error:
+                         if attempt:
+@@ -644,21 +959,92 @@ class LocalEngineeringReasoner:
+                 # incomplete profile can reach draft review or canonical apply.
+                 current['unresolved'] = []
+ 
+-                def replace(result, allowed):
+-                    for field in allowed:
+-                        current[field] = deepcopy(result[field])
+-                    current['unresolved'].extend(result['unresolved'])
+-
+-                devices = await infer('Teilnehmer', {'devices'}, feedback=feedback)
+-                replace(devices, {'devices'})
+-                intents = await infer('Portabsicht, Messgrößen und Stellbefehle',
+-                    {'ports', 'measurements', 'commands'}, feedback=feedback, port_intent=True)
+-                replace(intents, {'ports', 'measurements', 'commands'})
++                current['devices'], compiled = _reference_declared_instances(prepared, profile_facts)
++                check_inventory(current['devices'])
++                declared_inventory_events.extend({**row, 'profile': list(profile)} for row in compiled)
++                compiled_fact_ids = {row['fact_id'] for row in compiled}
++                inventory = [(key, fact) for key, fact in profile_facts.items() if fact['kind'] in {'INSTANCE', 'CATEGORY'}]
++                inventory.sort(key=lambda entry: (
++                    0 if entry[1]['role'] in {'CONTROLLER', 'GATEWAY'} else 1 if entry[1]['role'] in {'SENSOR', 'ACTUATOR'} else 2,
++                    entry[1]['kind'] != 'INSTANCE'))
++                for fact_id, fact in inventory:
++                    if fact_id in compiled_fact_ids:
++                        continue
++                    members = reference_inventory_members(fact)
++                    expected_names = [row['name'] for row in prepared['catalog'].get('source_devices', [])
++                        if (row.get('evidence') or {}).get('source_quote') == fact['source_quote']
++                        and (row.get('evidence') or {}).get('source_context', []) == fact.get('source_context', [])]
++                    for member in members or [None]:
++                        native_complete = None
++                        while True:
++                            represented = [row for row in current['devices'] if fact_id in row['source_fact_ids']
++                                and (member is None or row['source_member_bindings'].get(fact_id) == member)]
++                            missing_names = [name for name in expected_names if name not in {row['name'] for row in represented}]
++                            required = fact['quantity'] if fact['kind'] == 'INSTANCE' else 1
++                            if len(represented) >= required and not missing_names and native_complete is True:
++                                break
++                            target = {'fact_id': fact_id, 'member': member, 'names': missing_names[:1],
++                                      'minimum_rows': min(1, max(0, required - len(represented))), 'max_rows': 1}
++                            devices = await infer('Physisches Quelleninventar', {'devices'}, feedback=feedback, inventory_target=target)
++                            merged = _reference_merge_inventory_devices(current['devices'], devices['devices'], target, prepared['facts'])
++                            native_complete = devices['inventory_complete']
++                            progress = _reference_inventory_progress(current['devices'], merged)
++                            if not progress and not native_complete:
++                                raise ValueError('Inventarergänzung hat keine fehlende ursprüngliche Geräteabdeckung ergänzt.')
++                            current['devices'] = merged
++                            current['unresolved'].extend(devices['unresolved'])
++                            after = [row for row in merged if fact_id in row['source_fact_ids']
++                                and (member is None or row['source_member_bindings'].get(fact_id) == member)]
++                            coverage_done = len(after) >= required and all(name in {row['name'] for row in after} for name in expected_names)
++                            if not progress and not coverage_done:
++                                raise ValueError('Inventarergänzung muss zusätzliche angeforderte Instanzabdeckung herstellen.')
++                            if fact['kind'] == 'INSTANCE' and sum(row['quantity'] for row in after) > required:
++                                raise ValueError('Explizite ursprüngliche Instanzmenge darf nicht überschritten werden.')
++                derivation_ids = [key for key, fact in prepared['facts'].items()
++                    if fact['kind'] in {'FUNCTION', 'REQUIREMENT'}
++                    and tuple(document_system_scope(fact.get('source_context', []))) == profile]
++                # Bound the hardware decision, not its complete source context.
++                # Every original fact is visited before any IO is planned;
++                # completion closes only this scope, never the remaining worklist.
++                for start in range(0, len(derivation_ids), 4):
++                    selected_derivations = derivation_ids[start:start + 4]
++                    while True:
++                        additions = await infer('Funktionsbedingte physische Hardware', {'devices'}, feedback=feedback,
++                            derivation_fact_ids=selected_derivations)
++                        current['devices'] = _reference_merge_inventory_devices(current['devices'], additions['devices'],
++                            {'derivation_fact_ids': selected_derivations, 'minimum_rows': 0}, prepared['facts'])
++                        current['unresolved'].extend(additions['unresolved'])
++                        if additions['inventory_complete']:
++                            break
++                inventory_findings = _validate_reference_inventory({'devices': current['devices']}, prepared, profile)
++                if inventory_findings:
++                    raise ValueError('Inventar vor Anschlussplanung unvollständig: ' + json.dumps(inventory_findings, ensure_ascii=False))
++                # A participant repair can change identities. Rebuild its IO
++                # and later functions rather than exposing stale prior links.
++                for field in fields:
++                    if field not in {'devices', 'unresolved'}:
++                        current[field] = []
++                for device in current['devices']:
++                    if device['kind'] == 'PHYSICAL_CONTEXT':
++                        continue
++                    intents = await infer('Portabsicht des konkreten Teilnehmers', {'ports'},
++                        feedback=feedback, port_intent=True, device_ids=(device['id'],))
++                    for field in ('ports', 'unresolved'):
++                        current[field].extend(intents[field])
+                 for port_id in [row['id'] for row in current['ports']]:
+                     parameters = await infer('Parameter des konkreten Anschlusses', {'ports'},
+                         feedback=feedback, port_ids=(port_id,))
+                     current['ports'] = _reference_merge_port_parameters(current['ports'], parameters['ports'], (port_id,))
+                     current['unresolved'].extend(parameters['unresolved'])
++                for field, kind, stage in (
++                        ('measurements', 'SENSOR', 'Messgrößen des konkreten Sensors'),
++                        ('commands', 'ACTUATOR', 'Stellbefehle des konkreten Aktors')):
++                    for device in current['devices']:
++                        if device['kind'] != kind:
++                            continue
++                        choices = await infer(stage, {field}, feedback=feedback, device_ids=(device['id'],))
++                        for key in (field, 'unresolved'):
++                            current[key].extend(choices[key])
+                 current['functions'] = []
+                 current['functional_dependencies'] = []
+                 function_ids = [key for key, fact in profile_facts.items() if fact['kind'] == 'FUNCTION']
+@@ -746,7 +1132,7 @@ class LocalEngineeringReasoner:
+         result = validate_reference_design(combined, prepared)
+         result.update(model=self.model, provider='local_ollama', created_at=datetime.now(timezone.utc).isoformat(),
+                       model_parameter_count=info['model_info']['general.parameter_count'], model_calls=deepcopy(calls),
+-                      normalization_events=normalization_events)
++                      normalization_events=normalization_events, declared_inventory_compilation=declared_inventory_events)
+         return result
+ 
+     async def next(self, messages, context, tools):
+diff --git a/backend/nis/agent/orchestration/project_intake.py b/backend/nis/agent/orchestration/project_intake.py
+index 7e26acbe..f34e4f5c 100644
+--- a/backend/nis/agent/orchestration/project_intake.py
++++ b/backend/nis/agent/orchestration/project_intake.py
+@@ -1258,6 +1258,7 @@ class ReferenceDevice(_ReferenceChoice):
+     context_kind: Literal['PASSIVE', 'ASSEMBLY', 'SOFTWARE_SERVICE'] | None = None
+     quantity: int = Field(strict=True, ge=1, le=1000)
+     source_fact_ids: list[str] = Field(min_length=1, max_length=1000)
++    source_member_bindings: dict[str, str] = Field(default_factory=dict)
+     owner_device_id: str | None = None
+     purpose: str | None = Field(default=None, min_length=1, max_length=500)
+     contained_device_ids: list[str] = Field(default_factory=list, max_length=1000)
+@@ -1584,10 +1585,32 @@ def validate_reference_design_profile(result: dict, prepared: dict, profile) ->
+     return _validate_reference_design(result, prepared, profile=tuple(profile))
+ 
+ 
+-def _validate_reference_design(result: dict, prepared: dict, *, profile=None) -> dict:
++def reference_inventory_members(fact: dict) -> list[str]:
++    """Literal type-list obligations, not new facts or confirmed quantities."""
++    if fact['kind'] != 'CATEGORY' or fact['role'] not in {'SENSOR', 'ACTUATOR'}:
++        return []
++    text = fact['source_quote'].strip()
++    match = re.fullmatch(r'(?:[-*]\s*)?(?:Sensorik|Aktorik|Sensor\s+types|Sensortypen|Actuator\s+types|Aktortypen)\s*(?:\(([^()]*)\)|:\s*([^()]*))\.?', text, re.I)
++    if not match:
++        return []
++    body = match[1] if match[1] is not None else match[2]
++    if re.search(r'\b(?:oder|or|optional|beispielsweise|etc)\b|z\.\s*B\.|e\.\s*g\.|/|\.\.\.', body, re.I):
++        return []  # Alternatives/examples do not establish installed members.
++    members = [part.strip() for part in re.split(r'[,;]|\s+(?:und|and)\s+', body) if part.strip()]
++    return list(dict.fromkeys(members)) if len(members) > 1 else []
++
++
++def _validate_reference_inventory(result: dict, prepared: dict, profile, *, partial=False) -> list[dict]:
++    """Internal prerequisite only: never returns approval or a review candidate."""
++    return _validate_reference_design(result, prepared, profile=tuple(profile), inventory_only=True, partial_inventory=partial)
++
++
++def _validate_reference_design(result: dict, prepared: dict, *, profile=None, inventory_only=False, partial_inventory=False) -> dict | list[dict]:
+     """Stamp a detached review candidate; no approval, model writes or readiness."""
+     from copy import deepcopy
+     from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
++    if partial_inventory and not inventory_only:
++        raise ValueError('Eine interne Inventarteilprüfung darf keinen Referenz-Review erzeugen.')
+     # Revalidate the complete primary input, not caller-supplied prepared facts.
+     current = prepare_reference_design(prepared['request'])
+     if current['request_sha256'] != prepared.get('request_sha256'):
+@@ -1681,6 +1704,9 @@ def _validate_reference_design(result: dict, prepared: dict, *, profile=None) ->
+             if fact['role'] != 'OTHER' and device['kind'] != fact['role']:
+                 raise ValueError('Belegte Geräteart darf durch die Referenzannahme nicht ersetzt werden.')
+             bound.setdefault(fact_id, []).append(device_id)
++        for fact_id, member in device['source_member_bindings'].items():
++            if fact_id not in ids or member not in reference_inventory_members(facts[fact_id]):
++                raise ValueError('Typenbindung benötigt ein wörtliches Mitglied der eigenen ursprünglichen Gerätegruppe.')
+         device_fields = ['quantity', 'device_type']
+         if device['owner_device_id'] is not None:
+             device_fields.append('function_hosts')
+@@ -1708,14 +1734,23 @@ def _validate_reference_design(result: dict, prepared: dict, *, profile=None) ->
+         if not represented:
+             findings.append({'code': 'REFERENCE_INVENTORY_UNCOVERED', 'target_ref': fact_id,
+                              'message': 'Ursprünglicher Gerätebefund ist im Referenzentwurf noch nicht abgebildet.'})
++        for member in reference_inventory_members(fact):
++            if not any(devices[key]['source_member_bindings'].get(fact_id) == member for key in represented):
++                findings.append({'code': 'REFERENCE_INVENTORY_MEMBER_UNCOVERED', 'target_ref': fact_id,
++                    'message': f'Benannter Gerätetyp {member!r} benötigt eine eigene quellengebundene Referenzinstanz.'})
+         if fact['kind'] == 'INSTANCE' and represented:
+             count = sum(devices[device_id]['quantity'] for device_id in represented)
+             if count != fact['quantity']:
+-                raise ValueError('Explizite ursprüngliche Instanzmenge darf nicht ersetzt werden.')
++                if partial_inventory and count < fact['quantity']:
++                    findings.append({'code': 'REFERENCE_INVENTORY_QUANTITY_PENDING', 'target_ref': fact_id,
++                        'message': 'Explizite Quellmenge ist im internen Inventarzwischenstand noch nicht vollständig abgebildet.'})
++                else:
++                    raise ValueError('Explizite ursprüngliche Instanzmenge darf nicht ersetzt werden.')
+             expected_names = {name_identity(row['name']) for row in current['catalog'].get('source_devices', [])
+                 if (row.get('evidence') or {}).get('source_quote') == fact['source_quote']
+                 and (row.get('evidence') or {}).get('source_context', []) == fact.get('source_context', [])}
+-            if expected_names and {name_identity(devices[key]['name']) for key in represented} != expected_names:
++            actual_names = {name_identity(devices[key]['name']) for key in represented}
++            if expected_names and (not actual_names <= expected_names if partial_inventory else actual_names != expected_names):
+                 raise ValueError('Explizite ursprüngliche Instanzidentität muss im bestehenden quellenbezogenen Namenspfad erhalten bleiben.')
+     for answer in current['source_evidence']['answers']:
+         if answer.get('coverage_confirmed'):
+@@ -1734,10 +1769,17 @@ def _validate_reference_design(result: dict, prepared: dict, *, profile=None) ->
+             raise ValueError('Vorherige bestätigte Geräteentscheidung besitzt keine gültige Menge.')
+         count = sum(devices[device_id]['quantity'] for device_id in represented)
+         if (answer.get('minimum') and count < quantity) or (not answer.get('minimum') and count != quantity):
+-            raise ValueError('Vorher bestätigte Gerätemenge darf nicht ersetzt oder unterschritten werden.')
++            if partial_inventory and count < quantity:
++                findings.append({'code': 'REFERENCE_INVENTORY_QUANTITY_PENDING', 'target_ref': str(answer.get('id') or 'inventory'),
++                    'message': 'Bestätigte Gerätemenge bleibt im internen Zwischenstand noch offen.'})
++            else:
++                raise ValueError('Vorher bestätigte Gerätemenge darf nicht ersetzt oder unterschritten werden.')
+         if any(answer.get('role') and devices[device_id]['kind'] != answer['role'] for device_id in represented):
+             raise ValueError('Vorher bestätigte Geräteart darf nicht ersetzt werden.')
+ 
++    if inventory_only:
++        return findings
++
+     for fact_id, function in functions.items():
+         if fact_id not in facts or facts[fact_id]['kind'] != 'FUNCTION':
+             raise ValueError('Funktionsrealisierung benötigt einen ursprünglichen Funktionsbefund.')
+diff --git a/backend/nis/agent/tools/api.py b/backend/nis/agent/tools/api.py
+index 648ccbfc..084f1539 100644
+--- a/backend/nis/agent/tools/api.py
++++ b/backend/nis/agent/tools/api.py
+@@ -38,6 +38,7 @@ from backend.nis.agent.tools.run_status import reconcile_model_apply
+ from backend.nis.agent.tools.run_status import restore_wizard_continuation_prompt
+ from backend.nis.agent.tools.cancellation import RunCancellation
+ from backend.nis.agent.tools.cancellation import request_cancel
++from backend.nis.agent.tools.cancellation import active_document_request
+ from backend.nis.workflow.services.service import WorkflowStatusService
+ from datetime import datetime, timezone
+ from backend.nis.agent.api.agent_response import validate_response
+@@ -207,29 +208,51 @@ def _local_document_response(tool_name, handler, initial_text):
+     authority = ToolAuthority(_project(), 'local-human')
+     if 'application/x-ndjson' in request.headers.get('Accept', ''):
+         queue = Queue()
++        cancellation = RunCancellation(authority.project_id, 'document-' + uuid4().hex)
++        def progress(event):
++            cancellation.check()
++            queue.put(event)
+         def worker():
++            token = active_document_request.set(cancellation)
+             try:
+-                result = execute(ToolAuthority(authority.project_id, authority.actor, progress_callback=queue.put),
++                cancellation.check()
++                result = execute(ToolAuthority(authority.project_id, authority.actor, progress_callback=progress),
+                     tool_name, Permission.GENERATE_PROPOSAL, arguments, handler)
++                cancellation.check()
+                 queue.put({'type': 'RESULT', 'result': result.model_dump(mode='json')})
++            except asyncio.CancelledError:
++                # The stream has no durable turn to resume after its reader leaves.
++                pass
+             finally:
++                active_document_request.reset(token)
++                cancellation.close()
+                 _slots.release()
+                 queue.put(None)
+-        _executor.submit(worker)
++        try:
++            _executor.submit(worker)
++        except Exception:
++            cancellation.close()
++            _slots.release()
++            raise
+         @stream_with_context
+         def stream():
+-            yield json.dumps({'type': 'PROGRESS', 'text': initial_text}) + '\n'
+-            while True:
+-                try:
+-                    item = queue.get(timeout=15)
+-                except Empty:
+-                    yield json.dumps({'type': 'HEARTBEAT'}) + '\n'
+-                    continue
+-                if item is None:
+-                    break
+-                yield json.dumps(item, ensure_ascii=False) + '\n'
+-        return Response(stream(), mimetype='application/x-ndjson',
+-                        headers={'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no'})
++            try:
++                yield json.dumps({'type': 'PROGRESS', 'text': initial_text}) + '\n'
++                while True:
++                    try:
++                        item = queue.get(timeout=15)
++                    except Empty:
++                        yield json.dumps({'type': 'HEARTBEAT'}) + '\n'
++                        continue
++                    if item is None:
++                        break
++                    yield json.dumps(item, ensure_ascii=False) + '\n'
++            finally:
++                request_cancel(*cancellation.key)
++        response = Response(stream(), mimetype='application/x-ndjson',
++                            headers={'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no'})
++        response.call_on_close(lambda: request_cancel(*cancellation.key))
++        return response
+     try:
+         result = execute(authority, tool_name,
+                          Permission.GENERATE_PROPOSAL, arguments,
+diff --git a/backend/nis/agent/tools/cancellation.py b/backend/nis/agent/tools/cancellation.py
+index 04fbb1bf..f115eb58 100644
+--- a/backend/nis/agent/tools/cancellation.py
++++ b/backend/nis/agent/tools/cancellation.py
+@@ -1,9 +1,11 @@
+ """Thread-safe cancellation of this server's active wizard tasks."""
+ import asyncio
+ import threading
++from contextvars import ContextVar
+ 
+ _lock = threading.Lock()
+ _runs = {}
++active_document_request = ContextVar('active_document_request', default=None)
+ 
+ 
+ class RunCancellation:
+@@ -37,3 +39,10 @@ def request_cancel(project_id, wizard_run_id):
+             if control.loop and not control.loop.is_closed():
+                 control.loop.call_soon_threadsafe(control.task.cancel)
+     return control is not None
++
++
++def bind_document_request():
++    """Bind only transient document work; durable wizard turns own their lifecycle."""
++    control = active_document_request.get()
++    if control is not None:
++        control.bind()
+diff --git a/backend/nis/agent/tools/project_draft.py b/backend/nis/agent/tools/project_draft.py
+index 89d975bc..291441d4 100644
+--- a/backend/nis/agent/tools/project_draft.py
++++ b/backend/nis/agent/tools/project_draft.py
+@@ -372,15 +372,21 @@ def generate_reference_design(arguments):
+                 await reasoner.client.aclose()
+         try:
+             candidate = asyncio.run(infer())
+-        except Exception as error:
++        except (Exception, asyncio.CancelledError) as error:
++            cancelled = isinstance(error, asyncio.CancelledError)
++            message = 'Referenzplanung abgebrochen; kein unvollständiger Entwurf wurde übernommen.' if cancelled else str(error)
+             failed = conversation.read()
+             current = failed.get('engineering_draft') or {}
+             generation = current.get('reference_generation') or {}
+             if generation.get('token') == generation_token:
+-                generation.update(status='FAILED', error=str(error)[:2000])
++                generation.update(status='CANCELED' if cancelled else 'FAILED', error=message[:2000])
+                 if current.get('source_format') == 'REFERENCE_DOCUMENT':
+-                    current['status'] = 'REFERENCE_FAILED'
++                    current['status'] = 'REFERENCE_CANCELED' if cancelled else 'REFERENCE_FAILED'
+                 conversation.write(failed)
++            if cancelled:
++                from backend.nis.agent.api.tool_contract import ToolResult, ToolStatus
++                return ToolResult(success=False, status=ToolStatus.BLOCKED,
++                                  findings=[{'code': 'DOCUMENT_REQUEST_CANCELED', 'severity': 'ERROR', 'message': message}])
+             raise
+         state = conversation.read()
+         draft = state.get('engineering_draft') or {}
+diff --git a/backend/nis/agent/tools/wizard_generation.py b/backend/nis/agent/tools/wizard_generation.py
+index 06700a66..3a69db15 100644
+--- a/backend/nis/agent/tools/wizard_generation.py
++++ b/backend/nis/agent/tools/wizard_generation.py
+@@ -928,6 +928,9 @@ def _materialize_reference_bindings(reference, spec, changes, existing, ensure,
+         if ref in created:
+             identity = node.setdefault('identity', {})
+             identity.update(reference_design=stamp, source_bindings=source_metadata(device['source_fact_ids']))
++            for binding, fact_id in zip(identity['source_bindings'], device['source_fact_ids']):
++                if fact_id in device.get('source_member_bindings', {}):
++                    binding['reference_member'] = {'label': device['source_member_bindings'][fact_id], **stamp}
+             if device.get('owner_device_id'):
+                 owner = device_refs[device['owner_device_id']]
+                 previous = identity.get('system_owner_id')
+diff --git a/backend/nis/app/__main__.py b/backend/nis/app/__main__.py
+index ac436ef1..b8356b61 100644
+--- a/backend/nis/app/__main__.py
++++ b/backend/nis/app/__main__.py
+@@ -78,7 +78,8 @@ def main() -> int:
+         try:
+             with _exclusive_listener(host, port) as listener:
+                 serve(app, sockets=[listener], threads=settings.api_threads,
+-                      clear_untrusted_proxy_headers=True)
++                      clear_untrusted_proxy_headers=True,
++                      channel_request_lookahead=1)
+         except OSError as error:
+             print(
+                 f"Simulator-Backend nicht gestartet: {host}:{port} ist bereits belegt.",
+diff --git a/frontend/e2e/document-intake.spec.ts b/frontend/e2e/document-intake.spec.ts
+index d66194bf..9e5cce7d 100644
+--- a/frontend/e2e/document-intake.spec.ts
++++ b/frontend/e2e/document-intake.spec.ts
+@@ -2,6 +2,45 @@ import { test, expect } from 'playwright/test';
+ import { createHash, randomUUID } from 'node:crypto';
+ import { fileURLToPath } from 'node:url';
+ 
++test('document network failure retains the complete attachment and permits only explicit retry @document-transport', async ({ page }) => {
++  // Transport contract only. Abort before backend inference; no native extraction PASS.
++  const line = '# Vollständige Prüfquelle\nAnforderungen bleiben unverändert erhalten.\n';
++  const source = line.repeat(Math.ceil(419634 / line.length)).slice(0, 419634);
++  const requests: { source: string; source_request_id: string }[] = [];
++  await page.route('**/api/engineering/agent/document-intake', async route => {
++    requests.push(route.request().postDataJSON());
++    await route.abort('connectionreset');
++  });
++  await page.goto(`/studio/engineering?assistant=project&project=nis-e2e-document-network-${randomUUID()}`);
++  const dialog = page.getByRole('dialog', { name: 'Engineering-Auftrag erstellen' });
++  await dialog.locator('#engineering-project-name').fill('Dokument mit Transportabbruch');
++  const description = dialog.getByPlaceholder('Was soll dieses Projekt leisten?');
++  const notes = dialog.getByPlaceholder('Optional: besondere Protokolle, Safety, Timing oder Herstellerlogik ...');
++  await description.fill('Vollständige Anlage prüfen.');
++  await notes.fill('Freigaben erst nach vollständiger Prüfung.');
++  await dialog.locator('fieldset.agent-project-name-step input[type=file]').setInputFiles({
++    name: 'vollstaendige-pruefquelle.md', mimeType: 'text/markdown', buffer: Buffer.from(source),
++  });
++  await expect(dialog.getByText(/vollständig gelesen \(419\.634 Zeichen\)/)).toBeVisible();
++  await dialog.getByRole('button', { name: 'Lokalen Qwen-Vorschlag erstellen', exact: true }).click();
++  const error = dialog.locator('fieldset.agent-project-name-step').getByRole('alert');
++  await expect(error).toContainText('Verbindung zur lokalen Dokumentauswertung wurde unterbrochen');
++  await expect(error).toContainText('kein vollständiges Prüfergebnis empfangen');
++  await expect(error).not.toContainText('network error');
++  await expect(description).toHaveValue('Vollständige Anlage prüfen.');
++  await expect(notes).toHaveValue('Freigaben erst nach vollständiger Prüfung.');
++  await expect(dialog.getByText(/vollständig gelesen \(419\.634 Zeichen\)/)).toBeVisible();
++  await expect(dialog.getByRole('region', { name: 'Qwen-Dokumentvorschlag' })).toHaveCount(0);
++  expect(requests).toHaveLength(1);
++  expect(requests[0].source).toContain(source);
++  await dialog.getByRole('button', { name: 'Dokument erneut prüfen', exact: true }).click();
++  await expect(error).toContainText('Verbindung zur lokalen Dokumentauswertung wurde unterbrochen');
++  expect(requests).toHaveLength(2);
++  expect(requests[1].source).toBe(requests[0].source);
++  expect(requests[1].source_request_id).not.toBe(requests[0].source_request_id);
++  await page.screenshot({ path: test.info().outputPath('network-recovery.png') });
++});
++
+ test('document intake preserves complete requirements and reports unresolved scope @parser', async ({ page }) => {
+   await page.goto(`/studio/engineering?assistant=project&project=nis-e2e-document-${randomUUID()}`);
+   const dialog = page.getByRole('dialog', { name: 'Engineering-Auftrag erstellen' });
+diff --git a/frontend/src/features/agent/lib/document-intake-response.test.mjs b/frontend/src/features/agent/lib/document-intake-response.test.mjs
+index 89a99522..5f4f43ec 100644
+--- a/frontend/src/features/agent/lib/document-intake-response.test.mjs
++++ b/frontend/src/features/agent/lib/document-intake-response.test.mjs
+@@ -1,6 +1,6 @@
+ import test from 'node:test';
+ import assert from 'node:assert/strict';
+-import { readDocumentIntakeResponse } from './engineering-agent.ts';
++import { readDocumentIntakeResponse, documentRequestErrorMessage } from './engineering-agent.ts';
+ import { documentSourceScope, documentSystemScope } from './document-clarification.ts';
+ 
+ function fragmentedResponse(text) {
+@@ -11,6 +11,24 @@ function fragmentedResponse(text) {
+   } }), { headers: { 'Content-Type': 'application/x-ndjson' } });
+ }
+ 
++test('document transport failures explain incomplete evidence and deliberate retry', () => {
++  for (const text of ['network error', 'Failed to fetch', 'Load failed', 'NetworkError when attempting to fetch resource.']) {
++    const message = documentRequestErrorMessage(new TypeError(text));
++    assert.match(message, /Verbindung zur lokalen Dokumentauswertung wurde unterbrochen/);
++    assert.match(message, /kein vollständiges Prüfergebnis empfangen/);
++    assert.match(message, /Datei und Eingaben bleiben erhalten/);
++    assert.match(message, /erneut/);
++    assert.equal(message.includes(text), false);
++  }
++  assert.match(documentRequestErrorMessage(new Error('fetch failed'), 'reference'), /lokalen Referenzplanung/);
++});
++
++test('document error display preserves specific validation findings', () => {
++  const message = 'Abschnitt 4 ist nicht quellenkonform.';
++  assert.equal(documentRequestErrorMessage(new Error(message)), message);
++  assert.match(documentRequestErrorMessage(null), /Dokumentauswertung/);
++});
++
+ test('document transport preserves UTF8 progress and waits for the terminal tool result', async () => {
+   const progress = [];
+   const proposal = { source_name: 'Äußere Sensorik', source_complete: true };
+@@ -28,6 +46,67 @@ test('heartbeat-only or failed later processing is never interpreted as a succes
+   } })), () => {}), /Abschnitt 4/);
+ });
+ 
++test('abandoning a pending document response cancels its reader without a successful proposal', async () => {
++  let canceled = false;
++  const progress = [];
++  const response = new Response(new ReadableStream({
++    start(controller) { controller.enqueue(new TextEncoder().encode('{"type":"PROGRESS","text":"Abschnitt 1"}\n')); },
++    cancel() { canceled = true; },
++  }), { headers: { 'Content-Type': 'application/x-ndjson' } });
++  const controller = new AbortController();
++  const pending = readDocumentIntakeResponse(response, text => progress.push(text), 2_000_000, controller.signal);
++  await new Promise(resolve => setImmediate(resolve));
++  controller.abort();
++  await assert.rejects(pending, error => error.name === 'AbortError');
++  assert.equal(canceled, true);
++  assert.deepEqual(progress, ['Abschnitt 1']);
++});
++
++test('a rejected oversized document response releases the stream before returning its error', async () => {
++  let canceled = false;
++  const response = new Response(new ReadableStream({
++    start(controller) { controller.enqueue(new Uint8Array(32)); },
++    cancel() { canceled = true; },
++  }), { headers: { 'Content-Type': 'application/x-ndjson' } });
++  await assert.rejects(readDocumentIntakeResponse(response, () => assert.fail('No partial proposal'), 16), /zu groß/);
++  assert.equal(canceled, true);
++});
++
++test('failed transport cleanup cannot replace an explicit size finding with network error', async () => {
++  const response = new Response(new ReadableStream({
++    start(controller) { controller.enqueue(new Uint8Array(32)); },
++    cancel() { throw new TypeError('network error'); },
++  }), { headers: { 'Content-Type': 'application/x-ndjson' } });
++  await assert.rejects(readDocumentIntakeResponse(response, () => assert.fail('No partial proposal'), 16), error => {
++    assert.match(documentRequestErrorMessage(error), /Die lokale Dokumentantwort ist zu groß/);
++    return true;
++  });
++  assert.equal(response.body.locked, false);
++});
++
++test('an aborted response does not cancel an independent completed response', async () => {
++  const canceled = new AbortController(); canceled.abort();
++  await assert.rejects(readDocumentIntakeResponse(fragmentedResponse('{"type":"HEARTBEAT"}\n'), () => {}, 2_000_000, canceled.signal), error => error.name === 'AbortError');
++  const independent = new AbortController();
++  const data = { source_complete: true, source_name: 'other.txt' };
++  assert.deepEqual(await readDocumentIntakeResponse(fragmentedResponse(JSON.stringify({ type: 'RESULT', result: { success: true, data } })), () => {}, 2_000_000, independent.signal), data);
++  assert.equal(independent.signal.aborted, false);
++});
++
++test('an aborted failed transport releases the reader and preserves its original error', async () => {
++  let streamController;
++  const response = new Response(new ReadableStream({ start(controller) { streamController = controller; } }),
++    { headers: { 'Content-Type': 'application/x-ndjson' } });
++  const controller = new AbortController();
++  const pending = readDocumentIntakeResponse(response, () => assert.fail('No progress from failed transport'), 2_000_000, controller.signal);
++  await new Promise(resolve => setImmediate(resolve));
++  const failure = new Error('socket closed');
++  streamController.error(failure);
++  controller.abort();
++  await assert.rejects(pending, error => error === failure);
++  assert.equal(response.body.locked, false);
++});
++
+ for (const caption of ['Mechanische, elektrische und E/E-Architektur', 'Physical and logical Architecture',
+   'Kernfunktionen', 'Core functions', 'Regulatorische Anforderungen', 'Regulatory Requirements',
+   'Schnittstellen und Datenobjekte', 'Safety, SOTIF, KI-Sicherheit, Cybersecurity und Compliance']) {
+diff --git a/frontend/src/features/agent/lib/engineering-agent.ts b/frontend/src/features/agent/lib/engineering-agent.ts
+index e8d8a3c2..1167bdb0 100644
+--- a/frontend/src/features/agent/lib/engineering-agent.ts
++++ b/frontend/src/features/agent/lib/engineering-agent.ts
+@@ -87,10 +87,22 @@ export type EngineeringProposal = {
+ export type EngineeringAgentUIMessage = UIMessage<unknown, { engineering: EngineeringAgentEvent; attachment: ChatAttachment }, Record<string, { input: Record<string, unknown>; output: unknown }>>;
+ 
+ type DocumentToolResult<T> = { success: boolean; data?: T; error?: string; findings?: { message?: string }[] };
+-export async function readDocumentIntakeResponse<T = DocumentIntakeProposal>(response: Response, onProgress: (text: string) => void, maxBytes = 2_000_000): Promise<T> {
++export function documentRequestErrorMessage(error: unknown, stage: 'document' | 'reference' = 'document'): string {
++  const message = error instanceof Error ? error.message : '';
++  const operation = stage === 'reference' ? 'Referenzplanung' : 'Dokumentauswertung';
++  if (/^(?:network error|failed to fetch|fetch failed|load failed|NetworkError(?: when attempting to fetch resource)?|The network connection was lost)[.!]?$/i.test(message.trim())) {
++    return `Die Verbindung zur lokalen ${operation} wurde unterbrochen. Es wurde kein vollständiges Prüfergebnis empfangen. Datei und Eingaben bleiben erhalten. Bitte die Prüfung erneut starten.`;
++  }
++  return message || `Die lokale ${operation} ist fehlgeschlagen. Bitte die Prüfung erneut starten.`;
++}
++
++export async function readDocumentIntakeResponse<T = DocumentIntakeProposal>(response: Response, onProgress: (text: string) => void, maxBytes = 2_000_000, signal?: AbortSignal): Promise<T> {
++  signal?.throwIfAborted();
+   let result: DocumentToolResult<T> | undefined;
+   if (response.headers.get('Content-Type')?.includes('application/x-ndjson') && response.body) {
+     const reader = response.body.getReader();
++    const abort = () => { void reader.cancel(signal?.reason).catch(() => undefined); };
++    signal?.addEventListener('abort', abort, { once: true });
+     const decoder = new TextDecoder();
+     let buffer = '';
+     let bytes = 0;
+@@ -103,6 +115,7 @@ export async function readDocumentIntakeResponse<T = DocumentIntakeProposal>(res
+     try {
+       while (true) {
+         const part = await reader.read();
++        signal?.throwIfAborted();
+         if (part.done) break;
+         bytes += part.value.byteLength;
+         if (bytes > maxBytes) throw new Error('Die lokale Dokumentantwort ist zu groß.');
+@@ -113,8 +126,12 @@ export async function readDocumentIntakeResponse<T = DocumentIntakeProposal>(res
+         }
+       }
+       receive(buffer + decoder.decode());
+-    } finally { await reader.cancel(); reader.releaseLock(); }
++    } finally {
++      signal?.removeEventListener('abort', abort);
++      try { await reader.cancel().catch(() => undefined); } finally { reader.releaseLock(); }
++    }
+   } else result = await response.json();
++  signal?.throwIfAborted();
+   if (!response.ok || !result?.success || !result.data) {
+     throw new Error(result?.error ?? result?.findings?.[0]?.message ?? 'Die vollständige lokale Dokumentauswertung ist fehlgeschlagen.');
+   }
+diff --git a/frontend/src/features/agent/ui/agent-chat-core.tsx b/frontend/src/features/agent/ui/agent-chat-core.tsx
+index 16519f69..7e2dadd5 100644
+--- a/frontend/src/features/agent/ui/agent-chat-core.tsx
++++ b/frontend/src/features/agent/ui/agent-chat-core.tsx
+@@ -8,7 +8,7 @@ import { readAssistantContext } from "@/features/agent/lib/assistant-context";
+ import type { AssistantGraphState } from "@/shared/lib/index.ts";
+ import type { ChatAttachment } from "@/features/agent/lib/chat-attachments";
+ import { completeWizardDocumentText, MAX_CHAT_FILE_BYTES } from "@/features/agent/lib/chat-attachments";
+-import { readDocumentIntakeResponse, referenceDesignMarker, type ReferenceDesignRecord, type ReferenceSource, type DocumentIntakeProposal } from '@/features/agent/lib/engineering-agent';
++import { readDocumentIntakeResponse, documentRequestErrorMessage, referenceDesignMarker, type ReferenceDesignRecord, type ReferenceSource, type DocumentIntakeProposal } from '@/features/agent/lib/engineering-agent';
+ import { AgentChatComposer } from "./agent-chat-composer";
+ import { ProjectDraftEditor, type ProjectDraftStatus } from '../../projects/ui/project-draft-editor';
+ 
+@@ -72,7 +72,7 @@ import { approveRoutes, listRoutes } from "@/features/routing/lib/routing-api";
+ import { routingApprovalProgress } from "@/features/routing/lib/routing-approval";
+ import type { EngineeringObject, EngineeringResource, RoutingEntry, Technology, TechnologyDomain } from "@/shared/api/types";
+ import { DEFAULT_BUS_PARTICIPANT_LIMITS, busBranchCapacity } from "@/features/communication/lib/bus-settings";
+-import { readActiveProjectId, withProjectParam } from "@/features/settings/lib/user-settings";
++import { readActiveProjectId, withProjectParam, SETTINGS_EVENT } from "@/features/settings/lib/user-settings";
+ import {
+   defaultWizardTechnologyIds,
+   normalizeEngineeringWizardSettings,
+@@ -1150,6 +1150,8 @@ export function EngineeringAgentWizard({
+   const [taskFiles, setTaskFiles] = useState<TaskAttachment[]>([]);
+   const [taskAttachmentError, setTaskAttachmentError] = useState('');
+   const [documentIntakeBusy, setDocumentIntakeBusy] = useState(false);
++  const documentRequestRef = useRef<AbortController | null>(null);
++  const referenceRequestRef = useRef<AbortController | null>(null);
+   const [documentIntakeProgress, setDocumentIntakeProgress] = useState('');
+   const [documentIntakeError, setDocumentIntakeError] = useState('');
+   const [documentIntake, setDocumentIntake] = useState<{ source: string; project: string; proposal: DocumentIntakeProposal } | null>(null);
+@@ -1196,6 +1198,22 @@ export function EngineeringAgentWizard({
+   const activeDocumentEquipment = reviewedDocument?.source === documentSourceIdentity && reviewedDocument.project === projectId ? reviewedDocument.equipment : null;
+   const sourceTask = originalTaskSource + (activeDocumentEquipment ? `\n${DOCUMENT_EQUIPMENT_MARKER}${JSON.stringify(activeDocumentEquipment)}` : '');
+   const referenceSignature = JSON.stringify([sourceTask, notes, referenceFiles, referenceClarification, referenceExample]);
++  useEffect(() => () => { documentRequestRef.current?.abort(); }, [documentSourceIdentity, projectId]);
++  useEffect(() => () => { referenceRequestRef.current?.abort(); }, [referenceSignature, projectId]);
++  useEffect(() => {
++    const changedProject = () => {
++      if (readActiveProjectId() !== projectId) {
++        documentRequestRef.current?.abort();
++        referenceRequestRef.current?.abort();
++      }
++    };
++    window.addEventListener(SETTINGS_EVENT, changedProject);
++    return () => {
++      window.removeEventListener(SETTINGS_EVENT, changedProject);
++      documentRequestRef.current?.abort(); documentRequestRef.current = null;
++      referenceRequestRef.current?.abort(); referenceRequestRef.current = null;
++    };
++  }, [projectId]);
+   const currentReference = referenceExample && referenceDesign?.project === projectId && referenceDesign.signature === referenceSignature ? referenceDesign.record : null;
+   const acceptedReference = currentReference?.status === 'ACCEPTED' ? currentReference : null;
+   const referenceMarker = acceptedReference ? referenceDesignMarker(acceptedReference) : '';
+@@ -2185,21 +2203,26 @@ export function EngineeringAgentWizard({
+ 
+   async function reviewDocumentWithQwen() {
+     if (documentIntakeBusy || !taskSource.trim()) return;
++    documentRequestRef.current?.abort();
++    const controller = new AbortController();
++    documentRequestRef.current = controller;
+     const source = documentSourceIdentity;
+     const sourceRequestId = Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join('');
+     setDocumentIntakeBusy(true); setDocumentIntakeProgress('Lokaler Qwen startet …'); setDocumentIntakeError(''); setDocumentIntake(null);
+     try {
+       completeWizardDocumentText(source);
+       if (readActiveProjectId() !== projectId) throw new Error('Das aktive Projekt wurde gewechselt.');
+-      const sessionResponse = await fetch('/api/engineering/agent/review-session', { cache: 'no-store' });
++      const sessionResponse = await fetch('/api/engineering/agent/review-session', { cache: 'no-store', signal: controller.signal });
+       if (!sessionResponse.ok) throw new Error('Die Dokumentauswertung konnte nicht vorbereitet werden.');
+       const session = await sessionResponse.json();
+       const response = await fetch('/api/engineering/agent/document-intake', {
++        signal: controller.signal,
+         method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/x-ndjson', 'X-Project-ID': projectId,
+           'X-Human-Review': 'confirmed', 'X-Review-CSRF': session.csrf_token },
+         body: JSON.stringify({ source, source_request_id: sourceRequestId, source_name: primaryFiles.map(file => file.name).join(', ').slice(0, 180) || 'Projektbeschreibung' }),
+       });
+-      const proposal = await readDocumentIntakeResponse(response, text => setDocumentIntakeProgress(text));
++      const proposal = await readDocumentIntakeResponse(response, text => setDocumentIntakeProgress(text), 2_000_000, controller.signal);
++      if (documentRequestRef.current !== controller) return;
+       if (readActiveProjectId() !== projectId || proposal.source_request_id !== sourceRequestId
+           || !/^[0-9a-f]{64}$/.test(proposal.source_sha256) || !proposal.source_complete
+           || proposal.source_chars !== Array.from(source).length || proposal.canonical_writes !== false || proposal.status !== 'REVIEW_REQUIRED') {
+@@ -2207,12 +2230,20 @@ export function EngineeringAgentWizard({
+       }
+       setDocumentIntake({ source, project: projectId, proposal });
+     } catch (error) {
+-      setDocumentIntakeError(error instanceof Error ? error.message : 'Die lokale Dokumentauswertung ist fehlgeschlagen.');
+-    } finally { setDocumentIntakeBusy(false); }
++      if (!controller.signal.aborted && documentRequestRef.current === controller) {
++        controller.abort();
++        setDocumentIntakeError(documentRequestErrorMessage(error));
++      }
++    } finally {
++      if (documentRequestRef.current === controller) { documentRequestRef.current = null; setDocumentIntakeBusy(false); }
++    }
+   }
+ 
+   async function referenceAction(accept = false) {
+     if (effectiveBusy || !activeDocumentEquipment || !referenceExample) return;
++    referenceRequestRef.current?.abort();
++    const controller = new AbortController();
++    referenceRequestRef.current = controller;
+     const signature = referenceSignature;
+     setReferenceBusy(true); setReferenceError('');
+     setReferenceProgress(accept ? 'Referenzprüfung wird gespeichert …' : 'Lokaler Qwen plant die vollständigen fachlichen Ketten …');
+@@ -2227,26 +2258,34 @@ export function EngineeringAgentWizard({
+         text: referenceClarification, source_sha256: await sha(referenceClarification),
+         allowed_fields: ['quantity', 'device_type', 'function_hosts', 'ports', 'measurements', 'commands', 'communication'] });
+       if (readActiveProjectId() !== projectId) throw new Error('Das aktive Projekt wurde gewechselt.');
+-      const sessionResponse = await fetch('/api/engineering/agent/review-session', { cache: 'no-store' });
++      const sessionResponse = await fetch('/api/engineering/agent/review-session', { cache: 'no-store', signal: controller.signal });
+       if (!sessionResponse.ok) throw new Error('Die Referenzprüfung konnte nicht vorbereitet werden.');
+       const session = await sessionResponse.json();
+       if (accept && !currentReference) throw new Error('Der aktuelle Referenzentwurf fehlt.');
+       const response = await fetch('/api/engineering/agent/document-reference-design' + (accept ? '/accept' : ''), {
++        signal: controller.signal,
+         method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/x-ndjson', 'X-Project-ID': projectId,
+           'X-Human-Review': 'confirmed', 'X-Review-CSRF': session.csrf_token },
+         body: JSON.stringify(accept ? { design_id: currentReference!.design_id, revision: currentReference!.revision,
+           request_sha256: currentReference!.request_sha256 } : { mode: 'EXAMPLE_PROJECT', prompt: sourceTask + (notes ? '\n' + notes : ''),
+           source_request_id: crypto.randomUUID(), reference_sources: sources }),
+       });
+-      const record = await readDocumentIntakeResponse<ReferenceDesignRecord>(response, setReferenceProgress, 24_000_000);
++      const record = await readDocumentIntakeResponse<ReferenceDesignRecord>(response, setReferenceProgress, 24_000_000, controller.signal);
++      if (referenceRequestRef.current !== controller) return;
+       if (readActiveProjectId() !== projectId || record.canonical_writes !== false || record.schema_version !== 1
+           || record.source_sha256 !== activeDocumentEquipment.source_sha256 || !record.design_id
+           || !['REVIEW_REQUIRED', 'ACCEPTED'].includes(record.status)) throw new Error('Die Referenzantwort passt nicht zur aktuellen vollständigen Quelle.');
+       setReferenceDesign({ signature, project: projectId, record });
+       // No canonical writes here. Starting the ordinary wizard is a separate
+       // action and retains validate/review/apply, preflight and simulation.
+-    } catch (error) { setReferenceError(error instanceof Error ? error.message : 'Die Referenzplanung ist fehlgeschlagen.'); }
+-    finally { setReferenceBusy(false); }
++    } catch (error) {
++      if (!controller.signal.aborted && referenceRequestRef.current === controller) {
++        controller.abort();
++        setReferenceError(documentRequestErrorMessage(error, 'reference'));
++      }
++    } finally {
++      if (referenceRequestRef.current === controller) { referenceRequestRef.current = null; setReferenceBusy(false); }
++    }
+   }
+ 
+   function referenceReview() {
+@@ -2263,7 +2302,8 @@ export function EngineeringAgentWizard({
+           <button type="button" disabled={effectiveBusy} onClick={() => setTaskFiles(taskFiles.filter(item => item !== file))}>Referenz entfernen</button></li>)}</ul>
+         <button type="button" className="button secondary" disabled={effectiveBusy || !activeDocumentEquipment} onClick={() => void referenceAction()}>NIS-Referenzentwurf mit lokalem Qwen erstellen</button>
+         {!activeDocumentEquipment && <p>Die vollständigen Dokumentbefunde zuerst prüfen und übernehmen.</p>}
+-        {referenceBusy && <p role="status">{referenceProgress}</p>}
++        {referenceBusy && <p role="status">{referenceProgress} <button className="button secondary tiny" type="button"
++          onClick={() => { referenceRequestRef.current?.abort(); setReferenceError('Referenzprüfung abgebrochen.'); }}>Abbrechen</button></p>}
+         {referenceError && <p role="alert">{referenceError}</p>}
+         {currentReference && <>
+           <p role="status">{currentReference.status === 'ACCEPTED' ? 'Referenzannahmen übernommen' : 'Referenzannahmen zur Prüfung'} · {currentReference.proposal.devices.length} Teilnehmerentwürfe · {currentReference.proposal.functions.length} Funktionen · {currentReference.proposal.communication.length} Kommunikationsbeziehungen</p>
+@@ -3315,9 +3355,10 @@ export function EngineeringAgentWizard({
+           </label>
+           {taskAttachmentError && <p className="notice error" role="alert">{taskAttachmentError}</p>}
+           <button className="button secondary" type="button" disabled={effectiveBusy || documentIntakeBusy || !taskReady || !!taskAttachmentError}
+-            onClick={() => void reviewDocumentWithQwen()}>{documentIntakeBusy ? 'Lokaler Qwen prüft das Dokument …' : 'Lokalen Qwen-Vorschlag erstellen'}</button>
++            onClick={() => void reviewDocumentWithQwen()}>{documentIntakeBusy ? 'Lokaler Qwen prüft das Dokument …' : documentIntakeError ? 'Dokument erneut prüfen' : 'Lokalen Qwen-Vorschlag erstellen'}</button>
+           {referenceReview()}
+-          {documentIntakeBusy && <p role="status">{documentIntakeProgress}</p>}
++          {documentIntakeBusy && <p role="status">{documentIntakeProgress} <button className="button secondary tiny" type="button"
++            onClick={() => { documentRequestRef.current?.abort(); setDocumentIntakeError('Dokumentauswertung abgebrochen.'); }}>Abbrechen</button></p>}
+           {documentIntakeError && <p className="notice error" role="alert">{documentIntakeError}</p>}
+           {currentDocumentProposal && <section className="agent-cluster-review" aria-label="Qwen-Dokumentvorschlag">
+             <h3>Lokaler Dokumentvorschlag zur Prüfung</h3>

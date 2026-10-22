@@ -280,7 +280,19 @@ async function repeatParameterReturn(page: Page, project: string, proposalId: st
           else await expect(input).toHaveValue(value);
         }
         await common.locator('#seed').fill(String(seed));
+        const parameterWriteStarted = performance.now();
+        const parameterWrite = page.waitForResponse(response =>
+          new URL(response.url()).pathname === '/api/engineering/workflow/parameters'
+          && response.request().method() === 'PATCH'
+          && response.request().headers()['x-project-id'] === project, {timeout: 180_000});
         await page.getByRole('button', {name: 'Parameter speichern →', exact: true}).click();
+        const parameterCommitResponse = await parameterWrite;
+        if (!parameterCommitResponse.ok()) throw new Error(
+          `Parameter write HTTP ${parameterCommitResponse.status()}: ${(await parameterCommitResponse.text()).slice(0, 4000)}`);
+        const parameterCommit = await parameterCommitResponse.json();
+        const parameterWriteMs = performance.now() - parameterWriteStarted;
+        expect(parameterCommit.project_id).toBe(project);
+        expect(parameterWriteMs, 'The real manual parameter write retains its separate 180-second bound.').toBeLessThanOrEqual(180_000);
         await expect(page.getByText('Technologie- und Timing-Parameter gespeichert.')).toBeVisible();
         const saved = await readProject(page, project, '/api/engineering/workflow/parameters');
         expect(saved.project_id).toBe(project);
@@ -384,6 +396,7 @@ async function repeatParameterReturn(page: Page, project: string, proposalId: st
         expect(after.parameters).toEqual(saved.parameters);
         expect(starts, 'Returning from parameters must never restart this run.').toEqual([]);
         evidence.push({cycle: cycle + 1, technology: scenario.technology, seed, run_id: identity.run_id,
+          parameter_write_ms: parameterWriteMs, parameter_write_status: parameterCommitResponse.status(),
           proposal_id: proposalId, saved_values: scoped, assumptions: assumed,
           restored_status: fresh.data.status, canonical_ids: canonicalIds});
       }
@@ -593,7 +606,7 @@ test('new small wizard traverses all nine stages and survives reload/restart @sm
   const dialog = await openWizard(page, project);
   await dialog.getByTitle('Projektname', { exact: true }).click();
   await dialog.locator('#engineering-project-name').fill('E2E small');
-  await dialog.getByLabel('Projektbeschreibung', { exact: true }).fill('Erzeuge ein Automotive CAN-FD Netzwerk mit einem Gateway System, den ECUs Motorsteuerung und Anzeige, einem Sensor MotorTemperature und einem Aktor MotorValve. MotorTemperature wird von Motorsteuerung ausgewertet. Motorsteuerung steuert MotorValve. Controllerstatus bleibt bis zur Auswahl konkreter Empfänger und Signale intern. Prüfe und arbeite bis Data Science & Intelligence.\nCAN-FD: 500 kbit/s arbitration, 2 Mbit/s data\nCAN: 500 kbit/s');
+  await dialog.getByLabel('Projektbeschreibung', { exact: true }).fill('Erzeuge ein Automotive CAN-FD Netzwerk mit einem Gateway System, den ECUs Motorsteuerung und Anzeige, einem Sensor MotorTemperature und einem Aktor MotorValve. MotorTemperature wird von Motorsteuerung ausgewertet. Motorsteuerung steuert MotorValve. Controllerstatus bleibt bis zur Auswahl konkreter Empfänger und Signale intern. Prüfe und arbeite bis Data Science & Intelligence.\nCAN-FD: 500 kbit/s arbitration, 2 Mbit/s data');
   await dialog.getByLabel('Weitere Hinweise', { exact: true }).fill('- Aktor-Befehle: {"MotorValve":{"length_bits":1,"data_type":"boolean","factor":1,"unit":"code","min_value":0,"max_value":1,"semantic":{"semantic_type":"BOOLEAN"},"data":{"enum_values":{"CLOSE":0,"OPEN":1}}}}');
   await dialog.getByTitle('Geräteumfang', { exact: true }).click();
   for (const [label, value] of [['Gateways', '1'], ['Controller', '2'], ['Sensoren', '1'], ['Aktoren', '1']]) await dialog.getByLabel(`${label}: verbindliche Anzahl`, { exact: true }).fill(value);

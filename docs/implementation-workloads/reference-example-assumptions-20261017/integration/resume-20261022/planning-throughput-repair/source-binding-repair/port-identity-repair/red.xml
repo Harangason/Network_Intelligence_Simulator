@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="4" time="30.539" timestamp="2026-10-22T12:24:24.625650+02:00" hostname="Haranga"><testcase classname="tests.test_reference_selected_identity" name="test_private_port_decoder_rejects_same_id_with_different_values" time="7.273"><failure message="Failed: DID NOT RAISE ValidationError">def test_private_port_decoder_rejects_same_id_with_different_values():
+        prepared = intake.prepare_reference_design(fixture_request())
+        ports = selected_ports()
+        schema = reasoner._reference_schema_for_stage(prepared, {'ports'},
+            port_ids=tuple(row['id'] for row in ports))
+        # Independently authored counterpart of actual38025: four rows, two IDs.
+        rows = [deepcopy(ports[index]) for index in (0, 0, 2, 2)]
+        for index, row in enumerate(rows):
+            row.update(rationale=f'Distinct row {index}', parameters={'bitrate_bps': 500000 + index})
+        body = {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'ports': rows}
+&gt;       with pytest.raises(ValidationError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValidationError
+
+backend\tests\test_reference_selected_identity.py:29: Failed</failure></testcase><testcase classname="tests.test_reference_selected_identity" name="test_private_function_decoder_rejects_repeated_source_identity" time="2.049"><failure message="Failed: DID NOT RAISE ValidationError">def test_private_function_decoder_rejects_repeated_source_identity():
+        prepared = intake.prepare_reference_design(fixture_request())
+        functions = fixture_design(prepared)['functions'][:2]
+        identities = tuple(row['source_fact_id'] for row in functions)
+        schema = reasoner._reference_schema_for_stage(prepared, {'functions', 'functional_dependencies'},
+            function_ids=identities)
+        rows = [deepcopy(functions[0]), deepcopy(functions[0])]
+        rows[1]['rationale'] = 'Different authored decision, same forbidden source identity'
+        body = {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'functions': rows}
+&gt;       with pytest.raises(ValidationError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValidationError
+
+backend\tests\test_reference_selected_identity.py:42: Failed</failure></testcase><testcase classname="tests.test_reference_selected_identity" name="test_selected_port_wire_contains_only_mutable_parameter_decisions" time="1.921"><failure message="AssertionError: Exact required ID keys are missing&#10;assert 'port_parameters' in {'devices': {'items': {'$ref': '#/$defs/ReferenceDevice'}, 'title': 'Devices', 'type': 'array', 'maxItems': 0}, 'funct...ts': {'items': {'$ref': '#/$defs/ReferenceMeasurement'}, 'title': 'Measurements', 'type': 'array', 'maxItems': 0}, ...}">def test_selected_port_wire_contains_only_mutable_parameter_decisions():
+        prepared = intake.prepare_reference_design(fixture_request())
+        public_before = deepcopy(intake.reference_design_schema(prepared))
+        identities = tuple(row['id'] for row in selected_ports())
+        schema = reasoner._reference_schema_for_stage(prepared, {'ports'}, port_ids=identities)
+&gt;       assert 'port_parameters' in schema['properties'], 'Exact required ID keys are missing'
+E       AssertionError: Exact required ID keys are missing
+E       assert 'port_parameters' in {'devices': {'items': {'$ref': '#/$defs/ReferenceDevice'}, 'title': 'Devices', 'type': 'array', 'maxItems': 0}, 'funct...ts': {'items': {'$ref': '#/$defs/ReferenceMeasurement'}, 'title': 'Measurements', 'type': 'array', 'maxItems': 0}, ...}
+
+backend\tests\test_reference_selected_identity.py:51: AssertionError</failure></testcase><testcase classname="tests.test_reference_selected_identity" name="test_progress_identifies_actual_port_and_function_selections" time="17.783"><failure message="AssertionError: Selected identities must remain visible across a long stage&#10;assert ([])">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000002377DC076F0&gt;
+
+    def test_progress_identifies_actual_port_and_function_selections(monkeypatch):
+        from backend.nis.engineering.goal_execution.progress import sink
+        from backend.tests.test_reference_reasoner import reasoner_with_transport, run_reference
+        instance, prepared, _ = reasoner_with_transport(monkeypatch)
+        events = []
+        token = sink.set(events.append)
+        try:
+            result = run_reference(instance, prepared)
+        finally:
+            sink.reset(token)
+        progress = [event for event in events
+                    if (event.get('metadata') or {}).get('source') == 'document_reference_design']
+        ports = [event for event in progress if event['metadata'].get('selected_port_ids')]
+        functions = [event for event in progress if event['metadata'].get('selected_function_fact_ids')]
+&gt;       assert ports and functions, 'Selected identities must remain visible across a long stage'
+E       AssertionError: Selected identities must remain visible across a long stage
+E       assert ([])
+
+backend\tests\test_reference_selected_identity.py:76: AssertionError</failure></testcase></testsuite></testsuites>

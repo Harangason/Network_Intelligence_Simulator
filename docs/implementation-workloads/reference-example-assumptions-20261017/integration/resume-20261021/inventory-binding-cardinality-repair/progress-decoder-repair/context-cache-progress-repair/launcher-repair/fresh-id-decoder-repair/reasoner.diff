@@ -1,0 +1,115 @@
+--- b47/local_reasoner.py
++++ current/local_reasoner.py
+@@ -111,9 +111,69 @@
+     return resolve(root)
+ 
+ 
++def _reference_fresh_identity_schema(definition, existing_ids):
++    """Express finite ID exclusion with positive, native-grammar alternatives.
++
++    Each constrained branch consumes one exact string length. This avoids
++    lookahead/not keywords and end-anchor ambiguity for identifiers with LF.
++    All other lengths and every non-colliding string remain available.
++    """
++    from copy import deepcopy
++    base = deepcopy(definition)
++    minimum, maximum = base['minLength'], base.get('maxLength')
++    groups = {}
++    for value in sorted(set(existing_ids)):
++        if len(value) >= minimum and (maximum is None or len(value) <= maximum):
++            groups.setdefault(len(value), []).append(value)
++    if 'pattern' in base:
++        raise ValueError('Eine zusätzliche Identitätsregel benötigt eine ausdrückliche native Schnittmenge.')
++
++    def length_branch(lower, upper):
++        branch = {**deepcopy(base), 'minLength': lower,
++                  'pattern': r'^([^\n]|\n){' + str(lower) + ','
++                             + (str(upper) if upper is not None else '') + '}$'}
++        if upper is not None:
++            branch['maxLength'] = upper
++        return branch
++
++    if not groups:
++        return length_branch(minimum, maximum)
++
++    def escape(char, *, character_class=False):
++        if char in {'\n', '\r', '\t'}:
++            return {'\n': r'\n', '\r': r'\r', '\t': r'\t'}[char]
++        special = r'\[]-^' if character_class else r'\.^$*+?{}[]|()'
++        return '\\' + char if char in special else char
++
++    def exclusion(words, length, depth=0):
++        children = {}
++        for word in words:
++            children.setdefault(word[depth], []).append(word)
++        suffix = length - depth - 1
++        alternatives = [
++            '[^' + ''.join(escape(char, character_class=True) for char in children) + ']'
++            + (r'([^\n]|\n)' + '{' + str(suffix) + '}' if suffix else '')]
++        if suffix:
++            alternatives.extend(escape(char) + exclusion(rows, length, depth + 1)
++                                for char, rows in children.items())
++        return '(' + '|'.join(alternatives) + ')'
++
++    alternatives = []
++    lower = minimum
++    for length, words in sorted(groups.items()):
++        if lower < length:
++            alternatives.append(length_branch(lower, length - 1))
++        alternatives.append({**deepcopy(base), 'minLength': length, 'maxLength': length,
++                             'pattern': '^' + exclusion(words, length) + '$'})
++        lower = length + 1
++    if maximum is None or lower <= maximum:
++        alternatives.append(length_branch(lower, maximum))
++    return alternatives[0] if len(alternatives) == 1 else {'anyOf': alternatives}
++
++
+ def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None, existing_devices=()):
+     """Narrow the native decoder, without changing public proposal validation."""
+-    from backend.nis.agent.orchestration.project_intake import reference_model_output_schema
++    from backend.nis.agent.orchestration.project_intake import reference_model_output_schema, ReferenceDevice
+     schema = reference_model_output_schema(prepared)
+     for field, definition in schema['properties'].items():
+         if field not in allowed and field != 'unresolved':
+@@ -147,6 +207,7 @@
+                                 or row.get('source_member_bindings', {}).get(inventory_target['fact_id'])
+                                 in {None, inventory_target['member']})]
+         definition = deepcopy(item('devices'))
++        public_identity = ReferenceDevice.model_json_schema()['properties']['id']
+         variants = []
+         for kind in definition['properties']['kind']['enum']:
+             fact_ids = [key for key, fact in prepared['facts'].items() if key in available and fact['role'] in {kind, 'OTHER'}]
+@@ -154,6 +215,8 @@
+                 continue
+             variant = deepcopy(definition)
+             properties = variant['properties']
++            properties['id'] = _reference_fresh_identity_schema(
++                public_identity, (row['id'] for row in existing_devices))
+             properties['kind'] = {'type': 'string', 'enum': [kind]}
+             properties['source_fact_ids']['items']['enum'] = fact_ids
+             if derivation_fact_ids is not None:
+@@ -243,7 +306,10 @@
+             or len(proposed) + len(bindings) > limit or any(not isinstance(row, dict) for row in proposed)):
+         raise ValueError('Neue Geräte und Inventarbindungen überschreiten die gemeinsame Stufengrenze.')
+     if any(row.get('id') in current for row in proposed):
+-        raise ValueError('Vorhandene Teilnehmer ausschließlich als ID-Bindung in inventory_choices auswählen; keine Gerätedefinition ersetzen.')
++        collisions = [{key: current[row['id']][key] for key in ('id', 'name', 'kind')}
++                      for row in proposed if row.get('id') in current]
++        raise ValueError('Vorhandene Teilnehmer ausschließlich als ID-Bindung in inventory_choices auswählen; keine Gerätedefinition ersetzen. '
++                         'Diese Teilnehmer existieren bereits: ' + json.dumps(collisions, ensure_ascii=False))
+     selected = set()
+     expanded = deepcopy(proposed)
+     for binding in bindings:
+@@ -931,8 +997,11 @@
+                           'inventory_target_for_this_stage': inventory_target,
+                           'derivation_fact_ids_for_this_stage': list(derivation_fact_ids) if derivation_fact_ids is not None else None,
+                           'output_fields_for_this_stage': list(allowed),
++                          'existing_inventory_for_this_stage': [
++                              {key: row[key] for key in ('id', 'name', 'kind')}
++                              for row in current['devices']] if inventory_stage else None,
+                           'instruction': ('Nur die genannten Outputfelder füllen; alle anderen Modellarrays leer. Echte offene Entscheidungen dürfen immer in unresolved stehen. '
+-                              + ('Inventarstufen liefern inventory_choices und inventory_complete; devices und alle anderen Modelllisten bleiben leer, echte Rückfragen bleiben in unresolved zulässig. inventory_choices enthält gemeinsam neue Geräte ODER Bindungen an vorhandene Geräte. ' if inventory_stage else '')
++                              + ('Inventarstufen liefern inventory_choices und inventory_complete; devices und alle anderen Modelllisten bleiben leer, echte Rückfragen bleiben in unresolved zulässig. inventory_choices enthält gemeinsam neue Geräte ODER Bindungen an vorhandene Geräte. existing_inventory_for_this_stage zeigt den tatsächlichen aktuellen Bestand einschließlich vorhandener Sensoren und Aktoren. Diese bleiben auch bei anderen Quellenbefunden physisch vorhanden; niemals unter NEW erneut definieren. Bereits vollständig gebundene Teilnehmer nicht wiederholen. Die Hardwareentscheidung knapp begründen; anstehende eigene Planungsschritte gehören zu inventory_complete=false, nicht als vermeintliche Fachentscheidung in unresolved. ' if inventory_stage else '')
+                               + 'Nur den ausdrücklich ausgewählten Stufenbereich vollständig liefern; vorhandene eindeutige IDs erhalten. '
+                               'Jede Auswahl begründen; echte offene Auslegung explizit unresolved halten. '
+                               + ('Zunächst ausschließlich konkrete Portabsicht planen: parameters bleibt {}. Die folgende eigene Parameterstufe legt jeden Anschluss aus; diese Zwischenstufe ist keine vollständige Prüfung. ' if port_intent else '')

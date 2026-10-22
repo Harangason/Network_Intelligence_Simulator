@@ -1,0 +1,278 @@
+{
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "kind": "repair",
+  "modify_code": true,
+  "allow_repair": true,
+  "status": "SUPERSEDED_NATIVE_CLOSURE_FAILURE",
+  "owner_thread_id": "01a11f88-d6c9-7b63-bec3-26450a86e52c",
+  "revision_before": {
+    "backend/nis/agent/orchestration/project_intake.py": "4afba3ba381f68d5f7e8eec46f7613837f14661b667ac57acad4acfcf353d28c",
+    "backend/nis/agent/orchestration/local_reasoner.py": "3dd0dc434d4564754383beb601ffc8e5a2339116aec05fe82d2c1b6b3f092045",
+    "backend/tests/test_reference_design.py": "2953bb44b9ca84f5fc7598547690c1f05ddf9dec2eaf7d0a6ba3055f00ffd021",
+    "backend/tests/test_reference_reasoner.py": "10da61115fa6aa64f2f4e6bc016e797376c0eca0a348113628e87f76c5b6dbed",
+    "backend/nis/agent/tools/wizard_generation.py": "07f073e7b48eea157b83189d917c01c125c68bf3774addf5227e7bea0503adaf",
+    "backend/tests/test_reference_model_persistence.py": "d04037e788a41a453d3f16d6359b4b3b57367c6e120471e67d39e5353b10f854"
+  },
+  "owned_files": [
+    "backend/nis/agent/orchestration/project_intake.py",
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_design.py",
+    "backend/tests/test_reference_reasoner.py",
+    "backend/nis/agent/tools/wizard_generation.py",
+    "backend/tests/test_reference_model_persistence.py"
+  ],
+  "files_inspected": [
+    "backend/nis/agent/orchestration/project_intake.py",
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_design.py",
+    "backend/tests/test_reference_reasoner.py",
+    "AGENTS.md",
+    "docs/WIZARD_EXECUTION_CONTRACT.md",
+    "docs/WIZARD_RELEASE_GATE.md",
+    "docs/COMMUNICATION_DESIGN_CONTRACT.md",
+    "docs/SPATIAL_ARCHITECTURE_CONTRACT.md",
+    "docs/GENERATION_RULE_MANAGER.md",
+    "backend/nis/agent/tools/wizard_generation.py",
+    "backend/tests/test_reference_model_persistence.py"
+  ],
+  "requested_change": "Use shared authoritative inventory validation before IO. Complete missing inventory in bounded native source-fact/member batches, preserve source roles/counts/identity and literal typed sensor/actuator list members. No canonical writes or approval from partial validation.",
+  "repair": {
+    "finding_ids": [
+      "NATIVE_PARTICIPANT_INVENTORY_VALIDATED_TOO_LATE"
+    ],
+    "owner": "PROJECT_PRODUCT",
+    "first_failing_layer": "Reference planning between native participants and port intents",
+    "root_cause": "Native proposal advances with five electronic participants although source requires five distinct CONTROLLER instances plus SENSOR and ACTUATOR categories. Shared inventory validator is called only after expensive IO/functions/communication; group binding alone also cannot establish explicit member coverage.",
+    "reproduction": "Exact actual prepared source and five completed port-intent events before parameters prove minimum7 required versus5 planned. Test deliberately stopped after read-only canonical capture and verified pg_dump; not a native timeout or executed final validator verdict.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\participant-io-batching-repair\\inventory-coverage-early-stop-evidence.json",
+        "sha256": "1b9ea17062c07cce944352e33ea68c065d4b450583bafea3ff0a3ea096f0c3fb"
+      }
+    ],
+    "affected_files": [
+      "backend/nis/agent/orchestration/project_intake.py",
+      "backend/nis/agent/orchestration/local_reasoner.py",
+      "backend/tests/test_reference_design.py",
+      "backend/tests/test_reference_reasoner.py",
+      "backend/nis/agent/tools/wizard_generation.py",
+      "backend/tests/test_reference_model_persistence.py"
+    ],
+    "affected_services": [
+      "reference inventory validator",
+      "native participant planner"
+    ],
+    "required_fix": "Reuse authoritative inventory checks as private pre-IO checkpoint. Bind native completion to exact missing source fact/member with bounded output and identity-safe merge. Preserve full final validation. Explicit native inventory-complete flag permits multiple bounded batches for unquantified groups; never treat minimum coverage as a maximum. Preserve selected member provenance in canonical HardwareNode source_bindings through normal validated review/apply.",
+    "acceptance_criteria": [
+      "No IO call if inventory lacks source coverage or violates preserved identity/quantity/role.",
+      "Explicit sensor/actuator type lists remain group source facts with separate proposed member bindings, not inferred confirmed hardware.",
+      "Native completions cannot replace existing device identities/source bindings or cross profiles.",
+      "No partial checkpoint can grant review/acceptance; normal final validator/release requirements remain.",
+      "Three or more participants in one category can span multiple native calls; non-progressing incomplete responses terminate before IO.",
+      "Accepted member bindings survive canonical apply with original fact kind and explicit REFERENCE_ASSUMPTION provenance."
+    ],
+    "targeted_tests": [
+      "backend/tests/test_reference_design.py",
+      "backend/tests/test_reference_reasoner.py"
+    ],
+    "weaken_assertions_to_pass": false
+  },
+  "implementation_plan": [
+    "Add shared internal inventory checkpoint before functions; reuse same checks in full validator.",
+    "Add typed list-member evidence and bounded source-targeted native missing-inventory completion, preserving existing identities.",
+    "Add negative/positive ownership, scope, quantity and explicit type coverage regressions. Run isolated affected suite, exact normal candidate, native originals and complete gate/deploy.",
+    "Native closure and canonical source-member persistence are part of the same unfinished repair; re-run affected suite after changes."
+  ],
+  "constraints": [
+    "No manual source/model correction",
+    "No timeout/context/provider/registry/gate weakening",
+    "Other chats remain archived"
+  ],
+  "required_outcomes": [
+    "early_source_inventory_guard",
+    "native_bounded_inventory_completion",
+    "native_originals_and_exact_production_delivery"
+  ],
+  "validation_requirements": [
+    "isolated_affected_regressions",
+    "native_originals",
+    "full_release_gate",
+    "production_identity_health_function"
+  ],
+  "unresolved_decisions": [],
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\early-inventory-repair\\before\\backend\\nis\\agent\\orchestration\\project_intake.py",
+      "sha256": "d25dd78be00495c4ad05f3b4e9ac1af1ff3f1ec9962781baccb7bd20c1611b1e"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\early-inventory-repair\\before\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "7ff396b8e47381a68383a445ebab5ba6ac6643eb21d1525536e6043fa25f9568"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\early-inventory-repair\\before\\backend\\tests\\test_reference_design.py",
+      "sha256": "6f33e026f0ae030f2da6e602a19f4bf9d84424fc2534428889a879b5da2c4a8c"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\early-inventory-repair\\before\\backend\\tests\\test_reference_reasoner.py",
+      "sha256": "58aa98e0c519311c5893e74d5e56f1c0671438d0ab7e08aed38133b4d2244722"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\early-inventory-repair\\before\\backend\\nis\\agent\\tools\\wizard_generation.py",
+      "sha256": "07f073e7b48eea157b83189d917c01c125c68bf3774addf5227e7bea0503adaf"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\early-inventory-repair\\before\\backend\\tests\\test_reference_model_persistence.py",
+      "sha256": "d04037e788a41a453d3f16d6359b4b3b57367c6e120471e67d39e5353b10f854"
+    }
+  ],
+  "initial_revision_before": {
+    "backend/nis/agent/orchestration/project_intake.py": "d25dd78be00495c4ad05f3b4e9ac1af1ff3f1ec9962781baccb7bd20c1611b1e",
+    "backend/nis/agent/orchestration/local_reasoner.py": "7ff396b8e47381a68383a445ebab5ba6ac6643eb21d1525536e6043fa25f9568",
+    "backend/tests/test_reference_design.py": "6f33e026f0ae030f2da6e602a19f4bf9d84424fc2534428889a879b5da2c4a8c",
+    "backend/tests/test_reference_reasoner.py": "58aa98e0c519311c5893e74d5e56f1c0671438d0ab7e08aed38133b4d2244722"
+  },
+  "diagnostic_test_result": {
+    "passed": 172,
+    "failed": 1,
+    "final_source_acceptance": false,
+    "finding": "Old decoder test expected an unbounded participant phase. Required new decoder is strictly bounded min1/max2; oversized rationale rejection still passed before the schema comparison. Preserve negative oversized assertions and add new bounds to expected decoder."
+  },
+  "pre_closure_validation": {
+    "passed": 204,
+    "source_sha256": "ab2730e8bbb860d0d0cd38393b6cc3d592fcb2c1071e65ecc52e81352f22cd99",
+    "frozen_hashes_verified": true,
+    "full_release_pass": false,
+    "note": "Pre-closure implementation only. Follow-up source change requires new final affected run."
+  },
+  "files_changed": [
+    "backend/nis/agent/orchestration/project_intake.py",
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_design.py",
+    "backend/tests/test_reference_reasoner.py",
+    "backend/nis/agent/tools/wizard_generation.py",
+    "backend/tests/test_reference_model_persistence.py"
+  ],
+  "active_test_session": null,
+  "active_compiler_session": null,
+  "current_source_sha256": "4f645c3f416f81e9bf316f81e83e7081d3b5049263f3534975ac7b3255cf2b3c",
+  "remaining_findings": [
+    "Native originals, complete release gate and exact production delivery remain unproven."
+  ],
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\early-inventory-repair\\after\\backend\\nis\\agent\\orchestration\\project_intake.py",
+      "sha256": "4afba3ba381f68d5f7e8eec46f7613837f14661b667ac57acad4acfcf353d28c"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\early-inventory-repair\\after\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "a318deee914541436f9b77aa9c13b4c24bc6a8e3cc4f78e2c11768a63b2bc28e"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\early-inventory-repair\\after\\backend\\tests\\test_reference_design.py",
+      "sha256": "b8e394503ca89eb6700df0ccea8463604fb5dbd5a95e3f0ea1d212e68ac78a65"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\early-inventory-repair\\after\\backend\\tests\\test_reference_reasoner.py",
+      "sha256": "f51cbe27d4b57b2fd386c15f6d5e9c9242f411e5bc6537f8c1ddb6e0bb5fb100"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\early-inventory-repair\\after\\backend\\nis\\agent\\tools\\wizard_generation.py",
+      "sha256": "468e277f711f507187906e0e371806c3a8c20eb154422a26c049a8915e31aace"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\early-inventory-repair\\after\\backend\\tests\\test_reference_model_persistence.py",
+      "sha256": "c774a4912e58b9e50e24e409c51f30800b3eceebb901f88e66e4d3070ded3061"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\early-inventory-repair\\changes.diff",
+      "sha256": "fd544c26c15b10c5a1ad5a19ff90364a78333b62ff8288699e3ec49054203277"
+    }
+  ],
+  "final_frozen_source": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\early-inventory-repair\\final-validation-source-freeze.json",
+    "sha256": "a06868173a0716502b2ab3f83c20c79bfd3cc8929df9062f933e18558bd054ea"
+  },
+  "native_compiler_probe": {
+    "status": "PASSED_COMPILER_ONLY",
+    "requests": 4,
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\early-inventory-repair\\final-native-io-grammar-probes.json",
+        "sha256": "b9129e5ea1024bc1f8413a19abd05434601d50e9c3e3356a6200c7e6ea30e1c4"
+      }
+    ],
+    "native_original_pass": false
+  },
+  "tests": {
+    "final_affected_suite": {
+      "at_utc": "2026-10-19T09:35:59.983820+00:00",
+      "status": "PASSED",
+      "cases": 207,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "source_sha256": "4f645c3f416f81e9bf316f81e83e7081d3b5049263f3534975ac7b3255cf2b3c",
+      "frozen_files_verified": true,
+      "scope": "Affected isolated reference reasoner/validation/review/canonical persistence/identity/parameter regressions; mock model in unit/persistence cases. Not native original/model/simulation/full release or productive PASS.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\early-inventory-repair\\final-affected-reference-regressions.xml",
+          "sha256": "6d252a66b174395eb4d998522238d1aec090c3183d176fea506518f1a3b722e3"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\early-inventory-repair\\final-affected-reference-regressions.log",
+          "sha256": "d88c86b7f7ff4a79a6a468a43958e24c0493a706e9181fec943482c06023d08c"
+        }
+      ]
+    }
+  },
+  "typecheck": {
+    "at_utc": "2026-10-19T09:38:44.462006+00:00",
+    "status": "PASSED",
+    "exit_code": 0,
+    "command": [
+      "C:/Program Files/nodejs/node.exe",
+      "node_modules/typescript/bin/tsc",
+      "--noEmit",
+      "--incremental",
+      "false"
+    ],
+    "workdir": "I:\\PycharmProjects\\My_first_Network_Simulator\\frontend",
+    "source_sha256": "4f645c3f416f81e9bf316f81e83e7081d3b5049263f3534975ac7b3255cf2b3c",
+    "log": {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\early-inventory-repair\\typecheck.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "frozen_owned_files_unchanged": true,
+    "full_release_pass": false,
+    "production_changed": false
+  },
+  "active_prepare_session": null,
+  "candidate": {
+    "image_tag": "networkis:candidate-f71e6189eaa6",
+    "image_id": "sha256:095935c84ac7e148b9fb58ece62b3a0d87bafc3fe95427e310151db79d4b51f6",
+    "source_sha256": "4f645c3f416f81e9bf316f81e83e7081d3b5049263f3534975ac7b3255cf2b3c",
+    "base_url": "http://127.0.0.1:57288",
+    "status": "PREPARED",
+    "receipt": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\joint-early-inventory-originals-4f645c3f416f\\f71e6189eaa6\\receipt.json"
+  },
+  "active_stage": "NATIVE_EARLY_INVENTORY_VEHICLE_REFERENCE",
+  "active_native_session": null,
+  "frontend_reference_tests": {
+    "at_utc": "2026-10-19T09:43:59.597359+00:00",
+    "status": "PASSED",
+    "cases": 9,
+    "exit_code": 0,
+    "source_sha256": "4f645c3f416f81e9bf316f81e83e7081d3b5049263f3534975ac7b3255cf2b3c",
+    "scope": "Pure frontend reference marker/specification regressions, not native Qwen or E2E simulation.",
+    "evidence": {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\early-inventory-repair\\frontend-reference-regressions.log",
+      "sha256": "d07a538467317d1790f676b9970388dff89def44c4b4a78ccc8602934daeae17"
+    },
+    "full_release_pass": false
+  },
+  "successor_workload": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\inventory-closure-progress-repair\\workload.json"
+}

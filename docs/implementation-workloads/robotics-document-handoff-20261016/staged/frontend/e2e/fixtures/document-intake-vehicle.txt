@@ -1,0 +1,597 @@
+Das System muss als Straßenfahrzeug sicher, zuverlässig und regelkonform betrieben werden können und alle dafür notwendigen mechanischen, elektrischen, elektronischen und softwarebasierten Funktionen bereitstellen.
+Es muss die Anforderungen an Mobilität, Sicherheit, Automatisierung, Komfort, Effizienz und Vernetzung erfüllen.
+
+1. Systemgrenzen und Systemkontext
+Das System muss mit der Umgebung interagieren (Straße, Verkehr, Infrastruktur, Wetter).
+Eingaben des Fahrers verarbeiten (Lenken, Bremsen, Beschleunigen, HMI).
+mit externen Systemen kommunizieren (Backend, OTA‑Server, Diagnosegeräte).
+gesetzliche Vorgaben und Normen erfüllen (UN‑ECE, ISO 26262, ISO 21434, StVZO).
+
+1. Einleitung und Zweck
+Dieses Dokument beschreibt das Straßenfahrzeug als technisches Gesamtsystem.
+Das Fahrzeug ist ein cyber‑physisches System, das mechanische, elektrische, elektronische und softwarebasierte Komponenten integriert, um eine sichere, regelkonforme und zuverlässige Teilnahme am Straßenverkehr zu ermöglichen.
+Die Beschreibung dient als Grundlage für Systemarchitektur, Safety‑Analysen, Cybersecurity‑Konzepte, E/E‑Design und Requirements‑Engineering.
+
+2. Systemgrenzen und Systemkontext
+2.1 Systemgrenzen
+Das System umfasst:
+
+Mechanische Struktur (Karosserie, Fahrwerk, Bremsen, Antrieb)
+
+Elektrische Energieversorgung (12‑V/48‑V, HV‑System)
+
+Elektronische Steuergeräte (Domain‑Controller, Sensor‑ECUs, Aktor‑ECUs)
+
+Software (Basissoftware, Middleware, Applikationen, ADAS‑Funktionen)
+
+Kommunikationsnetzwerke (CAN, CAN‑FD, Ethernet, LIN)
+
+HMI‑Systeme (Displays, Bedienelemente, Warnanzeigen)
+
+Nicht Bestandteil des Systems sind:
+
+Externe Backend‑Systeme
+
+Externe Infrastruktur (Ladesäulen, Verkehrszeichen, Cloud‑Dienste)
+
+Fahrer oder Insassen (als externe Akteure)
+
+2.2 Systemkontext
+Das Fahrzeug interagiert mit:
+
+Fahrer (Bedienung, Eingaben, HMI)
+
+Verkehrsumgebung (Straße, Objekte, andere Verkehrsteilnehmer)
+
+Infrastruktur (GPS, Mobilfunk, Verkehrszeichen)
+
+Backend‑Systemen (OTA‑Updates, Telemetrie, Diagnose)
+
+3. Systemstruktur (Top‑Level‑Architektur)
+Das Fahrzeug besteht aus vier Hauptdomänen:
+
+3.1 Mechanische Domäne
+Karosserie & Crashstruktur
+
+Fahrwerk (Lenkung, Federung, Dämpfung)
+
+Bremsanlage (hydraulisch, Brake‑by‑Wire)
+
+Antrieb (Verbrenner, Hybrid, Elektro)
+
+Thermomanagement
+
+3.2 Elektrische Domäne
+12‑V/48‑V Bordnetz
+
+Hochvoltsystem (BEV/HEV)
+
+Energieverteilung, Sicherungen, Relais
+
+Ladeinfrastruktur (AC/DC, CCS)
+
+3.3 Elektronische Domäne
+Domain‑Controller (Powertrain, Chassis, ADAS, Body, Infotainment)
+
+Sensorik (Radar, Kamera, Lidar, Ultraschall, IMU, Raddrehzahl)
+
+Aktorik (Bremsaktuator, Lenkaktuator, Antriebsaktuator)
+
+Kommunikationsnetzwerke (CAN, CAN‑FD, Ethernet, LIN)
+
+Diagnosezugänge (UDS, OBD)
+
+3.4 Softwaredomäne
+AUTOSAR Classic Platform (CP)
+
+AUTOSAR Adaptive Platform (AP)
+
+Middleware (SOME/IP, DDS)
+
+ADAS‑Algorithmen (Perception, Fusion, Planning, Control)
+
+OTA‑Update‑Management
+
+Cybersecurity‑Mechanismen
+
+4. Systemfunktionen
+4.1 Längsführung
+Beschleunigen
+
+Verzögern
+
+Geschwindigkeitsregelung (ACC, Tempomat)
+
+4.2 Querführung
+Lenken
+
+Spurhalten (LKA)
+
+Spurwechselassistenz
+
+4.3 Wahrnehmung & Umfeldmodell
+Objekterkennung (Fahrzeuge, Fußgänger, Radfahrer, Hindernisse)
+
+Spurdetektion
+
+Freiraumerkennung
+
+Szeneninterpretation
+
+Sensorfusion (Radar, Kamera, Lidar, IMU)
+
+4.4 Fahrzeugsteuerung
+Trajektorienplanung
+
+Stabilitätskontrolle (ESP, ABS, TCS)
+
+Fahrdynamikregelung
+
+4.5 Sicherheit
+Funktionale Sicherheit (ISO 26262)
+
+Cybersecurity (ISO 21434)
+
+Crashschutz (UN‑ECE R94/R95)
+
+Notbremsassistenz (UN‑ECE R152)
+
+4.6 Komfort & HMI
+Anzeigen, Warnungen, Interaktionen
+
+Klimatisierung
+
+Infotainment
+
+Connectivity (Bluetooth, WLAN, Mobilfunk)
+
+5. Systemanforderungen (Top‑Level)
+Das System muss
+
+sicher betrieben werden können und alle relevanten UN‑ECE‑Regelungen erfüllen.
+
+eine sichere Längs‑ und Querführung gewährleisten.
+
+eine zuverlässige Bremsfunktion gemäß UN‑ECE R13 bereitstellen.
+
+eine sichere Lenkfunktion gemäß UN‑ECE R79 bereitstellen.
+
+eine robuste Umfeldwahrnehmung bereitstellen.
+
+Sensorfusion mit deterministischer Latenz durchführen.
+
+funktionale Sicherheit gemäß ISO 26262 gewährleisten.
+
+Cybersecurity gemäß ISO 21434 gewährleisten.
+
+Diagnose gemäß ISO 14229 unterstützen.
+
+OTA‑Updates gemäß ISO 24089 unterstützen.
+
+mit Backend‑Systemen sicher kommunizieren.
+
+einen definierten Safe State erreichen können.
+
+Fahrerinteraktionen über HMI anzeigen und verarbeiten.
+
+Energieversorgung für alle Subsysteme sicherstellen.
+
+Redundanz für sicherheitskritische Funktionen bereitstellen.
+
+Datenintegrität, Datenqualität und Datenkonsistenz sicherstellen.
+
+deterministische Kommunikationslatenzen gewährleisten.
+
+Sensor‑ und Aktorfehler erkennen und behandeln.
+
+Systemzustände überwachen und protokollieren.
+
+alle sicherheitsrelevanten Funktionen priorisieren.
+
+6. Systemverhalten (High‑Level)
+6.1 Normalbetrieb
+Das System verarbeitet kontinuierlich Sensordaten, führt Fahrfunktionen aus, steuert Aktuatoren und stellt HMI‑Informationen bereit.
+
+6.2 Fehlerbetrieb
+Das System erkennt Fehler, klassifiziert sie und führt definierte Reaktionen aus (Degradation, Safe State, Warnungen).
+
+6.3 Notbetrieb
+Bei kritischen Fehlern führt das System ein kontrolliertes Abbremsen und Stabilisieren durch.
+
+7. Regulatorische Anforderungen
+7.1 UN‑ECE
+R13 Bremsen
+
+R79 Lenkassistenz
+
+R152 Notbremsassistenz
+
+R130 Spurverlassenswarnung
+
+R10 EMV
+
+R94/R95 Crashschutz
+
+7.2 ISO‑Normen
+ISO 26262 Funktionale Sicherheit
+
+ISO 21434 Cybersecurity
+
+ISO 24089 Software‑Updates
+
+ISO 14229 Diagnose (UDS)
+
+ISO 6469 HV‑Sicherheit
+
+8. Zusammenfassung
+Das Fahrzeug ist ein hochintegriertes, sicherheitskritisches System, das mechanische, elektrische, elektronische und softwarebasierte Komponenten zu einer funktionalen Einheit verbindet.
+Es muss eine Vielzahl gesetzlicher, sicherheitstechnischer und funktionaler Anforderungen erfüllen, um einen sicheren, zuverlässigen und regelkonformen Betrieb im Straßenverkehr zu gewährleisten.
+
+
+1. Zielbild der E/E‑Architektur
+Ein modernes Fahrzeug nutzt eine domänenbasierte E/E‑Architektur mit zentralen Domain‑Controllern, die Funktionen bündeln, Rechenleistung zentralisieren und Safety‑ sowie Cybersecurity‑Anforderungen erfüllen.
+
+Architekturmerkmale:
+
+Zentrale Domain‑Controller (Powertrain, Chassis, ADAS, Body, Infotainment)
+
+Ethernet‑Backbone als Hochgeschwindigkeitsnetz
+
+CAN/CAN‑FD für klassische Steuergeräte
+
+LIN für Komfortfunktionen
+
+OTA‑ und Diagnosefähigkeit über Ethernet
+
+Safety‑ und Security‑Mechanismen integriert
+
+2. Domain‑Controller‑Design
+2.1 Powertrain Domain Controller (PDC)
+Aufgaben:
+
+Motor-/Invertersteuerung
+
+Getriebe-/Antriebslogik
+
+HV‑Management
+
+Thermomanagement
+
+Schnittstellen:
+
+Powertrain‑CAN
+
+Ethernet (Backbone)
+
+Diagnose (UDS)
+
+Anforderungen:
+
+REQ‑PDC‑01: PDC MUSS Motor-/Invertersteuerung gemäß ASIL C/D ausführen.
+
+REQ‑PDC‑02: PDC MUSS HV‑Sicherheitsfunktionen gemäß ISO 6469 überwachen.
+
+REQ‑PDC‑03: PDC MUSS Echtzeitfähigkeit < 10 ms Zykluszeit gewährleisten.
+
+REQ‑PDC‑04: PDC MUSS Diagnose gemäß ISO 14229 unterstützen.
+
+REQ‑PDC‑05: PDC MUSS sichere Kommunikation mit ADAS‑Controller gewährleisten.
+
+2.2 Chassis Domain Controller (CDC)
+Aufgaben:
+
+Bremsen (Brake‑by‑Wire, ABS/ESP)
+
+Lenkung (Steer‑by‑Wire, EPS)
+
+Fahrdynamikregelung
+
+Schnittstellen:
+
+Chassis‑CAN/CAN‑FD
+
+Ethernet (ADAS‑Eingriffe)
+
+Safety‑Signale (redundant)
+
+Anforderungen:
+
+REQ‑CDC‑01: CDC MUSS ASIL‑D‑Bremsfunktionen gemäß ISO 26262 ausführen.
+
+REQ‑CDC‑02: CDC MUSS redundante Lenkpfade bereitstellen.
+
+REQ‑CDC‑03: CDC MUSS Notbremsassistenzanforderungen gemäß UN‑ECE R152 umsetzen.
+
+REQ‑CDC‑04: CDC MUSS Lenkassistenz gemäß UN‑ECE R79 unterstützen.
+
+REQ‑CDC‑05: CDC MUSS Fail‑Operational‑Fähigkeit für Level‑3‑Funktionen bieten.
+
+2.3 ADAS Domain Controller (ADC)
+Aufgaben:
+
+Sensorfusion (Radar, Kamera, Lidar, IMU, Ultraschall)
+
+Perception (Objekte, Spuren, Freiraum)
+
+Planning (Trajektorien, Manöver)
+
+Vehicle Control (Längs-/Querführung)
+
+Plattform:
+
+AUTOSAR Adaptive
+
+POSIX‑OS
+
+Hochleistungs‑SoC (CPU + GPU/AI‑Beschleuniger)
+
+Schnittstellen:
+
+Ethernet‑Backbone
+
+Direkte Sensorlinks (GMSL, FPD‑Link, GigE)
+
+CDC (Lenk-/Bremsanforderungen)
+
+PDC (Antriebsanforderungen)
+
+Anforderungen:
+
+REQ‑ADC‑01: ADC MUSS Sensorfusion mit < 50 ms Latenz durchführen.
+
+REQ‑ADC‑02: ADC MUSS Objektliste mit Position, Geschwindigkeit, Klassifikation erzeugen.
+
+REQ‑ADC‑03: ADC MUSS Spurmodell mit min. 30 m Vorschau generieren.
+
+REQ‑ADC‑04: ADC MUSS Multi‑Object‑Tracking unterstützen.
+
+REQ‑ADC‑05: ADC MUSS Szeneninterpretation und Situationsbewertung durchführen.
+
+REQ‑ADC‑06: ADC MUSS AEB gemäß UN‑ECE R152 unterstützen.
+
+REQ‑ADC‑07: ADC MUSS LKA gemäß UN‑ECE R79 unterstützen.
+
+REQ‑ADC‑08: ADC MUSS Fail‑Operational für Level‑3‑Funktionen sein.
+
+REQ‑ADC‑09: ADC MUSS Sensorzeitstempel synchronisieren.
+
+REQ‑ADC‑10: ADC MUSS Sensor‑Cross‑Checks durchführen.
+
+2.4 Body Domain Controller (BDC)
+Aufgaben:
+
+Türen, Fenster, Sitzverstellung
+
+Klima, Innenbeleuchtung
+
+Komfortfunktionen
+
+Schnittstellen:
+
+LIN‑Cluster
+
+Body‑CAN
+
+Anforderungen:
+
+REQ‑BDC‑01: BDC MUSS LIN‑Cluster mit min. 20 Nodes unterstützen.
+
+REQ‑BDC‑02: BDC MUSS Komfortfunktionen gemäß StVZO steuern.
+
+REQ‑BDC‑03: BDC MUSS Diagnose gemäß ISO 14229 unterstützen.
+
+2.5 Infotainment Domain Controller (IDC)
+Aufgaben:
+
+HMI (Cluster, Center‑Display)
+
+Navigation, Media, Connectivity
+
+Smartphone‑Integration
+
+Schnittstellen:
+
+Ethernet
+
+MOST/AVB (optional)
+
+Verbindung zu ADAS‑HMI
+
+Anforderungen:
+
+REQ‑IDC‑01: IDC MUSS HMI‑Status für ADAS anzeigen.
+
+REQ‑IDC‑02: IDC MUSS OTA‑Updates gemäß ISO 24089 unterstützen.
+
+REQ‑IDC‑03: IDC MUSS sichere Kommunikation gemäß ISO 21434 gewährleisten.
+
+3. Kommunikationsarchitektur
+3.1 Ethernet‑Backbone
+100/1000BASE‑T1
+
+VLAN‑Segmentierung
+
+Service‑orientierte Kommunikation (SOME/IP, DDS)
+
+Anforderungen:
+
+REQ‑NET‑01: Backbone MUSS min. 1 Gbit/s unterstützen.
+
+REQ‑NET‑02: Backbone MUSS VLAN‑Segmentierung für Safety/Cybersecurity bieten.
+
+REQ‑NET‑03: Backbone MUSS SOME/IP‑Kommunikation unterstützen.
+
+REQ‑NET‑04: Backbone MUSS deterministische Latenzen < 5 ms ermöglichen.
+
+3.2 Sub‑Busse
+Powertrain‑CAN
+
+Chassis‑CAN
+
+Body‑CAN
+
+LIN‑Busse
+
+Punkt‑zu‑Punkt‑Links für Kameras/Lidar/Radar
+
+Anforderungen:
+
+REQ‑BUS‑01: CAN‑Bus MUSS 500 kbit/s oder CAN‑FD unterstützen.
+
+REQ‑BUS‑02: LIN‑Bus MUSS bis zu 20 Slaves unterstützen.
+
+REQ‑BUS‑03: Punkt‑zu‑Punkt‑Links MUSS min. 2 Gbit/s übertragen.
+
+4. Safety‑Anforderungen (ISO 26262)
+REQ‑SAFE‑01: Alle sicherheitsrelevanten Funktionen MÜSSEN ASIL‑klassifiziert werden.
+REQ‑SAFE‑02: Safety‑Mechanismen MÜSSEN Watchdogs, Plausibilisierung, Heartbeats umfassen.
+REQ‑SAFE‑03: System MUSS Safe State definieren (z. B. kontrolliertes Abbremsen).
+REQ‑SAFE‑04: ADAS‑Funktionen MUSS Fail‑Operational sein (Level‑3).
+REQ‑SAFE‑05: Redundante Sensorik MUSS vorhanden sein (Radar + Kamera).
+
+5. Cybersecurity‑Anforderungen (ISO 21434)
+REQ‑SEC‑01: Domain‑Controller MUSS Secure Boot unterstützen.
+REQ‑SEC‑02: Kommunikation MUSS verschlüsselt sein (TLS, IPsec, SOME/IP‑Sec).
+REQ‑SEC‑03: System MUSS Hardware Security Module (HSM) nutzen.
+REQ‑SEC‑04: OTA‑Updates MÜSSEN signiert und verifiziert werden.
+REQ‑SEC‑05: IDS/IPS MUSS Netzwerkverkehr überwachen.
+REQ‑SEC‑06: Schlüsselmanagement MUSS zentralisiert sein.
+
+6. Diagnose & OTA
+REQ‑DIA‑01: Diagnose MUSS ISO 14229 (UDS) unterstützen.
+REQ‑DIA‑02: Flash‑Programmierung MUSS über Ethernet möglich sein.
+REQ‑DIA‑03: OTA‑Updates MUSS Rollback‑Mechanismus besitzen.
+REQ‑DIA‑04: OTA‑Updates MUSS ISO 24089 erfüllen.
+
+
+7. Erweiterte Safety‑Requirements (ISO 26262)
+(40 neue Anforderungen)
+
+REQ‑SAFE‑06: System MUSS alle sicherheitsrelevanten Signale plausibilisieren.
+REQ‑SAFE‑07: Steuergeräte MÜSSEN zyklische Alive‑Counter verwenden.
+REQ‑SAFE‑08: Safety‑Kommunikation MUSS CRC‑geschützt sein.
+REQ‑SAFE‑09: System MUSS Fehler innerhalb von 100 ms erkennen.
+REQ‑SAFE‑10: System MUSS in einen definierten Safe State übergehen.
+REQ‑SAFE‑11: Safe State MUSS für alle Domänen definiert sein.
+REQ‑SAFE‑12: System MUSS Watchdog‑Überwachung implementieren.
+REQ‑SAFE‑13: System MUSS redundante Pfade für ASIL‑D‑Signale bereitstellen.
+REQ‑SAFE‑14: Sensorfusion MUSS bei Ausfall eines Sensors degradieren.
+REQ‑SAFE‑15: Lenkung MUSS redundante Positionssensoren besitzen.
+REQ‑SAFE‑16: Bremssystem MUSS hydraulischen Fallback besitzen.
+REQ‑SAFE‑17: ADAS‑Controller MUSS Fail‑Operational sein.
+REQ‑SAFE‑18: System MUSS Fehlerklassen gemäß ISO 26262 definieren.
+REQ‑SAFE‑19: System MUSS ASIL‑Decomposition dokumentieren.
+REQ‑SAFE‑20: System MUSS Safety‑Mechanismen überwachen.
+REQ‑SAFE‑21: System MUSS Fehlerreaktionszeiten einhalten.
+REQ‑SAFE‑22: System MUSS interne Selbsttests durchführen.
+REQ‑SAFE‑23: System MUSS Boot‑Time‑Checks durchführen.
+REQ‑SAFE‑24: System MUSS Memory‑ECC verwenden.
+REQ‑SAFE‑25: System MUSS Stack‑Overflow‑Schutz implementieren.
+REQ‑SAFE‑26: System MUSS CPU‑Load überwachen.
+REQ‑SAFE‑27: System MUSS deterministische Ausführungszeiten garantieren.
+REQ‑SAFE‑28: System MUSS Safety‑Logs speichern.
+REQ‑SAFE‑29: Safety‑Logs MÜSSEN unveränderbar sein.
+REQ‑SAFE‑30: System MUSS Safety‑Zustände an HMI melden.
+REQ‑SAFE‑31: System MUSS Safety‑Kommunikation priorisieren.
+REQ‑SAFE‑32: System MUSS Safety‑Zustände an Backend melden.
+REQ‑SAFE‑33: System MUSS Safety‑Zustände persistent speichern.
+REQ‑SAFE‑34: System MUSS Sensor‑Drift erkennen.
+REQ‑SAFE‑35: System MUSS Sensor‑Blockaden erkennen.
+REQ‑SAFE‑36: System MUSS Sensor‑Verschmutzung erkennen.
+REQ‑SAFE‑37: System MUSS Sensor‑Überhitzung erkennen.
+REQ‑SAFE‑38: System MUSS Sensor‑Unterspannung erkennen.
+REQ‑SAFE‑39: System MUSS Sensor‑Überstrom erkennen.
+REQ‑SAFE‑40: System MUSS alle Safety‑Mechanismen dokumentieren.
+REQ‑SAFE‑41: System MUSS Safety‑Mechanismen testen.
+REQ‑SAFE‑42: System MUSS Safety‑Mechanismen validieren.
+REQ‑SAFE‑43: System MUSS Safety‑Mechanismen verifizieren.
+REQ‑SAFE‑44: System MUSS Safety‑Mechanismen versionieren.
+REQ‑SAFE‑45: System MUSS Safety‑Mechanismen rückverfolgbar machen.
+
+8. Erweiterte Cybersecurity‑Requirements (ISO 21434)
+(40 neue Anforderungen)
+
+REQ‑SEC‑07: System MUSS Secure Boot mit Hardware‑Root‑of‑Trust verwenden.
+REQ‑SEC‑08: System MUSS Secure Flash unterstützen.
+REQ‑SEC‑09: System MUSS Firmware‑Integrität prüfen.
+REQ‑SEC‑10: System MUSS Secure Debug implementieren.
+REQ‑SEC‑11: Debug‑Zugänge MÜSSEN deaktivierbar sein.
+REQ‑SEC‑12: System MUSS Schlüsselrotation unterstützen.
+REQ‑SEC‑13: System MUSS Schlüssel sicher speichern.
+REQ‑SEC‑14: System MUSS HSM verwenden.
+REQ‑SEC‑15: System MUSS IDS/IPS implementieren.
+REQ‑SEC‑16: System MUSS Netzwerkverkehr analysieren.
+REQ‑SEC‑17: System MUSS Anomalien erkennen.
+REQ‑SEC‑18: System MUSS DoS‑Angriffe erkennen.
+REQ‑SEC‑19: System MUSS Spoofing erkennen.
+REQ‑SEC‑20: System MUSS Replay‑Angriffe verhindern.
+REQ‑SEC‑21: System MUSS Man‑in‑the‑Middle verhindern.
+REQ‑SEC‑22: System MUSS TLS 1.3 unterstützen.
+REQ‑SEC‑23: System MUSS SOME/IP‑Sec unterstützen.
+REQ‑SEC‑24: System MUSS IPsec unterstützen.
+REQ‑SEC‑25: System MUSS sichere OTA‑Updates unterstützen.
+REQ‑SEC‑26: OTA‑Updates MÜSSEN signiert sein.
+REQ‑SEC‑27: OTA‑Updates MÜSSEN verifiziert werden.
+REQ‑SEC‑28: OTA‑Updates MÜSSEN Rollback verhindern.
+REQ‑SEC‑29: System MUSS sichere Diagnose unterstützen.
+REQ‑SEC‑30: Diagnose MUSS Authentifizierung erfordern.
+REQ‑SEC‑31: System MUSS sichere Log‑Übertragung unterstützen.
+REQ‑SEC‑32: System MUSS sichere Backend‑Kommunikation unterstützen.
+REQ‑SEC‑33: System MUSS sichere Schlüsselverteilung unterstützen.
+REQ‑SEC‑34: System MUSS sichere Schlüsselentfernung unterstützen.
+REQ‑SEC‑35: System MUSS sichere Schlüsselrotation unterstützen.
+REQ‑SEC‑36: System MUSS sichere Schlüsselarchivierung unterstützen.
+REQ‑SEC‑37: System MUSS sichere Schlüsselzerstörung unterstützen.
+REQ‑SEC‑38: System MUSS sichere Benutzerverwaltung unterstützen.
+REQ‑SEC‑39: System MUSS sichere Rollenverwaltung unterstützen.
+REQ‑SEC‑40: System MUSS sichere Rechteverwaltung unterstützen.
+REQ‑SEC‑41: System MUSS sichere Passwortverwaltung unterstützen.
+REQ‑SEC‑42: System MUSS sichere Tokenverwaltung unterstützen.
+REQ‑SEC‑43: System MUSS sichere Zertifikatsverwaltung unterstützen.
+REQ‑SEC‑44: System MUSS sichere Firmware‑Verteilung unterstützen.
+REQ‑SEC‑45: System MUSS sichere Firmware‑Archivierung unterstützen.
+REQ‑SEC‑46: System MUSS sichere Firmware‑Löschung unterstützen.
+
+9. Erweiterte ADAS‑/Sensorfusion‑Requirements
+(40 neue Anforderungen)
+
+REQ‑FUS‑01: Fusion MUSS Radar‑ und Kameradaten zeitlich synchronisieren.
+REQ‑FUS‑02: Fusion MUSS IMU‑Daten integrieren.
+REQ‑FUS‑03: Fusion MUSS Raddrehzahldaten integrieren.
+REQ‑FUS‑04: Fusion MUSS Lidar‑Daten integrieren.
+REQ‑FUS‑05: Fusion MUSS Objektassoziation > 95 % Genauigkeit erreichen.
+REQ‑FUS‑06: Fusion MUSS Tracking‑Stabilität > 98 % erreichen.
+REQ‑FUS‑07: Fusion MUSS Spurdetektion > 95 % Genauigkeit erreichen.
+REQ‑FUS‑08: Fusion MUSS Freiraumerkennung > 90 % Genauigkeit erreichen.
+REQ‑FUS‑09: Fusion MUSS Wetterrobustheit gewährleisten.
+REQ‑FUS‑10: Fusion MUSS Nachtrobustheit gewährleisten.
+REQ‑FUS‑11: Fusion MUSS Sensor‑Dropouts kompensieren.
+REQ‑FUS‑12: Fusion MUSS Sensor‑Drift kompensieren.
+REQ‑FUS‑13: Fusion MUSS Sensor‑Noise filtern.
+REQ‑FUS‑14: Fusion MUSS EKF/UKF unterstützen.
+REQ‑FUS‑15: Fusion MUSS Multi‑Hypothesen‑Tracking unterstützen.
+REQ‑FUS‑16: Fusion MUSS Objektklassifikation validieren.
+REQ‑FUS‑17: Fusion MUSS Fehlklassifikationen erkennen.
+REQ‑FUS‑18: Fusion MUSS Fehlklassifikationen melden.
+REQ‑FUS‑19: Fusion MUSS Szeneninterpretation unterstützen.
+REQ‑FUS‑20: Fusion MUSS Trajektorienvorhersage unterstützen.
+REQ‑FUS‑21: Fusion MUSS Verkehrsflussmodell erstellen.
+REQ‑FUS‑22: Fusion MUSS Hindernisse klassifizieren.
+REQ‑FUS‑23: Fusion MUSS Fußgänger erkennen.
+REQ‑FUS‑24: Fusion MUSS Radfahrer erkennen.
+REQ‑FUS‑25: Fusion MUSS Tiere erkennen.
+REQ‑FUS‑26: Fusion MUSS statische Objekte erkennen.
+REQ‑FUS‑27: Fusion MUSS dynamische Objekte erkennen.
+REQ‑FUS‑28: Fusion MUSS Objektlebenszyklen verwalten.
+REQ‑FUS‑29: Fusion MUSS Objektpriorisierung durchführen.
+REQ‑FUS‑30: Fusion MUSS Objektkonfidenz berechnen.
+REQ‑FUS‑31: Fusion MUSS Datenlatenz überwachen.
+REQ‑FUS‑32: Fusion MUSS Datenqualität bewerten.
+REQ‑FUS‑33: Fusion MUSS Datenintegrität prüfen.
+REQ‑FUS‑34: Fusion MUSS Datenkonsistenz prüfen.
+REQ‑FUS‑35: Fusion MUSS Datenvollständigkeit prüfen.
+REQ‑FUS‑36: Fusion MUSS Datenverfügbarkeit prüfen.
+REQ‑FUS‑37: Fusion MUSS Datenpriorisierung durchführen.
+REQ‑FUS‑38: Fusion MUSS Datenkompression unterstützen.
+REQ‑FUS‑39: Fusion MUSS Datenverschlüsselung unterstützen.
+REQ‑FUS‑40: Fusion MUSS Datenpersistenz unterstützen.

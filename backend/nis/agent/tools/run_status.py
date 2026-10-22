@@ -43,7 +43,9 @@ def restore_wizard_continuation_prompt(prompt: str, wizard: dict | None, maximum
             or "per Wizard-Uebernehmen bestaetigt" not in original:
         return compact
     suffix = "\n\nFortsetzung des bestätigten Wizard-Auftrags:\n" + compact
-    return original[:max(0, maximum - len(suffix))] + suffix
+    if len(original) + len(suffix) > maximum:
+        raise ValueError('Der vollständige Auftrag mit Fortsetzung überschreitet die zulässige Länge; die Originalquelle wird nicht gekürzt.')
+    return original + suffix
 
 
 def _now() -> str:

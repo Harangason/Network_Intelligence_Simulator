@@ -33,6 +33,33 @@ def codes(model):
     return {finding['code'] for finding in communication_findings(model)}
 
 
+@pytest.mark.parametrize('role', ['PERCEPTION', 'PROCESSOR'])
+def test_unresolved_scoped_duties_do_not_inherit_other_hosted_processing_roles(role):
+    for domain in ('automotive', 'robotics', 'aerospace', 'building', 'custom'):
+        declared = {'source_scoped_function': {'name': 'Planning', 'source_quote': 'Planning'},
+                    'processing_evidence': 'NONE', 'dependency_review': 'REQUIRED'}
+        changes = [
+            {'object_type': 'HardwareNode', 'local_ref': 'host',
+             'data': {'name': 'ControlAlpha', 'device_type': 'ECU'}},
+            {'object_type': 'Function', 'local_ref': 'planning', 'data': {
+                'name': 'Planning', 'domain': domain, 'hardware_node_id': '$host',
+                'configuration': deepcopy(declared)}},
+            {'object_type': 'Function', 'local_ref': 'processing', 'data': {
+                'name': 'ObjectProcessing', 'domain': domain, 'hardware_node_id': '$host'}},
+        ]
+        chains = [{'hardware_name': 'ControlAlpha', 'configuration': {
+            'functional_device_contract': {'version': 1, 'role': role,
+                                           'input_names': ['Sensor1'], 'output_signal': 'Objects'}}}]
+        attach_functional_device_contracts(changes, chains,
+                                          {'controlalpha': '$host', 'sensor1': '$sensor'})
+        assert changes[1]['data']['configuration'] == declared
+        processing = changes[2]['data']['configuration']['functional_device_contract']
+        assert processing['role'] == role
+        assert processing['input_refs'] == ['$sensor']
+        assert processing['output_signal'] == 'Objects'
+        assert changes[0]['data']['identity']['functional_device_contract']['role'] == role
+
+
 def test_functional_acceptance_is_industry_independent_and_requires_real_receptions():
     for domain in ('automotive', 'robotics', 'aerospace', 'building', 'custom'):
         model = graph(domain)

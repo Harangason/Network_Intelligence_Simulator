@@ -1,5 +1,6 @@
-import { addAutomotiveFunctionOutputs, isEngineeringControllerDevice, normalizeHardwareName, type ExtractedEngineeringChain } from "./engineering-specification.ts";
+import { addAutomotiveFunctionOutputs, isEngineeringControllerDevice, isReferenceDesignChain, normalizeHardwareName, type ExtractedEngineeringChain } from "./engineering-specification.ts";
 import { completeFunctionalDeviceDesign, perceptionConsumer } from './functional-device-design.ts';
+import { conciseGeneratedName } from '../../engineering/lib/engineering-names.ts';
 import type { EquipmentAssignmentLearningSuggestion, FunctionalPartnerSuggestion } from "../../../shared/api/engineering-api.ts";
 import {
   compareTopologyClusterKeys,
@@ -306,9 +307,10 @@ function text(value: unknown) {
 function chainCorpus(chain: ExtractedEngineeringChain) {
   const semantic = record(chain.semantic);
   const data = record(chain.data);
+  const duties = chain.configuration?.source_scoped_functions as Array<{ name: string }> | undefined;
   return [
     chain.hardware_name,
-    chain.hardware_description,
+    duties?.length ? duties.map(item => item.name).join(' ') : chain.hardware_description,
     text(semantic.category),
     text(semantic.system_frame),
     text(semantic.systemFrame),
@@ -458,16 +460,18 @@ function controllerBranches(
       ? endpoint.configuration.functional_owner
       : "";
     const learned = learnedAssignments.find((suggestion) => compactKey(suggestion.endpoint_name) === compactKey(endpoint.hardware_name));
-    const explicitOwnerName = endpoint.configuration?.functional_owner_source === 'explicit_user_statement'
+    const sourceOwned = ['explicit_user_statement', 'source_scoped_function'].includes(String(endpoint.configuration?.functional_owner_source));
+    const explicitOwnerName = sourceOwned
       ? configuredOwner : learned?.controller_name || configuredOwner || "";
     const explicitOwner = controllers.find((controller) => compactKey(controller.hardware_name) === compactKey(explicitOwnerName));
     if (explicitOwner) {
       const branch = branches.find((candidate) => candidate.name === explicitOwner.hardware_name)!;
       const leaf = deviceLeaf(
         endpoint,
-        endpoint.configuration?.functional_owner_source === 'explicit_user_statement' ? 1 : learned?.confidence ?? 1,
+        endpoint.configuration?.functional_owner_source === 'explicit_user_statement' ? 1 : sourceOwned ? 0.9 : learned?.confidence ?? 1,
         endpoint.configuration?.functional_owner_source === 'explicit_user_statement'
           ? "Vom Nutzer ausdrücklich diesem Controller zugeordnet."
+          : sourceOwned ? 'Aus den Aufgaben des eindeutig genannten Controllers abgeleitet; Quellenbezug und Funktionszuordnung prüfen.'
           : learned?.controller_name === explicitOwnerName ? learned.reason
             : "Vom Vollständigkeitsgenerator fachlich an diesen Controller gebunden.",
       );
@@ -584,7 +588,9 @@ export function buildEquipmentClusters(
   learnedAssignments: EquipmentAssignmentLearningSuggestion[] = [],
   functionalHistory: FunctionalPartnerSuggestion[] = [],
 ): EquipmentCluster[] {
-  chains = completeFunctionalDeviceDesign(addAutomotiveFunctionOutputs(chains, chains[0]?.domain || industry || ""));
+  if (!chains.some(isReferenceDesignChain)) {
+    chains = completeFunctionalDeviceDesign(addAutomotiveFunctionOutputs(chains, chains[0]?.domain || industry || ""));
+  }
   const profile = resolveTopologyClusterProfile(industry || chains[0]?.domain);
   const graphMode = Boolean(industry);
   const buckets = new Map<string, { label: string; clusterKey: string; recommendation: string; preferredNetworks: string[]; devices: ExtractedEngineeringChain[] }>();
@@ -600,11 +606,15 @@ export function buildEquipmentClusters(
       const stem = ownershipStem(chain.hardware_name);
       const configuredOwner = typeof chain.configuration?.functional_owner === "string" ? chain.configuration.functional_owner : "";
       const learnedOwner = learnedAssignments.find((suggestion) => compactKey(suggestion.endpoint_name) === compactKey(chain.hardware_name))?.controller_name ?? "";
-      const ownerName = chain.configuration?.functional_owner_source === 'explicit_user_statement'
+      const ownerName = ['explicit_user_statement', 'source_scoped_function'].includes(String(chain.configuration?.functional_owner_source))
         ? configuredOwner : learnedOwner || configuredOwner;
+      const endpointGraph = graphMode ? graphClusterFor(chain, profile) : null;
+      const matchingFamilyControllers = endpointGraph && !endpointGraph.key.startsWith('system:')
+        ? controllerGraphs.filter(candidate => !candidate.graph.key.startsWith('system:') && candidate.graph.familyKey === endpointGraph.familyKey) : [];
       const inheritedGraph = (chain.device_type === "SensorController" || chain.device_type === "ActuatorController")
         ? controllerGraphs.find((candidate) => ownerName && compactKey(candidate.name) === compactKey(ownerName))?.graph
           ?? controllerGraphs.find((candidate) => stem.length >= 3 && candidate.stem === stem)?.graph
+          ?? (matchingFamilyControllers.length === 1 ? matchingFamilyControllers[0].graph : undefined)
           ?? (controllerGraphs.length === 1 ? controllerGraphs[0].graph : undefined)
         : undefined;
       const graph = graphMode ? inheritedGraph ?? controllerGraphs.find(candidate => candidate.name === chain.hardware_name)?.graph ?? graphClusterFor(chain, profile) : null;
@@ -632,6 +642,8 @@ export function buildEquipmentClusters(
       const ownership = controllerBranches(sortedDevices, profile, learnedAssignments);
       for (const branch of ownership.branches as EquipmentEcuBranch[]) {
         const functions = new Map<string, string[]>();
+        const duties = sortedDevices.find(item => item.hardware_name === branch.name)?.configuration?.source_scoped_functions as Array<{ name: string }> | undefined;
+        for (const duty of duties ?? []) functions.set(conciseGeneratedName('Function', `${branch.name}_${duty.name}`), []);
         for (const chain of chains.filter(item => item.hardware_name === branch.name && item.configuration?.functional_output_template)) {
           functions.set(chain.function_name, [...new Set([...(functions.get(chain.function_name) ?? []), chain.signal_name])]);
         }
@@ -680,7 +692,13 @@ export function buildEquipmentClusters(
         && (chain.configuration?.functional_device_contract as { role?: string } | undefined)?.role === 'PERCEPTION');
       if (!outputs.length) continue;
       const consumers = clusters.flatMap(item => item.controllers).filter(target => target.name !== source.name && perceptionConsumer(target.name));
-      if (!consumers.length) cluster.functionalIssues.push(`${source.name}: Empfänger der verarbeiteten Objektdaten fachlich festlegen.`);
+      if (!consumers.length) {
+        const localDuties = chains.find(chain => chain.hardware_name === source.name)?.configuration?.source_scoped_functions as Array<{ name: string }> | undefined;
+        const localConsumer = localDuties?.filter(duty => /\bplanning\b|\bcontrol\b|planung|regelung|führung/i.test(duty.name));
+        cluster.functionalIssues.push(localConsumer?.length
+          ? `${source.name}: Empfänger der Objektdaten innerhalb desselben Controllers prüfen (${localConsumer.map(duty => duty.name).join('; ')}). Ein-/Ausgangszuordnung und lokalen Datenaustausch bestätigen; daraus folgt kein externer Bus-Empfänger.`
+          : `${source.name}: Empfänger der verarbeiteten Objektdaten fachlich festlegen.`);
+      }
       for (const target of consumers) cluster.functionalRoutes.push({ source: source.name, target: target.name,
         signals: outputs.map(item => item.signal_name), path: [source.name, target.name],
         reason: 'Wahrnehmungsdaten für Navigation, Assistenz oder Sensorfusion; Bedarf und Empfänger bestätigen.',

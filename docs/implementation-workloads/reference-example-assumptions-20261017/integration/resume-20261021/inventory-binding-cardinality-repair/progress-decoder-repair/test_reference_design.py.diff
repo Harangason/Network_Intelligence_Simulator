@@ -1,0 +1,15 @@
+--- before/backend/tests/test_reference_design.py
++++ after/backend/tests/test_reference_design.py
+@@ -1002,6 +1002,12 @@
+         selected_sensor['required'] = ['choice_kind', *selected_sensor['required']]
+         expected['properties']['inventory_choices'] = {
+             'type': 'array', 'minItems': 1, 'maxItems': 1, 'items': selected_sensor}
++        complete = deepcopy({key: value for key, value in expected.items() if key not in {'$defs', 'anyOf'}})
++        incomplete = deepcopy(complete)
++        complete['properties']['inventory_complete'] = {'type': 'boolean', 'enum': [True]}
++        incomplete['properties']['inventory_complete'] = {'type': 'boolean', 'enum': [False]}
++        incomplete['properties']['inventory_choices']['minItems'] = 1
++        expected['anyOf'] = [complete, incomplete]
+         actual['$defs']['ReferenceDevice'] = deepcopy(expected['$defs']['ReferenceDevice'])
+         assert actual == expected
+         assert request['options']['num_predict'] == 8192

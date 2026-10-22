@@ -1,0 +1,57 @@
+--- before-transfer
++++ after-transfer
+@@ -16,13 +16,18 @@
+ 
+ parser = argparse.ArgumentParser(description=__doc__)
+ parser.add_argument('--receipt', type=Path, required=True)
++parser.add_argument('--context-repair-dir', type=Path)
++parser.add_argument('--destination-prefix', default='native-waitress-lifecycle')
+ args = parser.parse_args()
+ OUT = Path(__file__).resolve().parent
+ BASE = OUT.parents[1]
+ ROOT = OUT.parents[5]
+ D = 'C:/Users/marti/AppData/Local/Programs/DockerDesktop/resources/bin/docker.exe'
+ receipt = json.loads(args.receipt.read_text(encoding='utf-8'))
+-identity = json.loads((OUT / 'waitress-candidate-input-identity.json').read_text(encoding='utf-8'))
++assert re.fullmatch('[a-z0-9-]+', args.destination_prefix)
++evidence_dir = args.context_repair_dir.resolve() if args.context_repair_dir else OUT
++assert evidence_dir.is_relative_to(BASE.resolve())
++identity = json.loads((evidence_dir / ('current-input-identity.json' if args.context_repair_dir else 'waitress-candidate-input-identity.json')).read_text(encoding='utf-8'))
+ assert receipt['status'] == 'PREPARED' and not receipt.get('development_only')
+ assert receipt['initial_source_sha256'] == identity['source_sha256']
+ assert receipt['initial_commit_id'] == identity['commit_id']
+@@ -65,6 +70,17 @@
+ assert scope['unchanged_document_intake_methods_and_response_validation']
+ assert scope['unchanged_nonreference_module_ast_including_imports_and_constants']
+ frozen = json.loads((OUT / 'waitress-validation-source-freeze.json').read_text(encoding='utf-8'))
++if args.context_repair_dir:
++    context_proof = json.loads((evidence_dir / 'source-scope-proof.json').read_text())
++    assert context_proof['all_other_application_ast_unchanged']
++    assert context_proof['no_source_reference_candidate_or_retry_truncation']
++    assert context_proof['no_model_provider_budget_gate_change']
++    freeze = json.loads((evidence_dir / 'candidate-prepare-freeze.json').read_text())
++    assert freeze['identity'] == identity and freeze['targeted_current_cases'] == 253
++    for name, digest in freeze['frozen_affected_files'].items():
++        assert name in {'backend/nis/agent/orchestration/local_reasoner.py', 'backend/tests/test_reference_reasoner.py'}
++        assert sha((ROOT / name).read_bytes()) == digest
++        frozen[name] = digest
+ assert all(sha((ROOT / name).read_bytes()) == digest for name, digest in frozen.items())
+ 
+ 
+@@ -114,7 +130,7 @@
+     payload = json.loads(raw)
+     assert set(payload) == {'bundle'}
+     empty(payload['bundle'], project)
+-    destination = BASE / ('native-waitress-lifecycle-' + case)
++    destination = BASE / (args.destination_prefix + '-' + case)
+     destination.mkdir(exist_ok=False)
+     record = {'at_utc': datetime.now(timezone.utc).isoformat(), 'project_id': project,
+         'source_state': {'path': str(old_state_file), 'sha256': sha(old_state_file.read_bytes())},
+@@ -171,6 +187,6 @@
+     finally:
+         (destination / 'source-only-transfer.json').write_text(json.dumps(record, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+ assert inspect('NetworkIS')['Image'] == production
+-(OUT / 'waitress-source-only-transfer-result.json').write_text(json.dumps({'scope': __doc__,
++(evidence_dir / 'waitress-source-only-transfer-result.json').write_text(json.dumps({'scope': __doc__,
+     'transfers': transfers, 'production_changed': False}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+ print(json.dumps({'transfers': transfers, 'production_changed': False}, ensure_ascii=False))

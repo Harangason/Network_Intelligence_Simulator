@@ -8,6 +8,112 @@ from backend.nis.infrastructure.storage.saved_storage import save_user_defined_v
 from backend.nis.infrastructure.storage.saved_storage import load_user_defined_values
 from backend.nis.infrastructure.storage.trace_storage import TraceStorage
 
+
+@pytest.mark.parametrize('winerror', [5, 32, 33])
+def test_atomic_save_recovers_transient_windows_locks_without_partial_content(tmp_path, monkeypatch, winerror):
+    from backend.nis.infrastructure.storage import saved_storage
+    target = tmp_path / 'document.json'
+    target.write_bytes(b'previous')
+    original_replace = saved_storage.os.replace
+    attempts, delays = [], []
+
+    def replace(source, destination):
+        assert target.read_bytes() == b'previous'
+        assert source.read_bytes() == b'complete replacement'
+        attempts.append(source)
+        if len(attempts) <= 2:
+            error = PermissionError('transient Windows file lock')
+            error.winerror = winerror
+            raise error
+        original_replace(source, destination)
+
+    monkeypatch.setattr(saved_storage.os, 'replace', replace)
+    monkeypatch.setattr(saved_storage.time, 'sleep', delays.append)
+    saved_storage._replace_bytes(target, b'complete replacement')
+    assert target.read_bytes() == b'complete replacement'
+    assert len(attempts) == 3 and len(set(attempts)) == 1
+    assert delays == [0.025, 0.05]
+    assert not list(tmp_path.glob('*.tmp'))
+
+
+@pytest.mark.parametrize('winerror', [5, 32, 33, None])
+def test_atomic_save_propagates_permanent_permission_failure_and_keeps_previous_content(tmp_path, monkeypatch, winerror):
+    from backend.nis.infrastructure.storage import saved_storage
+    target = tmp_path / 'document.json'
+    target.write_bytes(b'previous')
+    error = PermissionError('permanent access denied')
+    if winerror is not None:
+        error.winerror = winerror
+    attempts, delays = [], []
+
+    def denied(source, destination):
+        attempts.append(source)
+        assert target.read_bytes() == b'previous'
+        raise error
+
+    monkeypatch.setattr(saved_storage.os, 'replace', denied)
+    monkeypatch.setattr(saved_storage.time, 'sleep', delays.append)
+    with pytest.raises(PermissionError) as caught:
+        saved_storage._replace_bytes(target, b'replacement')
+    assert caught.value is error
+    assert len(attempts) == (7 if winerror is not None else 1)
+    assert len(set(attempts)) == 1
+    assert sum(delays) <= 1.5751
+    assert target.read_bytes() == b'previous'
+    assert not list(tmp_path.glob('*.tmp'))
+
+
+def test_atomic_save_does_not_retry_other_storage_errors(tmp_path, monkeypatch):
+    import errno
+    from backend.nis.infrastructure.storage import saved_storage
+    target = tmp_path / 'document.json'
+    target.write_bytes(b'previous')
+    error = OSError(errno.ENOSPC, 'no space left')
+    attempts, delays = [], []
+
+    def failed(source, destination):
+        attempts.append(source)
+        raise error
+
+    monkeypatch.setattr(saved_storage.os, 'replace', failed)
+    monkeypatch.setattr(saved_storage.time, 'sleep', delays.append)
+    with pytest.raises(OSError) as caught:
+        saved_storage._replace_bytes(target, b'replacement')
+    assert caught.value is error and len(attempts) == 1 and delays == []
+    assert target.read_bytes() == b'previous'
+    assert not list(tmp_path.glob('*.tmp'))
+
+
+def test_parameter_api_recovers_transient_manifest_lock(tmp_path, monkeypatch):
+    from pathlib import Path
+    from backend.nis.infrastructure.storage import saved_storage
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    monkeypatch.setenv('SIMULATOR_SAVED_ROOT', str(tmp_path))
+    project = 'transient-lock-' + uuid4().hex
+    WorkflowStatusService(project).save_parameters({'duration_s': 17})
+    original_replace = saved_storage.os.replace
+    locks = []
+
+    def replace(source, destination):
+        if Path(destination).name == 'manifest.json' and len(locks) < 2:
+            locks.append(str(destination))
+            error = PermissionError('transient Windows manifest lock')
+            error.winerror = 5
+            raise error
+        original_replace(source, destination)
+
+    monkeypatch.setattr(saved_storage.os, 'replace', replace)
+    client = create_app().test_client()
+    headers = {'X-Project-ID': project}
+    current = client.get('/api/engineering/workflow/parameters', headers=headers).json
+    response = client.patch('/api/engineering/workflow/parameters', headers=headers,
+                            json={'parameters': {'duration_s': 19}, 'expected_token': current['edit_token']})
+    assert len(locks) == 2
+    assert response.status_code == 200, response.json
+    assert client.get('/api/engineering/workflow/parameters', headers=headers).json['parameters']['duration_s'] == 19
+    assert load_user_defined_values(project)['parameters']['duration_s'] == 19
+    assert not list(tmp_path.rglob('*.tmp'))
+
 def test_saved_folders_are_project_scoped_and_reject_escape(tmp_path, monkeypatch):
     monkeypatch.setenv('SIMULATOR_SAVED_ROOT', str(tmp_path))
     assert TraceStorage(container=False).root_for('alpha') == tmp_path/'alpha'/'runs'

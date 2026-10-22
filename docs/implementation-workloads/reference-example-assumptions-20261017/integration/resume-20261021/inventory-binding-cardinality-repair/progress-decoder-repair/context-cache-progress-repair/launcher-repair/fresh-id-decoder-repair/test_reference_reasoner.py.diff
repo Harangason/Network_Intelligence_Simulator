@@ -1,0 +1,182 @@
+--- b47/backend/tests/test_reference_reasoner.py
++++ current/backend/tests/test_reference_reasoner.py
+@@ -116,6 +116,14 @@
+             row['producer_device_id'] = mapping.get(row['producer_device_id'], row['producer_device_id'])
+             row['consumer_device_ids'] = [mapping.get(key, key) for key in row['consumer_device_ids']]
+         candidate = {key: deepcopy(value) for key, value in active.items() if key in allowed}
++        def use_offered_new_ids(rows, existing):
++            items = payload['format']['properties']['inventory_choices']['items']
++            variants = items.get('anyOf', [items])
++            offered = {item['properties']['choice_kind']['enum'][0]: item['properties']['id']['enum'][0]
++                       for item in variants if 'id' in item['properties']}
++            for row in rows:
++                if row['id'] not in existing:
++                    row['id'] = offered['NEW_' + row['kind']]
+         if content.get('inventory_target_for_this_stage'):
+             target = content['inventory_target_for_this_stage']
+             candidate['devices'] = [row for row in candidate['devices']
+@@ -127,6 +135,7 @@
+             fresh = [row for row in candidate['devices'] if row['id'] not in existing]
+             candidate['inventory_complete'] = len(fresh) <= 1 and prepared['facts'][target['fact_id']]['role'] != never_complete_inventory_role
+             candidate['devices'] = (fresh or candidate['devices'])[:1]
++            use_offered_new_ids(candidate['devices'], existing)
+             for row in candidate['devices']:
+                 row['source_fact_ids'] = [target['fact_id']]
+                 row['source_member_bindings'] = {target['fact_id']: target['member']} if target['member'] else {}
+@@ -138,6 +147,7 @@
+             fresh = [row for row in active['devices'] if row['id'] not in existing and set(row['source_fact_ids']) <= eligible]
+             limit = payload['format']['properties']['inventory_choices']['maxItems']
+             candidate['devices'] = deepcopy(fresh[:limit])
++            use_offered_new_ids(candidate['devices'], existing)
+             candidate['inventory_complete'] = len(fresh) <= limit
+             if derivation_mutator:
+                 derivation_mutator(candidate, content, payload, prepared)
+@@ -251,6 +261,15 @@
+     return asyncio.run(run())
+ 
+ 
++def offered_new_inventory_id(schema, choice_kind):
++    items = schema['properties']['inventory_choices']['items']
++    choice = next(row for row in items.get('anyOf', [items])
++                  if row['properties']['choice_kind']['enum'] == [choice_kind])
++    identities = choice['properties']['id']['enum']
++    assert len(identities) == 1
++    return identities[0]
++
++
+ def test_stage_catalogs_preserve_originals_and_only_supply_selected_port_schemas(monkeypatch):
+     payloads = []
+     reasoner, prepared, observed = reasoner_with_transport(monkeypatch, capture=payloads)
+@@ -311,9 +330,14 @@
+     owners = lambda field: [row['device_ids_for_this_stage'] for row in stages
+                             if row['output_fields_for_this_stage'] == [field]]
+     compiled_id = next(row['id'] for row in observed[0]['current_candidate']['devices'] if row['kind'] == 'CONTROLLER')
+-    assert owners('ports') == [[compiled_id], ['S'], ['A']]
+-    assert owners('measurements') == [['S']]
+-    assert owners('commands') == [['A']]
++    inventory = stages[0]['current_candidate']['devices']
++    assert [(row['name'], row['kind']) for row in inventory] == [
++        (row['name'], row['kind']) for row in complete_design(prepared)['devices']]
++    sensor_id = next(row['id'] for row in inventory if row['kind'] == 'SENSOR')
++    actuator_id = next(row['id'] for row in inventory if row['kind'] == 'ACTUATOR')
++    assert owners('ports') == [[compiled_id], [sensor_id], [actuator_id]]
++    assert owners('measurements') == [[sensor_id]]
++    assert owners('commands') == [[actuator_id]]
+     assert all(len(row['device_ids_for_this_stage']) == 1 for row in stages)
+     assert len(result['proposal']['ports']) == 3
+     assert len(result['proposal']['measurements']) == len(result['proposal']['commands']) == 1
+@@ -949,7 +973,9 @@
+     target = {'fact_id': fact, 'member': None, 'names': [], 'minimum_rows': 1}
+     schema = _reference_schema_for_stage(prepared, {'devices'}, inventory_target=target, existing_devices=known)
+     binding = {'choice_kind': 'EXISTING', 'device_id': known[0]['id'], 'source_fact_ids': [fact], 'rationale': 'Same source controller', 'field_references': {}}
+-    new = {'choice_kind': 'NEW_CONTROLLER', **deepcopy(known[0]), 'id': 'new-unit-only-device', 'name': 'Additional reference controller', 'source_fact_ids': [fact]}
++    new = {'choice_kind': 'NEW_CONTROLLER', **deepcopy(known[0]),
++           'id': offered_new_inventory_id(schema, 'NEW_CONTROLLER'),
++           'name': 'Additional reference controller', 'source_fact_ids': [fact]}
+     base = {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'inventory_complete': True}
+     validator = Draft202012Validator(schema)
+     for choice in (binding, new):
+@@ -1254,7 +1280,8 @@
+         row = {'choice_kind': kind, 'device_id': known[0]['id'], 'source_fact_ids': selected,
+                'rationale': 'Mocked source binding', 'field_references': {}}
+     else:
+-        row = {**deepcopy(known[0]), 'choice_kind': kind, 'id': 'unit-scoped-sensor', 'name': 'Unit scoped sensor',
++        row = {**deepcopy(known[0]), 'choice_kind': kind,
++               'id': offered_new_inventory_id(schema, kind), 'name': 'Unit scoped sensor',
+                'kind': 'SENSOR', 'owner_device_id': known[0]['id'], 'source_fact_ids': selected}
+     value = {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'inventory_complete': True, 'inventory_choices': [row]}
+     validator = Draft202012Validator(schema)
+@@ -1284,7 +1311,7 @@
+         second['device_id'] = known[1]['id']
+     elif pair == 'new_and_existing':
+         second = {**deepcopy(known[0]), 'choice_kind': 'NEW_SENSOR', 'kind': 'SENSOR',
+-                  'id': 'unit-new-derived-sensor', 'name': 'Unit derived sensor',
++                  'id': offered_new_inventory_id(schema, 'NEW_SENSOR'), 'name': 'Unit derived sensor',
+                   'owner_device_id': known[0]['id'], 'source_fact_ids': [fact]}
+     base = {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'inventory_complete': False}
+     validator = Draft202012Validator(schema)
+@@ -1368,3 +1395,84 @@
+     assert hashlib.sha256(raw.encode()).hexdigest() == diagnostic['response_sha256']
+     assert json.loads(raw)['inventory_complete'] is False
+     assert json.loads(raw)['inventory_choices'] == []
++
++
++@pytest.mark.parametrize('collision', ['same_kind', 'cross_kind', 'already_bound'])
++def test_native_new_identity_decoder_excludes_every_existing_id(collision):
++    """Authored probe: decoder admission must agree with the unchanged guard."""
++    from jsonschema import Draft202012Validator
++    prepared = intake.prepare_reference_design(fixture_request())
++    known = complete_design(prepared)['devices']
++    fact = next(key for key, item in prepared['facts'].items() if item['kind'] == 'FUNCTION')
++    sensor = next(row for row in known if row['kind'] == 'SENSOR')
++    old_id = next(row['id'] for row in known if row['kind'] == 'CONTROLLER') if collision == 'cross_kind' else sensor['id']
++    if collision == 'already_bound':
++        sensor['source_fact_ids'].append(fact)
++    row = {**deepcopy(sensor), 'choice_kind': 'NEW_SENSOR', 'id': old_id,
++           'name': 'Authored probe sensor', 'source_fact_ids': [fact],
++           'source_member_bindings': {}, 'rationale': 'Independent decoder counterexample'}
++    value = {**intake.ReferenceDesignProposal().model_dump(mode='json'),
++             'inventory_complete': False, 'inventory_choices': [row]}
++    schema = _reference_schema_for_stage(prepared, {'devices'},
++        derivation_fact_ids=[fact], existing_devices=known)
++    before = deepcopy(known)
++    with pytest.raises(ValueError, match='Vorhandene Teilnehmer ausschließlich als ID-Bindung'):
++        _reference_expand_inventory_choices(known, [row])
++    assert known == before
++    assert not Draft202012Validator(schema).is_valid(value), 'NEW must not emit any allocated identity.'
++
++
++def test_inventory_prompt_exposes_exact_existing_identity_projection(monkeypatch):
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch)
++    run_reference(reasoner, prepared)
++    inventory = [content for content in observed
++                 if content['inventory_target_for_this_stage'] is not None
++                 or content['derivation_fact_ids_for_this_stage'] is not None]
++    assert inventory
++    for content in inventory:
++        assert content['existing_inventory_for_this_stage'] == [
++            {key: row[key] for key in ('id', 'name', 'kind')}
++            for row in content['current_candidate']['devices']]
++
++
++def test_rejected_new_identity_feedback_identifies_the_existing_participant():
++    prepared = intake.prepare_reference_design(fixture_request())
++    known = complete_design(prepared)['devices']
++    sensor = next(row for row in known if row['kind'] == 'SENSOR')
++    with pytest.raises(ValueError) as error:
++        _reference_expand_inventory_choices(known, [{**deepcopy(sensor), 'choice_kind': 'NEW_SENSOR'}])
++    assert sensor['id'] in str(error.value)
++    assert sensor['name'] in str(error.value)
++    assert sensor['kind'] in str(error.value)
++
++
++@pytest.mark.parametrize('used', [[], ['a', 'ab', 'ba'], ['a\n', 'é', '[x]', '🙂', 'a\\b'], ['x' * 120]])
++def test_native_fresh_inventory_ids_are_stable_distinct_and_preserve_existing_ids(used):
++    from backend.nis.agent.orchestration.local_reasoner import _reference_fresh_inventory_id
++    from backend.nis.agent.orchestration.project_intake import ReferenceDevice
++    prepared = intake.prepare_reference_design(fixture_request())
++    facts = list(prepared['facts'])[:2]
++    before = deepcopy(used)
++    first = _reference_fresh_inventory_id(prepared, 'SENSOR', facts, set(used))
++    assert first not in used and 1 <= len(first) <= 120
++    assert first == _reference_fresh_inventory_id(prepared, 'SENSOR', reversed(facts), set(reversed(used)))
++    assert first != _reference_fresh_inventory_id(prepared, 'ACTUATOR', facts, set(used))
++    assert first != _reference_fresh_inventory_id(prepared, 'SENSOR', facts[:1], set(used))
++    # Public persisted identities keep the complete original domain. Existing
++    # arbitrary identities are not rewritten to the newly offered private ID.
++    sensor = next(row for row in complete_design(prepared)['devices'] if row['kind'] == 'SENSOR')
++    for identifier in used + ['quoted"id', 'a\n', 'a\\b', 'é', '🙂']:
++        ReferenceDevice.model_validate({**sensor, 'id': identifier})
++    assert used == before
++
++
++def test_native_fresh_inventory_id_resolves_actual_allocated_collision(monkeypatch):
++    import hashlib
++    from backend.nis.agent.orchestration.local_reasoner import _reference_fresh_inventory_id
++    prepared = intake.prepare_reference_design(fixture_request())
++    class Digest:
++        def hexdigest(self):
++            return 'a' * 64
++    monkeypatch.setattr(hashlib, 'sha256', lambda value: Digest())
++    used = {'derived-' + 'a' * 24, 'derived-' + 'a' * 24 + '-1'}
++    assert _reference_fresh_inventory_id(prepared, 'SENSOR', list(prepared['facts'])[:1], used) == 'derived-' + 'a' * 24 + '-2'

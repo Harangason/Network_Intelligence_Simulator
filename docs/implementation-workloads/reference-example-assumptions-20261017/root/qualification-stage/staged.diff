@@ -1,0 +1,209 @@
+--- a/backend/nis/agent/orchestration/project_intake.py
++++ b/backend/nis/agent/orchestration/project_intake.py
+@@ -1200,7 +1200,6 @@
+             'excluded_questions': value.get('excluded_questions', []), 'function_assignments': assignments,
+             'canonical_writes': False, 'approval_required': True}
+ 
+-
+ # Reference design is a separate planning result, never a source interpretation.
+ ReferenceField = Literal['quantity', 'device_type', 'function_hosts', 'ports',
+                          'measurements', 'commands', 'communication']
+@@ -1387,7 +1386,11 @@
+     if not isinstance(catalog, dict) or not catalog.get('measurements'):
+         raise ValueError('Der vorhandene Messgrößenkatalog ist nicht verfügbar.')
+     _reference_unique(catalog['measurements'], 'id', 'Messgrößenkatalog')
+-    catalog['technology_ids'] = sorted(profile['id'] for profile in DEFAULT_TECHNOLOGY_REGISTRY.profiles())
++    technology_profiles = DEFAULT_TECHNOLOGY_REGISTRY.profiles()
++    catalog['technology_ids'] = sorted(profile['id'] for profile in technology_profiles)
++    catalog['technology_catalog_sha256'] = _reference_digest(technology_profiles)
++    catalog['technology_parameter_roles_sha256'] = _reference_digest({
++        profile['id']: DEFAULT_TECHNOLOGY_REGISTRY.parameter_roles(profile['id']) for profile in technology_profiles})
+     catalog_digest = _reference_digest(catalog)
+     project_id = current_project_id()
+     return {'request': payload, 'project_id': project_id,
+@@ -1564,6 +1567,7 @@
+     _reference_unique(value['measurements'], 'device_id', 'Messgrößen')
+     _reference_unique(value['commands'], 'device_id', 'Stellbefehle')
+     findings = value['unresolved']
++    qualification_findings = []
+     scopes, bound = {}, {}
+     decision_evidence = []
+     aliases = current['catalog'].get('name_aliases', {})
+@@ -1729,8 +1733,19 @@
+             raise ValueError('Referenzanschluss benötigt eine registrierte Technologie.') from error
+         if identity != port['technology']:
+             raise ValueError('Referenzanschluss benötigt die kanonische Technologieidentität.')
++        roles = DEFAULT_TECHNOLOGY_REGISTRY.parameter_roles(identity)
++        normalized_parameters = DEFAULT_TECHNOLOGY_REGISTRY.normalize_parameters(identity, port['parameters'])
++        for parameter in normalized_parameters:
++            if roles.get(parameter) != 'CONFIGURATION':
++                raise ValueError(f'Referenzanschluss {port_id}: {parameter} ist kein zulässiger CONFIGURATION-Wert; Qwen darf keine Hardware-, Referenz- oder Abnahmebelege erzeugen.')
+         review = DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters(identity, port['parameters'])
+         for finding in review.get('findings', []):
++            parameter = finding.get('parameter')
++            if finding.get('code') == 'TECHNOLOGY_PARAMETER_MISSING' and roles.get(parameter) in {'EVIDENCE', 'REFERENCE'}:
++                qualification_findings.append({'target_ref': port_id, 'technology': identity,
++                    'parameter': parameter, 'value_role': roles[parameter],
++                    'qualification': 'UNVERIFIED', 'hardware_evidence': False, 'finding': deepcopy(finding)})
++                continue
+             if finding.get('severity') in {'ERROR', 'BLOCKER', 'OPEN', 'REVIEW'}:
+                 findings.append({'code': 'REFERENCE_PORT_' + finding.get('code', 'REVIEW_REQUIRED'),
+                     'target_ref': port_id, 'message': finding.get('message') or str(finding)})
+@@ -1891,6 +1906,7 @@
+         'reference_sources': deepcopy(current['reference_sources']),
+         'proposal': value, 'decision_evidence': decision_evidence,
+         'processing_evidence': 'NONE', 'timing_evidence': 'NONE',
++        'hardware_evidence': False, 'qualification': 'UNVERIFIED', 'qualification_findings': qualification_findings,
+         'coverage': {'inventory_fact_ids': [key for key, fact in facts.items() if fact['kind'] in {'INSTANCE', 'CATEGORY'}],
+             'function_fact_ids': [key for key, fact in facts.items() if fact['kind'] == 'FUNCTION'],
+             'requirement_fact_ids': [key for key, fact in facts.items() if fact['kind'] == 'REQUIREMENT'],
+--- a/backend/tests/test_reference_design.py
++++ b/backend/tests/test_reference_design.py
+@@ -658,6 +658,95 @@
+     assert all(row['executor_device_ids'] == ['C'] for row in checked['proposal']['functions'])
+ 
+ 
++def with_reference_port(candidate, technology='lin', parameters=None):
++    candidate['ports'] = [{'id': 'P', 'device_id': 'C', 'technology': technology, 'role': 'LOCAL',
++        'network_scope': 'reference_' + technology, 'parameters': parameters or {},
++        'rationale': 'Prüfbare Softwareauslegung ohne Behauptung von Hardware- oder Abnahmenachweisen'}]
++    return candidate
++
++
++def lin_reference_configuration():
++    return {'lin_edition': 'LIN_2_2A_2010', 'lin_physical_profile': 'LIN_2_2A_SINGLE_WIRE',
++            'lin_node_role': 'COMMANDER', 'lin_frame_kind': 'UNCONDITIONAL', 'lin_bitrate_bps': 19200}
++
++
++@pytest.mark.parametrize('parameter,value', [('lin_device_source', 'invented-vendor-proof'),
++    ('lin_commander_node_id', 'invented-canonical-id'), ('lin_capacity_confirmed', True)])
++def test_machine_reference_parameters_cannot_invent_evidence_or_canonical_references(prepared, parameter, value):
++    candidate = with_reference_port(fixture_design(prepared), parameters={**lin_reference_configuration(), parameter: value})
++    with pytest.raises(ValueError, match='keine Hardware-, Referenz- oder Abnahmebelege'):
++        intake.validate_reference_design(candidate, prepared)
++
++
++def test_missing_evidence_is_separate_qualification_with_the_unmodified_native_finding(prepared):
++    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
++    parameters = lin_reference_configuration()
++    native = registry.validate_parameters('lin', parameters)
++    candidate = with_reference_port(fixture_design(prepared), parameters=parameters)
++    result = intake.validate_reference_design(candidate, prepared)
++    roles = registry.parameter_roles('lin')
++    expected = [row for row in native['findings'] if row['code'] == 'TECHNOLOGY_PARAMETER_MISSING'
++                and roles.get(row.get('parameter')) in {'EVIDENCE', 'REFERENCE'}]
++    assert expected and [row['finding'] for row in result['qualification_findings']] == expected
++    assert result['qualification'] == 'UNVERIFIED' and result['hardware_evidence'] is False
++    assert result['processing_evidence'] == 'NONE' and result['timing_evidence'] == 'NONE'
++    assert all(row['qualification'] == 'UNVERIFIED' and row['hardware_evidence'] is False for row in result['qualification_findings'])
++    assert not result['proposal']['unresolved']
++    assert candidate['ports'][0]['parameters'] == parameters
++
++
++def test_missing_configuration_still_blocks_the_design_review(prepared):
++    parameters = lin_reference_configuration(); del parameters['lin_bitrate_bps']
++    result = intake.validate_reference_design(with_reference_port(fixture_design(prepared), parameters=parameters), prepared)
++    assert any(row['code'] == 'REFERENCE_PORT_TECHNOLOGY_PARAMETER_MISSING' and 'lin_bitrate_bps' in row['message']
++               for row in result['proposal']['unresolved'])
++    assert all(row['parameter'] != 'lin_bitrate_bps' for row in result['qualification_findings'])
++
++
++def test_invalid_configuration_is_never_relabelled_as_missing_hardware_proof(prepared):
++    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
++    parameters = {**lin_reference_configuration(), 'lin_bitrate_bps': 25000}
++    native_errors = [row for row in registry.validate_parameters('lin', parameters)['findings']
++                     if row['code'] != 'TECHNOLOGY_PARAMETER_MISSING' and row['severity'] in {'ERROR', 'BLOCKER', 'OPEN', 'REVIEW'}]
++    assert native_errors
++    result = intake.validate_reference_design(with_reference_port(fixture_design(prepared), parameters=parameters), prepared)
++    assert {'REFERENCE_PORT_' + row['code'] for row in native_errors} <= {row['code'] for row in result['proposal']['unresolved']}
++    assert all(row['finding']['code'] == 'TECHNOLOGY_PARAMETER_MISSING' for row in result['qualification_findings'])
++
++
++def test_existing_native_parameter_aliases_keep_configurable_values_as_assumptions(prepared):
++    result = intake.validate_reference_design(with_reference_port(fixture_design(prepared), 'ethernet', {'bitrate': 1000000000}), prepared)
++    assert not result['proposal']['unresolved'] and result['qualification_findings'] == []
++    assert result['proposal']['ports'][0]['parameters'] == {'bitrate': 1000000000}
++    assert result['qualification'] == 'UNVERIFIED' and result['hardware_evidence'] is False
++
++
++@pytest.mark.parametrize('change', ['profile', 'parameter_role'])
++def test_native_technology_and_role_revisions_invalidate_the_reference_request(monkeypatch, change):
++    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
++    prepared = intake.prepare_reference_design(fixture_request())
++    candidate = fixture_design(prepared)
++    if change == 'profile':
++        original = registry.profiles
++        def revised_profiles():
++            profiles = original()
++            next(row for row in profiles if row['id'] == 'lin')['parameter_schema']['lin_bitrate_bps']['max'] = 19000
++            return profiles
++        monkeypatch.setattr(registry, 'profiles', revised_profiles)
++    else:
++        original = registry.parameter_roles
++        def revised_roles(technology):
++            roles = original(technology)
++            if technology == 'lin': roles['lin_tx_enabled'] = 'EVIDENCE'
++            return roles
++        monkeypatch.setattr(registry, 'parameter_roles', revised_roles)
++    current = intake.prepare_reference_design(prepared['request'])
++    assert current['catalog_sha256'] != prepared['catalog_sha256']
++    assert current['request_sha256'] != prepared['request_sha256']
++    with pytest.raises(ValueError, match='Auftragsrevision'):
++        intake.validate_reference_design(candidate, prepared)
++
++
+ @pytest.mark.parametrize('mutation', ['foreign_fact', 'foreign_profile', 'invented_scope', 'changed_source'])
+ def test_internal_profile_feedback_cannot_change_scope_or_primary_evidence(mutation):
+     prepared, candidate = profiled_fixture()
+--- a/backend/nis/communication/catalog.py
++++ b/backend/nis/communication/catalog.py
+@@ -107,6 +107,9 @@
+     """Identity and evidence references cannot be invented as scenario values."""
+     if spec.get('value_role'):
+         return spec['value_role']
++    if (spec.get('type') == 'boolean' or spec.get('boolean')) and name.endswith(
++            ('_confirmed', '_verified', '_proven', '_validated')):
++        return 'EVIDENCE'
+     if spec.get('type') in {'text', 'string'} or not spec.get('type') and not spec.get('numeric') and not spec.get('boolean') and not spec.get('options'):
+         if name.endswith('_source') or name.endswith('_revision') or name == 'revision':
+             return 'EVIDENCE'
+--- a/backend/tests/test_reference_parameter_roles.py
++++ b/backend/tests/test_reference_parameter_roles.py
+@@ -0,0 +1,37 @@
++"""Proof flags stay unknown; configuration booleans remain editable scenarios."""
++import pytest
++
++from backend.nis.communication.catalog import parameter_value_role
++from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
++
++
++@pytest.mark.parametrize('ending', ['confirmed', 'verified', 'proven', 'validated'])
++@pytest.mark.parametrize('spec', [{'type': 'boolean'}, {'boolean': True}])
++def test_proof_booleans_are_evidence(ending, spec):
++    assert parameter_value_role('example_' + ending, spec) == 'EVIDENCE'
++
++
++@pytest.mark.parametrize('name', ['lin_diode_present', 'lin_tx_enabled', 'lin_flow_control'])
++def test_real_lin_configuration_booleans_remain_configuration(name):
++    assert registry.parameter_roles('lin')[name] == 'CONFIGURATION'
++
++
++@pytest.mark.parametrize('name', ['lin_capacity_confirmed', 'lin_schedule_confirmed'])
++def test_real_lin_proof_flags_have_no_generated_simulation_confirmation(name):
++    assert registry.parameter_roles('lin')[name] == 'EVIDENCE'
++    field = next(row for row in registry.parameter_fields('lin') if row['native_key'] == name)
++    assert field['value_role'] == 'EVIDENCE'
++    assert field['simulation_default'] is None
++    assert field['simulation_default_provenance']['status'] == 'UNKNOWN'
++    assert field['simulation_default_provenance']['hardware_evidence'] is False
++
++
++@pytest.mark.parametrize('role', ['CONFIGURATION', 'REFERENCE', 'EVIDENCE'])
++def test_explicit_profile_role_remains_authoritative(role):
++    assert parameter_value_role('example_confirmed', {'type': 'boolean', 'value_role': role}) == role
++
++
++def test_non_boolean_names_are_not_reinterpreted_as_proof_flags():
++    assert parameter_value_role('example_confirmed', {'type': 'text'}) == 'CONFIGURATION'
++    assert parameter_value_role('example_verified', {'type': 'number'}) == 'CONFIGURATION'
++    assert parameter_value_role('example_proven', {'options': ['one', 'two']}) == 'CONFIGURATION'

@@ -430,7 +430,8 @@ def test_compact_wizard_continuation_restores_the_confirmed_request():
     assert restored.endswith(compact)
     assert restore_wizard_continuation_prompt(original, {'run_id': run_id, 'agent_prompt': original}) == original
     assert restore_wizard_continuation_prompt(compact, {'run_id': 'other-run', 'agent_prompt': original}) == compact
-    assert len(restore_wizard_continuation_prompt(compact, {'run_id': run_id, 'agent_prompt': original}, 180)) <= 180
+    with pytest.raises(ValueError, match='nicht gekürzt'):
+        restore_wizard_continuation_prompt(compact, {'run_id': run_id, 'agent_prompt': original}, 180)
 
 
 def test_conversation_heartbeat_only_renews_matching_run():
@@ -729,3 +730,21 @@ def test_optional_mcp_question_can_be_skipped_and_resumed():
     assert resumed.success, resumed
     assert resumed.data['context']['answered_questions']['format']['status'] == 'SKIPPED'
     run(authority, lambda: conversation.finish(resumed.data['run_id']))
+
+
+def test_complete_reviewed_document_request_can_exceed_legacy_120k_limit_without_losing_source():
+    from backend.nis.agent.context.agent_context import AgentContext
+    from backend.nis.agent.context.limits import MAX_DOCUMENT_SOURCE_CHARS, MAX_REQUIREMENT_LENGTH
+    original = 'Strukturierte Vorgaben fuer den Engineering-Agenten:\nLauf-ID: source-bound-12345678\nper Wizard-Uebernehmen bestaetigt\n' + ('Vollständige Dokumentquelle.\n' * 7000)
+    assert len(original) > 120_000
+    context = AgentContext(active_project_id='robotics-document-bounds-test', current_requirement=original)
+    assert context.current_requirement == original
+    restored = restore_wizard_continuation_prompt('Lauf-ID: source-bound-12345678\nWeiter', {'run_id': 'source-bound-12345678', 'agent_prompt': original})
+    assert restored.startswith(original) and len(restored) > len(original)
+    assert MAX_REQUIREMENT_LENGTH >= 4 * MAX_DOCUMENT_SOURCE_CHARS
+
+
+def test_durable_continuation_rejects_overflow_instead_of_slicing_the_confirmed_source():
+    original = 'Strukturierte Vorgaben fuer den Engineering-Agenten:\nper Wizard-Uebernehmen bestaetigt\nOriginalquelle am Ende unbedingt erhalten.'
+    with pytest.raises(ValueError, match='nicht gekürzt'):
+        restore_wizard_continuation_prompt('Lauf-ID: source-bound-12345678\nWeiter', {'run_id': 'source-bound-12345678', 'agent_prompt': original}, maximum=len(original) + 10)

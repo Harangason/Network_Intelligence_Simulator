@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="17" time="62.275" timestamp="2026-10-22T21:48:09.815198+02:00" hostname="Haranga"><testcase classname="tests.test_reference_design" name="test_local_reference_planner_uses_decoder_projection_but_rejects_oversized_response" time="6.538"><failure message="AssertionError: assert {'type': 'obj...rties': False} == {'type': 'obj...axItems': 0}}}&#10;  &#10;  Omitting 2 identical items, use -vv to show&#10;  Differing items:&#10;  {'properties': {'quantity': {'type': 'array', 'items': {'type': 'string'}, 'maxItems': 0}, 'device_type': {'type': 'ar...: {'type': 'string'}, 'maxItems': 0}, 'function_hosts': {'type': 'array', 'items': {'type': 'string'}, 'maxItems': 0}}} != {'properties': {'quantity': {'type': 'array', 'items': {'type': 'string'}, 'maxItems': 0}, 'device_type': {'type': 'array', 'items': {'type': 'string'}, 'maxItems': 0}}}&#10;  Use -v to get more diff">prepared = {'request': {'mode': 'EXAMPLE_PROJECT', 'prompt': 'Controller (ECU)\nSensorik (Temperatursensoren)\nAktorik (Ventile)\...DESIGN', 'processing_evidence': 'NONE', 'field_validity': 'REQUIRES_REVIEW', ...}, 'confirmed_commands': {}, ...}, ...}
+
+    def test_local_reference_planner_uses_decoder_projection_but_rejects_oversized_response(prepared):
+        import asyncio
+        from contextlib import asynccontextmanager
+        from backend.nis.agent.orchestration.local_reasoner import LocalEngineeringReasoner
+        candidate = {'devices': [{**fixture_design(prepared)['devices'][0], 'rationale': 'x' * 2001}]}
+        encoded_candidate = json.dumps({'devices': [], 'inventory_complete': True,
+                                        'inventory_choices': [{'choice_kind': 'NEW_CONTROLLER', **row} for row in candidate['devices']]})
+        requests = []
+        class Response:
+            is_error = False
+            def __init__(self, body): self.body = body
+            def json(self): return self.body
+            async def aiter_lines(self):
+                yield json.dumps(self.body)
+        class Client:
+            async def post(self, url, *, json):
+                assert url.endswith('/show')
+                return Response({'details': {'family': 'qwen35'}, 'model_info': {'general.parameter_count': 27_000_000_000}})
+            @asynccontextmanager
+            async def stream(self, method, url, *, json):
+                assert method == 'POST' and url.endswith('/chat') and json['stream'] is True
+                requests.append(json)
+                yield Response({'message': {'content': encoded_candidate}, 'done': True})
+        async def run():
+            reasoner = LocalEngineeringReasoner()
+            await reasoner.client.aclose()
+            reasoner.client = Client()
+            return await reasoner.plan_reference_design(prepared)
+        with pytest.raises(ValueError, match='2000'):
+            asyncio.run(run())
+        assert len(requests) == 2
+        expected = intake.reference_model_output_schema(prepared)
+        # Private output is a strict concise, field-bound subset. Public response
+        # validation still rejects2001 characters above; no public bound changes.
+        assert prepared['reference_sources'] == {}
+        fields_by_definition = {
+            'ReferenceDevice': ('quantity', 'device_type', 'function_hosts'),
+            'ReferenceFunction': ('function_hosts',), 'ReferencePort': ('ports',),
+            'ReferenceMeasurement': ('measurements',), 'ReferenceCommand': ('commands',),
+            'ReferenceCommunication': ('communication',),
+            'ReferenceFunctionalDependency': ('communication',),
+        }
+        for name, fields in fields_by_definition.items():
+            properties = expected['$defs'][name]['properties']
+            properties['rationale']['maxLength'] = 240
+            properties['field_references'] = {
+                'type': 'object', 'additionalProperties': False,
+                'properties': {field: {'type': 'array', 'items': {'type': 'string'}, 'maxItems': 0}
+                               for field in fields}}
+        # Later native planning arrays remain forbidden at this participant stage.
+        for field in ('functions', 'ports', 'measurements', 'commands', 'communication', 'functional_dependencies'):
+            expected['properties'][field]['maxItems'] = 0
+        expected['properties']['devices'].update(minItems=0, maxItems=0)
+        expected['properties']['inventory_complete'] = {'type': 'boolean'}
+        # Only the source-compiled controller exists at this first sensor cursor;
+        # it is not a sensor candidate. The sole choice must be a new sensor.
+        expected.setdefault('required', []).extend(['inventory_complete', 'inventory_choices'])
+        for request in requests:
+            actual = deepcopy(request['format'])
+            variants = actual['$defs']['ReferenceDevice']['anyOf']
+            sensor = next(row for row in variants if row['properties']['kind']['enum'] == ['SENSOR'])
+            assert len(variants) == 1
+            assert sensor['properties']['source_member_bindings'] == {
+                'type': 'object', 'properties': {}, 'additionalProperties': False}
+            assert sensor['properties']['quantity'] == {'type': 'integer', 'enum': [1]}
+&gt;           assert sensor['properties']['field_references'] == {
+                'type': 'object', 'additionalProperties': False,
+                'properties': {field: {'type': 'array', 'items': {'type': 'string'}, 'maxItems': 0}
+                               for field in ('quantity', 'device_type')}}
+E           AssertionError: assert {'type': 'obj...rties': False} == {'type': 'obj...axItems': 0}}}
+E             
+E             Omitting 2 identical items, use -vv to show
+E             Differing items:
+E             {'properties': {'quantity': {'type': 'array', 'items': {'type': 'string'}, 'maxItems': 0}, 'device_type': {'type': 'ar...: {'type': 'string'}, 'maxItems': 0}, 'function_hosts': {'type': 'array', 'items': {'type': 'string'}, 'maxItems': 0}}} != {'properties': {'quantity': {'type': 'array', 'items': {'type': 'string'}, 'maxItems': 0}, 'device_type': {'type': 'array', 'items': {'type': 'string'}, 'maxItems': 0}}}
+E             Use -v to get more diff
+
+backend\tests\test_reference_design.py:1020: AssertionError</failure></testcase><testcase classname="tests.test_reference_design" name="test_decoder_projection_does_not_accept_oversized_server_candidates[devices]" time="0.014" /><testcase classname="tests.test_reference_design" name="test_decoder_projection_does_not_accept_oversized_server_candidates[rationale]" time="0.008" /><testcase classname="tests.test_reference_design" name="test_decoder_projection_does_not_accept_oversized_server_candidates[port_technology]" time="0.008" /><testcase classname="tests.test_reference_cache_output" name="test_fitting_older_native_anchor_precedes_full_snapshot_fallback" time="0.016" /><testcase classname="tests.test_reference_cache_output" name="test_no_fitting_anchor_uses_complete_snapshot_without_dropping_source" time="0.009" /><testcase classname="tests.test_reference_cache_output" name="test_no_anchor_can_make_oversized_complete_source_acceptable" time="0.034" /><testcase classname="tests.test_reference_cache_output" name="test_compact_complete_anchor_avoids_duplicate_history_even_when_both_fit" time="0.007" /><testcase classname="tests.test_reference_cache_output" name="test_literal_field_keys_exclude_actual_factid_key_without_property_names" time="1.740" /><testcase classname="tests.test_reference_cache_output" name="test_decoder_excludes_unknown_or_field_disallowed_reference[references0]" time="1.712" /><testcase classname="tests.test_reference_cache_output" name="test_decoder_excludes_unknown_or_field_disallowed_reference[references1]" time="1.700" /><testcase classname="tests.test_reference_cache_output" name="test_allowed_reference_pair_and_empty_map_survive_private_projection" time="1.926" /><testcase classname="tests.test_reference_cache_output" name="test_private_rationale_rejects_observed_verbose_size_public_schema_unchanged" time="1.605" /><testcase classname="tests.test_reference_cache_output" name="test_concise_private_rationale_preserves_complete_public_choice" time="2.085" /><testcase classname="tests.test_reference_cache_output" name="test_function_progress_reports_actual_group_and_all_original_ids[0]" time="14.829" /><testcase classname="tests.test_reference_cache_output" name="test_function_progress_reports_actual_group_and_all_original_ids[6]" time="14.824" /><testcase classname="tests.test_reference_cache_output" name="test_planner_retains_bounded_original_and_recent_actual_native_anchors" time="13.859" /></testsuite></testsuites>

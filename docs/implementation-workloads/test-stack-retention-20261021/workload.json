@@ -1,0 +1,260 @@
+{
+  "goal_id": "test-stack-retention-20261021",
+  "goal_type": "RELEASE_TOOLING_REPAIR",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "project_scope": "Host release tooling and explicitly retired test Docker objects",
+  "requested_change": "Safely archive/remove obsolete test stacks and unused candidates; prevent repeated builds and retained stacks.",
+  "constraints": [
+    "Preserve production, all PASS/unknown images, recorded rollback, active latest prepared stack and unrelated projects.",
+    "No application-source changes, production deployment or candidate builds for this host-only repair.",
+    "Preserve original receipts; PREPARED retirement is not a FAIL or delivered-feature claim."
+  ],
+  "required_outcomes": [
+    "safe_cleanup",
+    "reuse_and_bounded_stacks",
+    "production_and_rollback_preserved"
+  ],
+  "validation_requirements": [
+    "release_tool_regressions",
+    "cleanup_archive_and_identity_checks",
+    "production_health"
+  ],
+  "kind": "repair",
+  "modify_code": true,
+  "allow_repair": true,
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "first_failing_layer": "Host release/preparation orchestration",
+    "root_cause": "--prepare builds before selecting an existing image and always retains its unique stack; PREPARED is excluded from image reuse; no cross-process gate lock or retained-stack bound.",
+    "reproduction": "Audited 30 nis-e2e containers and 27 PREPARED-only image identities; repeated prepare leaves every stack.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\inventory-before.json",
+        "sha256": "f85a91bce83f82d449fc9f0292c13a74a91d2f405b1817c7a5cde16ee5995eca"
+      }
+    ],
+    "affected_files": [
+      "scripts/release/run-release-gate.py",
+      "scripts/release/release-and-deploy.py",
+      "scripts/tests/test_release_and_deploy.py",
+      "scripts/tests/test_release_lifecycle.py",
+      "docs/WIZARD_RELEASE_GATE.md",
+      "AGENTS.md"
+    ],
+    "acceptance_criteria": [
+      "Reuse non-development PREPARED images for the exact source and commit.",
+      "Serialize gates; reuse an identical healthy prepared stack, otherwise block a second retained stack before building.",
+      "Keep receipts and archived data; delete only fresh-checked exact retired objects."
+    ],
+    "targeted_tests": [
+      "scripts/tests/test_release*.py"
+    ],
+    "weaken_assertions_to_pass": false
+  },
+  "revision_before": {
+    "scripts/release/run-release-gate.py": "588ff2db9c71343570159930a0bd4683813c991921b57c4c01efd990ad1fa31e",
+    "scripts/release/release-and-deploy.py": "39239b4c7458af55dca13582ca2f20af283d4a39e26472e82625d173a4ff02aa",
+    "scripts/tests/test_release_and_deploy.py": "f70a8d0fd3c2d6f1c00686e2a85fb6552da795c07af8a2cb0e9ab49dd16eb21d",
+    "scripts/tests/test_release_lifecycle.py": "bcb31fbf0195d1ba25db09b71190f323318f47aaee8dbc142158d2c45e1e526c",
+    "docs/WIZARD_RELEASE_GATE.md": "72dd7068a514ada587457b62f29650fbe9e3efb259e9b86d08c2a3f263249f16",
+    "AGENTS.md": "cd9e34e38d4c7c01725ca0d2ff061b3633e0507414afb855c99215b62542536f"
+  },
+  "unresolved_decisions": [],
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\before\\scripts\\release\\run-release-gate.py",
+      "sha256": "b957f32f57511d4faf54617fe65c480dfb70af2379237036f4da646d7c2251df"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\before\\scripts\\release\\release-and-deploy.py",
+      "sha256": "05e01778b91e2a6b2bbe632ff06a92797e344fe46a475467e7bda04899cc1a55"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\before\\scripts\\tests\\test_release_and_deploy.py",
+      "sha256": "f70a8d0fd3c2d6f1c00686e2a85fb6552da795c07af8a2cb0e9ab49dd16eb21d"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\before\\docs\\WIZARD_RELEASE_GATE.md",
+      "sha256": "1aba05bf3a12939bbb0662c95e645eb641bb849d855f40ee45ae5b85790ac987"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\before\\AGENTS.md",
+      "sha256": "b6b43ad8978b9c39c4af7dc6905cf479097b368cbd0bba83b75b7a225c2e9323"
+    }
+  ],
+  "files_inspected": [
+    "scripts/release/run-release-gate.py",
+    "scripts/release/release-and-deploy.py",
+    "scripts/tests/test_release_and_deploy.py",
+    "scripts/tests/test_release_lifecycle.py",
+    "docs/WIZARD_RELEASE_GATE.md",
+    "AGENTS.md"
+  ],
+  "files_changed": [
+    "scripts/release/run-release-gate.py",
+    "scripts/release/release-and-deploy.py",
+    "scripts/tests/test_release_lifecycle.py",
+    "docs/WIZARD_RELEASE_GATE.md",
+    "AGENTS.md"
+  ],
+  "remaining_findings": [],
+  "delivery": {
+    "decision": "NOT_APPLICABLE",
+    "reason": "Only host-executed preparation/release orchestration and its verification/docs change. No application image inputs or production behavior change; no image build/redeployment is needed."
+  },
+  "status": "COMPLETED",
+  "revision_history": [
+    {
+      "scripts/release/run-release-gate.py": "b957f32f57511d4faf54617fe65c480dfb70af2379237036f4da646d7c2251df",
+      "scripts/release/release-and-deploy.py": "05e01778b91e2a6b2bbe632ff06a92797e344fe46a475467e7bda04899cc1a55",
+      "scripts/tests/test_release_and_deploy.py": "f70a8d0fd3c2d6f1c00686e2a85fb6552da795c07af8a2cb0e9ab49dd16eb21d",
+      "scripts/tests/test_release_lifecycle.py": null,
+      "docs/WIZARD_RELEASE_GATE.md": "1aba05bf3a12939bbb0662c95e645eb641bb849d855f40ee45ae5b85790ac987",
+      "AGENTS.md": "b6b43ad8978b9c39c4af7dc6905cf479097b368cbd0bba83b75b7a225c2e9323"
+    },
+    {
+      "scripts/release/run-release-gate.py": "db7815daa1334bfc5e8b91b8b9b3270274a64690e2b3686c6e8e171791e0922c",
+      "scripts/release/release-and-deploy.py": "f0f488e24c1f6806d6d5e6ade5311b1d30eb9590fd40003e4058fba588779cb8",
+      "scripts/tests/test_release_and_deploy.py": "f70a8d0fd3c2d6f1c00686e2a85fb6552da795c07af8a2cb0e9ab49dd16eb21d",
+      "scripts/tests/test_release_lifecycle.py": "89cd1bef4a1dea59da49cee3c30341d0e7561b6fa8f98558f99478c58fee8a06",
+      "docs/WIZARD_RELEASE_GATE.md": "1aba05bf3a12939bbb0662c95e645eb641bb849d855f40ee45ae5b85790ac987",
+      "AGENTS.md": "b6b43ad8978b9c39c4af7dc6905cf479097b368cbd0bba83b75b7a225c2e9323"
+    },
+    {
+      "scripts/release/run-release-gate.py": "588ff2db9c71343570159930a0bd4683813c991921b57c4c01efd990ad1fa31e",
+      "scripts/release/release-and-deploy.py": "39239b4c7458af55dca13582ca2f20af283d4a39e26472e82625d173a4ff02aa",
+      "scripts/tests/test_release_and_deploy.py": "f70a8d0fd3c2d6f1c00686e2a85fb6552da795c07af8a2cb0e9ab49dd16eb21d",
+      "scripts/tests/test_release_lifecycle.py": "e774b29b733b058c5382162cf699104425441bce55f3d753a1be79940224e53e",
+      "docs/WIZARD_RELEASE_GATE.md": "72dd7068a514ada587457b62f29650fbe9e3efb259e9b86d08c2a3f263249f16",
+      "AGENTS.md": "cd9e34e38d4c7c01725ca0d2ff061b3633e0507414afb855c99215b62542536f"
+    }
+  ],
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\after\\scripts\\release\\run-release-gate.py",
+      "sha256": "588ff2db9c71343570159930a0bd4683813c991921b57c4c01efd990ad1fa31e"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\after\\scripts\\release\\release-and-deploy.py",
+      "sha256": "fc11bd0abd82c385f6073b6a2044d49392cc15e3d8cab29bf8e1eecd24a271e1"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\after\\scripts\\tests\\test_release_lifecycle.py",
+      "sha256": "dd2d69ebd31468f98c67adcf0daee577d77786afd1056feada893265222d1784"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\after\\docs\\WIZARD_RELEASE_GATE.md",
+      "sha256": "72dd7068a514ada587457b62f29650fbe9e3efb259e9b86d08c2a3f263249f16"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\after\\AGENTS.md",
+      "sha256": "cd9e34e38d4c7c01725ca0d2ff061b3633e0507414afb855c99215b62542536f"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\owned-changes.diff",
+      "sha256": "fcaa108edf41f115bd3f131f555a4574802cbd4d7d0a5c979452cce9cdfada13"
+    }
+  ],
+  "outcomes": {
+    "safe_cleanup": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\cleanup-plan.json",
+          "sha256": "7c0c6edb0a85c18bc64c982d6507f2c608fefa9024fec0ae812870e6c6d6dd2b"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\image-archive-audit.json",
+          "sha256": "7d94a2d7c7fdfea8d01ff0dc097374a27921d59ce15b7a85e4d8dcc302d8165e"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\stack-backup-audit.json",
+          "sha256": "f32428e02e72b015cfc5ca89a34d3441185aa4ea3f362e018b056429e34b15ba"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\removal-result.json",
+          "sha256": "457dee251149565fbefcfcba8190a6e2d3c830a4114da9937963c02505071a2d"
+        }
+      ]
+    },
+    "reuse_and_bounded_stacks": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\release-tool-tests.log",
+          "sha256": "3b7145fd7ecd26d0530eb381d524f73762428b6caae4710f7aff5146685fcee3"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\live-tooling-verification.json",
+          "sha256": "69bd23bccdd4f2717a795b98efbb76c98a6c72d04ce267217961e7876907ee2b"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\owned-changes.diff",
+          "sha256": "fcaa108edf41f115bd3f131f555a4574802cbd4d7d0a5c979452cce9cdfada13"
+        }
+      ]
+    },
+    "production_and_rollback_preserved": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\protected-identity-and-health.json",
+          "sha256": "9cfdb7fd82a420416725669f60c2961d4c1786b30dffddc6e2cab1fbe1ab97d7"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\inventory-after.json",
+          "sha256": "fd597d1b76b2b4c1a57623d56cf05463989026ad42f76becd62919611bfb7b5b"
+        }
+      ]
+    }
+  },
+  "validations": {
+    "release_tool_regressions": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\release-tool-tests.log",
+          "sha256": "3b7145fd7ecd26d0530eb381d524f73762428b6caae4710f7aff5146685fcee3"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\live-tooling-verification.json",
+          "sha256": "69bd23bccdd4f2717a795b98efbb76c98a6c72d04ce267217961e7876907ee2b"
+        }
+      ]
+    },
+    "cleanup_archive_and_identity_checks": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\image-archive-audit.json",
+          "sha256": "7d94a2d7c7fdfea8d01ff0dc097374a27921d59ce15b7a85e4d8dcc302d8165e"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\stack-backup-audit.json",
+          "sha256": "f32428e02e72b015cfc5ca89a34d3441185aa4ea3f362e018b056429e34b15ba"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\removal-result.json",
+          "sha256": "457dee251149565fbefcfcba8190a6e2d3c830a4114da9937963c02505071a2d"
+        }
+      ]
+    },
+    "production_health": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\test-stack-retention-20261021\\protected-identity-and-health.json",
+          "sha256": "9cfdb7fd82a420416725669f60c2961d4c1786b30dffddc6e2cab1fbe1ab97d7"
+        }
+      ]
+    }
+  },
+  "completion_status": "28 obsolete stopped containers, 13 networks, 13 archived volumes and 26 archived unused PREPARED images removed exactly. 73 protected images/tags preserved. 38 host release-tool regressions plus live read-only reuse/rejection and production health passed. No application build, product deployment, production restart or full app release gate performed.",
+  "tests": {
+    "count": 38,
+    "failures": 0,
+    "scope": "Host release tooling; no SQL or application E2E claims"
+  }
+}

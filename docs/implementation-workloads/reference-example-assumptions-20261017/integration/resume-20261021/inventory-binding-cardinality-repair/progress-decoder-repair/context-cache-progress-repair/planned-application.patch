@@ -1,0 +1,74 @@
+--- a/backend/nis/agent/orchestration/local_reasoner.py
++++ b/backend/nis/agent/orchestration/local_reasoner.py
+@@ -413,7 +413,10 @@
+     if required > maximum:
+         raise ValueError('Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten '
+                          'das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.')
+-    return min(maximum, ((required + 4095) // 4096) * 4096)
++    # Keep the already configured capacity stable across the whole native
++    # workflow. A different allocation loses the reusable provider KV prefix.
++    # The complete-input guard above remains mandatory on every retry.
++    return maximum
+ 
+ 
+ def _reference_merge_port_parameters(ports, proposed, selected):
+@@ -882,17 +885,30 @@
+                               + ('Genau die angeforderten Port-IDs liefern. id, device_id, technology, role und network_scope unverändert übernehmen; nur parameters und ports-spezifische Begründung/Referenzbelege auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
+                               + ('Genau die angeforderten Funktions-FactIDs abdecken; Abhängigkeiten nur mit diesen Senderfunktionen liefern. Andere ursprüngliche Funktions-FactIDs dürfen bewusste Empfänger oder COMPOSITE-Bestandteile sein. ' if function_ids else ''))}
+                 messages = [{'role': 'system', 'content': system}, {'role': 'user', 'content': json.dumps(prompt, ensure_ascii=False, separators=(',', ':'))}]
+-                progress = sink.get()
+-                if progress:
+-                    metadata = {'source': 'document_reference_design', 'completed_calls': len(calls), 'canonical_writes': False}
+-                    if inventory_stage:
+-                        metadata.update(inventory_target=deepcopy(inventory_target), draft_inventory_by_kind={
+-                            kind: sum(row['kind'] == kind for row in current['devices'])
+-                            for kind in ('CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR', 'PHYSICAL_CONTEXT')})
+-                        if derivation_fact_ids is not None:
+-                            metadata['derivation_fact_ids'] = list(derivation_fact_ids)
+-                    progress({'type': 'PROGRESS', 'text': f'Lokaler Qwen plant Referenzprofil {profile_index} von {len(groups)}: {stage}.',
+-                              'status': 'RUNNING', 'metadata': metadata})
++                def report_progress(attempt):
++                    progress = sink.get()
++                    if progress:
++                        metadata = {'source': 'document_reference_design', 'completed_calls': len(calls), 'canonical_writes': False,
++                                    'planning_stage': stage, 'profile_index': profile_index, 'profile_count': len(groups),
++                                    'attempt': attempt}
++                        if inventory_stage:
++                            metadata.update(inventory_target=deepcopy(inventory_target), draft_inventory_by_kind={
++                                kind: sum(row['kind'] == kind for row in current['devices'])
++                                for kind in ('CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR', 'PHYSICAL_CONTEXT')})
++                            if derivation_fact_ids is not None:
++                                metadata['derivation_fact_ids'] = list(derivation_fact_ids)
++                        scope_text = ''
++                        if derivation_fact_ids:
++                            fact_ids = [key for key, fact in prepared['facts'].items()
++                                if fact['kind'] in {'FUNCTION', 'REQUIREMENT'}
++                                and tuple(document_system_scope(fact.get('source_context', []))) == profile]
++                            scope_index = fact_ids.index(derivation_fact_ids[0]) // 4 + 1
++                            scope_count = (len(fact_ids) + 3) // 4
++                            metadata.update(scope_index=scope_index, scope_count=scope_count)
++                            scope_text = f'; Quellenbereich {scope_index} von {scope_count}'
++                        attempt_text = 'Planung' if attempt == 1 else f'Korrekturversuch {attempt}'
++                        progress({'type': 'PROGRESS', 'text': f'Lokaler Qwen plant Referenzprofil {profile_index} von {len(groups)}: {stage}. {len(calls)} Modellantworten empfangen; {attempt_text}{scope_text}.',
++                                  'status': 'RUNNING', 'metadata': metadata})
+                 payload = {'model': self.model, 'messages': messages,
+                            'format': _reference_schema_for_stage(prepared, allowed, port_ids=port_ids,
+                                function_ids=function_ids, port_intent=port_intent, device_ids=device_ids,
+@@ -902,6 +918,7 @@
+                            'options': {'temperature': 0, 'num_predict': 8192, 'num_ctx': self.context_tokens}}
+                 for attempt in range(2):
+                     payload['options']['num_ctx'] = _reference_context_window(payload['messages'], self.context_tokens)
++                    report_progress(attempt + 1)
+                     try:
+                         response = await self.client.post(self.chat_url, json=payload)
+                     except httpx.TimeoutException as error:
+@@ -921,7 +938,8 @@
+                                   'device_ids': list(device_ids),
+                                   'inventory_target': inventory_target,
+                                   'derivation_fact_ids': list(derivation_fact_ids) if derivation_fact_ids is not None else None,
+-                                  'prompt_eval_count': body.get('prompt_eval_count'), 'eval_count': body.get('eval_count')})
++                                  'prompt_eval_count': body.get('prompt_eval_count'), 'eval_count': body.get('eval_count'),
++                                  **{key: body.get(key) for key in ('load_duration', 'prompt_eval_duration', 'eval_duration', 'total_duration')}})
+                     try:
+                         decoded = document_response_json(raw)
+                         inventory_complete = decoded.pop('inventory_complete', None) if inventory_stage else None

@@ -1,0 +1,10 @@
+--- before/frontend/e2e/document-intake.spec.ts
++++ after/frontend/e2e/document-intake.spec.ts
+@@ -6,6 +6,7 @@
+   await page.goto(`/studio/engineering?assistant=project&project=nis-e2e-document-${randomUUID()}`);
+   const dialog = page.getByRole('dialog', { name: 'Engineering-Auftrag erstellen' });
+   await expect(dialog).toBeVisible();
++  await dialog.locator('#engineering-project-name').fill('Dokumentaufnahme Fahrzeug');
+   await dialog.locator('fieldset.agent-project-name-step input[type=file]').setInputFiles(
+     fileURLToPath(new URL('./fixtures/document-intake-vehicle.txt', import.meta.url)));
+   await expect(dialog.getByText(/vollständig gelesen \(19\.088 Zeichen\)/)).toBeVisible();

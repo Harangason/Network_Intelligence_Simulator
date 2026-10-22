@@ -1,0 +1,130 @@
+--- before/transfer_waitress_source_only_projects.py
++++ after/transfer_waitress_source_only_projects.py
+@@ -23,6 +23,7 @@
+ repair.add_argument('--context-cache-progress-repair-dir', type=Path)
+ repair.add_argument('--launcher-repair-dir', type=Path)
+ repair.add_argument('--fresh-id-repair-dir', type=Path)
++repair.add_argument('--throughput-repair-dir', type=Path)
+ parser.add_argument('--destination-prefix', default='native-waitress-lifecycle')
+ args = parser.parse_args()
+ OUT = Path(__file__).resolve().parent
+@@ -31,9 +32,10 @@
+ D = 'C:/Users/marti/AppData/Local/Programs/DockerDesktop/resources/bin/docker.exe'
+ receipt = json.loads(args.receipt.read_text(encoding='utf-8'))
+ assert re.fullmatch('[a-z0-9-]+', args.destination_prefix)
+-repair_dir = args.context_repair_dir or args.inventory_cardinality_repair_dir or args.inventory_progress_repair_dir or args.context_cache_progress_repair_dir or args.launcher_repair_dir or args.fresh_id_repair_dir
++repair_dir = args.context_repair_dir or args.inventory_cardinality_repair_dir or args.inventory_progress_repair_dir or args.context_cache_progress_repair_dir or args.launcher_repair_dir or args.fresh_id_repair_dir or args.throughput_repair_dir
+ evidence_dir = repair_dir.resolve() if repair_dir else OUT
+ assert evidence_dir.is_relative_to(BASE.resolve())
++fresh_id_dir = (BASE / 'resume-20261021/inventory-binding-cardinality-repair/progress-decoder-repair/context-cache-progress-repair/launcher-repair/fresh-id-decoder-repair') if args.throughput_repair_dir else evidence_dir
+ identity = json.loads((evidence_dir / ('current-input-identity.json' if repair_dir else 'waitress-candidate-input-identity.json')).read_text(encoding='utf-8'))
+ assert receipt['status'] == 'PREPARED' and not receipt.get('development_only')
+ assert receipt['initial_source_sha256'] == identity['source_sha256']
+@@ -49,9 +51,11 @@
+ def context_baseline_bytes(name):
+     # Bind historical b47 evidence to immutable before snapshots, then validate
+     # the new current files separately. Never substitute historical app inputs.
+-    if args.fresh_id_repair_dir and name in {
++    if (args.fresh_id_repair_dir or args.throughput_repair_dir) and name in {
+             'backend/nis/agent/orchestration/local_reasoner.py', 'backend/tests/test_reference_reasoner.py'}:
+-        return (evidence_dir / ('before-' + Path(name).name)).read_bytes()
++        return (fresh_id_dir / ('before-' + Path(name).name)).read_bytes()
++    if args.throughput_repair_dir and (evidence_dir / 'before' / name).is_file():
++        return (evidence_dir / 'before' / name).read_bytes()
+     return (ROOT / name).read_bytes()
+ 
+ 
+@@ -139,10 +143,10 @@
+                         'backend/tests/test_reference_reasoner.py', 'backend/tests/test_reference_design.py'}
+         assert sha(snapshot.read_bytes()) == row['sha256'] == sha((ROOT / name).read_bytes())
+         frozen[name] = row['sha256']
+-if args.context_cache_progress_repair_dir or args.launcher_repair_dir or args.fresh_id_repair_dir:
+-    launcher_dir = evidence_dir.parent if args.fresh_id_repair_dir else evidence_dir
+-    context_dir = launcher_dir.parent if args.launcher_repair_dir or args.fresh_id_repair_dir else evidence_dir
+-    if args.launcher_repair_dir or args.fresh_id_repair_dir:
++if args.context_cache_progress_repair_dir or args.launcher_repair_dir or args.fresh_id_repair_dir or args.throughput_repair_dir:
++    launcher_dir = fresh_id_dir.parent if args.fresh_id_repair_dir or args.throughput_repair_dir else evidence_dir
++    context_dir = launcher_dir.parent if args.launcher_repair_dir or args.fresh_id_repair_dir or args.throughput_repair_dir else evidence_dir
++    if args.launcher_repair_dir or args.fresh_id_repair_dir or args.throughput_repair_dir:
+         launcher_identity = json.loads((launcher_dir / 'current-input-identity.json').read_text())
+         launcher_proof = json.loads((launcher_dir / 'source-scope-proof.json').read_text())
+         assert launcher_proof['only_application_source_changed'] == 'scripts/dev/launch-networkis.py'
+@@ -165,7 +169,7 @@
+     assert proof['configured_capacity_fixed_not_increased'] == 131072
+     assert json.loads((context_dir / 'native-cache/reviewed-result.json').read_text())['status'] == 'PASSED'
+     freeze = json.loads((context_dir / 'candidate-prepare-freeze.json').read_text())
+-    context_identity = json.loads((context_dir / 'prepared-current-identity.json').read_text()) if args.launcher_repair_dir or args.fresh_id_repair_dir else identity
++    context_identity = json.loads((context_dir / 'prepared-current-identity.json').read_text()) if args.launcher_repair_dir or args.fresh_id_repair_dir or args.throughput_repair_dir else identity
+     assert {key: freeze[key] for key in context_identity} == context_identity
+     assert json.loads((context_dir / 'candidate-prepare-result.json').read_text())['exit_code'] == 0
+     # The prior d399 repair is historical evidence, not a claim about this new
+@@ -176,6 +180,8 @@
+         name = snapshot.relative_to(context_dir.parent / 'after').as_posix()
+         before = context_dir / ('before-' + Path(name).name)
+         baseline = before if before.exists() else ROOT / name
++        if args.throughput_repair_dir and not before.exists() and (evidence_dir / 'before' / name).is_file():
++            baseline = evidence_dir / 'before' / name
+         assert sha(snapshot.read_bytes()) == row['sha256'] == sha(baseline.read_bytes())
+         frozen[name] = row['sha256']
+     current_work = json.loads((context_dir / 'workload.json').read_text())
+@@ -187,20 +193,46 @@
+                         'frontend/src/features/agent/lib/engineering-specification.test.mjs'}
+         assert sha(snapshot.read_bytes()) == row['sha256'] == sha(context_baseline_bytes(name))
+         frozen[name] = row['sha256']
+-if args.fresh_id_repair_dir:
+-    proof = json.loads((evidence_dir / 'source-scope-proof.json').read_text())
++if args.fresh_id_repair_dir or args.throughput_repair_dir:
++    fresh_identity = json.loads((fresh_id_dir / 'current-input-identity.json').read_text()) if args.throughput_repair_dir else identity
++    proof = json.loads((fresh_id_dir / 'source-scope-proof.json').read_text())
+     for key in ('private_schema_only_adds_exact_new_id_enum',
+                 'runtime_identity_guard_condition_and_merge_AST_unchanged',
+                 'provider_model_maximum_output_timeout_worklist_AST_unchanged',
+                 'public_model_schemas_source_scope_and_existing_identity_domain_unchanged'):
+         assert proof[key] is True
+     assert proof['canonical_before']['source_sha256'] == launcher_identity['source_sha256']
+-    assert {key: proof['canonical_after'][key] for key in identity} == identity
++    assert {key: proof['canonical_after'][key] for key in fresh_identity} == fresh_identity
++    freeze = json.loads((fresh_id_dir / 'candidate-prepare-freeze.json').read_text())
++    assert {key: freeze[key] for key in fresh_identity} == fresh_identity
++    assert json.loads((fresh_id_dir / 'candidate-prepare-result.json').read_text())['exit_code'] == 0
++    grammar = json.loads((fresh_id_dir / 'native-grammar-enum/result.json').read_text())
++    assert grammar['status'] == 'PASSED' and len(grammar['results']) == 6
++    for name, digest in freeze['frozen_affected_files'].items():
++        baseline = evidence_dir / 'before' / name if args.throughput_repair_dir else ROOT / name
++        assert sha((baseline if baseline.exists() else ROOT / name).read_bytes()) == digest
++        frozen[name] = digest
++if args.throughput_repair_dir:
++    proof = json.loads((evidence_dir / 'source-scope-proof.json').read_text())
++    assert proof['canonical_before']['source_sha256'] == fresh_identity['source_sha256']
++    assert proof['canonical_after']['source_sha256'] == identity['source_sha256']
++    assert proof['only_application_delta'] == 'backend/nis/agent/orchestration/local_reasoner.py'
++    for key in ('all_other_reasoner_methods_including_model_provider_context_timeout_AST_unchanged',
++                'complete_UTF8_guard_and_output_reserve_AST_unchanged',
++                'exact_port_parameter_merge_AST_unchanged',
++                'source_fact_worklists_and_declared_inventory_loops_AST_unchanged',
++                'all_existing_identity_source_member_reference_checks_preserved_AST'):
++        assert proof[key] is True
+     freeze = json.loads((evidence_dir / 'candidate-prepare-freeze.json').read_text())
+     assert {key: freeze[key] for key in identity} == identity
++    assert freeze['complete_regression_cases'] > 568 and freeze['complete_regressions_passed'] is True
++    assert freeze['validation_evidence']
++    for saved in freeze['validation_evidence']:
++        assert sha(Path(saved['path']).read_bytes()) == saved['sha256']
+     assert json.loads((evidence_dir / 'candidate-prepare-result.json').read_text())['exit_code'] == 0
+-    grammar = json.loads((evidence_dir / 'native-grammar-enum/result.json').read_text())
+-    assert grammar['status'] == 'PASSED' and len(grammar['results']) == 6
++    native = json.loads((evidence_dir / 'native-continuous-anchor/result.json').read_text())
++    assert native['status'] == 'PASS_CONTINUOUS_WORKER_APPEND_AND_ANCHORED_REBASE'
++    assert native['actual_worker_continuity_all3'] and native['all_sources_copies_and_expected_values_exact']
+     for name, digest in freeze['frozen_affected_files'].items():
+         assert sha((ROOT / name).read_bytes()) == digest
+         frozen[name] = digest
+@@ -245,7 +277,7 @@
+             assert sha(Path(scope['source_intake_baseline_snapshot']['path']).read_bytes()) == digest
+             intake_frozen = json.loads((OUT / 'waitress-validation-source-freeze.json').read_text(encoding='utf-8'))
+             assert sha((ROOT / name).read_bytes()) == intake_frozen[name]
+-        elif (args.context_cache_progress_repair_dir or args.launcher_repair_dir or args.fresh_id_repair_dir) and name == 'frontend/src/features/agent/lib/engineering-specification.ts':
++        elif (args.context_cache_progress_repair_dir or args.launcher_repair_dir or args.fresh_id_repair_dir or args.throughput_repair_dir) and name == 'frontend/src/features/agent/lib/engineering-specification.ts':
+             assert sha((context_dir / 'before-preview-engineering-specification.ts').read_bytes()) == digest
+             assert sha((ROOT / name).read_bytes()) == frozen[name]
+         else:

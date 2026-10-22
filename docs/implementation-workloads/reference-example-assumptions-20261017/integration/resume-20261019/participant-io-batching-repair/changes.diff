@@ -1,0 +1,222 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -110,7 +110,7 @@
+     return resolve(root)
+ 
+ 
+-def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False):
++def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, device_ids=()):
+     """Narrow the native decoder, without changing public proposal validation."""
+     from backend.nis.agent.orchestration.project_intake import reference_model_output_schema
+     schema = reference_model_output_schema(prepared)
+@@ -125,6 +125,9 @@
+     if port_intent:
+         item('ports')['properties']['parameters'] = {
+             'type': 'object', 'properties': {}, 'additionalProperties': False}
++    if device_ids:
++        for field in allowed & {'ports', 'measurements', 'commands'}:
++            item(field)['properties']['device_id']['enum'] = list(device_ids)
+     if port_ids:
+         schema['properties']['ports'].update(minItems=len(port_ids), maxItems=len(port_ids))
+         item('ports')['properties']['id']['enum'] = list(port_ids)
+@@ -560,7 +563,14 @@
+                        'source_profile': list(profile), 'reserved_project_device_names': [row['name'] for row in combined['devices']], 'reference_sources': prepared['reference_sources'],
+                        'registered_catalogs': catalog,
+                        'protected_review_decisions': {key: prepared['source_evidence'].get(key) for key in ('answers', 'function_assignments', 'excluded_questions')}}
+-            async def infer(stage, allowed, producer_ids=(), feedback=None, *, port_ids=(), function_ids=(), port_intent=False):
++            async def infer(stage, allowed, producer_ids=(), feedback=None, *, port_ids=(), function_ids=(), port_intent=False, device_ids=()):
++                if device_ids:
++                    kinds = {'ports': {'CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR'},
++                             'measurements': {'SENSOR'}, 'commands': {'ACTUATOR'}}
++                    owners = {row['id']: row['kind'] for row in current['devices']}
++                    if (len(device_ids) != 1 or not allowed <= kinds.keys()
++                            or any(owners.get(device_ids[0]) not in kinds[field] for field in allowed)):
++                        raise ValueError('Die IO-Stufe benötigt genau einen bestehenden Teilnehmer passender Geräteart.')
+                 stage_catalog = deepcopy(catalog)
+                 if port_ids:
+                     stage_catalog['technology_parameters'] = technology_schemas_for(
+@@ -573,12 +583,14 @@
+                           'validation_feedback': feedback, 'planning_stage': stage,
+                           'producer_device_ids_for_this_stage': list(producer_ids),
+                           'port_ids_for_this_stage': list(port_ids),
++                          'device_ids_for_this_stage': list(device_ids),
+                           'function_fact_ids_for_this_stage': list(function_ids),
+                           'output_fields_for_this_stage': list(allowed),
+                           'instruction': ('Nur die genannten Outputfelder füllen; alle anderen Arrays leer. '
+                               'Diese Felder vollständig neu liefern; vorhandene eindeutige IDs erhalten, soweit kein Befund ihre Änderung verlangt. '
+                               'Jede Auswahl begründen; echte offene Auslegung explizit unresolved halten. '
+                               + ('Zunächst ausschließlich konkrete Portabsicht planen: parameters bleibt {}. Die folgende eigene Parameterstufe legt jeden Anschluss aus; diese Zwischenstufe ist keine vollständige Prüfung. ' if port_intent else '')
++                              + ('Ausschließlich IO für die angeforderte vorhandene Teilnehmer-ID liefern; keine anderen Geräte, Anschlüsse, Messgrößen oder Befehle überschreiben. Alle Nachbarteilnehmer bleiben als Planungskontext sichtbar. ' if device_ids else '')
+                               + ('Genau die angeforderten Port-IDs liefern. id, device_id, technology, role und network_scope unverändert übernehmen; nur parameters und ports-spezifische Begründung/Referenzbelege auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
+                               + ('Genau die angeforderten Funktions-FactIDs abdecken; Abhängigkeiten nur mit diesen Senderfunktionen liefern. Andere ursprüngliche Funktions-FactIDs dürfen bewusste Empfänger oder COMPOSITE-Bestandteile sein. ' if function_ids else ''))}
+                 messages = [{'role': 'system', 'content': system}, {'role': 'user', 'content': json.dumps(prompt, ensure_ascii=False)}]
+@@ -588,7 +600,7 @@
+                               'status': 'RUNNING', 'metadata': {'source': 'document_reference_design', 'completed_calls': len(calls), 'canonical_writes': False}})
+                 payload = {'model': self.model, 'messages': messages,
+                            'format': _reference_schema_for_stage(prepared, allowed, port_ids=port_ids,
+-                               function_ids=function_ids, port_intent=port_intent),
++                               function_ids=function_ids, port_intent=port_intent, device_ids=device_ids),
+                            'think': False, 'stream': False, 'keep_alive': self.keep_alive,
+                            'options': {'temperature': 0, 'num_predict': 8192, 'num_ctx': self.context_tokens}}
+                 for attempt in range(2):
+@@ -609,6 +621,7 @@
+                                   'response_sha256': hashlib.sha256(raw.encode()).hexdigest(),
+                                   'context_tokens': payload['options']['num_ctx'],
+                                   'port_ids': list(port_ids), 'function_fact_ids': list(function_ids),
++                                  'device_ids': list(device_ids),
+                                   'prompt_eval_count': body.get('prompt_eval_count'), 'eval_count': body.get('eval_count')})
+                     try:
+                         result = ReferenceDesignProposal.model_validate(document_response_json(raw)).model_dump(mode='json')
+@@ -616,15 +629,20 @@
+                             raise ValueError('Eine Planungsstufe darf keine Felder anderer Stufen überschreiben.')
+                         if producer_ids and any(row['producer_device_id'] not in producer_ids for row in result['communication']):
+                             raise ValueError('Die Kommunikationsstufe enthält einen nicht ausgewählten Sender.')
++                        if device_ids and any(row['device_id'] not in device_ids
++                                              for field in allowed for row in result[field]):
++                            raise ValueError('Die IO-Stufe enthält Daten eines nicht ausgewählten Teilnehmers.')
+                         if allowed == {'devices'}:
+                             ids = [row['id'] for row in result['devices']]
+                             if len(ids) != len(set(ids)):
+                                 raise ValueError('Teilnehmer benötigen eindeutige IDs.')
+                         if port_intent:
+                             ids = [row['id'] for row in result['ports']]
+-                            device_ids = {row['id'] for row in current['devices'] if row['kind'] != 'PHYSICAL_CONTEXT'}
+-                            if (len(ids) != len(set(ids)) or any(row['parameters'] or row['device_id'] not in device_ids for row in result['ports'])):
++                            electronic_ids = {row['id'] for row in current['devices'] if row['kind'] != 'PHYSICAL_CONTEXT'}
++                            if (len(ids) != len(set(ids)) or any(row['parameters'] or row['device_id'] not in electronic_ids for row in result['ports'])):
+                                 raise ValueError('Portabsichten benötigen eindeutige IDs, bestehende elektronische Teilnehmer und zunächst leere parameters.')
++                            if set(ids) & {row['id'] for row in current['ports']}:
++                                raise ValueError('Die Portabsicht darf keine bereits geplante Port-ID überschreiben.')
+                         if port_ids:
+                             _reference_merge_port_parameters(current['ports'], result['ports'], port_ids)
+                         if function_ids:
+@@ -651,14 +669,32 @@
+ 
+                 devices = await infer('Teilnehmer', {'devices'}, feedback=feedback)
+                 replace(devices, {'devices'})
+-                intents = await infer('Portabsicht, Messgrößen und Stellbefehle',
+-                    {'ports', 'measurements', 'commands'}, feedback=feedback, port_intent=True)
+-                replace(intents, {'ports', 'measurements', 'commands'})
++                # A participant repair can change identities. Rebuild its IO
++                # and later functions rather than exposing stale prior links.
++                for field in fields:
++                    if field not in {'devices', 'unresolved'}:
++                        current[field] = []
++                for device in current['devices']:
++                    if device['kind'] == 'PHYSICAL_CONTEXT':
++                        continue
++                    intents = await infer('Portabsicht des konkreten Teilnehmers', {'ports'},
++                        feedback=feedback, port_intent=True, device_ids=(device['id'],))
++                    for field in ('ports', 'unresolved'):
++                        current[field].extend(intents[field])
+                 for port_id in [row['id'] for row in current['ports']]:
+                     parameters = await infer('Parameter des konkreten Anschlusses', {'ports'},
+                         feedback=feedback, port_ids=(port_id,))
+                     current['ports'] = _reference_merge_port_parameters(current['ports'], parameters['ports'], (port_id,))
+                     current['unresolved'].extend(parameters['unresolved'])
++                for field, kind, stage in (
++                        ('measurements', 'SENSOR', 'Messgrößen des konkreten Sensors'),
++                        ('commands', 'ACTUATOR', 'Stellbefehle des konkreten Aktors')):
++                    for device in current['devices']:
++                        if device['kind'] != kind:
++                            continue
++                        choices = await infer(stage, {field}, feedback=feedback, device_ids=(device['id'],))
++                        for key in (field, 'unresolved'):
++                            current[key].extend(choices[key])
+                 current['functions'] = []
+                 current['functional_dependencies'] = []
+                 function_ids = [key for key, fact in profile_facts.items() if fact['kind'] == 'FUNCTION']
+--- before/backend/tests/test_reference_reasoner.py
++++ after/backend/tests/test_reference_reasoner.py
+@@ -36,7 +36,8 @@
+     return value
+ 
+ 
+-def reasoner_with_transport(monkeypatch, *, family='qwen3', truncate=False, capture=None, timeout=False):
++def reasoner_with_transport(monkeypatch, *, family='qwen3', truncate=False, capture=None, timeout=False,
++                            foreign_io=None, duplicate_port_ids=False, retry_foreign_port=False):
+     prepared = intake.prepare_reference_design(fixture_request())
+     design = complete_design(prepared)
+     observed = []
+@@ -56,9 +57,25 @@
+         if content.get('port_ids_for_this_stage'):
+             selected = set(content['port_ids_for_this_stage'])
+             candidate['ports'] = [row for row in candidate['ports'] if row['id'] in selected]
+-        elif content['planning_stage'] == 'Portabsicht, Messgrößen und Stellbefehle':
++        elif content.get('device_ids_for_this_stage') and allowed == {'ports'}:
+             for row in candidate['ports']:
+                 row['parameters'] = {}
++        if content.get('device_ids_for_this_stage'):
++            selected = set(content['device_ids_for_this_stage'])
++            for field in allowed:
++                candidate[field] = [row for row in candidate[field] if row['device_id'] in selected]
++            if foreign_io in allowed:
++                row = deepcopy(candidate[foreign_io][0])
++                row['device_id'] = 'not-selected'
++                candidate[foreign_io].append(row)
++            if duplicate_port_ids and allowed == {'ports'}:
++                for row in candidate['ports']:
++                    row['id'] = 'same-id-for-different-participants'
++            if retry_foreign_port and allowed == {'ports'}:
++                if len(payload['messages']) == 2:
++                    candidate['ports'][0]['parameters'] = {'bitrate_bps': 500000}
++                else:
++                    candidate['ports'][0]['device_id'] = 'S'
+         if content.get('function_fact_ids_for_this_stage'):
+             selected = set(content['function_fact_ids_for_this_stage'])
+             candidate['functions'] = [row for row in candidate['functions'] if row['source_fact_id'] in selected]
+@@ -175,6 +192,54 @@
+     assert public['properties']['ports']['maxItems'] > 1
+ 
+ 
++def test_io_stages_cover_exact_participants_and_preserve_whole_native_result(monkeypatch):
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch)
++    result = run_reference(reasoner, prepared)
++    stages = [row for row in observed if row['device_ids_for_this_stage']]
++    owners = lambda field: [row['device_ids_for_this_stage'] for row in stages
++                            if row['output_fields_for_this_stage'] == [field]]
++    assert owners('ports') == [['C'], ['S'], ['A']]
++    assert owners('measurements') == [['S']]
++    assert owners('commands') == [['A']]
++    assert all(len(row['device_ids_for_this_stage']) == 1 for row in stages)
++    assert len(result['proposal']['ports']) == 3
++    assert len(result['proposal']['measurements']) == len(result['proposal']['commands']) == 1
++    assert result['proposal']['unresolved'] == [] and result['canonical_writes'] is False
++
++
++@pytest.mark.parametrize('field', ['ports', 'measurements', 'commands'])
++def test_io_decoder_binds_owner_without_changing_public_schema(field):
++    prepared = intake.prepare_reference_design(fixture_request())
++    public = deepcopy(intake.reference_design_schema(prepared))
++    schema = _reference_schema_for_stage(prepared, {field}, device_ids=('chosen-owner',), port_intent=field == 'ports')
++    name = {'ports': 'ReferencePort', 'measurements': 'ReferenceMeasurement', 'commands': 'ReferenceCommand'}[field]
++    assert schema['$defs'][name]['properties']['device_id']['enum'] == ['chosen-owner']
++    assert all(row['maxItems'] == 0 for key, row in schema['properties'].items() if key not in {field, 'unresolved'})
++    assert intake.reference_design_schema(prepared) == public
++
++
++@pytest.mark.parametrize('field', ['ports', 'measurements', 'commands'])
++def test_foreign_io_owner_is_rejected_even_if_native_decoder_is_bypassed(monkeypatch, field):
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch, foreign_io=field)
++    with pytest.raises(ValueError, match='nicht ausgewählten Teilnehmers'):
++        run_reference(reasoner, prepared)
++    assert len([row for row in observed if row['output_fields_for_this_stage'] == [field]]) >= 2
++
++
++def test_port_intent_cannot_overwrite_another_participants_port_id(monkeypatch):
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch, duplicate_port_ids=True)
++    with pytest.raises(ValueError, match='bereits geplante Port-ID'):
++        run_reference(reasoner, prepared)
++
++
++def test_retry_keeps_selected_owner_after_invalid_port_parameters(monkeypatch):
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch, retry_foreign_port=True)
++    with pytest.raises(ValueError, match='nicht ausgewählten Teilnehmers'):
++        run_reference(reasoner, prepared)
++    assert len(observed) == 3
++    assert all(row['device_ids_for_this_stage'] == ['C'] for row in observed[1:])
++
++
+ @pytest.mark.parametrize('mode', ['missing', 'duplicate', 'foreign'])
+ def test_parameter_merge_rejects_wrong_batch_membership(mode):
+     ports = [{'id': 'P', 'device_id': 'C', 'technology': 'can', 'role': 'LOCAL',

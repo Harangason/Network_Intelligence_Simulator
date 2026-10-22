@@ -41,6 +41,56 @@ class DocumentIntakeRequest(BaseModel):
     source_request_id: str | None = Field(default=None, min_length=8, max_length=80)
 
 
+def compose_document_proposal(parts: list[dict]):
+    """Build a global review task from Qwen facts, never from local absences.
+
+    A section's prose only knows that section. Its missing-context questions and
+    assumptions cannot be promoted to assertions about the complete document.
+    Keep the source-bound facts and derive the review steps from their union.
+    """
+    import json
+    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
+
+    components = list({json.dumps(item, sort_keys=True, ensure_ascii=False): item
+                       for part in parts for item in part['components']}.values())
+    technologies = list({(item['kind'], DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(item['name'])
+                          if item['kind'] == 'TRANSPORT' else item['name'].casefold()): item
+                         for part in parts for item in part['technologies']}.values())
+    instances = [item for item in components if item['kind'] == 'INSTANCE']
+    categories = [item for item in components if item['kind'] == 'CATEGORY']
+    functions = [item for item in components if item['kind'] == 'FUNCTION']
+    requirements = [item for item in components if item['kind'] == 'REQUIREMENT']
+    unresolved = [item['name'] for item in technologies if item['kind'] == 'UNRESOLVED']
+    task = ['Engineering-Vorschlag anhand der vollständigen quellengebundenen Qwen-Befunde prüfen.']
+    if instances:
+        task.append(f'Die {len(instances)} konkret benannten Geräte als Instanzen übernehmen und ihre Anschlüsse sowie Funktionszuordnungen bestätigen.')
+        names = '; '.join(item['name'] for item in instances)
+        task.append('Benannte Geräte: ' + names + '.' if len(names) <= 3500
+                    else 'Die vollständige Liste benannter Geräte steht in den Quellenbefunden unter INSTANCE.')
+    if categories:
+        task.append(f'Die {len(categories)} unquantifizierten Gerätegruppen getrennt halten; zusätzliche Instanzen und Stückzahlen vor einer Geräteerzeugung klären.')
+    if functions:
+        task.append(f'Die {len(functions)} erfassten logischen Funktionen den bestätigten Geräten zuordnen und Funktionspartner klären.')
+    if requirements:
+        task.append(f'Die {len(requirements)} erfassten Anforderungen mit ihren Quellenbelegen als Prüfkriterien erhalten.')
+    if any(item['kind'] == 'TRANSPORT' for item in technologies):
+        task.append('Die belegten registrierten Kommunikationsvarianten getrennt planen und die tatsächlichen Geräteanschlüsse bestätigen.')
+    if unresolved:
+        task.append('Nicht eindeutig registrierte Schnittstellen vor einer technischen Zuordnung klären.')
+    task.append('Änderungen erst nach Prüfung dieses Vorschlags bestätigen; keine Mengen, Topologien oder technischen Parameter ergänzen.')
+    questions = []
+    for role in dict.fromkeys(item['role'] for item in categories):
+        names = '; '.join(item['name'] for item in categories if item['role'] == role)
+        questions.append(f'Welche konkreten Geräte und Stückzahlen gehören zusätzlich zu den bereits benannten Instanzen zu diesen Gruppen: {names}?')
+    if unresolved:
+        questions.append('Welche technische Realisierung und gegebenenfalls registrierte Variante ist für diese noch ungeklärten Schnittstellen vorgesehen: ' + ', '.join(unresolved) + '?')
+    return {
+        'summary': f'Die vollständige Quelle wurde in {len(parts)} lokalen Qwen-Abschnitten ausgewertet: {len(instances)} benannte Geräte, {len(categories)} unquantifizierte Gerätegruppen. Der Prüfauftrag wird aus den zusammengeführten Quellenbefunden aufgebaut.',
+        'components': components, 'technologies': technologies,
+        'proposed_task': '\n'.join(task), 'assumptions': [], 'open_questions': questions,
+    }
+
+
 def document_segments(source: str, max_bytes=6000):
     """Cover every source character in bounded, contiguous inference windows."""
     segments = []

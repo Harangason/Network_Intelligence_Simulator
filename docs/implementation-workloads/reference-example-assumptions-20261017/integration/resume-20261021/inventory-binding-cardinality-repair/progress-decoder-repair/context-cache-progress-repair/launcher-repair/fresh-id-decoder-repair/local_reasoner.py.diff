@@ -1,0 +1,56 @@
+--- b47/backend/nis/agent/orchestration/local_reasoner.py
++++ current/backend/nis/agent/orchestration/local_reasoner.py
+@@ -111,6 +111,19 @@
+     return resolve(root)
+ 
+ 
++def _reference_fresh_inventory_id(prepared, kind, available, existing_ids):
++    """Allocate mechanical native-choice identity, never hardware semantics."""
++    import hashlib
++    seed = json.dumps([kind, sorted(prepared['fact_id_map'][key] for key in available),
++                       sorted(existing_ids)], ensure_ascii=False, separators=(',', ':'))
++    base = 'derived-' + hashlib.sha256(seed.encode('utf8')).hexdigest()[:24]
++    candidate, suffix = base, 0
++    while candidate in existing_ids:
++        suffix += 1
++        candidate = base + '-' + str(suffix)
++    return candidate
++
++
+ def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None, existing_devices=()):
+     """Narrow the native decoder, without changing public proposal validation."""
+     from backend.nis.agent.orchestration.project_intake import reference_model_output_schema
+@@ -154,6 +167,8 @@
+                 continue
+             variant = deepcopy(definition)
+             properties = variant['properties']
++            properties['id'] = {'type': 'string', 'enum': [_reference_fresh_inventory_id(
++                prepared, kind, available, {row['id'] for row in existing_devices})]}
+             properties['kind'] = {'type': 'string', 'enum': [kind]}
+             properties['source_fact_ids']['items']['enum'] = fact_ids
+             if derivation_fact_ids is not None:
+@@ -243,7 +258,10 @@
+             or len(proposed) + len(bindings) > limit or any(not isinstance(row, dict) for row in proposed)):
+         raise ValueError('Neue Geräte und Inventarbindungen überschreiten die gemeinsame Stufengrenze.')
+     if any(row.get('id') in current for row in proposed):
+-        raise ValueError('Vorhandene Teilnehmer ausschließlich als ID-Bindung in inventory_choices auswählen; keine Gerätedefinition ersetzen.')
++        collisions = [{key: current[row['id']][key] for key in ('id', 'name', 'kind')}
++                      for row in proposed if row.get('id') in current]
++        raise ValueError('Vorhandene Teilnehmer ausschließlich als ID-Bindung in inventory_choices auswählen; keine Gerätedefinition ersetzen. '
++                         'Diese Teilnehmer existieren bereits: ' + json.dumps(collisions, ensure_ascii=False))
+     selected = set()
+     expanded = deepcopy(proposed)
+     for binding in bindings:
+@@ -931,8 +949,11 @@
+                           'inventory_target_for_this_stage': inventory_target,
+                           'derivation_fact_ids_for_this_stage': list(derivation_fact_ids) if derivation_fact_ids is not None else None,
+                           'output_fields_for_this_stage': list(allowed),
++                          'existing_inventory_for_this_stage': [
++                              {key: row[key] for key in ('id', 'name', 'kind')}
++                              for row in current['devices']] if inventory_stage else None,
+                           'instruction': ('Nur die genannten Outputfelder füllen; alle anderen Modellarrays leer. Echte offene Entscheidungen dürfen immer in unresolved stehen. '
+-                              + ('Inventarstufen liefern inventory_choices und inventory_complete; devices und alle anderen Modelllisten bleiben leer, echte Rückfragen bleiben in unresolved zulässig. inventory_choices enthält gemeinsam neue Geräte ODER Bindungen an vorhandene Geräte. ' if inventory_stage else '')
++                              + ('Inventarstufen liefern inventory_choices und inventory_complete; devices und alle anderen Modelllisten bleiben leer, echte Rückfragen bleiben in unresolved zulässig. inventory_choices enthält gemeinsam neue Geräte ODER Bindungen an vorhandene Geräte. existing_inventory_for_this_stage zeigt den tatsächlichen aktuellen Bestand einschließlich vorhandener Sensoren und Aktoren. Diese bleiben auch bei anderen Quellenbefunden physisch vorhanden; niemals unter NEW erneut definieren. Bereits vollständig gebundene Teilnehmer nicht wiederholen. Die Hardwareentscheidung knapp begründen; anstehende eigene Planungsschritte gehören zu inventory_complete=false, nicht als vermeintliche Fachentscheidung in unresolved. ' if inventory_stage else '')
+                               + 'Nur den ausdrücklich ausgewählten Stufenbereich vollständig liefern; vorhandene eindeutige IDs erhalten. '
+                               'Jede Auswahl begründen; echte offene Auslegung explizit unresolved halten. '
+                               + ('Zunächst ausschließlich konkrete Portabsicht planen: parameters bleibt {}. Die folgende eigene Parameterstufe legt jeden Anschluss aus; diese Zwischenstufe ist keine vollständige Prüfung. ' if port_intent else '')

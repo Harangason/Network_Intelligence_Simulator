@@ -237,7 +237,7 @@ class LocalEngineeringReasoner:
         from backend.nis.agent.orchestration.project_intake import document_source_references, resolve_document_references
         from backend.nis.agent.orchestration.project_intake import document_technology_grounding
         from backend.nis.agent.orchestration.project_intake import document_device_aliases
-        from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
+        from backend.nis.agent.orchestration.project_intake import compose_document_proposal
         import hashlib
         from datetime import datetime, timezone
         DocumentIntakeRequest(source=source, source_name=source_name)
@@ -380,17 +380,7 @@ class LocalEngineeringReasoner:
                         progress({'type': 'PROGRESS', 'text': f'Lokaler Qwen korrigiert die Quellenprüfung von Abschnitt {index + 1}.'})
         interpretation = interpretations[0]
         if len(interpretations) > 1:
-            def unique(values):
-                return list({json.dumps(value, sort_keys=True, ensure_ascii=False): value for value in values}.values())
-            interpretation = {
-                'summary': f'Die vollständige Quelle wurde in {len(segments)} lokalen Qwen-Abschnitten ausgewertet. Alle Aussagen bleiben prüfpflichtig.',
-                'components': unique([item for part in interpretations for item in part['components']]),
-                'technologies': list({(item['kind'], DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(item['name']) if item['kind'] == 'TRANSPORT' else item['name'].casefold()): item
-                                      for part in interpretations for item in part['technologies']}.values()),
-                'proposed_task': '\n\n'.join(part['proposed_task'] for part in interpretations),
-                'assumptions': unique([item for part in interpretations for item in part['assumptions']]),
-                'open_questions': unique([item for part in interpretations for item in part['open_questions']]),
-            }
+            interpretation = compose_document_proposal(interpretations)
             interpretation = validate_document_interpretation(interpretation, source)
         source_hash = hashlib.sha256(source.encode()).hexdigest()
         return {'proposal_type': 'DOCUMENT_INTERPRETATION', 'status': 'REVIEW_REQUIRED',

@@ -1099,7 +1099,7 @@
 +REQ‑FUS‑39: Fusion MUSS Datenverschlüsselung unterstützen.
 +REQ‑FUS‑40: Fusion MUSS Datenpersistenz unterstützen.--- before/frontend/e2e/document-intake.spec.ts
 +++ after/frontend/e2e/document-intake.spec.ts
-@@ -0,0 +1,21 @@
+@@ -0,0 +1,22 @@
 +import { test, expect } from 'playwright/test';
 +import { randomUUID } from 'node:crypto';
 +import { fileURLToPath } from 'node:url';
@@ -1108,6 +1108,7 @@
 +  await page.goto(`/studio/engineering?assistant=project&project=nis-e2e-document-${randomUUID()}`);
 +  const dialog = page.getByRole('dialog', { name: 'Engineering-Auftrag erstellen' });
 +  await expect(dialog).toBeVisible();
++  await dialog.locator('#engineering-project-name').fill('Dokumentaufnahme Fahrzeug');
 +  await dialog.locator('fieldset.agent-project-name-step input[type=file]').setInputFiles(
 +    fileURLToPath(new URL('./fixtures/document-intake-vehicle.txt', import.meta.url)));
 +  await expect(dialog.getByText(/vollständig gelesen \(19\.088 Zeichen\)/)).toBeVisible();

@@ -19,6 +19,8 @@ def capture(state, descriptor, wizard):
     if wizard.get('engineering_draft_ref'):
         return  # Already backed by the shared editable draft.
     previous = state.get('engineering_draft')
+    from backend.nis.agent.tools.project_draft import reference_design_for_prompt
+    reference_design = reference_design_for_prompt(descriptor['prompt'])
     same_run = previous and previous.get('structured_source', {}).get('run_id') == descriptor['run_id']
     if same_run and previous['structured_source']['request_revision'] == descriptor['revision']:
         wizard['structured_draft_ref'] = {'draft_id': previous['draft_id'], 'revision': previous['revision']}
@@ -66,6 +68,9 @@ def capture(state, descriptor, wizard):
         'structured_source': {'version': 2, 'run_id': descriptor['run_id'],
             'request_revision': descriptor['revision'], 'prompt': prompt,
             'context': deepcopy(wizard), 'target': descriptor['target']}}
+    if reference_design:
+        draft['reference_design'] = deepcopy(reference_design)
+        draft['reference_sources'] = deepcopy(reference_design['reference_sources'])
     state['engineering_draft'] = draft
     wizard['structured_draft_ref'] = {'draft_id': draft['draft_id'], 'revision': draft['revision']}
 

@@ -1,0 +1,44 @@
+{
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "kind": "repair",
+  "modify_code": true,
+  "allow_repair": true,
+  "status": "PLANNING",
+  "revision_before": {
+    "backend/tests/test_reference_design.py": "0495c4a2513a6325da26e7387470c81c9f6eafa3b56d2a3ad8e10a5c3aff59f3"
+  },
+  "repair": {
+    "finding_ids": [
+      "STAGED_DECODER_TEST_EXPECTATION"
+    ],
+    "owner": "TEST_DATA",
+    "first_failing_layer": "test_reference_design.py:881 exact decoder shape expectation",
+    "root_cause": "The oversized-response test still expects the old unrestricted full decoder; the new authorized bounded phases add maxItems=0 to arrays outside devices/unresolved. Its prior ValueError2000, exact two attempts and8192 token checks already pass. Only stale schema equality fails; public source schema remains byte unchanged.",
+    "reproduction": "Actual complete affected isolated round:374PASS/1FAIL, trace exactformat equality. Native schema compiler separately accepts all4bounded shapes.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261018\\reference-stage-sizing-repair\\affected-reference-regressions.xml",
+        "sha256": "3a097831094dc9e970f46ff527d89692a6a9fff34ec384a4f2a9bc147b7dc48b"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261018\\reference-stage-sizing-repair\\affected-reference-regressions.log",
+        "sha256": "c4b8fb7ee832602d7a4af4eb65ffec69f34d604d98e0c3efdcd944c374a3496d"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261018\\reference-stage-sizing-repair\\stage-grammar-probes.json",
+        "sha256": "9c83ff5ab4e70210e17181a3e52547d46d326352ea9db5e0801111ebe6e70b34"
+      }
+    ],
+    "affected_files": [
+      "backend/tests/test_reference_design.py"
+    ],
+    "acceptance_criteria": [
+      "Expected decoder retains every original constraint, adding only maxItems=0 for the actual non-output arrays of the initial devices phase.",
+      "Keep ValueError2000 rejection, exactlytwoattempts,num_predict8192 and publicrationale max2000 assertions unchanged; no deleted tests or reduced severity."
+    ],
+    "targeted_tests": [
+      "backend/tests/test_reference_design.py::test_local_reference_planner_uses_decoder_projection_but_rejects_oversized_response"
+    ],
+    "weaken_assertions_to_pass": false
+  }
+}

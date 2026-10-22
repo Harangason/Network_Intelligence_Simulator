@@ -1,0 +1,620 @@
+--- before/backend/nis/agent/orchestration/project_intake.py
++++ after/backend/nis/agent/orchestration/project_intake.py
+@@ -1258,6 +1258,7 @@
+     context_kind: Literal['PASSIVE', 'ASSEMBLY', 'SOFTWARE_SERVICE'] | None = None
+     quantity: int = Field(strict=True, ge=1, le=1000)
+     source_fact_ids: list[str] = Field(min_length=1, max_length=1000)
++    source_member_bindings: dict[str, str] = Field(default_factory=dict)
+     owner_device_id: str | None = None
+     purpose: str | None = Field(default=None, min_length=1, max_length=500)
+     contained_device_ids: list[str] = Field(default_factory=list, max_length=1000)
+@@ -1584,7 +1585,27 @@
+     return _validate_reference_design(result, prepared, profile=tuple(profile))
+ 
+ 
+-def _validate_reference_design(result: dict, prepared: dict, *, profile=None) -> dict:
++def reference_inventory_members(fact: dict) -> list[str]:
++    """Literal type-list obligations, not new facts or confirmed quantities."""
++    if fact['kind'] != 'CATEGORY' or fact['role'] not in {'SENSOR', 'ACTUATOR'}:
++        return []
++    text = fact['source_quote'].strip()
++    match = re.fullmatch(r'(?:[-*]\s*)?(?:Sensorik|Aktorik|Sensor\s+types|Sensortypen|Actuator\s+types|Aktortypen)\s*(?:\(([^()]*)\)|:\s*([^()]*))\.?', text, re.I)
++    if not match:
++        return []
++    body = match[1] if match[1] is not None else match[2]
++    if re.search(r'\b(?:oder|or|optional|beispielsweise|etc)\b|z\.\s*B\.|e\.\s*g\.|/|\.\.\.', body, re.I):
++        return []  # Alternatives/examples do not establish installed members.
++    members = [part.strip() for part in re.split(r'[,;]|\s+(?:und|and)\s+', body) if part.strip()]
++    return list(dict.fromkeys(members)) if len(members) > 1 else []
++
++
++def _validate_reference_inventory(result: dict, prepared: dict, profile) -> list[dict]:
++    """Internal prerequisite only: never returns approval or a review candidate."""
++    return _validate_reference_design(result, prepared, profile=tuple(profile), inventory_only=True)
++
++
++def _validate_reference_design(result: dict, prepared: dict, *, profile=None, inventory_only=False) -> dict | list[dict]:
+     """Stamp a detached review candidate; no approval, model writes or readiness."""
+     from copy import deepcopy
+     from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
+@@ -1681,6 +1702,9 @@
+             if fact['role'] != 'OTHER' and device['kind'] != fact['role']:
+                 raise ValueError('Belegte Geräteart darf durch die Referenzannahme nicht ersetzt werden.')
+             bound.setdefault(fact_id, []).append(device_id)
++        for fact_id, member in device['source_member_bindings'].items():
++            if fact_id not in ids or member not in reference_inventory_members(facts[fact_id]):
++                raise ValueError('Typenbindung benötigt ein wörtliches Mitglied der eigenen ursprünglichen Gerätegruppe.')
+         device_fields = ['quantity', 'device_type']
+         if device['owner_device_id'] is not None:
+             device_fields.append('function_hosts')
+@@ -1708,6 +1732,10 @@
+         if not represented:
+             findings.append({'code': 'REFERENCE_INVENTORY_UNCOVERED', 'target_ref': fact_id,
+                              'message': 'Ursprünglicher Gerätebefund ist im Referenzentwurf noch nicht abgebildet.'})
++        for member in reference_inventory_members(fact):
++            if not any(devices[key]['source_member_bindings'].get(fact_id) == member for key in represented):
++                findings.append({'code': 'REFERENCE_INVENTORY_MEMBER_UNCOVERED', 'target_ref': fact_id,
++                    'message': f'Benannter Gerätetyp {member!r} benötigt eine eigene quellengebundene Referenzinstanz.'})
+         if fact['kind'] == 'INSTANCE' and represented:
+             count = sum(devices[device_id]['quantity'] for device_id in represented)
+             if count != fact['quantity']:
+@@ -1737,6 +1765,9 @@
+             raise ValueError('Vorher bestätigte Gerätemenge darf nicht ersetzt oder unterschritten werden.')
+         if any(answer.get('role') and devices[device_id]['kind'] != answer['role'] for device_id in represented):
+             raise ValueError('Vorher bestätigte Geräteart darf nicht ersetzt werden.')
++
++    if inventory_only:
++        return findings
+ 
+     for fact_id, function in functions.items():
+         if fact_id not in facts or facts[fact_id]['kind'] != 'FUNCTION':
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -110,7 +110,7 @@
+     return resolve(root)
+ 
+ 
+-def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, device_ids=()):
++def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None):
+     """Narrow the native decoder, without changing public proposal validation."""
+     from backend.nis.agent.orchestration.project_intake import reference_model_output_schema
+     schema = reference_model_output_schema(prepared)
+@@ -135,7 +135,41 @@
+         schema['properties']['functions'].update(minItems=len(function_ids), maxItems=len(function_ids))
+         item('functions')['properties']['source_fact_id']['enum'] = list(function_ids)
+         item('functional_dependencies')['properties']['producer_fact_id']['enum'] = list(function_ids)
++    if inventory_target:
++        schema['properties']['devices'].update(minItems=1, maxItems=2)
++        schema['properties']['inventory_complete'] = {'type': 'boolean'}
++        schema.setdefault('required', []).append('inventory_complete')
+     return schema
++
++
++def _reference_merge_inventory_devices(devices, proposed, target):
++    """Accumulate native inventory without replacing existing identities."""
++    from copy import deepcopy
++    by_id = {row['id']: deepcopy(row) for row in devices}
++    ids = [row['id'] for row in proposed]
++    if not ids or len(ids) > 2 or len(ids) != len(set(ids)):
++        raise ValueError('Inventarstufe benötigt ein oder zwei eindeutige Teilnehmer.')
++    selected = [row for row in proposed if target['fact_id'] in row['source_fact_ids']
++                and (not target.get('member') or row['source_member_bindings'].get(target['fact_id']) == target['member'])]
++    if len(selected) < target['minimum_rows']:
++        raise ValueError('Inventarstufe deckt den angeforderten ursprünglichen Gerätebefund oder Typ nicht ab.')
++    if target.get('names') and {row['name'] for row in selected} != set(target['names']):
++        raise ValueError('Inventarstufe muss genau ihre angeforderten ursprünglichen Instanznamen erhalten.')
++    for row in proposed:
++        previous = by_id.get(row['id'])
++        if previous is not None:
++            extensible = {'source_fact_ids', 'source_member_bindings', 'rationale', 'field_references'}
++            if any(row[key] != previous[key] for key in row if key not in extensible):
++                raise ValueError('Inventarergänzung darf bestehende Teilnehmeridentität oder Realisierung nicht ersetzen.')
++            if not set(previous['source_fact_ids']) <= set(row['source_fact_ids']):
++                raise ValueError('Inventarergänzung darf bestehende Quellenbindungen nicht entfernen.')
++            if any(row['source_member_bindings'].get(key) != value for key, value in previous['source_member_bindings'].items()):
++                raise ValueError('Inventarergänzung darf bestehende Typenbindungen nicht ersetzen.')
++            if any(not set(values) <= set(row['field_references'].get(key, []))
++                   for key, values in previous['field_references'].items()):
++                raise ValueError('Inventarergänzung darf bestehende Referenzbelege nicht entfernen.')
++        by_id[row['id']] = deepcopy(row)
++    return list(by_id.values())
+ 
+ 
+ def _reference_context_window(messages, maximum):
+@@ -455,6 +489,7 @@
+         from datetime import datetime, timezone
+         from backend.nis.agent.orchestration.project_intake import document_source_contexts, document_system_scope
+         from backend.nis.agent.orchestration.project_intake import ReferenceDesignProposal, validate_reference_design, validate_reference_design_profile, document_response_json
++        from backend.nis.agent.orchestration.project_intake import _validate_reference_inventory, reference_inventory_members
+         from backend.nis.engineering.goal_execution.progress import sink
+         from backend.nis.engineering.communication.device_communication import FUNCTIONAL_DEVICE_REASONING_RULES
+         from backend.nis.engineering.structure.spatial_architecture import REASONING_RULES
+@@ -563,7 +598,7 @@
+                        'source_profile': list(profile), 'reserved_project_device_names': [row['name'] for row in combined['devices']], 'reference_sources': prepared['reference_sources'],
+                        'registered_catalogs': catalog,
+                        'protected_review_decisions': {key: prepared['source_evidence'].get(key) for key in ('answers', 'function_assignments', 'excluded_questions')}}
+-            async def infer(stage, allowed, producer_ids=(), feedback=None, *, port_ids=(), function_ids=(), port_intent=False, device_ids=()):
++            async def infer(stage, allowed, producer_ids=(), feedback=None, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None):
+                 if device_ids:
+                     kinds = {'ports': {'CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR'},
+                              'measurements': {'SENSOR'}, 'commands': {'ACTUATOR'}}
+@@ -585,12 +620,15 @@
+                           'port_ids_for_this_stage': list(port_ids),
+                           'device_ids_for_this_stage': list(device_ids),
+                           'function_fact_ids_for_this_stage': list(function_ids),
++                          'inventory_target_for_this_stage': inventory_target,
+                           'output_fields_for_this_stage': list(allowed),
+                           'instruction': ('Nur die genannten Outputfelder füllen; alle anderen Arrays leer. '
+                               'Diese Felder vollständig neu liefern; vorhandene eindeutige IDs erhalten, soweit kein Befund ihre Änderung verlangt. '
+                               'Jede Auswahl begründen; echte offene Auslegung explizit unresolved halten. '
+                               + ('Zunächst ausschließlich konkrete Portabsicht planen: parameters bleibt {}. Die folgende eigene Parameterstufe legt jeden Anschluss aus; diese Zwischenstufe ist keine vollständige Prüfung. ' if port_intent else '')
+                               + ('Ausschließlich IO für die angeforderte vorhandene Teilnehmer-ID liefern; keine anderen Geräte, Anschlüsse, Messgrößen oder Befehle überschreiben. Alle Nachbarteilnehmer bleiben als Planungskontext sichtbar. ' if device_ids else '')
++                              + ('Nur den angeforderten ursprünglichen Inventarbefund ergänzen: höchstens zwei Teilnehmer. Vorhandene passende Teilnehmer mit unveränderter ID, Realisierung und bisherigen Quellenbindungen wiederverwenden; nur Quellenbindungen ergänzen. Für ein benanntes Listenmitglied source_member_bindings mit FactID und wörtlichem Mitglied angeben. Keine andere Typeninstanz damit ersetzen. Fachlich nötige zusätzliche Hardware darf anhand ursprünglicher Funktionen/Anforderungen begründet werden, nicht mit fremder Geräteart. Owner müssen bereits im current_candidate existieren oder in derselben Antwort entstehen. ' if inventory_target else '')
++                              + ('inventory_complete betrifft ausschließlich die angeforderte Inventarentscheidung. Falls dafür weitere Teilnehmer über diese höchstens zwei hinaus benötigt werden, false liefern; NIS fordert dann den nächsten Abschnitt an. Erst true liefern, wenn alle dafür benötigten Teilnehmer im bisherigen Kandidaten und dieser Antwort vorliegen. Zwei ist keine Obergrenze des Gesamtinventars. Fehlende Angaben anderer Planungsstufen nicht als Inventarlücke melden. ' if inventory_target else '')
+                               + ('Genau die angeforderten Port-IDs liefern. id, device_id, technology, role und network_scope unverändert übernehmen; nur parameters und ports-spezifische Begründung/Referenzbelege auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
+                               + ('Genau die angeforderten Funktions-FactIDs abdecken; Abhängigkeiten nur mit diesen Senderfunktionen liefern. Andere ursprüngliche Funktions-FactIDs dürfen bewusste Empfänger oder COMPOSITE-Bestandteile sein. ' if function_ids else ''))}
+                 messages = [{'role': 'system', 'content': system}, {'role': 'user', 'content': json.dumps(prompt, ensure_ascii=False)}]
+@@ -600,7 +638,7 @@
+                               'status': 'RUNNING', 'metadata': {'source': 'document_reference_design', 'completed_calls': len(calls), 'canonical_writes': False}})
+                 payload = {'model': self.model, 'messages': messages,
+                            'format': _reference_schema_for_stage(prepared, allowed, port_ids=port_ids,
+-                               function_ids=function_ids, port_intent=port_intent, device_ids=device_ids),
++                               function_ids=function_ids, port_intent=port_intent, device_ids=device_ids, inventory_target=inventory_target),
+                            'think': False, 'stream': False, 'keep_alive': self.keep_alive,
+                            'options': {'temperature': 0, 'num_predict': 8192, 'num_ctx': self.context_tokens}}
+                 for attempt in range(2):
+@@ -622,9 +660,14 @@
+                                   'context_tokens': payload['options']['num_ctx'],
+                                   'port_ids': list(port_ids), 'function_fact_ids': list(function_ids),
+                                   'device_ids': list(device_ids),
++                                  'inventory_target': inventory_target,
+                                   'prompt_eval_count': body.get('prompt_eval_count'), 'eval_count': body.get('eval_count')})
+                     try:
+-                        result = ReferenceDesignProposal.model_validate(document_response_json(raw)).model_dump(mode='json')
++                        decoded = document_response_json(raw)
++                        inventory_complete = decoded.pop('inventory_complete', None) if inventory_target else None
++                        result = ReferenceDesignProposal.model_validate(decoded).model_dump(mode='json')
++                        if inventory_target and type(inventory_complete) is not bool:
++                            raise ValueError('Inventarstufe benötigt eine ausdrückliche inventory_complete-Entscheidung.')
+                         if any(result[field] for field in fields if field not in allowed and field != 'unresolved'):
+                             raise ValueError('Eine Planungsstufe darf keine Felder anderer Stufen überschreiben.')
+                         if producer_ids and any(row['producer_device_id'] not in producer_ids for row in result['communication']):
+@@ -636,6 +679,8 @@
+                             ids = [row['id'] for row in result['devices']]
+                             if len(ids) != len(set(ids)):
+                                 raise ValueError('Teilnehmer benötigen eindeutige IDs.')
++                            if inventory_target:
++                                _reference_merge_inventory_devices(current['devices'], result['devices'], inventory_target)
+                         if port_intent:
+                             ids = [row['id'] for row in result['ports']]
+                             electronic_ids = {row['id'] for row in current['devices'] if row['kind'] != 'PHYSICAL_CONTEXT'}
+@@ -650,6 +695,9 @@
+                             if (len(actual) != len(set(actual)) or set(actual) != set(function_ids)
+                                     or any(row['producer_fact_id'] not in function_ids for row in result['functional_dependencies'])):
+                                 raise ValueError('Die Funktionsstufe muss genau ihre ursprünglichen Funktions-FactIDs abdecken; keine fremden Senderabhängigkeiten.')
++                        if inventory_target:
++                            result['inventory_complete'] = inventory_complete
++                            calls[-1]['inventory_complete'] = inventory_complete
+                         return result
+                     except (ValueError, TypeError, KeyError) as error:
+                         if attempt:
+@@ -662,13 +710,43 @@
+                 # incomplete profile can reach draft review or canonical apply.
+                 current['unresolved'] = []
+ 
+-                def replace(result, allowed):
+-                    for field in allowed:
+-                        current[field] = deepcopy(result[field])
+-                    current['unresolved'].extend(result['unresolved'])
+-
+-                devices = await infer('Teilnehmer', {'devices'}, feedback=feedback)
+-                replace(devices, {'devices'})
++                current['devices'] = []
++                inventory = [(key, fact) for key, fact in profile_facts.items() if fact['kind'] in {'INSTANCE', 'CATEGORY'}]
++                inventory.sort(key=lambda entry: entry[1]['kind'] != 'INSTANCE')
++                for fact_id, fact in inventory:
++                    members = reference_inventory_members(fact)
++                    expected_names = [row['name'] for row in prepared['catalog'].get('source_devices', [])
++                        if (row.get('evidence') or {}).get('source_quote') == fact['source_quote']
++                        and (row.get('evidence') or {}).get('source_context', []) == fact.get('source_context', [])]
++                    for member in members or [None]:
++                        native_complete = None
++                        while True:
++                            represented = [row for row in current['devices'] if fact_id in row['source_fact_ids']
++                                and (member is None or row['source_member_bindings'].get(fact_id) == member)]
++                            missing_names = [name for name in expected_names if name not in {row['name'] for row in represented}]
++                            required = fact['quantity'] if fact['kind'] == 'INSTANCE' else 1
++                            if len(represented) >= required and not missing_names and (
++                                    fact['kind'] == 'INSTANCE' or native_complete is True):
++                                break
++                            target = {'fact_id': fact_id, 'member': member, 'names': missing_names[:2],
++                                      'minimum_rows': min(2, max(1, required - len(represented)))}
++                            devices = await infer('Teilnehmer', {'devices'}, feedback=feedback, inventory_target=target)
++                            merged = _reference_merge_inventory_devices(current['devices'], devices['devices'], target)
++                            native_complete = devices['inventory_complete']
++                            if merged == current['devices'] and not native_complete:
++                                raise ValueError('Inventarergänzung hat keine fehlende ursprüngliche Geräteabdeckung ergänzt.')
++                            current['devices'] = merged
++                            current['unresolved'].extend(devices['unresolved'])
++                            after = [row for row in merged if fact_id in row['source_fact_ids']
++                                and (member is None or row['source_member_bindings'].get(fact_id) == member)]
++                            coverage_done = len(after) >= required and all(name in {row['name'] for row in after} for name in expected_names)
++                            if len(after) <= len(represented) and not (native_complete and coverage_done):
++                                raise ValueError('Inventarergänzung muss zusätzliche angeforderte Instanzabdeckung herstellen.')
++                            if fact['kind'] == 'INSTANCE' and len(after) >= required and not native_complete:
++                                raise ValueError('Explizite ursprüngliche Instanzmenge darf nicht durch weitere Inventarabschnitte erweitert werden.')
++                inventory_findings = _validate_reference_inventory({'devices': current['devices']}, prepared, profile)
++                if inventory_findings:
++                    raise ValueError('Inventar vor Anschlussplanung unvollständig: ' + json.dumps(inventory_findings, ensure_ascii=False))
+                 # A participant repair can change identities. Rebuild its IO
+                 # and later functions rather than exposing stale prior links.
+                 for field in fields:
+--- before/backend/tests/test_reference_design.py
++++ after/backend/tests/test_reference_design.py
+@@ -8,13 +8,13 @@
+ from backend.nis.agent.orchestration import project_intake as intake
+ 
+ 
+-def fixture_request(*, references=None, answers=None, assignments=None):
+-    source = ('Controller (ECU)\nSensorik (Temperatursensoren)\nAktorik (Ventile)\n'
++def fixture_request(*, references=None, answers=None, assignments=None, sensor_group='Sensorik (Temperatursensoren)'):
++    source = ('Controller (ECU)\n' + sensor_group + '\nAktorik (Ventile)\n'
+               'Funktion: Regelung\nFunktion: Diagnose\nFunktion: Gesamtfunktion\n'
+               'REQ-001: Das System MUSS diagnostizierbar sein.')
+     rows = [
+         ('Controller (ECU)', 'INSTANCE', 'CONTROLLER', 1, 'Controller (ECU)'),
+-        ('Sensorik (Temperatursensoren)', 'CATEGORY', 'SENSOR', None, 'Sensorik (Temperatursensoren)'),
++        (sensor_group, 'CATEGORY', 'SENSOR', None, sensor_group),
+         ('Aktorik (Ventile)', 'CATEGORY', 'ACTUATOR', None, 'Aktorik (Ventile)'),
+         *[(name, 'FUNCTION', 'OTHER', None, 'Funktion: ' + name) for name in ('Regelung', 'Diagnose', 'Gesamtfunktion')],
+         ('REQ-001', 'REQUIREMENT', 'OTHER', None, 'REQ-001: Das System MUSS diagnostizierbar sein.'),
+@@ -42,11 +42,12 @@
+ 
+ def fixture_design(prepared):
+     ids = {fact['name']: fact_id for fact_id, fact in prepared['facts'].items()}
++    sensor_group = next(fact['name'] for fact in prepared['facts'].values() if fact['role'] == 'SENSOR')
+     devices = [{'id': key, 'name': name, 'kind': kind, 'quantity': count,
+                 'source_fact_ids': [ids[fact]], 'rationale': 'Prüfbarer Referenzentwurf'}
+                for key, name, kind, count, fact in [
+                    ('C', 'Controller (ECU)', 'CONTROLLER', 1, 'Controller (ECU)'),
+-                   ('S', 'Temperatursensor', 'SENSOR', 1, 'Sensorik (Temperatursensoren)'),
++                   ('S', 'Temperatursensor', 'SENSOR', 1, sensor_group),
+                    ('A', 'Ventil', 'ACTUATOR', 1, 'Aktorik (Ventile)')]]
+     for device in devices:
+         source_fact = prepared['facts'][device['source_fact_ids'][0]]
+@@ -103,6 +104,69 @@
+     text = 'Kommunikationsbeispiel mit 100 ECUs, keine Primärstückliste.'
+     return {'id': 'R1', 'name': 'reference.txt', 'role': 'REFERENCE_SUPPLEMENT', 'text': text,
+             'source_sha256': hashlib.sha256(text.encode()).hexdigest(), 'allowed_fields': list(fields)}
++
++
++def test_inventory_checkpoint_reuses_full_source_guards_without_granting_review(prepared):
++    value = fixture_design(prepared)
++    devices = {'devices': value['devices']}
++    assert intake._validate_reference_inventory(devices, prepared, []) == []
++    complete = intake.validate_reference_design(devices, prepared)
++    assert complete['proposal']['unresolved']  # IO/functions still missing.
++    assert complete['approval_required'] and not complete['canonical_writes']
++    missing = {'devices': value['devices'][:1]}
++    findings = intake._validate_reference_inventory(missing, prepared, [])
++    assert {row['target_ref'] for row in findings if row['code'] == 'REFERENCE_INVENTORY_UNCOVERED'} == {
++        key for key, fact in prepared['facts'].items() if fact['role'] in {'SENSOR', 'ACTUATOR'}}
++    for check in (lambda value: intake._validate_reference_inventory(value, prepared, []),
++                  lambda value: intake.validate_reference_design(value, prepared)):
++        corrupt = deepcopy(devices)
++        corrupt['devices'][0]['name'] = 'Unrelated controller replacing the source instance'
++        with pytest.raises(ValueError, match='Instanzidentität'):
++            check(corrupt)
++
++
++def test_sensor_type_list_needs_separate_literal_member_bindings():
++    request = fixture_request()
++    original, encoded = request['prompt'].split('\n- Dokument-Geräte: ')
++    envelope = json.loads(encoded)
++    before, after = 'Sensorik (Temperatursensoren)', 'Sensorik (Temperatursensoren, Drucksensoren)'
++    envelope['source_text'] = original.replace(before, after)
++    envelope['source_chars'] = len(envelope['source_text'])
++    envelope['source_sha256'] = hashlib.sha256(envelope['source_text'].encode()).hexdigest()
++    for fact in envelope['facts']:
++        for key in ('name', 'source_quote'):
++            fact[key] = fact[key].replace(before, after)
++    request['prompt'] = envelope['source_text'] + '\n- Dokument-Geräte: ' + json.dumps(envelope, ensure_ascii=False)
++    prepared = intake.prepare_reference_design(request)
++    previous = intake.prepare_reference_design(fixture_request())
++    value = fixture_design(previous)
++    replacements = {old_id: next(key for key, fact in prepared['facts'].items()
++                    if fact['name'] == old_fact['name'].replace(before, after)) for old_id, old_fact in previous['facts'].items()}
++    for row in value['devices']:
++        row['source_fact_ids'] = [replacements[key] for key in row['source_fact_ids']]
++    sensor_id = value['devices'][1]['source_fact_ids'][0]
++    fact = prepared['facts'][sensor_id]
++    assert intake.reference_inventory_members(fact) == ['Temperatursensoren', 'Drucksensoren']
++    value = {'devices': value['devices']}
++    assert sum(row['code'] == 'REFERENCE_INVENTORY_MEMBER_UNCOVERED'
++               for row in intake._validate_reference_inventory(value, prepared, [])) == 2
++    value['devices'][1]['source_member_bindings'] = {sensor_id: 'Temperatursensoren'}
++    pressure = {**deepcopy(value['devices'][1]), 'id': 'S2', 'name': 'Drucksensor',
++                'source_member_bindings': {sensor_id: 'Drucksensoren'}}
++    value['devices'].append(pressure)
++    assert intake._validate_reference_inventory(value, prepared, []) == []
++    full = intake.validate_reference_design(value, prepared)
++    assert not any(row['code'] == 'REFERENCE_INVENTORY_MEMBER_UNCOVERED' for row in full['proposal']['unresolved'])
++    assert full['source_evidence']['components'] == prepared['source_evidence']['components']
++    value['devices'][-1]['source_member_bindings'] = {sensor_id: 'Erfundener Typ'}
++    with pytest.raises(ValueError, match='wörtliches Mitglied'):
++        intake._validate_reference_inventory(value, prepared, [])
++
++
++@pytest.mark.parametrize('quote', ['Sensorik (Radar oder Kamera)', 'Aktorik (z. B. Pumpen, Ventile)',
++                                  'Sensor types (camera/lidar, IMU)', 'Function: camera processing'])
++def test_alternatives_and_examples_do_not_create_mandatory_inventory_members(quote):
++    assert intake.reference_inventory_members({'kind': 'CATEGORY', 'role': 'SENSOR', 'source_quote': quote}) == []
+ 
+ 
+ def test_reference_inventory_is_not_promoted_and_field_scope_is_enforced():
+@@ -857,7 +921,7 @@
+     import asyncio
+     from backend.nis.agent.orchestration.local_reasoner import LocalEngineeringReasoner
+     candidate = {'devices': [{**fixture_design(prepared)['devices'][0], 'rationale': 'x' * 2001}]}
+-    encoded_candidate = json.dumps(candidate)
++    encoded_candidate = json.dumps({**candidate, 'inventory_complete': True})
+     requests = []
+     class Response:
+         is_error = False
+@@ -882,6 +946,9 @@
+     # forbidding arrays that belong to later native planning phases.
+     for field in ('functions', 'ports', 'measurements', 'commands', 'communication', 'functional_dependencies'):
+         expected['properties'][field]['maxItems'] = 0
++    expected['properties']['devices'].update(minItems=1, maxItems=2)
++    expected['properties']['inventory_complete'] = {'type': 'boolean'}
++    expected.setdefault('required', []).append('inventory_complete')
+     for request in requests:
+         assert request['format'] == expected
+         assert request['options']['num_predict'] == 8192
+--- before/backend/tests/test_reference_reasoner.py
++++ after/backend/tests/test_reference_reasoner.py
+@@ -9,7 +9,7 @@
+ from backend.nis.agent.orchestration import project_intake as intake
+ from backend.nis.agent.orchestration.local_reasoner import (
+     LocalEngineeringReasoner, _reference_context_window,
+-    _reference_merge_port_parameters, _reference_schema_for_stage,
++    _reference_merge_port_parameters, _reference_schema_for_stage, _reference_merge_inventory_devices,
+ )
+ from backend.tests.test_reference_design import fixture_request, fixture_design, wire
+ 
+@@ -37,9 +37,10 @@
+ 
+ 
+ def reasoner_with_transport(monkeypatch, *, family='qwen3', truncate=False, capture=None, timeout=False,
+-                            foreign_io=None, duplicate_port_ids=False, retry_foreign_port=False):
+-    prepared = intake.prepare_reference_design(fixture_request())
+-    design = complete_design(prepared)
++                            foreign_io=None, duplicate_port_ids=False, retry_foreign_port=False, omit_inventory_role=None,
++                            request=None, design_factory=complete_design, never_complete_inventory_role=None):
++    prepared = intake.prepare_reference_design(request or fixture_request())
++    design = design_factory(prepared)
+     observed = []
+     monkeypatch.setenv('LOCAL_AI_CONTEXT_TOKENS', '131072')
+     def handler(request):
+@@ -54,6 +55,17 @@
+         observed.append(content)
+         allowed = set(content['output_fields_for_this_stage'])
+         candidate = {key: deepcopy(value) for key, value in design.items() if key in allowed}
++        if content.get('inventory_target_for_this_stage'):
++            target = content['inventory_target_for_this_stage']
++            candidate['devices'] = [row for row in candidate['devices']
++                if target['fact_id'] in row['source_fact_ids'] and row['kind'] != omit_inventory_role
++                and (not target['member'] or row.get('source_member_bindings', {}).get(target['fact_id']) == target['member'])]
++            if target['names']:
++                candidate['devices'] = [row for row in candidate['devices'] if row['name'] in target['names']]
++            existing = {row['id'] for row in content['current_candidate']['devices']}
++            fresh = [row for row in candidate['devices'] if row['id'] not in existing]
++            candidate['inventory_complete'] = len(fresh) <= 2 and prepared['facts'][target['fact_id']]['role'] != never_complete_inventory_role
++            candidate['devices'] = (fresh or candidate['devices'])[:2]
+         if content.get('port_ids_for_this_stage'):
+             selected = set(content['port_ids_for_this_stage'])
+             candidate['ports'] = [row for row in candidate['ports'] if row['id'] in selected]
+@@ -236,8 +248,9 @@
+     reasoner, prepared, observed = reasoner_with_transport(monkeypatch, retry_foreign_port=True)
+     with pytest.raises(ValueError, match='nicht ausgewählten Teilnehmers'):
+         run_reference(reasoner, prepared)
+-    assert len(observed) == 3
+-    assert all(row['device_ids_for_this_stage'] == ['C'] for row in observed[1:])
++    io = [row for row in observed if row['device_ids_for_this_stage']]
++    assert len(io) == 2
++    assert all(row['device_ids_for_this_stage'] == ['C'] for row in io)
+ 
+ 
+ @pytest.mark.parametrize('mode', ['missing', 'duplicate', 'foreign'])
+@@ -289,7 +302,7 @@
+     reasoner, prepared, observed = reasoner_with_transport(monkeypatch)
+     result = run_reference(reasoner, prepared)
+     assert len(checks) == 2 and result['proposal']['unresolved'] == []
+-    assert sum(row['planning_stage'] == 'Teilnehmer' for row in observed) == 2
++    assert sum(row['planning_stage'] == 'Teilnehmer' for row in observed) == 6
+     assert sum(bool(row['port_ids_for_this_stage']) for row in observed) == 6
+     assert all(len(row['output_fields_for_this_stage']) <= 3 for row in observed)
+     assert all(row['original_source'] == prepared['source_evidence']['source_text'] for row in observed)
+@@ -312,3 +325,94 @@
+     with pytest.raises(ValueError, match='keine Quelle gekürzt'):
+         _reference_context_window(messages, 131072)
+     assert messages[0] == before[0]
++
++
++@pytest.mark.parametrize('role', ['SENSOR', 'ACTUATOR'])
++def test_missing_native_inventory_cannot_advance_to_any_io(monkeypatch, role):
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch, omit_inventory_role=role)
++    with pytest.raises(ValueError, match='ein oder zwei eindeutige Teilnehmer'):
++        run_reference(reasoner, prepared)
++    assert not any(row['device_ids_for_this_stage'] or row['port_ids_for_this_stage'] for row in observed)
++    assert observed[-1]['inventory_target_for_this_stage']['fact_id'] in prepared['facts']
++
++
++def test_inventory_is_native_bounded_and_complete_before_first_port(monkeypatch):
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch)
++    result = run_reference(reasoner, prepared)
++    inventory = [row for row in observed if row['inventory_target_for_this_stage']]
++    assert len(inventory) == 3
++    assert {row['inventory_target_for_this_stage']['fact_id'] for row in inventory} == {
++        key for key, fact in prepared['facts'].items() if fact['kind'] in {'INSTANCE', 'CATEGORY'}}
++    assert len(observed[3]['current_candidate']['devices']) == 3
++    assert all(len(row['current_candidate']['devices']) == index for index, row in enumerate(inventory))
++    assert result['proposal']['unresolved'] == []
++    schema = _reference_schema_for_stage(prepared, {'devices'}, inventory_target=inventory[0]['inventory_target_for_this_stage'])
++    assert schema['properties']['devices']['maxItems'] == 2
++
++
++@pytest.mark.parametrize('field,value', [('name', 'replacement'), ('kind', 'SENSOR'), ('quantity', 2), ('owner_device_id', 'foreign')])
++def test_inventory_completion_cannot_reassign_existing_device(field, value):
++    prepared = intake.prepare_reference_design(fixture_request())
++    row = intake.ReferenceDesignProposal.model_validate(complete_design(prepared)).model_dump(mode='json')['devices'][0]
++    changed = {**row, field: value}
++    target = {'fact_id': row['source_fact_ids'][0], 'minimum_rows': 1, 'member': None, 'names': []}
++    with pytest.raises(ValueError, match='bestehende Teilnehmeridentität'):
++        _reference_merge_inventory_devices([row], [changed], target)
++    assert row[field] != value
++
++
++def test_native_type_members_are_planned_separately_before_io(monkeypatch):
++    def two_sensors(prepared):
++        design = complete_design(prepared)
++        first = design['devices'][1]
++        fact_id = first['source_fact_ids'][0]
++        first['source_member_bindings'] = {fact_id: 'Temperatur links'}
++        design['devices'].append({**deepcopy(first), 'id': 'S2', 'name': 'Zweiter Temperatursensor',
++                                 'source_member_bindings': {fact_id: 'Temperatur rechts'}})
++        design['ports'].append({**deepcopy(design['ports'][1]), 'id': 'PS2', 'device_id': 'S2'})
++        design['measurements'].append({**deepcopy(design['measurements'][0]), 'device_id': 'S2'})
++        design['communication'].append({**deepcopy(design['communication'][0]), 'id': 'second-temperature',
++            'signal_name': 'second-temperature', 'producer_device_id': 'S2', 'source_port_id': 'PS2'})
++        return design
++    request = fixture_request(sensor_group='Sensortypen (Temperatur links, Temperatur rechts)')
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch, request=request, design_factory=two_sensors)
++    result = run_reference(reasoner, prepared)
++    targets = [row['inventory_target_for_this_stage'] for row in observed if row['inventory_target_for_this_stage']]
++    assert [row['member'] for row in targets] == [None, 'Temperatur links', 'Temperatur rechts', None]
++    first_port = next(row for row in observed if row['device_ids_for_this_stage'])
++    assert len(first_port['current_candidate']['devices']) == 4
++    assert result['proposal']['unresolved'] == []
++    assert len(result['proposal']['measurements']) == 2
++    assert result['source_evidence'] == prepared['source_evidence']
++
++
++def test_unquantified_category_can_continue_beyond_two_native_participants(monkeypatch):
++    def three_sensors(prepared):
++        design = complete_design(prepared)
++        for number in (2, 3):
++            device_id = 'S' + str(number)
++            design['devices'].append({**deepcopy(design['devices'][1]), 'id': device_id,
++                                     'name': 'Temperatursensor ' + str(number)})
++            design['ports'].append({**deepcopy(design['ports'][1]), 'id': 'P' + device_id, 'device_id': device_id})
++            design['measurements'].append({**deepcopy(design['measurements'][0]), 'device_id': device_id})
++            design['communication'].append({**deepcopy(design['communication'][0]), 'id': 'temperature-' + str(number),
++                'signal_name': 'temperature-' + str(number), 'producer_device_id': device_id, 'source_port_id': 'P' + device_id})
++        return design
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch, design_factory=three_sensors)
++    result = run_reference(reasoner, prepared)
++    sensor_targets = [row for row in observed if row['inventory_target_for_this_stage']
++                      and prepared['facts'][row['inventory_target_for_this_stage']['fact_id']]['role'] == 'SENSOR']
++    assert len(sensor_targets) == 2
++    assert len(sensor_targets[1]['current_candidate']['devices']) == 3  # Controller plus first two sensors.
++    assert len(result['proposal']['devices']) == 5
++    assert len(result['proposal']['measurements']) == 3
++    assert result['proposal']['unresolved'] == []
++    assert 'inventory_complete' not in result['proposal']  # Internal planning protocol grants no public approval.
++
++
++def test_incomplete_native_inventory_must_progress_instead_of_looping(monkeypatch):
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch, never_complete_inventory_role='SENSOR')
++    with pytest.raises(ValueError, match='keine fehlende ursprüngliche Geräteabdeckung'):
++        run_reference(reasoner, prepared)
++    assert len(observed) == 3  # Controller and two sensor attempts, no IO.
++    assert not any(row['device_ids_for_this_stage'] for row in observed)
+--- before/backend/nis/agent/tools/wizard_generation.py
++++ after/backend/nis/agent/tools/wizard_generation.py
+@@ -928,6 +928,9 @@
+         if ref in created:
+             identity = node.setdefault('identity', {})
+             identity.update(reference_design=stamp, source_bindings=source_metadata(device['source_fact_ids']))
++            for binding, fact_id in zip(identity['source_bindings'], device['source_fact_ids']):
++                if fact_id in device.get('source_member_bindings', {}):
++                    binding['reference_member'] = {'label': device['source_member_bindings'][fact_id], **stamp}
+             if device.get('owner_device_id'):
+                 owner = device_refs[device['owner_device_id']]
+                 previous = identity.get('system_owner_id')
+--- before/backend/tests/test_reference_model_persistence.py
++++ after/backend/tests/test_reference_model_persistence.py
+@@ -1,5 +1,8 @@
+ """Real isolated canonical writes from a mocked reviewed plan; no Qwen/E2E claim."""
+ from uuid import uuid4
++from copy import deepcopy
++
++import pytest
+ 
+ from backend.nis.agent.api.tool_contract import Permission
+ from backend.nis.agent.orchestration.local_reasoner import LocalEngineeringReasoner
+@@ -11,10 +14,21 @@
+ from backend.tests.test_reference_design_integration import marker
+ 
+ 
+-def test_accepted_reference_model_survives_normal_validation_review_apply(monkeypatch):
++@pytest.mark.parametrize('with_type_members', [False, True])
++def test_accepted_reference_model_survives_normal_validation_review_apply(monkeypatch, with_type_members):
+     """Keep full facts, real recipients, local dependencies, ports and assumption role."""
+     async def local_unit_fixture(_self, prepared):
+         plan = complete_design(prepared)
++        if with_type_members:
++            sensor = plan['devices'][1]
++            fact_id = sensor['source_fact_ids'][0]
++            sensor['source_member_bindings'] = {fact_id: 'Temperatur links'}
++            plan['devices'].append({**deepcopy(sensor), 'id': 'S2', 'name': 'Zweiter Temperatursensor',
++                'source_member_bindings': {fact_id: 'Temperatur rechts'}})
++            plan['ports'].append({**deepcopy(plan['ports'][1]), 'id': 'PS2', 'device_id': 'S2'})
++            plan['measurements'].append({**deepcopy(plan['measurements'][0]), 'device_id': 'S2'})
++            plan['communication'].append({**deepcopy(plan['communication'][0]), 'id': 'second-temperature',
++                'signal_name': 'second-temperature', 'producer_device_id': 'S2', 'source_port_id': 'PS2'})
+         ids = {fact['name']: key for key, fact in prepared['facts'].items()}
+         for row in plan['functions']:
+             if row['source_fact_id'] == ids['Gesamtfunktion']:
+@@ -46,7 +60,7 @@
+ 
+     monkeypatch.setattr(LocalEngineeringReasoner, 'plan_reference_design', local_unit_fixture)
+     authority = ToolAuthority('reference-model-' + uuid4().hex, 'test-human')
+-    request = fixture_request()
++    request = fixture_request(sensor_group='Sensortypen (Temperatur links, Temperatur rechts)') if with_type_members else fixture_request()
+     request.update(source_request_id=uuid4().hex)
+     request['prompt'] = ('- Projekt-Modelltyp: embedded_systems\n- Industrie: Embedded Systems\n'
+                          '- Netzwerktechnologien: CAN (can), Ethernet (ethernet)\n- Systemcluster-Graph: []\n'
+@@ -76,10 +90,10 @@
+         saved['DataObject'] = WorkflowStatusService(current_project_id()).get()['parameters']['engineering_models']['DataObject']
+         return saved
+     objects = call('read', saved_model)
+-    assert len(objects['HardwareNode']) == 3
++    assert len(objects['HardwareNode']) == 3 + with_type_members
+     interfaces = objects['HardwareNetworkInterface']
+-    assert len(interfaces) == 4
+-    assert len({row['physical_port_ref'] for row in interfaces}) == 4
++    assert len(interfaces) == 4 + with_type_members
++    assert len({row['physical_port_ref'] for row in interfaces}) == 4 + with_type_members
+     ethernet = next(row for row in interfaces if row['technology'] == 'Ethernet')
+     assumptions = ethernet['capabilities']['simulation_parameter_assumptions']['ethernet']
+     assert assumptions['values']['bitrate_bps'] == 1000000000
+@@ -104,6 +118,18 @@
+         hardware_id = str(saved_ports[port['id']]['hardware_node_id'])
+         assert device_ids.setdefault(port['device_id'], hardware_id) == hardware_id
+     assert set(device_ids.values()) == {str(row['id']) for row in objects['HardwareNode']}
++    if with_type_members:
++        for device in record['proposal']['devices']:
++            if device['kind'] != 'SENSOR':
++                continue
++            node = next(row for row in objects['HardwareNode'] if str(row['id']) == device_ids[device['id']])
++            binding = next(row for row in node['identity']['source_bindings'] if 'reference_member' in row)
++            assert binding['kind'] == 'CATEGORY' and binding['role'] == 'SENSOR'
++            assert binding['source_quote'] == 'Sensortypen (Temperatur links, Temperatur rechts)'
++            member = binding['reference_member']
++            assert member['label'] == next(iter(device['source_member_bindings'].values()))
++            assert member['source'] == 'REFERENCE_ASSUMPTION' and member['hardware_evidence'] is False
++            assert member['design_id'] == record['design_id'] and member['request_sha256'] == record['request_sha256']
+     expected_communication = {row['id']: row for row in record['proposal']['communication']}
+     for message in objects['Message']:
+         config = message['configuration']

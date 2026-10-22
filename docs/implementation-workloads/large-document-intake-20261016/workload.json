@@ -1,0 +1,410 @@
+{
+  "goal_id": "large-document-intake-20261016",
+  "goal_type": "implementation",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "project_scope": "20261016084924562-131ed051",
+  "kind": "repair",
+  "modify_code": true,
+  "allow_repair": true,
+  "requested_change": "Automatically evaluate larger complete documents in locally bounded sections without user splitting.",
+  "constraints": [
+    "Complete source and source validation; local Qwen only; no canonical writes or automatic approval.",
+    "Preserve pre-existing changes. Full gate and exact-image production delivery."
+  ],
+  "required_outcomes": [
+    "automatic_complete_sections",
+    "complete_aggregate",
+    "production_delivery"
+  ],
+  "validation_requirements": [
+    "regressions",
+    "native_large_document",
+    "full_release_gate",
+    "production_identity_health_function"
+  ],
+  "revision_before": {
+    "backend/nis/agent/orchestration/project_intake.py": "b5e37110a17bc09cbefc859ed059fa17ceca59745ffb85bf107222669bc690c8",
+    "backend/nis/agent/orchestration/local_reasoner.py": "0afff415107fe155f04249b62b68b1ced2ac1a8a0c81196128f59ca8dc2bd4a4",
+    "backend/nis/agent/tools/services.py": "4846bce730c5805c1c44faf7bc5a2fbc28ab9ccca239e4b6059acf5f5e358bc2",
+    "backend/nis/agent/tools/api.py": "68e80ad5299b245f103b52fe05977b95b619b8de0cb54dd34a2fb3a3616fb56d",
+    "backend/tests/test_qwen_document_intake.py": "d88ddac39606e31e20fefe7db2be9c8b2f494d256a2b7bee3af9a2f6f49104b0",
+    "frontend/src/features/agent/lib/chat-attachments.ts": "cb5b911fe00fa95817d2181fc9605c95bbea73dfb5fea1b909b0fdfc20eeb44d",
+    "frontend/src/features/agent/lib/chat-attachments.test.mjs": "bb356bcc3b9a8cfd846662feb07545eca51f6695f40c835f66c5b04663332f74"
+  },
+  "unresolved_decisions": [],
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "root_cause": "Eight-section hard stop, 80000-character intake ceiling, aggregate inherits single-document 60/32 fact limits.",
+    "first_failing_layer": "document_segments",
+    "reproduction": {
+      "source_chars": 63705,
+      "error": "Die Quelle benötigt mehr als acht lokale Auswertungsabschnitte. Bitte aufteilen; sie wird nicht gekürzt.",
+      "owner": "PROJECT_PRODUCT",
+      "layer": "document_segments",
+      "max_segments": 8,
+      "segment_bytes": 6000
+    },
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\reproduction.json",
+        "sha256": "42e0638b62e9d1eea4e42fe13331f8b7f0ef1949dbb6fff0fa3ad79279c2f11d"
+      }
+    ],
+    "affected_files": [
+      "backend/nis/agent/orchestration/project_intake.py",
+      "backend/nis/agent/orchestration/local_reasoner.py",
+      "backend/nis/agent/tools/services.py",
+      "backend/nis/agent/tools/api.py",
+      "backend/tests/test_qwen_document_intake.py",
+      "frontend/src/features/agent/lib/chat-attachments.ts",
+      "frontend/src/features/agent/lib/chat-attachments.test.mjs"
+    ],
+    "acceptance_criteria": [
+      "All source characters covered once in order beyond 8 sections and 80000 characters.",
+      "Per-call prompt/output limits and strict source validation remain active.",
+      "Complete aggregate preserves more than 60 components and 32 technology facts.",
+      "Failed late sections never produce complete success."
+    ],
+    "targeted_tests": [
+      "backend/tests/test_qwen_document_intake.py",
+      "frontend/src/features/agent/lib/chat-attachments.test.mjs"
+    ],
+    "weaken_assertions_to_pass": false
+  },
+  "delivery": {
+    "decision": "YES",
+    "authorization": "Standing authorization in user AGENTS.md for verified production delivery.",
+    "target": "canonical NetworkIS production stack",
+    "tested_version": "sha256:7a4fe70380d3448413ecf44d00edb4c36013a8188879612ce8eedd4beb95348e",
+    "running_version": "sha256:7a4fe70380d3448413ecf44d00edb4c36013a8188879612ce8eedd4beb95348e",
+    "checks": {
+      "release": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-c74dcdfd5870\\a1c086d28f4b\\receipt.json",
+            "sha256": "4c7c3b313758b7e282bd253cc0547db507f717f340dfcb84ea06089ca32a7be7"
+          }
+        ]
+      },
+      "deployment": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\release-and-deploy.log",
+            "sha256": "eb35527df97465e13dc03a8675fcaa90cb1fe280ae9d360c80e4b6da33aaa212"
+          },
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\production-verification.json",
+            "sha256": "1f0d8864e1c2fd63fdcc8f7391fc97d7795b7d8dc1063ed85293be75cf2fec17"
+          }
+        ]
+      },
+      "health": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\production-verification.json",
+            "sha256": "1f0d8864e1c2fd63fdcc8f7391fc97d7795b7d8dc1063ed85293be75cf2fec17"
+          },
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\production-links.json",
+            "sha256": "bb72959a9cf965f43a979c25f2ea0deb7b52be1fa96e24776a8bbee6dd39aab1"
+          }
+        ]
+      },
+      "functional": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\native-large-document.json",
+            "sha256": "f1a15b8f2bd1647cdeb924f67f7853eb74a5660af9ab945a46f158fc180570c0"
+          },
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\production-verification.json",
+            "sha256": "1f0d8864e1c2fd63fdcc8f7391fc97d7795b7d8dc1063ed85293be75cf2fec17"
+          }
+        ]
+      }
+    }
+  },
+  "files_inspected": [
+    "backend/nis/agent/orchestration/project_intake.py",
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/nis/agent/tools/services.py",
+    "backend/nis/agent/tools/api.py",
+    "backend/tests/test_qwen_document_intake.py",
+    "frontend/src/features/agent/lib/chat-attachments.ts",
+    "frontend/src/features/agent/lib/chat-attachments.test.mjs",
+    "AGENTS.md",
+    "docs/WIZARD_EXECUTION_CONTRACT.md",
+    "docs/WIZARD_RELEASE_GATE.md",
+    "docs/SPATIAL_ARCHITECTURE_CONTRACT.md",
+    "docs/GENERATION_RULE_MANAGER.md",
+    "scripts/release/run-release-gate.py",
+    "scripts/release/release-and-deploy.py",
+    "scripts/release/release_storage.py"
+  ],
+  "implementation_plan": [
+    "Raise consistent complete-source budget to 1000000 Unicode characters, retaining upload cap and bounded JSON envelope.",
+    "Remove section-count stop and size each section independently to existing context/output budgets.",
+    "Validate merged results with complete aggregate collections; preserve all semantic checks.",
+    "Regression, native inference, release and deploy."
+  ],
+  "completion_status": "COMPLETED",
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\before\\backend\\nis\\agent\\orchestration\\project_intake.py",
+      "sha256": "45ae525ed27f80a5db81a1b50e5ea3ce5e989fe37c13fe2f6ef3007e0b03a16d"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\before\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "d9a9685c777c5a6b59f9af3b77260d7ec83cdf80f0d50deedafede128a6fd926"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\before\\backend\\nis\\agent\\tools\\services.py",
+      "sha256": "1572b4dea394ddc39948ed7651fbf5f24ad03ecf33148525dcb4b3b191be5df1"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\before\\backend\\nis\\agent\\tools\\api.py",
+      "sha256": "aabfc24eaad33b127e5d89a083babcdb46b148467a8f11d20b7e169c2353ebd0"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\before\\backend\\tests\\test_qwen_document_intake.py",
+      "sha256": "c01b3a2b079b978d995848e8f3dfc0f533b4eb3bdb0a4ddf0b90512ad92f8fc1"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\before\\frontend\\src\\features\\agent\\lib\\chat-attachments.ts",
+      "sha256": "762a03e88c4c9626f155ddfb25b1eb9b3016319ed487e982bf46043be8db1f9f"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\before\\frontend\\src\\features\\agent\\lib\\chat-attachments.test.mjs",
+      "sha256": "daef6582744a034fdb6947a284fc8dc2eebc6f2c4ca4d8e13b8b23897959b75b"
+    }
+  ],
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\after\\backend\\nis\\agent\\orchestration\\project_intake.py",
+      "sha256": "b5e37110a17bc09cbefc859ed059fa17ceca59745ffb85bf107222669bc690c8"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\after\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "0afff415107fe155f04249b62b68b1ced2ac1a8a0c81196128f59ca8dc2bd4a4"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\after\\backend\\nis\\agent\\tools\\services.py",
+      "sha256": "4846bce730c5805c1c44faf7bc5a2fbc28ab9ccca239e4b6059acf5f5e358bc2"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\after\\backend\\nis\\agent\\tools\\api.py",
+      "sha256": "68e80ad5299b245f103b52fe05977b95b619b8de0cb54dd34a2fb3a3616fb56d"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\after\\backend\\tests\\test_qwen_document_intake.py",
+      "sha256": "0ad7c575de737db0cf53f74a0e3c3616f872a5187e7ac853f24fd59a06bb187b"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\after\\frontend\\src\\features\\agent\\lib\\chat-attachments.ts",
+      "sha256": "cb5b911fe00fa95817d2181fc9605c95bbea73dfb5fea1b909b0fdfc20eeb44d"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\after\\frontend\\src\\features\\agent\\lib\\chat-attachments.test.mjs",
+      "sha256": "bb356bcc3b9a8cfd846662feb07545eca51f6695f40c835f66c5b04663332f74"
+    }
+  ],
+  "files_changed": [
+    "backend/nis/agent/orchestration/project_intake.py",
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/nis/agent/tools/services.py",
+    "backend/nis/agent/tools/api.py",
+    "backend/tests/test_qwen_document_intake.py",
+    "frontend/src/features/agent/lib/chat-attachments.ts",
+    "frontend/src/features/agent/lib/chat-attachments.test.mjs"
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\owned-changes.diff",
+      "sha256": "5c5e8448109ffdbe0300dc4a9e52202f25432dd887547ffde8c232fba88401f4"
+    }
+  ],
+  "remaining_findings": [],
+  "context": {
+    "source_complete_semantics": "Every character is transferred and hashed; final source_complete only after all sections and global semantic validation.",
+    "aggregate_limits": "Per-inference bounds remain 24 components / 16 technologies, while final union has no per-section collection cap.",
+    "user_limit": "1000000 Unicode characters; existing 5 MiB text upload limit retained.",
+    "no_canonical_mutations": true,
+    "architecture_review": "Shared native intake handler and source semantic validator reused. No registry, transport rule, generation path, model writes, review authority or technology/preflight semantics changed."
+  },
+  "tests": [
+    {
+      "scope": "frontend attachments and NDJSON stream",
+      "result": "7 passed",
+      "command": "node --experimental-strip-types --test src/features/agent/lib/chat-attachments.test.mjs src/features/agent/lib/document-intake-response.test.mjs"
+    },
+    {
+      "scope": "obsolete backend runs before final fixture corrections",
+      "result": "cancelled; rerunning complete current regression file in isolated SQL database",
+      "reason": "Use natural prose fixtures for large-document behavior; long artificial unbroken words cause unrelated existing regex quadratic behavior."
+    }
+  ],
+  "validations": {
+    "regressions": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\document-regressions.xml",
+          "sha256": "3b72bc30aa24a1286741d0b4bdb3f85777e705370f5d55c273978abd4ebe14b6"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\frontend-regressions.json",
+          "sha256": "6de7dddc5232bca4671c7295e62883cf443b312b477377cd69de9fd12ac4f170"
+        }
+      ]
+    },
+    "native_large_document": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\native-large-document.json",
+          "sha256": "f1a15b8f2bd1647cdeb924f67f7853eb74a5660af9ab945a46f158fc180570c0"
+        }
+      ]
+    },
+    "full_release_gate": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-c74dcdfd5870\\a1c086d28f4b\\receipt.json",
+          "sha256": "4c7c3b313758b7e282bd253cc0547db507f717f340dfcb84ea06089ca32a7be7"
+        }
+      ]
+    },
+    "production_identity_health_function": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\production-verification.json",
+          "sha256": "1f0d8864e1c2fd63fdcc8f7391fc97d7795b7d8dc1063ed85293be75cf2fec17"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\release-and-deploy.log",
+          "sha256": "eb35527df97465e13dc03a8675fcaa90cb1fe280ae9d360c80e4b6da33aaa212"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\production-links.json",
+          "sha256": "bb72959a9cf965f43a979c25f2ea0deb7b52be1fa96e24776a8bbee6dd39aab1"
+        }
+      ]
+    }
+  },
+  "outcomes": {
+    "automatic_complete_sections": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\document-regressions.xml",
+          "sha256": "3b72bc30aa24a1286741d0b4bdb3f85777e705370f5d55c273978abd4ebe14b6"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\native-large-document.json",
+          "sha256": "f1a15b8f2bd1647cdeb924f67f7853eb74a5660af9ab945a46f158fc180570c0"
+        }
+      ]
+    },
+    "complete_aggregate": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\document-regressions.xml",
+          "sha256": "3b72bc30aa24a1286741d0b4bdb3f85777e705370f5d55c273978abd4ebe14b6"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\native-large-document.json",
+          "sha256": "f1a15b8f2bd1647cdeb924f67f7853eb74a5660af9ab945a46f158fc180570c0"
+        }
+      ]
+    },
+    "production_delivery": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-c74dcdfd5870\\a1c086d28f4b\\receipt.json",
+          "sha256": "4c7c3b313758b7e282bd253cc0547db507f717f340dfcb84ea06089ca32a7be7"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\production-verification.json",
+          "sha256": "1f0d8864e1c2fd63fdcc8f7391fc97d7795b7d8dc1063ed85293be75cf2fec17"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\release-and-deploy.log",
+          "sha256": "eb35527df97465e13dc03a8675fcaa90cb1fe280ae9d360c80e4b6da33aaa212"
+        }
+      ]
+    }
+  },
+  "validation": {
+    "backend_regressions": {
+      "passed": 92,
+      "warnings": 1,
+      "seconds": 498.73,
+      "isolated_sql": true
+    },
+    "frontend_regressions": {
+      "passed": 7
+    },
+    "native_large_document": {
+      "status": "PASSED",
+      "characters": 63705,
+      "sections": 15,
+      "calls": 15,
+      "components": 82,
+      "database_access": false
+    }
+  },
+  "preflight": {
+    "architecture": "Existing source semantic validation, local-provider verification, project/source binding and review/write restrictions preserved.",
+    "release_gate": "Complete PASS for exact deployed immutable image; prior storage FAIL preserved."
+  },
+  "cleanup": {
+    "authorization": "AGENTS.md standing scoped cleanup of unused fully archived FAIL candidates",
+    "removed_image": "sha256:7591bf9e818cbfa213f3f938ceaf498652f94605f9b42c34bc281ddb1918bd85",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\cleanup-inventory.json",
+        "sha256": "b0c9dd04b641f6e854f0e2a43a370877274db83d31c56036c4295b8609712e1c"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\archive-audit.json",
+        "sha256": "9b9f720319960a36e03599612600c1f96aed0f339faa7a00e2f77f7e357a592b"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\fresh-removal-audit.json",
+        "sha256": "152397eb41024eac7b5e46b8a4d79ac0aa93c2152a979f3bfbb0c405387dcde2"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\removal-result.json",
+        "sha256": "305cefe33f0cd705f7594d53607c6f21d7ebf1a0fb4f34518b157bd7d888e13d"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\large-document-intake-20261016\\archived-fail-receipt-0.json",
+        "sha256": "0e4be862a932f4d0589c0a9256d21d4850eecdd74b03f1e1fa7771a0a0b2db98"
+      }
+    ],
+    "archive": {
+      "path": "F:\\CodexOrdner\\visualizations\\2026\\10\\16\\01a143e7-705b-74f0-b43c-f7b2a1f9c707\\failed-release-eeb41e71a396.tar",
+      "sha256": "55d157a3378dccc5a80982358fc2be9f14ff5215c7ecf1bb0ff19d8aa7935bd9"
+    },
+    "removed_count": 1,
+    "production_unchanged": true
+  },
+  "revision_initial": {
+    "backend/nis/agent/orchestration/project_intake.py": "45ae525ed27f80a5db81a1b50e5ea3ce5e989fe37c13fe2f6ef3007e0b03a16d",
+    "backend/nis/agent/orchestration/local_reasoner.py": "d9a9685c777c5a6b59f9af3b77260d7ec83cdf80f0d50deedafede128a6fd926",
+    "backend/nis/agent/tools/services.py": "1572b4dea394ddc39948ed7651fbf5f24ad03ecf33148525dcb4b3b191be5df1",
+    "backend/nis/agent/tools/api.py": "aabfc24eaad33b127e5d89a083babcdb46b148467a8f11d20b7e169c2353ebd0",
+    "backend/tests/test_qwen_document_intake.py": "c01b3a2b079b978d995848e8f3dfc0f533b4eb3bdb0a4ddf0b90512ad92f8fc1",
+    "frontend/src/features/agent/lib/chat-attachments.ts": "762a03e88c4c9626f155ddfb25b1eb9b3016319ed487e982bf46043be8db1f9f",
+    "frontend/src/features/agent/lib/chat-attachments.test.mjs": "daef6582744a034fdb6947a284fc8dc2eebc6f2c4ca4d8e13b8b23897959b75b"
+  },
+  "release_receipt": "backend/test-output/release-gates/delivery-c74dcdfd5870/a1c086d28f4b/receipt.json"
+}

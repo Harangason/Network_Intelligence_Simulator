@@ -1,12 +1,12 @@
 export const MAX_CHAT_ATTACHMENTS = 4;
 export const MAX_CHAT_FILE_BYTES = 5 * 1024 * 1024;
 export const MAX_CHAT_DOCUMENT_CHARS = 16_000;
-export const MAX_WIZARD_DOCUMENT_CHARS = 80_000;
+export const MAX_WIZARD_DOCUMENT_CHARS = 1_000_000;
 
 /** Wizard inventory must use a complete source, never an unmarked excerpt. */
 export function completeWizardDocumentText(text: string): string {
-  if (text.length > MAX_WIZARD_DOCUMENT_CHARS) {
-    throw new Error(`Die Aufgaben-Anlagen dürfen zusammen höchstens ${MAX_WIZARD_DOCUMENT_CHARS.toLocaleString('de-DE')} Zeichen enthalten. Bitte die Quelle aufteilen; sie wird nicht gekürzt.`);
+  if (Array.from(text).length > MAX_WIZARD_DOCUMENT_CHARS) {
+    throw new Error(`Die Aufgaben-Anlagen überschreiten die Uploadgrenze von ${MAX_WIZARD_DOCUMENT_CHARS.toLocaleString('de-DE')} Zeichen. Die Quelle wurde nicht gekürzt.`);
   }
   return text;
 }

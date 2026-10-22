@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="3" time="7.962" timestamp="2026-10-21T13:02:49.188633+02:00" hostname="Haranga"><testcase classname="tests.test_reference_reasoner" name="test_native_inventory_decoder_rejects_incomplete_without_coverage_progress[empty]" time="3.956"><failure message="Failed: DID NOT RAISE ValidationError">mode = 'empty'
+
+    @pytest.mark.parametrize('mode', ['empty', 'already_bound'])
+    def test_native_inventory_decoder_rejects_incomplete_without_coverage_progress(mode):
+        from jsonschema import Draft202012Validator, ValidationError
+        prepared = intake.prepare_reference_design(fixture_request())
+        known, _ = _reference_declared_instances(prepared, prepared['facts'])
+        fact = next(key for key, row in prepared['facts'].items() if row['kind'] == 'FUNCTION')
+        known[0]['source_fact_ids'].append(fact)
+        schema = _reference_schema_for_stage(prepared, {'devices'},
+            derivation_fact_ids=[fact], existing_devices=known)
+        choice = {'choice_kind': 'EXISTING', 'device_id': known[0]['id'],
+                  'source_fact_ids': [fact], 'rationale': 'Repeated existing binding', 'field_references': {}}
+        value = {**intake.ReferenceDesignProposal().model_dump(mode='json'),
+                 'inventory_complete': False, 'inventory_choices': [] if mode == 'empty' else [choice]}
+&gt;       with pytest.raises(ValidationError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValidationError
+
+backend\tests\test_reference_reasoner.py:1201: Failed</failure></testcase><testcase classname="tests.test_reference_reasoner" name="test_native_inventory_decoder_rejects_incomplete_without_coverage_progress[already_bound]" time="1.481"><failure message="Failed: DID NOT RAISE ValidationError">mode = 'already_bound'
+
+    @pytest.mark.parametrize('mode', ['empty', 'already_bound'])
+    def test_native_inventory_decoder_rejects_incomplete_without_coverage_progress(mode):
+        from jsonschema import Draft202012Validator, ValidationError
+        prepared = intake.prepare_reference_design(fixture_request())
+        known, _ = _reference_declared_instances(prepared, prepared['facts'])
+        fact = next(key for key, row in prepared['facts'].items() if row['kind'] == 'FUNCTION')
+        known[0]['source_fact_ids'].append(fact)
+        schema = _reference_schema_for_stage(prepared, {'devices'},
+            derivation_fact_ids=[fact], existing_devices=known)
+        choice = {'choice_kind': 'EXISTING', 'device_id': known[0]['id'],
+                  'source_fact_ids': [fact], 'rationale': 'Repeated existing binding', 'field_references': {}}
+        value = {**intake.ReferenceDesignProposal().model_dump(mode='json'),
+                 'inventory_complete': False, 'inventory_choices': [] if mode == 'empty' else [choice]}
+&gt;       with pytest.raises(ValidationError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValidationError
+
+backend\tests\test_reference_reasoner.py:1201: Failed</failure></testcase><testcase classname="tests.test_reference_reasoner" name="test_native_inventory_decoder_binds_only_missing_facts_to_each_existing_identity" time="1.461"><failure message="Failed: DID NOT RAISE ValidationError">def test_native_inventory_decoder_binds_only_missing_facts_to_each_existing_identity():
+        from jsonschema import Draft202012Validator, ValidationError
+        prepared = intake.prepare_reference_design(wide_derivation_request())
+        known, _ = _reference_declared_instances(prepared, prepared['facts'])
+        facts = [key for key, row in prepared['facts'].items() if row['kind'] == 'FUNCTION'][:2]
+        assert len(facts) == 2
+        known[0]['source_fact_ids'].append(facts[0])
+        schema = _reference_schema_for_stage(prepared, {'devices'},
+            derivation_fact_ids=facts, existing_devices=known)
+        validator = Draft202012Validator(schema)
+        base = {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'inventory_complete': False}
+        choice = {'choice_kind': 'EXISTING', 'device_id': known[0]['id'],
+                  'source_fact_ids': [facts[1]], 'rationale': 'Additional source binding', 'field_references': {}}
+        validator.validate({**base, 'inventory_choices': [choice]})
+&gt;       with pytest.raises(ValidationError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValidationError
+
+backend\tests\test_reference_reasoner.py:1220: Failed</failure></testcase></testsuite></testsuites>

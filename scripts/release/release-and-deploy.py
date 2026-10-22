@@ -6,6 +6,7 @@ from pathlib import Path as _EntryPath
 _entry_sys.path.insert(0, str(_EntryPath(__file__).resolve().parents[1]))
 
 import argparse
+from contextlib import contextmanager
 import importlib.util
 import json
 import os
@@ -16,10 +17,134 @@ import subprocess
 import sys
 import time
 from urllib.request import urlopen
+from urllib.parse import urlsplit
 import uuid
 
 ROOT = Path(__file__).resolve().parents[2]
 RECEIPTS = ROOT / 'backend/test-output/release-gates'
+
+
+@contextmanager
+def gate_lock(root):
+    """One gate per checkout, even for direct calls and different output paths.
+
+    The OS releases the lock after a crash; an old lock file never owns a lease.
+    """
+    path = root / 'backend/test-output/release-gates/.gate.lock'
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open('a+b') as stream:
+        stream.seek(0, os.SEEK_END)
+        if not stream.tell():
+            stream.write(b'\0')
+            stream.flush()
+        stream.seek(0)
+        try:
+            if os.name == 'nt':
+                import msvcrt
+                msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(stream, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError as error:
+            raise RuntimeError('Another release/preparation gate holds the checkout lock; no new build was started.') from error
+        try:
+            yield
+        finally:
+            stream.seek(0)
+            if os.name == 'nt':
+                msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(stream, fcntl.LOCK_UN)
+
+
+def prepared_stack(docker, paths, source, commit, *, prepare, keep, ai_url,
+                   image=None, development_base=None):
+    """Reuse one healthy exact stack; never accumulate retained environments.
+
+    Stopped and unclassified containers count too: deletion needs a separate
+    audited retirement. Normal transient full gates still clean up in finally.
+    """
+    paths = list(paths)
+    if not (prepare or keep):
+        # A previous cleanup failure must not be multiplied by another full gate.
+        failed = set()
+        for path in paths:
+            try:
+                receipt = json.loads(path.read_text(encoding='utf-8-sig'))
+                if isinstance(receipt, dict) and receipt.get('cleanup_incomplete') is True:
+                    failed.update(value for value in receipt.get('containers', {}).values()
+                                  if isinstance(value, str) and value.startswith('nis-e2e-'))
+            except (OSError, ValueError, AttributeError):
+                continue
+        if failed:
+            for command in (['ps', '-a', '--format', '{{.Names}}'],
+                            ['volume', 'ls', '--format', '{{.Name}}'],
+                            ['network', 'ls', '--format', '{{.Name}}']):
+                actual = set(subprocess.check_output([docker, *command], text=True).split())
+                if failed & actual:
+                    raise RuntimeError('A previous test-stack cleanup is incomplete; reconcile its exact resources before another gate. No image was built.')
+        return None
+    ids = subprocess.check_output(
+        [docker, 'ps', '-aq', '--filter', 'name=nis-e2e-'], text=True).split()
+    if not ids:
+        # Networks/volumes left by an interrupted prepare also need reconciliation.
+        for kind, name in (('volume', 'nis-e2e-runtime-'), ('network', 'nis-e2e-network-')):
+            names = subprocess.check_output(
+                [docker, kind, 'ls', '--format', '{{.Name}}'], text=True).split()
+            if any(item.startswith(name) for item in names):
+                raise RuntimeError('Retained test resources exist without containers. Archive/retire their exact receipt resources before preparing another stack.')
+        return None
+    containers = json.loads(subprocess.check_output([docker, 'inspect', *ids], text=True))
+    actual_names = {row['Name'].lstrip('/') for row in containers}
+    for path in paths:
+        try:
+            receipt = json.loads(path.read_text(encoding='utf-8-sig'))
+            if not isinstance(receipt, dict):
+                continue
+            names = receipt.get('containers', {})
+            if not isinstance(names, dict):
+                continue
+            expected = {names.get('app'), names.get('db')}
+            if (prepare and receipt.get('status') == 'PREPARED'
+                    and receipt.get('initial_source_sha256') == source
+                    and receipt.get('initial_commit_id') == commit
+                    and receipt.get('development_only') is not True
+                    and development_base is None
+                    and (image is None or image in {receipt.get('image_id'), receipt.get('image_tag')})
+                    and receipt.get('stack_retirement') is None
+                    and None not in expected and actual_names == expected):
+                app = next(row for row in containers if row['Name'].lstrip('/') == names['app'])
+                db = next(row for row in containers if row['Name'].lstrip('/') == names['db'])
+                if (app['Image'] != receipt.get('image_id')
+                        or any(row['State']['Status'] != 'running' for row in (app, db))
+                        or any((row['Config'].get('Labels') or {}).get('networkis.test') != 'disposable' for row in (app, db))
+                        or f'LOCAL_AI_BASE_URL={ai_url}' not in app['Config'].get('Env', [])):
+                    continue
+                env = dict(item.split('=', 1) for item in app['Config'].get('Env', []) if '=' in item)
+                database = urlsplit(env.get('DATABASE_URL', ''))
+                if (database.hostname != 'test-db' or database.username != 'nis_test'
+                        or database.port != 5432 or database.path != '/nis_test_e2e'
+                        or not names.get('network') or not names.get('runtime')
+                        or any(names['network'] not in row['NetworkSettings']['Networks'] for row in (app, db))
+                        or not any(m.get('Name') == names['runtime'] and m['Destination'] == '/app/var/data'
+                                   for m in app.get('Mounts', []))):
+                    continue
+                base = receipt['base_url']
+                # The URL must be the actual isolated loopback publication.
+                ports = app['NetworkSettings']['Ports']['13500/tcp']
+                if not any(p['HostIp'] == '127.0.0.1' and base == 'http://127.0.0.1:' + p['HostPort'] for p in ports):
+                    continue
+                with urlopen(base + '/api/ready', timeout=3) as response:
+                    if response.status != 200:
+                        continue
+                with urlopen(base + '/api/build-info', timeout=3) as response:
+                    live = json.load(response)
+                if live.get('source_sha256') == source and live.get('commit_id') == commit:
+                    return path, receipt
+        except (OSError, ValueError, KeyError, TypeError, StopIteration):
+            continue
+    raise RuntimeError('A retained test stack already exists (' + ', '.join(sorted(actual_names))
+                       + '). Reuse/resume it or archive and retire its exact receipt resources before preparing another; no image was built.')
 
 
 def receipt_paths():
@@ -83,7 +208,8 @@ def reusable_image(paths, source: str, commit: str):
             image = receipt.get('image_id')
             if (receipt.get('initial_source_sha256') == source
                     and receipt.get('initial_commit_id') == commit
-                    and receipt.get('status') in {'PASS', 'FAIL'}
+                    and receipt.get('status') in {'PASS', 'FAIL', 'PREPARED'}
+                    and receipt.get('stack_retirement') is None
                     and receipt.get('development_only') is not True
                     and isinstance(image, str)
                     and re.fullmatch(r'sha256:[0-9a-f]{64}', image)):
@@ -135,7 +261,7 @@ def verify_live(receipt, *, base_url='http://127.0.0.1:13500'):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--receipt', type=Path, help='Deploy this existing PASS receipt; do not build an image.')
-    parser.add_argument('--no-reuse', action='store_true', help='Run a fresh gate even when this source already has a PASS.')
+    parser.add_argument('--no-reuse', action='store_true', help='Run a fresh full gate; an existing exact-source image is still reused.')
     args = parser.parse_args()
     if not os.environ.get('NIS_TEST_DOCKER') and not shutil.which('docker'):
         config = json.loads((ROOT / 'config/networkis.resources.json').read_text(encoding='utf-8'))
@@ -154,7 +280,7 @@ def main():
         other = None if args.no_reuse else active_gate(receipt_paths(), source)
         if other:
             raise SystemExit(f'Another release gate for this source is running: {other}')
-        candidate = None if args.no_reuse else reusable_image(receipt_paths(), source, commit)
+        candidate = reusable_image(receipt_paths(), source, commit)
         output = RECEIPTS / ('delivery-' + uuid.uuid4().hex[:12])
         command = [sys.executable, str(ROOT / 'scripts/run-release-gate.py'), '--output', str(output)]
         if candidate:

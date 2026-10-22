@@ -86,7 +86,8 @@ export function completeFunctionalDeviceDesign(chains: ExtractedEngineeringChain
   if (!includeOutputs) return result;
   for (const device of devices.values()) {
     if (device.device_type === 'SensorController' || device.device_type === 'ActuatorController' || device.device_type === 'Gateway') continue;
-    const role = perceptionRole(`${device.hardware_name} ${device.function_name}`);
+    const duties = device.configuration?.source_scoped_functions as Array<{ name: string; source_quote: string }> | undefined;
+    const role = perceptionRole(`${device.hardware_name} ${device.function_name} ${(duties ?? []).map(item => item.name).join(' ')}`);
     const sensors = [...devices.values()].filter(item => item.device_type === 'SensorController'
       && item.configuration?.functional_owner === device.hardware_name).map(item => item.hardware_name);
     const actuators = [...devices.values()].filter(item => item.device_type === 'ActuatorController'
@@ -132,7 +133,8 @@ export function completeFunctionalDeviceDesign(chains: ExtractedEngineeringChain
           accepted_measurements: role === 'object_list' ? ['object_list', 'radar_detections']
             : role === 'image_frame' ? ['image_frame', 'object_list']
               : role === 'point_cloud' ? ['point_cloud', 'object_list'] : ['distance'],
-          input_names: sensors, actuator_names: actuators, output_signal: name, evidence: 'semantic_draft_requires_review' },
+          input_names: sensors, actuator_names: actuators, output_signal: name,
+          ...(duties?.length ? { source_functions: duties } : {}), evidence: 'semantic_draft_requires_review' },
         design_evidence: 'illustrative_template_requires_review' },
     });
   }

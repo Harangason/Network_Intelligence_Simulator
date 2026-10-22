@@ -6,12 +6,13 @@
     "backend/nis/engineering/communication/device_communication.py": "3d65e03c31e9e5cd663c96bf2692a7b5257b08ca7c57043801fd13167589e917",
     "backend/nis/agent/tools/services.py": "1572b4dea394ddc39948ed7651fbf5f24ad03ecf33148525dcb4b3b191be5df1",
     "backend/nis/agent/orchestration/tool_selection.py": "bbbdd3ff07a60c8c9eaabec3a5ebf25d799a3b02c07842326d09d94f49135809",
-    "backend/nis/agent/orchestration/local_reasoner.py": "88ef3d51bfc76136020deef135058caa6fc8c19215bf8519c8e0317b9eaa4f0e",
-    "backend/tests/test_functional_device_design.py": "ab19f9f51054a903cc93760f0427468c3483bf5dde886f845b99dcabe57f10ab",
+    "backend/nis/agent/orchestration/local_reasoner.py": "09b9310ed1bbb705d0aa771bcef9e916457173497e39d6fb487f4f9501cd7791",
+    "backend/tests/test_functional_device_design.py": "8cb927ea0a254b1cb7859ff9d9340e5da8e4c62f538069af675f4c9f7284a13c",
     "backend/tests/test_agent_clarification_contract.py": "ab1cf77886f8975d6194b86000c1aaf2b1c4b7176acdb178bd534318232f8090",
     "docs/COMMUNICATION_DESIGN_CONTRACT.md": "57ee63f1ebbb23443e36c53c3c7f71c54035702d6fe0899a8c2737be0854f4a8",
     "backend/nis/agent/tools/wizard_generation.py": "5e49a97427c6c594a24ba881468754b356c1b0899480f460a7862f145ec8904e",
-    "docs/migrations/structure_mapping.csv": "e5de600b8cb970bf119833b28a3c51cd137631984770bdc4ea81e8d075e699a3"
+    "docs/migrations/structure_mapping.csv": "242d42882d42f7ed0790da1ed5914ca16690bec8c09926f197e0e338b6077f69",
+    "frontend/e2e/wizard.spec.ts": "66c9339f8fdf444eef453437b2f0ec5858465be32de64ec9119065b52cb02a19"
   },
   "requested_change": "Teach NIS to inspect and complete functional sensor-processing-output-consumer-actuator chains through its own proposal/review workflow; do not mutate or simulate user projects on behalf of NIS",
   "required_outcomes": [
@@ -23,7 +24,10 @@
     "targeted_tests",
     "release_gate",
     "current_typecheck",
-    "live_qwen_full_source"
+    "live_qwen_full_source",
+    "targeted_gui_repair",
+    "verification_input_transition",
+    "production_native_provider"
   ],
   "unresolved_decisions": [],
   "files_changed": [
@@ -35,25 +39,85 @@
     "backend/tests/test_agent_clarification_contract.py",
     "docs/COMMUNICATION_DESIGN_CONTRACT.md",
     "backend/nis/agent/tools/wizard_generation.py",
-    "docs/migrations/structure_mapping.csv"
+    "docs/migrations/structure_mapping.csv",
+    "frontend/e2e/wizard.spec.ts"
   ],
   "delivery": {
     "decision": "YES",
     "authorization": "User correction: teach NIS logic; standing verified production delivery in AGENTS.md",
     "target": "canonical NetworkIS production",
-    "blocker": "Structured full-file facts passed but globally concatenated proposed_task contradicts later confirmed controller instances; global task/assumption/question merge requires coordinated repair and fresh full native acceptance.",
+    "blocker": null,
     "approval_question": null,
     "cleanup_status": "AUTHORIZED_IMAGE_REMOVED",
     "release_session": null,
-    "release_output": "backend/test-output/release-gates/delivery-150fec15ca8a",
-    "release_state": "STOPPED_BEFORE_BUILD_GLOBAL_DOCUMENT_TASK_REPAIR",
+    "release_output": "backend/test-output/release-gates/delivery-3f9839f6b18a",
+    "release_state": "DEPLOYED",
     "last_aborted_receipt": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-74f08e21a704\\ef652815373d\\receipt.json",
     "current_user_request": "Complete Qwen validation and typecheck, then shared NIS release through verified production delivery",
     "release_command": "backend/.venv/Scripts/python.exe scripts/release-and-deploy.py",
-    "release_log": "docs/implementation-workloads/functional-agent-workflow-20261014/release-delivery-repaired-final-20261014.log",
-    "last_failed_receipt": "backend/test-output/release-gates/delivery-150fec15ca8a/81d3796a7cc2/receipt.json"
+    "release_log": "docs/implementation-workloads/functional-agent-workflow-20261014/release-delivery-existing-image-final-20261014.log",
+    "last_failed_receipt": "backend/test-output/release-gates/delivery-f6503195ae67/d7ad51da43e8/receipt.json",
+    "candidate_image_tag": "networkis:candidate-d7ad51da43e8",
+    "candidate_application_source_sha256": "19ebdcb753bb67b1de0b70a2df0ab88e3e6d787061bd0029e9e82645edde7857",
+    "pending_browser_test_data_repairs": [
+      {
+        "file": "frontend/e2e/document-intake.spec.ts",
+        "owner_thread": "01a139b0-6181-7642-9f5d-563105609790",
+        "cause": "Fresh randomUUID wizard requires a project name; upload19088 is complete but step4 correctly disabled without mandatory name.",
+        "change": "Fill normal project-name UI field before upload; keep assertions/timeouts."
+      },
+      {
+        "file": "frontend/e2e/wizard.spec.ts",
+        "owner_thread": "root",
+        "cause": "CAN-FD-only small scenario contains explicit separate CAN bitrate declaration, correctly selecting both transports.",
+        "change": "Remove only contradictory standalone CAN test-data line; preserve CAN-FD arbitration/data and exact can_fd/9-stage assertions."
+      }
+    ],
+    "candidate_image_id": "sha256:e27aa35055b668d136f9f15adba308d1e4b22a1c5ad7d933f6118f9bc71b770b",
+    "active_receipt": "backend/test-output/release-gates/delivery-3f9839f6b18a/da780e21f45c/receipt.json",
+    "completed_release_session": 75349,
+    "tested_version": "sha256:e27aa35055b668d136f9f15adba308d1e4b22a1c5ad7d933f6118f9bc71b770b",
+    "running_version": "sha256:e27aa35055b668d136f9f15adba308d1e4b22a1c5ad7d933f6118f9bc71b770b",
+    "checks": {
+      "release": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\release-pass-receipt.json",
+            "sha256": "c6539efe96334f073a0390135e5d69bbe661a1dddee32d66b5bf1266dcd55516"
+          }
+        ]
+      },
+      "deployment": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\production-functional.json",
+            "sha256": "cfdce1f4b8ab962ee5f9bf84ff766e7b415a7ff3714c50cedfdfab675916c230"
+          }
+        ]
+      },
+      "health": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\production-functional.json",
+            "sha256": "cfdce1f4b8ab962ee5f9bf84ff766e7b415a7ff3714c50cedfdfab675916c230"
+          }
+        ]
+      },
+      "functional": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\production-functional.json",
+            "sha256": "cfdce1f4b8ab962ee5f9bf84ff766e7b415a7ff3714c50cedfdfab675916c230"
+          }
+        ]
+      }
+    }
   },
-  "status": "VALIDATING",
+  "status": "COMPLETED",
   "root_cause": "PROCESSOR input contracts are not evaluated, legacy contracts skip semantic checks, functional audit not selected for device-chain requests",
   "initial_revision_before": {
     "backend/nis/engineering/communication/device_communication.py": "3f80625ed1bd35a18350e1b5394133e9eb722561be2622edfb5087a41ab81999",
@@ -102,6 +166,10 @@
     {
       "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\before\\docs\\migrations\\structure_mapping.csv",
       "sha256": "e5de600b8cb970bf119833b28a3c51cd137631984770bdc4ea81e8d075e699a3"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\before\\frontend\\e2e\\wizard.spec.ts",
+      "sha256": "66c9339f8fdf444eef453437b2f0ec5858465be32de64ec9119065b52cb02a19"
     }
   ],
   "after": [
@@ -111,19 +179,19 @@
     },
     {
       "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\after\\backend\\nis\\agent\\tools\\services.py",
-      "sha256": "ae4e0d62e133aa775541803306bfa8431ed51ad35d99d80fc1f12d35fee28395"
+      "sha256": "1572b4dea394ddc39948ed7651fbf5f24ad03ecf33148525dcb4b3b191be5df1"
     },
     {
       "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\after\\backend\\nis\\agent\\orchestration\\tool_selection.py",
-      "sha256": "0797e7171cb3c114e74e43852122c2bb458d77ac62d5f940e282eb8ea7c68985"
+      "sha256": "bbbdd3ff07a60c8c9eaabec3a5ebf25d799a3b02c07842326d09d94f49135809"
     },
     {
       "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\after\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
-      "sha256": "8f1f4f591755ec76dfa563220f9da60e107df0bb59750dbe5fdadd80a7f5909d"
+      "sha256": "09b9310ed1bbb705d0aa771bcef9e916457173497e39d6fb487f4f9501cd7791"
     },
     {
       "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\after\\backend\\tests\\test_functional_device_design.py",
-      "sha256": "ab19f9f51054a903cc93760f0427468c3483bf5dde886f845b99dcabe57f10ab"
+      "sha256": "8cb927ea0a254b1cb7859ff9d9340e5da8e4c62f538069af675f4c9f7284a13c"
     },
     {
       "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\after\\backend\\tests\\test_agent_clarification_contract.py",
@@ -136,12 +204,20 @@
     {
       "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\after\\backend\\nis\\agent\\tools\\wizard_generation.py",
       "sha256": "5e49a97427c6c594a24ba881468754b356c1b0899480f460a7862f145ec8904e"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\after\\docs\\migrations\\structure_mapping.csv",
+      "sha256": "242d42882d42f7ed0790da1ed5914ca16690bec8c09926f197e0e338b6077f69"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\after\\frontend\\e2e\\wizard.spec.ts",
+      "sha256": "dbd92718bfab82761ded4dbc23caa62b10eaf4ced1c13508afed47a99268e1b5"
     }
   ],
   "diff": [
     {
       "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\owned-changes.diff",
-      "sha256": "ef7456628bce90379567f20593bc47b6eab965b875cdc4103d038b932c1f2382"
+      "sha256": "2891dbd05e30e433209268d79e1822176b0b146a93ba301ade50c2d249e49aa1"
     }
   ],
   "remaining_findings": [],
@@ -152,6 +228,18 @@
         {
           "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\targeted-tests-final.log",
           "sha256": "d40511ea7d2f5983e17c7055c82ad08d69cdae81d9a2ecb38de9e1dc47426355"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\implementation.md",
+          "sha256": "24d673e5f75933a8af1d9a67b9ed52fa658d6e9a5d5d5e7ebd12140312d2bdcb"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\owned-changes.diff",
+          "sha256": "2891dbd05e30e433209268d79e1822176b0b146a93ba301ade50c2d249e49aa1"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\release-test-data-repair-targeted.log",
+          "sha256": "e1285a8684626e84f33da8c7cd35f0eba0e81a8bebc33e6b4b0428cb9391ec17"
         }
       ]
     },
@@ -169,7 +257,17 @@
       ]
     },
     "verified_production_delivery": {
-      "status": "PENDING"
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\release-pass-receipt.json",
+          "sha256": "c6539efe96334f073a0390135e5d69bbe661a1dddee32d66b5bf1266dcd55516"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\production-functional.json",
+          "sha256": "cfdce1f4b8ab962ee5f9bf84ff766e7b415a7ff3714c50cedfdfab675916c230"
+        }
+      ]
     }
   },
   "validations": {
@@ -187,8 +285,13 @@
       ]
     },
     "release_gate": {
-      "status": "PENDING",
-      "note": "Previous gate intentionally aborted before build; not a test acceptance failure"
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\release-pass-receipt.json",
+          "sha256": "c6539efe96334f073a0390135e5d69bbe661a1dddee32d66b5bf1266dcd55516"
+        }
+      ]
     },
     "current_typecheck": {
       "status": "PASSED",
@@ -200,20 +303,78 @@
       ]
     },
     "live_qwen_full_source": {
-      "status": "PENDING",
+      "status": "PASSED",
       "evidence": [
         {
           "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\native-full-source-acceptance.json",
-          "sha256": "d8fd2a744d1ef812b5f24cb2e4456792733d96ee2a0c074e647846f24f33da25"
+          "sha256": "c8373759d412b42814c60ee7b36b148f0a11c59c3926de3b08f1672004090a7a"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\verification-input-transition.json",
+          "sha256": "d80abb0384ea3a2f906794ef31d06561319fa31c9eff741228cab043d89c7900"
         }
       ],
-      "note": "Previous native acceptance proved structured facts, not global task consistency. Original evidence preserved; fresh corrected full native run and stronger acceptance required."
+      "note": "Real complete model phase, application code and source unchanged; only GUI test prerequisites changed and were separately verified on the same immutable image. No new or replay-based inference PASS claimed."
+    },
+    "targeted_gui_repair": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\targeted-browser-repair-result.json",
+          "sha256": "99cdbf9a6907fc3840a0e99aa72893db9c400ef709cb56211b4d7f9b22728de0"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\targeted-browser-repair.log",
+          "sha256": "42244969683f11b0723a530616dc0def5533c09ab94e2694cfd7b74802304ac8"
+        }
+      ]
+    },
+    "verification_input_transition": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\verification-input-transition.json",
+          "sha256": "d80abb0384ea3a2f906794ef31d06561319fa31c9eff741228cab043d89c7900"
+        }
+      ]
+    },
+    "production_native_provider": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\production-native-provider.json",
+          "sha256": "752eb3232e363198d6ef7f5388ae9e5ff3dbfe663d12241ff22e9f1cac01457b"
+        }
+      ]
+    },
+    "additional_production_wizard": {
+      "status": "PASSED",
+      "scope": "Original19088-character file through actual production file chooser; five controllers, unknown sensor/actuator groups, separate CAN/CAN-FD, no false ADC/degrading device; takeover disabled; Custom-vs-Automotive mismatch retained for user clarification; no canonical apply or new inference.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\document-parser-20261014\\production-wizard-dom.txt",
+          "sha256": "299469f0247e89622b3feac1ea6f6f2c16b88542b5d9b6ac453f197752381d79"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\document-parser-20261014\\production-wizard-scope.jpg",
+          "sha256": "eb8e1aee74e00b1d7002fff36bc947376f86d79adbc0c2fe09a6733c22597f4f"
+        }
+      ]
+    },
+    "post_delivery_smoke_cleanup": {
+      "status": "PASSED",
+      "evidence": [
+        "docs/implementation-workloads/functional-agent-workflow-20261014/post-delivery-draft-undo/proof.json"
+      ],
+      "canonical_model_unchanged": true,
+      "release_change": false
     }
   },
   "context": {
     "user_correction": "Teach NIS how to work; no manual product-model amendment or simulation",
     "production_model_mutations": 0,
-    "current_product_image": "sha256:fc59217a9cffa8da419646f8034928c70d008de86ef20fc927003a35c24c5aa0"
+    "current_product_image": "sha256:e27aa35055b668d136f9f15adba308d1e4b22a1c5ad7d933f6118f9bc71b770b",
+    "previous_product_image": "sha256:fc59217a9cffa8da419646f8034928c70d008de86ef20fc927003a35c24c5aa0"
   },
   "shared_release_coordination": {
     "source_thread": "01a139b0-6181-7642-9f5d-563105609790",
@@ -222,58 +383,91 @@
     "source_message_received": true,
     "resume_condition": "Parser owner sends NIS-ready evidence and confirms no further NIS application/test changes until delivery; EIP work remains separate",
     "latest_owner_status": {
-      "targeted_backend": 152,
-      "backend_seconds": 123.53,
-      "full_run": 92650,
-      "full_source_chars": 19088,
+      "targeted_backend": 154,
+      "backend_seconds": 104.37,
+      "full_run": 4874,
       "total_sections": 7,
-      "terminal": "PASS complete original source",
+      "source_chars": 19088,
+      "terminal": "PASS full source and independent global review",
       "source_hashes_unchanged": true,
-      "typecheck": "PASSED",
+      "typecheck": "PASSED frontend unchanged",
       "production": "UNCHANGED",
-      "full_source_seconds": 2319.56,
-      "accepted_sections": 7,
-      "actual_model_calls": 9
+      "full_source_seconds": 2243.5,
+      "actual_model_calls": 9,
+      "accepted_sections": 7
     },
-    "final_source_freeze_confirmed": true
+    "final_source_freeze_confirmed": true,
+    "verified_current_commit": "70f0c160bc4f08bd23437f6b3c175523d1e5859c",
+    "additional_production_wizard_verified": true
   },
   "repair": {
     "owner": "TEST_DATA",
-    "root_cause": "Functional assertion selected an arbitrary first Function despite two valid contracts; structure inventory omitted two new canonical test files. No application defect identified in these two failures.",
-    "first_failing_layer": "Backend test identity selection and migration inventory evidence",
-    "reproduction": "Complete isolated backend suite: Custom generator review/apply selects downstream PROCESSOR by random database order; structure inventory reports two uncovered files.",
+    "root_cause": "CAN-FD-only small workflow fixture explicitly also declares a standalone CAN bitrate; the parser correctly retains both technologies, violating the intended single-transport test precondition.",
+    "first_failing_layer": "Browser test input, before model generation",
+    "reproduction": "Browser case109 received CAN and CAN-FD from test text containing both CAN and CAN-FD; exact technology assertion remains correct for a CAN-FD-only scenario.",
     "evidence": [
       {
-        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\release-failed-backend-20261014-receipt.json",
-        "sha256": "0a346095bd92321de297cdd511b89408e9d49a14634ada65d063e521da729eb3"
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\release-failed-browser-receipt.json",
+        "sha256": "1bf71fd0b3d78eaa8bf9bc72de9a232a56845cee9661208f5dcef985dbcec997"
       },
       {
-        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\release-failed-backend-20261014-backend-tests.log",
-        "sha256": "668b8c731eb9f47c3b219f2b4ff01c81b9153282338baa92152012e01013d06d"
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\release-failed-browser-browser-e2e.log",
+        "sha256": "32edc531b160d71e83ed984efc42eb89ac720319cd6533b0e25b9d7ddd2501ab"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-f6503195ae67\\d7ad51da43e8\\browser\\wizard-new-small-wizard-tr-c83d1-rvives-reload-restart-small\\error-context.md",
+        "sha256": "106dd14e2c051c63643c509b71c53d2e04137c54ed3f9b182f07f016769ea30c"
       }
     ],
     "affected_files": [
-      "backend/tests/test_functional_device_design.py",
-      "docs/migrations/structure_mapping.csv"
+      "frontend/e2e/wizard.spec.ts"
     ],
-    "acceptance_criteria": "Bind camera input assertion to the actual camera hardware owner, assert PERCEPTION role, preserve all sensor/processor/producer/consumer/payload assertions; account for both existing new test files without excluding inventory.",
+    "acceptance_criteria": "Remove only standalone CAN test-data declaration. Preserve CAN-FD arbitration/data input, exact technology assertion, all nine-stage persistence/reload/restart checks and timeouts.",
     "targeted_tests": [
-      "backend/tests/test_functional_device_design.py",
-      "backend/tests/test_structure_completion.py",
-      "backend/tests/test_structure_architecture.py"
+      "frontend/e2e/wizard.spec.ts @small",
+      "frontend/e2e/document-intake.spec.ts @parser (source owner fixture correction)"
     ],
-    "weaken_assertions_to_pass": false,
-    "targeted_result": {
-      "status": "PASSED",
-      "exit_code": 0,
-      "tests": 31,
-      "seconds": 19.71,
+    "weaken_assertions_to_pass": false
+  },
+  "previous_repairs": [
+    {
+      "owner": "TEST_DATA",
+      "root_cause": "Functional assertion selected an arbitrary first Function despite two valid contracts; structure inventory omitted two new canonical test files. No application defect identified in these two failures.",
+      "first_failing_layer": "Backend test identity selection and migration inventory evidence",
+      "reproduction": "Complete isolated backend suite: Custom generator review/apply selects downstream PROCESSOR by random database order; structure inventory reports two uncovered files.",
       "evidence": [
         {
-          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\release-test-data-repair-targeted.log",
-          "sha256": "e1285a8684626e84f33da8c7cd35f0eba0e81a8bebc33e6b4b0428cb9391ec17"
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\release-failed-backend-20261014-receipt.json",
+          "sha256": "0a346095bd92321de297cdd511b89408e9d49a14634ada65d063e521da729eb3"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\release-failed-backend-20261014-backend-tests.log",
+          "sha256": "668b8c731eb9f47c3b219f2b4ff01c81b9153282338baa92152012e01013d06d"
         }
-      ]
+      ],
+      "affected_files": [
+        "backend/tests/test_functional_device_design.py",
+        "docs/migrations/structure_mapping.csv"
+      ],
+      "acceptance_criteria": "Bind camera input assertion to the actual camera hardware owner, assert PERCEPTION role, preserve all sensor/processor/producer/consumer/payload assertions; account for both existing new test files without excluding inventory.",
+      "targeted_tests": [
+        "backend/tests/test_functional_device_design.py",
+        "backend/tests/test_structure_completion.py",
+        "backend/tests/test_structure_architecture.py"
+      ],
+      "weaken_assertions_to_pass": false,
+      "targeted_result": {
+        "status": "PASSED",
+        "exit_code": 0,
+        "tests": 31,
+        "seconds": 19.71,
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\functional-agent-workflow-20261014\\release-test-data-repair-targeted.log",
+            "sha256": "e1285a8684626e84f33da8c7cd35f0eba0e81a8bebc33e6b4b0428cb9391ec17"
+          }
+        ]
+      }
     }
-  }
+  ]
 }

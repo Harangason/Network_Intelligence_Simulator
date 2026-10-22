@@ -14,6 +14,8 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
     names = {"inspect_project","search_model","inspect_object","ask_engineering_question","discover_engineering_tools", "type_engineering_input",
              "inspect_assistant_capabilities", "prepare_assistant_action"}
     focused = set()
+    if re.search(r'dokument|datei|anhang|anlage|document|attachment|specification', prompt, re.I):
+        focused.add('interpret_project_document')
     if re.search(r'sensor|aktor|actuator|aktuator|stellglied|kamera|camera|radar|lidar|wahrnehm|perception|objektdaten|object.?data|fahrerassistenz|sensorfusion', prompt, re.I):
         focused.add('validate_device_communication')
         names.update({'inspect_hardware', 'inspect_signal_definition', 'inspect_message',

@@ -28,6 +28,18 @@ function Test-ReadablePath($Path) {
   }
 }
 
+function Test-OllamaListener {
+  $OllamaSocket = [System.Net.Sockets.TcpClient]::new()
+  try {
+    $OllamaConnect = $OllamaSocket.ConnectAsync("127.0.0.1", 11434)
+    return $OllamaConnect.Wait(1000) -and $OllamaSocket.Connected
+  } catch {
+    return $false
+  } finally {
+    $OllamaSocket.Dispose()
+  }
+}
+
 if (-not (Test-ReadablePath $Docker)) {
   $Docker = (Get-Command docker -ErrorAction SilentlyContinue).Source
 }
@@ -130,22 +142,16 @@ if (Test-ReadablePath $Ollama) {
   try {
     Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:11434/api/tags" -TimeoutSec 2 | Out-Null
   } catch {
-    Write-Host "Ollama wird gestartet..."
-    Start-Process -FilePath $Ollama -ArgumentList "serve" -WindowStyle Hidden
-    Start-Sleep -Seconds 3
+    # Failed metadata is not proof that the shared provider has stopped.
+    if (Test-OllamaListener) {
+      Write-Warning "Ollama ist erreichbar; Metadaten fehlen. Der bestehende Dienst bleibt unverändert."
+    } else {
+      Write-Host "Ollama wird gestartet..."
+      Start-Process -FilePath $Ollama -ArgumentList "serve" -WindowStyle Hidden
+      Start-Sleep -Seconds 3
+    }
   }
-  try {
-    $WarmPayload = @{
-      model = [string]$Config.ai.providers.ollama.fast_model
-      prompt = ""
-      stream = $false
-      keep_alive = [string]$Config.resources.ollama_fast_keep_alive
-    } | ConvertTo-Json -Compress
-    Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:11434/api/generate" -ContentType "application/json" -Body $WarmPayload -TimeoutSec 180 | Out-Null
-    Write-Host "Lokales Semantikmodell ist vorgewärmt ($($Config.ai.providers.ollama.fast_model))."
-  } catch {
-    Write-Warning "Semantikmodell konnte nicht vorgewärmt werden: $($_.Exception.Message)"
-  }
+  # Do not enqueue optional inference during startup: it can evict active Qwen state.
 }
 
 $networkisRunning = (& $Docker ps --filter "name=^/NetworkIS$" --format "{{.Names}}") -contains "NetworkIS"

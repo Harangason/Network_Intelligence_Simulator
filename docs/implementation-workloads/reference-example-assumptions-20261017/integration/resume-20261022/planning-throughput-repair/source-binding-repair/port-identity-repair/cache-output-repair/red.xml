@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="10" time="31.554" timestamp="2026-10-22T19:52:24.366112+02:00" hostname="Haranga"><testcase classname="tests.test_reference_cache_output" name="test_fitting_older_native_anchor_precedes_full_snapshot_fallback" time="0.035"><failure message="AssertionError: A fitting complete native prefix was discarded&#10;assert [{'role': 'sy... decision&quot;}'}] == [{'role': 'sy...ly&quot;:true}\n'}]&#10;  &#10;  At index 1 diff: {'role': 'user', 'content': '{&quot;original_source&quot;:&quot;Original\\r\\nµ 🦾 /~ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss...&#10;  &#10;  ...Full output truncated (3 lines hidden), use '-vv' to show">def test_fitting_older_native_anchor_precedes_full_snapshot_fallback():
+        from backend.tests.test_reference_reasoner import effective_reference_context
+        older, newer, current = anchor_fixture()
+        original = deepcopy((older, newer, current))
+        history = [*newer[0], {'role': 'user', 'content': 'x' * 125000}]
+        messages, fallback, rebased = with_older_anchor(history, newer[1], current, newer, older)
+        assert rebased and messages == fallback
+&gt;       assert messages[:len(older[0])] == older[0], 'A fitting complete native prefix was discarded'
+E       AssertionError: A fitting complete native prefix was discarded
+E       assert [{'role': 'sy... decision"}'}] == [{'role': 'sy...ly":true}\n'}]
+E         
+E         At index 1 diff: {'role': 'user', 'content': '{"original_source":"Original\\r\\nµ 🦾 /~ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss...
+E         
+E         ...Full output truncated (3 lines hidden), use '-vv' to show
+
+backend\tests\test_reference_cache_output.py:44: AssertionError</failure></testcase><testcase classname="tests.test_reference_cache_output" name="test_no_fitting_anchor_uses_complete_snapshot_without_dropping_source" time="0.012" /><testcase classname="tests.test_reference_cache_output" name="test_no_anchor_can_make_oversized_complete_source_acceptable" time="0.019" /><testcase classname="tests.test_reference_cache_output" name="test_literal_field_keys_exclude_actual_factid_key_without_property_names" time="5.939"><failure message="Failed: DID NOT RAISE ValidationError">def test_literal_field_keys_exclude_actual_factid_key_without_property_names():
+        prepared, schema, body = measurement_case()
+        fact = next(iter(prepared['facts']))
+        body['measurements'][0]['field_references'] = {fact: ['R1']}
+&gt;       with pytest.raises(ValidationError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValidationError
+
+backend\tests\test_reference_cache_output.py:90: Failed</failure></testcase><testcase classname="tests.test_reference_cache_output" name="test_decoder_excludes_unknown_or_field_disallowed_reference[references0]" time="1.914"><failure message="Failed: DID NOT RAISE ValidationError">references = {'measurements': ['unknown']}
+
+    @pytest.mark.parametrize('references', [{'measurements': ['unknown']}, {'commands': ['R1']}])
+    def test_decoder_excludes_unknown_or_field_disallowed_reference(references):
+        _, schema, body = measurement_case()
+        body['measurements'][0]['field_references'] = references
+&gt;       with pytest.raises(ValidationError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValidationError
+
+backend\tests\test_reference_cache_output.py:98: Failed</failure></testcase><testcase classname="tests.test_reference_cache_output" name="test_decoder_excludes_unknown_or_field_disallowed_reference[references1]" time="1.743"><failure message="Failed: DID NOT RAISE ValidationError">references = {'commands': ['R1']}
+
+    @pytest.mark.parametrize('references', [{'measurements': ['unknown']}, {'commands': ['R1']}])
+    def test_decoder_excludes_unknown_or_field_disallowed_reference(references):
+        _, schema, body = measurement_case()
+        body['measurements'][0]['field_references'] = references
+&gt;       with pytest.raises(ValidationError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValidationError
+
+backend\tests\test_reference_cache_output.py:98: Failed</failure></testcase><testcase classname="tests.test_reference_cache_output" name="test_allowed_reference_pair_and_empty_map_survive_private_projection" time="1.820"><failure message="AssertionError: assert {'items': {'type': 'string'}, 'type': 'array'} is False">def test_allowed_reference_pair_and_empty_map_survive_private_projection():
+        prepared, schema, body = measurement_case()
+        Draft202012Validator(schema).validate(body)
+        body['measurements'][0]['field_references'] = {'measurements': ['R1']}
+        Draft202012Validator(schema).validate(body)
+        references = schema['$defs']['ReferenceMeasurement']['properties']['field_references']
+&gt;       assert references['additionalProperties'] is False
+E       AssertionError: assert {'items': {'type': 'string'}, 'type': 'array'} is False
+
+backend\tests\test_reference_cache_output.py:108: AssertionError</failure></testcase><testcase classname="tests.test_reference_cache_output" name="test_private_rationale_rejects_observed_verbose_size_public_schema_unchanged" time="1.848"><failure message="Failed: DID NOT RAISE ValidationError">def test_private_rationale_rejects_observed_verbose_size_public_schema_unchanged():
+        prepared, schema, body = measurement_case()
+        public = deepcopy(intake.reference_design_schema(prepared))
+        body['measurements'][0]['rationale'] = 'a' * 641
+        intake.ReferenceDesignProposal.model_validate(body)
+&gt;       with pytest.raises(ValidationError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValidationError
+
+backend\tests\test_reference_cache_output.py:118: Failed</failure></testcase><testcase classname="tests.test_reference_cache_output" name="test_concise_private_rationale_preserves_complete_public_choice" time="1.746" /><testcase classname="tests.test_reference_cache_output" name="test_function_progress_reports_actual_group_and_all_original_ids" time="15.313"><failure message="AssertionError: assert None == 1&#10; +  where None = &lt;built-in method get of dict object at 0x0000013646695D00&gt;('scope_index')&#10; +    where &lt;built-in method get of dict object at 0x0000013646695D00&gt; = {'source': 'document_reference_design', 'completed_calls': 9, 'canonical_writes': False, 'planning_stage': 'Atomare und zusammengesetzte Funktionen', ...}.get">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x00000136463AED70&gt;
+
+    def test_function_progress_reports_actual_group_and_all_original_ids(monkeypatch):
+        from backend.nis.engineering.goal_execution.progress import sink
+        from backend.tests.test_reference_reasoner import reasoner_with_transport, run_reference
+        instance, prepared, _ = reasoner_with_transport(monkeypatch)
+        events = []
+        token = sink.set(events.append)
+        try:
+            result = run_reference(instance, prepared)
+        finally:
+            sink.reset(token)
+        functions = [event for event in events if event.get('metadata', {}).get('source') == 'document_reference_design'
+                     and event['metadata'].get('selected_function_fact_ids')]
+        expected = {key for key, fact in prepared['facts'].items() if fact['kind'] == 'FUNCTION'}
+        assert functions
+        assert {key for event in functions for key in event['metadata']['selected_function_fact_ids']} == expected
+        for event in functions:
+&gt;           assert event['metadata'].get('scope_index') == 1
+E           AssertionError: assert None == 1
+E            +  where None = &lt;built-in method get of dict object at 0x0000013646695D00&gt;('scope_index')
+E            +    where &lt;built-in method get of dict object at 0x0000013646695D00&gt; = {'source': 'document_reference_design', 'completed_calls': 9, 'canonical_writes': False, 'planning_stage': 'Atomare und zusammengesetzte Funktionen', ...}.get
+
+backend\tests\test_reference_cache_output.py:148: AssertionError</failure></testcase></testsuite></testsuites>

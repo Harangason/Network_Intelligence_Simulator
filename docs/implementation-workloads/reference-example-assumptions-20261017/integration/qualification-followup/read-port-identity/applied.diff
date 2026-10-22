@@ -1,0 +1,28 @@
+--- before/backend/tests/test_reference_model_persistence.py
++++ after/backend/tests/test_reference_model_persistence.py
+@@ -98,8 +98,12 @@
+     assert len(objects['DataObject']) == 1
+     assert len(objects['Message']) == len(record['proposal']['communication'])
+     assert len(objects['Signal']) == len(record['proposal']['communication'])
+-    hardware_ids = {row['name']: str(row['id']) for row in objects['HardwareNode']}
+-    device_ids = {row['id']: hardware_ids[row['name']] for row in record['proposal']['devices']}
++    saved_ports = {row['physical_port_ref'].rsplit(':', 1)[1]: row for row in interfaces}
++    device_ids = {}
++    for port in record['proposal']['ports']:
++        hardware_id = str(saved_ports[port['id']]['hardware_node_id'])
++        assert device_ids.setdefault(port['device_id'], hardware_id) == hardware_id
++    assert set(device_ids.values()) == {str(row['id']) for row in objects['HardwareNode']}
+     expected_communication = {row['id']: row for row in record['proposal']['communication']}
+     for message in objects['Message']:
+         config = message['configuration']
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -426,6 +426,8 @@
+             'Für Quelleninstanzen die vorhandenen kanonischen source_devices-Namen mit Quellenkontext verwenden; abgeleitete Teilnehmer müssen eindeutige Namen im source_profile besitzen. '
+             'Bereits reservierte Teilnehmernamen gehören zu unabhängigen anderen Profilen und dürfen nicht wiederverwendet werden. '
+             'Kommunikation trägt ausdrücklich die role MEASUREMENT, COMMAND, FEEDBACK, STATUS oder FUNCTION_OUTPUT. Bei Busantworten nur existierende Anfrage-IDs verwenden; bekannte Kommunikationssignaturen sind beigefügt. '
++            'Port.parameters darf ausschließlich CONFIGURATION-Parameter nach den bereitgestellten parameter_roles enthalten. '
++            'EVIDENCE- und REFERENCE-Felder einschließlich *_confirmed-Nachweisen niemals als Annahme ausfüllen; fehlende echte Qualifikation bleibt UNVERIFIED. '
+             'Mehrfachanschlüsse und lokale Busse getrennt vom Backbone planen. Gateway ist Transportstation, kein Ersatz für einen fachlichen Empfänger. '
+             'Intelligente Teilnehmer benötigen bewusst geplante Statusausgänge und deren Empfänger; Aktoren eine getrennte Istwert-/Ausführungsrückmeldung. Keine stillen Begleitsignale ergänzen. '
+             'Stellbefehle brauchen passende physikalische Bedeutung, Einheit, Wertebereich, Skalierung und Rohkodierung. '

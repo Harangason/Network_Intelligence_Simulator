@@ -1,0 +1,12 @@
+parse: error parsing grammar: number of rules that are going to be repeated multiplied by the new repetition exceeds sane defaults, please reduce the number of repetitions or rule complexity
+
+array ::= "[" space ( value ("," space value)* )? space "]"
+boolean ::= ("true" | "false")
+char ::= [^"\\\x7F\x00-\x1F] | [\\] (["\\bfnrt] | "u" [0-9a-fA-F]{4})
+commands ::= "[" space (commands-item ("," space commands-item){0,1999})? space "]"
+commands-item ::= ref-defs-ReferenceCommand
+commands-kv ::= "\"commands\"" space ":" space commands
+commands-rest ::= ( "," space communication-kv )? communication-rest
+communication ::= "[" space (communication-item ("," space communication-item){0,9999})? space "]"
+communication-item ::= ref-defs-ReferenceCommunication
+communication-kv ::= "\"communication\"" space ":" space communication

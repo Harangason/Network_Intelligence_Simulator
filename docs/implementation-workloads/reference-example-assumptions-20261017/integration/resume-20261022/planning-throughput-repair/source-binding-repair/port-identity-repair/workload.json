@@ -1,0 +1,372 @@
+{
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "kind": "repair",
+  "modify_code": true,
+  "allow_repair": true,
+  "campaign_id": "nis-ea-independent-20260924-run1",
+  "status": "LOCAL_CHECKS_AND4_NATIVE_CONTROLS_VALIDATED_WAITING_NORMAL_CANDIDATE_AND_BOTH_ORIGINALS",
+  "requested_change": "Structurally enforce every selected original port and function identity exactly once in private native output, copy immutable port identity fields unchanged, expose actual selections in progress, then complete both originals/full release/productive delivery.",
+  "revision_before": {
+    "backend/nis/agent/orchestration/local_reasoner.py": "80604316076cd539ef2241b3f87b6ebee8fe06bcff3c41f86d04691f19de6358",
+    "backend/tests/test_reference_reasoner.py": "07ec1efa7e42d0815203a7b9e9b8060d029fc9308c6320df481bf5e485c78011",
+    "backend/tests/test_reference_planning_throughput.py": "e51e1fb1f680dc748eff8180d98e90aa96831e0f63bcb8ed90a4e6d372f94767",
+    "backend/tests/test_reference_selected_identity.py": "6a8cef8b6219a10f807a5682dd13407f8b348ece611a310cbf68c76d2255286e"
+  },
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\before\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "8a62a2c338e21a24f3dec0acff341f9248a1f8dc5e70d3f85f606262d881d46f"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\before\\backend\\tests\\test_reference_reasoner.py",
+      "sha256": "07ec1efa7e42d0815203a7b9e9b8060d029fc9308c6320df481bf5e485c78011"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\before\\backend\\tests\\test_reference_planning_throughput.py",
+      "sha256": "e51e1fb1f680dc748eff8180d98e90aa96831e0f63bcb8ed90a4e6d372f94767"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\before-new-files.json",
+      "sha256": "51be34a28d41541e7671d1c5774f1457a03eff08194576202c2bc7dfa9621790"
+    }
+  ],
+  "required_outcomes": [
+    "exact_selected_port_identity",
+    "exact_selected_function_identity",
+    "honest_selected_scope_progress",
+    "unchanged_public_source_and_merge_guards"
+  ],
+  "validation_requirements": [
+    "independent_red_green",
+    "isolated_reference_regressions",
+    "native_selected_identity_controls"
+  ],
+  "unresolved_decisions": [],
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "first_failing_layer": "Private native stage decoder for exact selected identities",
+    "root_cause": "Array min/max cardinality and per-row ID enums enforce row count and allowed IDs but permit the same ID more than once when other fields differ. Port identity/technology/role/network fields are unnecessarily generated again, although immutable. Functions use the same identity-array pattern; independent counterprobe required before repair.",
+    "reproduction": "Actual vehicle38025 parameter response contains four rows with only two IDs, repeating each Ethernet backbone ID with changed CAN-FD technology. Public runtime correctly rejected it. Actual raw response hash cdf845d1be574aad68808a07b16112c18686e417475bb49225a17443ec67dfbd.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\native-38025-parameter-invalid-response.json",
+        "sha256": "68b30b2f74f7797427507715a9fe141c9e6678343161e8e0aab599c363f04ed8"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\terminal-38025.json",
+        "sha256": "7159fec7a9bd8b5893e9edf04edc95caaed8bab9b73ee436dbe23d7d2602636a"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\terminal-worker-observation.json",
+        "sha256": "a76dd86ea927d5ea8ad7ea0cf263ed1cd1197cd314dccf33c7795ee45cf58ff0"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\red.xml",
+        "sha256": "f62b8881772a404655d1123bbeef12c2f87a4daf30f5cb6345e41183001f8aa1"
+      }
+    ],
+    "affected_files": [
+      "backend/nis/agent/orchestration/local_reasoner.py",
+      "backend/tests/test_reference_reasoner.py",
+      "backend/tests/test_reference_planning_throughput.py",
+      "backend/tests/test_reference_selected_identity.py"
+    ],
+    "acceptance_criteria": [
+      "Native schema requires exactly one value for every selected ID, never fewer/foreign/duplicate identities",
+      "Port device_id/technology/role/network_scope are copied exactly from prior ordinary NIS intent; only parameters/rationale/ports references are model-authored",
+      "Public schemas, original sources, source binding rules, strict merges, model/provider/context/output/readtimeout and every planning loop scope remain unchanged",
+      "Actual device/port/function selections visible in progress without fictitious percentage or completion"
+    ],
+    "targeted_tests": [
+      "Actual duplicate response rejected by private decoder; previously accepted cardinality counterprobe",
+      "Positive mixed technology selection reconstructs unchanged identities and preserves source references",
+      "Missing/foreign/identity-rewrite selections and duplicate function source IDs rejected"
+    ],
+    "weaken_assertions_to_pass": false
+  },
+  "delivery": {
+    "decision": "YES",
+    "authorization": "Human task plus standing AGENTS authorization after both full originals and exact complete PASS receipt",
+    "target": "canonical NetworkIS production"
+  },
+  "files_inspected": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_reasoner.py",
+    "backend/tests/test_reference_planning_throughput.py"
+  ],
+  "implementation_plan": [
+    "Record independent REDs against current366 decoder",
+    "Use existing private-schema adaptation to encode selected IDs by required keys and expand normally before unchanged public validation",
+    "Preserve exact runtime merges and add true selected labels to progress",
+    "Complete all relevant local/native controls before freezing one new normal candidate",
+    "Recoverably retire only own retained stack, preserve receipts/images, normal source-only transfer, fresh full originals then full gate and real deployment"
+  ],
+  "remaining_findings": [
+    "Both original models/ALL simulations/full gate and production delivery remain open."
+  ],
+  "completion_status": "REPAIRING",
+  "tests": {
+    "independent_red": {
+      "cases": 4,
+      "failed": 4,
+      "passed": 0,
+      "xml": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\red.xml",
+      "scope": "Own independent counterpart of actual duplicate-port pattern, independent analogous repeated function-ID counterprobe, private immutable-field exposure and actual selection progress. No original acceptance.",
+      "exit_code": 1
+    },
+    "first_green": {
+      "cases": 148,
+      "passed": 148,
+      "failed": 0,
+      "skipped": 0,
+      "exit_code": 0,
+      "xml": {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\first-green.xml",
+        "sha256": "62515ecfddb3b0a5f55f67ac55fdf47d69916730929c6021ecd91870869dcaf1"
+      },
+      "scope": "19 new selected-identity cases plus129 complete existing Reasoner regressions"
+    },
+    "adjacent_complete": {
+      "passed": 468,
+      "failed": 0,
+      "exit_code": 0,
+      "xml": {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\adjacent-green.xml",
+        "sha256": "e6feeda29d5521c4e730ec1a4d1336f38d8fabf74b602903fdf595da11b4c712"
+      }
+    },
+    "distinct_latest_pass": 616,
+    "native_selected_controls": {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\native-selected-controls.json",
+      "sha256": "a7f822f96849459b8fff70f5614fab41aab8828e2e115bce58d37a8837d8deda"
+    }
+  },
+  "revision_plan_history": [
+    {
+      "backend/nis/agent/orchestration/local_reasoner.py": "8a62a2c338e21a24f3dec0acff341f9248a1f8dc5e70d3f85f606262d881d46f",
+      "backend/tests/test_reference_reasoner.py": "07ec1efa7e42d0815203a7b9e9b8060d029fc9308c6320df481bf5e485c78011",
+      "backend/tests/test_reference_planning_throughput.py": "e51e1fb1f680dc748eff8180d98e90aa96831e0f63bcb8ed90a4e6d372f94767",
+      "backend/tests/test_reference_selected_identity.py": "6a8cef8b6219a10f807a5682dd13407f8b348ece611a310cbf68c76d2255286e"
+    }
+  ],
+  "source_scope_proof": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\source-scope-proof.json",
+    "sha256": "fade860d72f5d90a37cbbd0c71f4cc55cb21dbc26605298e9953fbb50efb47e3"
+  },
+  "files_changed": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_reasoner.py",
+    "backend/tests/test_reference_selected_identity.py"
+  ],
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\after\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "80604316076cd539ef2241b3f87b6ebee8fe06bcff3c41f86d04691f19de6358"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\after\\backend\\tests\\test_reference_reasoner.py",
+      "sha256": "818ad4b5160d18986c11c4bb9e9d5095a2c6ea4c94709148be81cfeccb5fdad5"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\after\\backend\\tests\\test_reference_selected_identity.py",
+      "sha256": "976a2fca3d63a1dac84dfa3fd499b68ad062b280951c8282160b53a7a67106a0"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\local_reasoner.py.diff",
+      "sha256": "69570a3fec6a5c0671f194865b47b3e301c931ac8ac920a11d4cf053122a07ae"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\test_reference_reasoner.py.diff",
+      "sha256": "76b31fb94e078aa09dc739a2d9cd09b6bacc887f0ac12a848f89b3f3009e2fc5"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\test_reference_selected_identity.py.diff",
+      "sha256": "ba3943178dc37c58ebde8cfce8541772591e6a624dce7cd485f6da8bec13b8c2"
+    }
+  ],
+  "outcomes": {
+    "exact_selected_port_identity": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\source-scope-proof.json",
+          "sha256": "fade860d72f5d90a37cbbd0c71f4cc55cb21dbc26605298e9953fbb50efb47e3"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\regression-aggregate.json",
+          "sha256": "e1cf1d2163714facd76b38a180b7eea280265a8796e75682f688fc0e08b98ef0"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\native-selected-controls.json",
+          "sha256": "a7f822f96849459b8fff70f5614fab41aab8828e2e115bce58d37a8837d8deda"
+        }
+      ]
+    },
+    "exact_selected_function_identity": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\source-scope-proof.json",
+          "sha256": "fade860d72f5d90a37cbbd0c71f4cc55cb21dbc26605298e9953fbb50efb47e3"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\regression-aggregate.json",
+          "sha256": "e1cf1d2163714facd76b38a180b7eea280265a8796e75682f688fc0e08b98ef0"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\native-selected-controls.json",
+          "sha256": "a7f822f96849459b8fff70f5614fab41aab8828e2e115bce58d37a8837d8deda"
+        }
+      ]
+    },
+    "honest_selected_scope_progress": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\source-scope-proof.json",
+          "sha256": "fade860d72f5d90a37cbbd0c71f4cc55cb21dbc26605298e9953fbb50efb47e3"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\regression-aggregate.json",
+          "sha256": "e1cf1d2163714facd76b38a180b7eea280265a8796e75682f688fc0e08b98ef0"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\native-selected-controls.json",
+          "sha256": "a7f822f96849459b8fff70f5614fab41aab8828e2e115bce58d37a8837d8deda"
+        }
+      ]
+    },
+    "unchanged_public_source_and_merge_guards": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\source-scope-proof.json",
+          "sha256": "fade860d72f5d90a37cbbd0c71f4cc55cb21dbc26605298e9953fbb50efb47e3"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\regression-aggregate.json",
+          "sha256": "e1cf1d2163714facd76b38a180b7eea280265a8796e75682f688fc0e08b98ef0"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\native-selected-controls.json",
+          "sha256": "a7f822f96849459b8fff70f5614fab41aab8828e2e115bce58d37a8837d8deda"
+        }
+      ]
+    }
+  },
+  "validations": {
+    "independent_red_green": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\regression-aggregate.json",
+          "sha256": "e1cf1d2163714facd76b38a180b7eea280265a8796e75682f688fc0e08b98ef0"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\first-green.xml",
+          "sha256": "62515ecfddb3b0a5f55f67ac55fdf47d69916730929c6021ecd91870869dcaf1"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\adjacent-green.xml",
+          "sha256": "e6feeda29d5521c4e730ec1a4d1336f38d8fabf74b602903fdf595da11b4c712"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\red.xml",
+          "sha256": "f62b8881772a404655d1123bbeef12c2f87a4daf30f5cb6345e41183001f8aa1"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\source-scope-proof.json",
+          "sha256": "fade860d72f5d90a37cbbd0c71f4cc55cb21dbc26605298e9953fbb50efb47e3"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\native-selected-controls.json",
+          "sha256": "a7f822f96849459b8fff70f5614fab41aab8828e2e115bce58d37a8837d8deda"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\native-source-freeze.json",
+          "sha256": "3df3462b25c4135ffca20619087626ea13095045088665ea1e47f2f0e6d892b0"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\fixture-assertion-proof.json",
+          "sha256": "1a704f0298ecabe8d3f16089466213c0653b6cfe6eb69030b5e637713ea49537"
+        }
+      ]
+    },
+    "isolated_reference_regressions": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\regression-aggregate.json",
+          "sha256": "e1cf1d2163714facd76b38a180b7eea280265a8796e75682f688fc0e08b98ef0"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\first-green.xml",
+          "sha256": "62515ecfddb3b0a5f55f67ac55fdf47d69916730929c6021ecd91870869dcaf1"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\adjacent-green.xml",
+          "sha256": "e6feeda29d5521c4e730ec1a4d1336f38d8fabf74b602903fdf595da11b4c712"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\red.xml",
+          "sha256": "f62b8881772a404655d1123bbeef12c2f87a4daf30f5cb6345e41183001f8aa1"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\source-scope-proof.json",
+          "sha256": "fade860d72f5d90a37cbbd0c71f4cc55cb21dbc26605298e9953fbb50efb47e3"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\native-selected-controls.json",
+          "sha256": "a7f822f96849459b8fff70f5614fab41aab8828e2e115bce58d37a8837d8deda"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\native-source-freeze.json",
+          "sha256": "3df3462b25c4135ffca20619087626ea13095045088665ea1e47f2f0e6d892b0"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\fixture-assertion-proof.json",
+          "sha256": "1a704f0298ecabe8d3f16089466213c0653b6cfe6eb69030b5e637713ea49537"
+        }
+      ]
+    },
+    "native_selected_identity_controls": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\regression-aggregate.json",
+          "sha256": "e1cf1d2163714facd76b38a180b7eea280265a8796e75682f688fc0e08b98ef0"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\first-green.xml",
+          "sha256": "62515ecfddb3b0a5f55f67ac55fdf47d69916730929c6021ecd91870869dcaf1"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\adjacent-green.xml",
+          "sha256": "e6feeda29d5521c4e730ec1a4d1336f38d8fabf74b602903fdf595da11b4c712"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\red.xml",
+          "sha256": "f62b8881772a404655d1123bbeef12c2f87a4daf30f5cb6345e41183001f8aa1"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\source-scope-proof.json",
+          "sha256": "fade860d72f5d90a37cbbd0c71f4cc55cb21dbc26605298e9953fbb50efb47e3"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\native-selected-controls.json",
+          "sha256": "a7f822f96849459b8fff70f5614fab41aab8828e2e115bce58d37a8837d8deda"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\native-source-freeze.json",
+          "sha256": "3df3462b25c4135ffca20619087626ea13095045088665ea1e47f2f0e6d892b0"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\fixture-assertion-proof.json",
+          "sha256": "1a704f0298ecabe8d3f16089466213c0653b6cfe6eb69030b5e637713ea49537"
+        }
+      ]
+    }
+  }
+}

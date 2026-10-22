@@ -1,0 +1,1108 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="6" time="16.282" timestamp="2026-10-22T08:11:08.720127+02:00" hostname="Haranga"><testcase classname="tests.test_reference_source_binding" name="test_introduction_is_a_semantic_chapter_not_a_separate_system[1. Einleitung und Zweck]" time="0.011"><failure message="AssertionError: assert ['1. Einleitung und Zweck'] == []&#10;  &#10;  Left contains one more item: '1. Einleitung und Zweck'&#10;  Use -v to get more diff">caption = '1. Einleitung und Zweck'
+
+    @pytest.mark.parametrize('caption', ['1. Einleitung und Zweck', 'Introduction and purpose'])
+    def test_introduction_is_a_semantic_chapter_not_a_separate_system(caption):
+&gt;       assert intake.document_system_scope([caption]) == []
+E       AssertionError: assert ['1. Einleitung und Zweck'] == []
+E         
+E         Left contains one more item: '1. Einleitung und Zweck'
+E         Use -v to get more diff
+
+backend\tests\test_reference_source_binding.py:14: AssertionError</failure></testcase><testcase classname="tests.test_reference_source_binding" name="test_introduction_is_a_semantic_chapter_not_a_separate_system[Introduction and purpose]" time="0.001"><failure message="AssertionError: assert ['Introduction and purpose'] == []&#10;  &#10;  Left contains one more item: 'Introduction and purpose'&#10;  Use -v to get more diff">caption = 'Introduction and purpose'
+
+    @pytest.mark.parametrize('caption', ['1. Einleitung und Zweck', 'Introduction and purpose'])
+    def test_introduction_is_a_semantic_chapter_not_a_separate_system(caption):
+&gt;       assert intake.document_system_scope([caption]) == []
+E       AssertionError: assert ['Introduction and purpose'] == []
+E         
+E         Left contains one more item: 'Introduction and purpose'
+E         Use -v to get more diff
+
+backend\tests\test_reference_source_binding.py:14: AssertionError</failure></testcase><testcase classname="tests.test_reference_source_binding" name="test_source_projection_retains_unrecognized_sections_and_separates_profiles" time="0.001"><failure message="AttributeError: module 'backend.nis.agent.orchestration.local_reasoner' has no attribute '_reference_profile_sources'">def test_source_projection_retains_unrecognized_sections_and_separates_profiles():
+        source = '# Portfolio\r\nShared µ\r\n## Robot 054\r\nA\r\n### Unknown purpose\r\nExact 🦾\r\n## Vehicle 021\r\nB\r\n### Unusual section\r\nMedical gateway\r\n'
+        profiles = [('Portfolio', 'Robot 054'), ('Portfolio', 'Vehicle 021')]
+&gt;       actual = reasoner._reference_profile_sources(source, profiles)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'backend.nis.agent.orchestration.local_reasoner' has no attribute '_reference_profile_sources'
+
+backend\tests\test_reference_source_binding.py:22: AttributeError</failure></testcase><testcase classname="tests.test_reference_source_binding" name="test_native_keyed_bindings_preserve_eight_identities_and_missing_fact_sets" time="4.274"><failure message="jsonschema.exceptions.ValidationError: {'choice_kind': 'EXISTING_BATCH', 'bindings': {'existing-0': {'source_fact_ids': ['F05b5bf743577'], 'rationale': 'Source-bound unit decision', 'field_references': {}}, 'existing-1': {'source_fact_ids': ['F05b5bf743577'], 'rationale': 'Source-bound unit decision', 'field_references': {}}, 'existing-2': {'source_fact_ids': ['F05b5bf743577'], 'rationale': 'Source-bound unit decision', 'field_references': {}}, 'existing-3': {'source_fact_ids': ['F05b5bf743577'], 'rationale': 'Source-bound unit decision', 'field_references': {}}, 'existing-4': {'source_fact_ids': ['F05b5bf743577'], 'rationale': 'Source-bound unit decision', 'field_references': {}}, 'existing-5': {'source_fact_ids': ['F05b5bf743577'], 'rationale': 'Source-bound unit decision', 'field_references': {}}, 'existing-6': {'source_fact_ids': ['F05b5bf743577'], 'rationale': 'Source-bound unit decision', 'field_references': {}}, 'existing-7': {'source_fact_ids': ['F05b5bf743577'], 'rationale': 'Source-bound unit decision', 'field_references': {}}}} is not valid under any of the given schemas&#10;&#10;Failed validating 'anyOf' in schema['properties']['inventory_choices']['items']:&#10;    {'anyOf': [{'additionalProperties': False,&#10;                'properties': {'choice_kind': {'type': 'string',&#10;                                               'enum': ['NEW_CONTROLLER']},&#10;                               'rationale': {'minLength': 1,&#10;                                             'title': 'Rationale',&#10;                                             'type': 'string'},&#10;                               'field_references': {'additionalProperties': {'items': {'type': 'string'},&#10;                                                                             'type': 'array'},&#10;                                                    'propertyNames': {'enum': ['quantity',&#10;                                                                               'device_type',&#10;                                                                               'function_hosts',&#10;                                                                               'ports',&#10;                                                                               'measurements',&#10;                                                                               'commands',&#10;                                                                               'communication']},&#10;                                                    'title': 'Field '&#10;                                                             'References',&#10;                                                    'type': 'object'},&#10;                               'id': {'type': 'string',&#10;                                      'enum': ['derived-4a5e41abd620c995b5cfc86f']},&#10;                               'name': {'minLength': 1,&#10;                                        'title': 'Name',&#10;                                        'type': 'string'},&#10;                               'kind': {'type': 'string',&#10;                                        'enum': ['CONTROLLER']},&#10;                               'context_kind': {'type': 'null'},&#10;                               'quantity': {'type': 'integer', 'enum': [1]},&#10;                               'source_fact_ids': {'items': {'type': 'string',&#10;                                                             'enum': ['F05b5bf743577']},&#10;                                                   'minItems': 1,&#10;                                                   'title': 'Source Fact '&#10;                                                            'Ids',&#10;                                                   'type': 'array',&#10;                                                   'maxItems': 1},&#10;                               'source_member_bindings': {'type': 'object',&#10;                                                          'properties': {},&#10;                                                          'additionalProperties': False},&#10;                               'owner_device_id': {'type': 'null'},&#10;                               'purpose': {'anyOf': [{'minLength': 1,&#10;                                                      'type': 'string'},&#10;                                                     {'type': 'null'}],&#10;                                           'default': None,&#10;                                           'title': 'Purpose'},&#10;                               'contained_device_ids': {'items': {'type': 'string'},&#10;                                                        'title': 'Contained '&#10;                                                                 'Device '&#10;                                                                 'Ids',&#10;                                                        'type': 'array',&#10;                                                        'maxItems': 0}},&#10;                'required': ['choice_kind',&#10;                             'rationale',&#10;                             'id',&#10;                             'name',&#10;                             'kind',&#10;                             'quantity',&#10;                             'source_fact_ids'],&#10;                'title': 'ReferenceDevice',&#10;                'type': 'object'},&#10;               {'additionalProperties': False,&#10;                'properties': {'choice_kind': {'type': 'string',&#10;                                               'enum': ['NEW_GATEWAY']},&#10;                               'rationale': {'minLength': 1,&#10;                                             'title': 'Rationale',&#10;                                             'type': 'string'},&#10;                               'field_references': {'additionalProperties': {'items': {'type': 'string'},&#10;                                                                             'type': 'array'},&#10;                                                    'propertyNames': {'enum': ['quantity',&#10;                                                                               'device_type',&#10;                                                                               'function_hosts',&#10;                                                                               'ports',&#10;                                                                               'measurements',&#10;                                                                               'commands',&#10;                                                                               'communication']},&#10;                                                    'title': 'Field '&#10;                                                             'References',&#10;                                                    'type': 'object'},&#10;                               'id': {'type': 'string',&#10;                                      'enum': ['derived-2139dfdf278f7af0a7c6ddb0']},&#10;                               'name': {'minLength': 1,&#10;                                        'title': 'Name',&#10;                                        'type': 'string'},&#10;                               'kind': {'type': 'string',&#10;                                        'enum': ['GATEWAY']},&#10;                               'context_kind': {'type': 'null'},&#10;                               'quantity': {'type': 'integer', 'enum': [1]},&#10;                               'source_fact_ids': {'items': {'type': 'string',&#10;                                                             'enum': ['F05b5bf743577']},&#10;                                                   'minItems': 1,&#10;                                                   'title': 'Source Fact '&#10;                                                            'Ids',&#10;                                                   'type': 'array',&#10;                                                   'maxItems': 1},&#10;                               'source_member_bindings': {'type': 'object',&#10;                                                          'properties': {},&#10;                                                          'additionalProperties': False},&#10;                               'owner_device_id': {'type': 'null'},&#10;                               'purpose': {'anyOf': [{'minLength': 1,&#10;                                                      'type': 'string'},&#10;                                                     {'type': 'null'}],&#10;                                           'default': None,&#10;                                           'title': 'Purpose'},&#10;                               'contained_device_ids': {'items': {'type': 'string'},&#10;                                                        'title': 'Contained '&#10;                                                                 'Device '&#10;                                                                 'Ids',&#10;                                                        'type': 'array',&#10;                                                        'maxItems': 0}},&#10;                'required': ['choice_kind',&#10;                             'rationale',&#10;                             'id',&#10;                             'name',&#10;                             'kind',&#10;                             'quantity',&#10;                             'source_fact_ids'],&#10;                'title': 'ReferenceDevice',&#10;                'type': 'object'},&#10;               {'additionalProperties': False,&#10;                'properties': {'choice_kind': {'type': 'string',&#10;                                               'enum': ['NEW_SENSOR']},&#10;                               'rationale': {'minLength': 1,&#10;                                             'title': 'Rationale',&#10;                                             'type': 'string'},&#10;                               'field_references': {'additionalProperties': {'items': {'type': 'string'},&#10;                                                                             'type': 'array'},&#10;                                                    'propertyNames': {'enum': ['quantity',&#10;                                                                               'device_type',&#10;                                                                               'function_hosts',&#10;                                                                               'ports',&#10;                                                                               'measurements',&#10;                                                                               'commands',&#10;                                                                               'communication']},&#10;                                                    'title': 'Field '&#10;                                                             'References',&#10;                                                    'type': 'object'},&#10;                               'id': {'type': 'string',&#10;                                      'enum': ['derived-69232244f4afbaa404ab2126']},&#10;                               'name': {'minLength': 1,&#10;                                        'title': 'Name',&#10;                                        'type': 'string'},&#10;                               'kind': {'type': 'string',&#10;                                        'enum': ['SENSOR']},&#10;                               'context_kind': {'type': 'null'},&#10;                               'quantity': {'type': 'integer', 'enum': [1]},&#10;                               'source_fact_ids': {'items': {'type': 'string',&#10;                                                             'enum': ['F05b5bf743577']},&#10;                                                   'minItems': 1,&#10;                                                   'title': 'Source Fact '&#10;                                                            'Ids',&#10;                                                   'type': 'array',&#10;                                                   'maxItems': 1},&#10;                               'source_member_bindings': {'type': 'object',&#10;                                                          'properties': {},&#10;                                                          'additionalProperties': False},&#10;                               'owner_device_id': {'anyOf': [{'type': 'string'},&#10;                                                             {'type': 'null'}],&#10;                                                   'default': None,&#10;                                                   'title': 'Owner Device '&#10;                                                            'Id'},&#10;                               'purpose': {'anyOf': [{'minLength': 1,&#10;                                                      'type': 'string'},&#10;                                                     {'type': 'null'}],&#10;                                           'default': None,&#10;                                           'title': 'Purpose'},&#10;                               'contained_device_ids': {'items': {'type': 'string'},&#10;                                                        'title': 'Contained '&#10;                                                                 'Device '&#10;                                                                 'Ids',&#10;                                                        'type': 'array',&#10;                                                        'maxItems': 0}},&#10;                'required': ['choice_kind',&#10;                             'rationale',&#10;                             'id',&#10;                             'name',&#10;                             'kind',&#10;                             'quantity',&#10;                             'source_fact_ids'],&#10;                'title': 'ReferenceDevice',&#10;                'type': 'object'},&#10;               {'additionalProperties': False,&#10;                'properties': {'choice_kind': {'type': 'string',&#10;                                               'enum': ['NEW_ACTUATOR']},&#10;                               'rationale': {'minLength': 1,&#10;                                             'title': 'Rationale',&#10;                                             'type': 'string'},&#10;                               'field_references': {'additionalProperties': {'items': {'type': 'string'},&#10;                                                                             'type': 'array'},&#10;                                                    'propertyNames': {'enum': ['quantity',&#10;                                                                               'device_type',&#10;                                                                               'function_hosts',&#10;                                                                               'ports',&#10;                                                                               'measurements',&#10;                                                                               'commands',&#10;                                                                               'communication']},&#10;                                                    'title': 'Field '&#10;                                                             'References',&#10;                                                    'type': 'object'},&#10;                               'id': {'type': 'string',&#10;                                      'enum': ['derived-2b07f316d342a4b07f83b132']},&#10;                               'name': {'minLength': 1,&#10;                                        'title': 'Name',&#10;                                        'type': 'string'},&#10;                               'kind': {'type': 'string',&#10;                                        'enum': ['ACTUATOR']},&#10;                               'context_kind': {'type': 'null'},&#10;                               'quantity': {'type': 'integer', 'enum': [1]},&#10;                               'source_fact_ids': {'items': {'type': 'string',&#10;                                                             'enum': ['F05b5bf743577']},&#10;                                                   'minItems': 1,&#10;                                                   'title': 'Source Fact '&#10;                                                            'Ids',&#10;                                                   'type': 'array',&#10;                                                   'maxItems': 1},&#10;                               'source_member_bindings': {'type': 'object',&#10;                                                          'properties': {},&#10;                                                          'additionalProperties': False},&#10;                               'owner_device_id': {'anyOf': [{'type': 'string'},&#10;                                                             {'type': 'null'}],&#10;                                                   'default': None,&#10;                                                   'title': 'Owner Device '&#10;                                                            'Id'},&#10;                               'purpose': {'anyOf': [{'minLength': 1,&#10;                                                      'type': 'string'},&#10;                                                     {'type': 'null'}],&#10;                                           'default': None,&#10;                                           'title': 'Purpose'},&#10;                               'contained_device_ids': {'items': {'type': 'string'},&#10;                                                        'title': 'Contained '&#10;                                                                 'Device '&#10;                                                                 'Ids',&#10;                                                        'type': 'array',&#10;                                                        'maxItems': 0}},&#10;                'required': ['choice_kind',&#10;                             'rationale',&#10;                             'id',&#10;                             'name',&#10;                             'kind',&#10;                             'quantity',&#10;                             'source_fact_ids'],&#10;                'title': 'ReferenceDevice',&#10;                'type': 'object'},&#10;               {'additionalProperties': False,&#10;                'properties': {'choice_kind': {'type': 'string',&#10;                                               'enum': ['NEW_PHYSICAL_CONTEXT']},&#10;                               'rationale': {'minLength': 1,&#10;                                             'title': 'Rationale',&#10;                                             'type': 'string'},&#10;                               'field_references': {'additionalProperties': {'items': {'type': 'string'},&#10;                                                                             'type': 'array'},&#10;                                                    'propertyNames': {'enum': ['quantity',&#10;                                                                               'device_type',&#10;                                                                               'function_hosts',&#10;                                                                               'ports',&#10;                                                                               'measurements',&#10;                                                                               'commands',&#10;                                                                               'communication']},&#10;                                                    'title': 'Field '&#10;                                                             'References',&#10;                                                    'type': 'object'},&#10;                               'id': {'type': 'string',&#10;                                      'enum': ['derived-442bd3c34a1727ea33ea3da7']},&#10;                               'name': {'minLength': 1,&#10;                                        'title': 'Name',&#10;                                        'type': 'string'},&#10;                               'kind': {'type': 'string',&#10;                                        'enum': ['PHYSICAL_CONTEXT']},&#10;                               'context_kind': {'type': 'string',&#10;                                                'enum': ['PASSIVE',&#10;                                                         'ASSEMBLY',&#10;                                                         'SOFTWARE_SERVICE']},&#10;                               'quantity': {'maximum': 1000,&#10;                                            'minimum': 1,&#10;                                            'title': 'Quantity',&#10;                                            'type': 'integer'},&#10;                               'source_fact_ids': {'items': {'type': 'string',&#10;                                                             'enum': ['F05b5bf743577']},&#10;                                                   'minItems': 1,&#10;                                                   'title': 'Source Fact '&#10;                                                            'Ids',&#10;                                                   'type': 'array',&#10;                                                   'maxItems': 1},&#10;                               'source_member_bindings': {'type': 'object',&#10;                                                          'properties': {},&#10;                                                          'additionalProperties': False},&#10;                               'owner_device_id': {'anyOf': [{'type': 'string'},&#10;                                                             {'type': 'null'}],&#10;                                                   'default': None,&#10;                                                   'title': 'Owner Device '&#10;                                                            'Id'},&#10;                               'purpose': {'anyOf': [{'minLength': 1,&#10;                                                      'type': 'string'},&#10;                                                     {'type': 'null'}],&#10;                                           'default': None,&#10;                                           'title': 'Purpose'},&#10;                               'contained_device_ids': {'items': {'type': 'string'},&#10;                                                        'title': 'Contained '&#10;                                                                 'Device '&#10;                                                                 'Ids',&#10;                                                        'type': 'array'}},&#10;                'required': ['choice_kind',&#10;                             'rationale',&#10;                             'id',&#10;                             'name',&#10;                             'kind',&#10;                             'quantity',&#10;                             'source_fact_ids',&#10;                             'context_kind'],&#10;                'title': 'ReferenceDevice',&#10;                'type': 'object'},&#10;               {'type': 'object',&#10;                'properties': {'choice_kind': {'type': 'string',&#10;                                               'enum': ['EXISTING']},&#10;                               'source_fact_ids': {'items': {'type': 'string',&#10;                                                             'enum': ['F05b5bf743577']},&#10;                                                   'minItems': 1,&#10;                                                   'title': 'Source Fact '&#10;                                                            'Ids',&#10;                                                   'type': 'array',&#10;                                                   'maxItems': 1},&#10;                               'rationale': {'minLength': 1,&#10;                                             'title': 'Rationale',&#10;                                             'type': 'string'},&#10;                               'field_references': {'additionalProperties': {'items': {'type': 'string'},&#10;                                                                             'type': 'array'},&#10;                                                    'propertyNames': {'enum': ['quantity',&#10;                                                                               'device_type',&#10;                                                                               'function_hosts',&#10;                                                                               'ports',&#10;                                                                               'measurements',&#10;                                                                               'commands',&#10;                                                                               'communication']},&#10;                                                    'title': 'Field '&#10;                                                             'References',&#10;                                                    'type': 'object'},&#10;                               'device_id': {'type': 'string',&#10;                                             'minLength': 1,&#10;                                             'enum': ['existing-0']}},&#10;                'required': ['choice_kind',&#10;                             'source_fact_ids',&#10;                             'rationale',&#10;                             'field_references',&#10;                             'device_id'],&#10;                'additionalProperties': False},&#10;               {'type': 'object',&#10;                'properties': {'choice_kind': {'type': 'string',&#10;                                               'enum': ['EXISTING']},&#10;                               'source_fact_ids': {'items': {'type': 'string',&#10;                                                             'enum': ['F05b5bf743577']},&#10;                                                   'minItems': 1,&#10;                                                   'title': 'Source Fact '&#10;                                                            'Ids',&#10;                                                   'type': 'array',&#10;                                                   'maxItems': 1},&#10;                               'rationale': {'minLength': 1,&#10;                                             'title': 'Rationale',&#10;                                             'type': 'string'},&#10;                               'field_references': {'additionalProperties': {'items': {'type': 'string'},&#10;                                                                             'type': 'array'},&#10;                                                    'propertyNames': {'enum': ['quantity',&#10;                                                                               'device_type',&#10;                                                                               'function_hosts',&#10;                                                                               'ports',&#10;                                                                               'measurements',&#10;                                                                               'commands',&#10;                                                                               'communication']},&#10;                                                    'title': 'Field '&#10;                                                             'References',&#10;                                                    'type': 'object'},&#10;                               'device_id': {'type': 'string',&#10;                                             'minLength': 1,&#10;                                             'enum': ['existing-1']}},&#10;                'required': ['choice_kind',&#10;                             'source_fact_ids',&#10;                             'rationale',&#10;                             'field_references',&#10;                             'device_id'],&#10;                'additionalProperties': False},&#10;               {'type': 'object',&#10;                'properties': {'choice_kind': {'type': 'string',&#10;                                               'enum': ['EXISTING']},&#10;                               'source_fact_ids': {'items': {'type': 'string',&#10;                                                             'enum': ['F05b5bf743577']},&#10;                                                   'minItems': 1,&#10;                                                   'title': 'Source Fact '&#10;                                                            'Ids',&#10;                                                   'type': 'array',&#10;                                                   'maxItems': 1},&#10;                               'rationale': {'minLength': 1,&#10;                                             'title': 'Rationale',&#10;                                             'type': 'string'},&#10;                               'field_references': {'additionalProperties': {'items': {'type': 'string'},&#10;                                                                             'type': 'array'},&#10;                                                    'propertyNames': {'enum': ['quantity',&#10;                                                                               'device_type',&#10;                                                                               'function_hosts',&#10;                                                                               'ports',&#10;                                                                               'measurements',&#10;                                                                               'commands',&#10;                                                                               'communication']},&#10;                                                    'title': 'Field '&#10;                                                             'References',&#10;                                                    'type': 'object'},&#10;                               'device_id': {'type': 'string',&#10;                                             'minLength': 1,&#10;                                             'enum': ['existing-2']}},&#10;                'required': ['choice_kind',&#10;                             'source_fact_ids',&#10;                             'rationale',&#10;                             'field_references',&#10;                             'device_id'],&#10;                'additionalProperties': False},&#10;               {'type': 'object',&#10;                'properties': {'choice_kind': {'type': 'string',&#10;                                               'enum': ['EXISTING']},&#10;                               'source_fact_ids': {'items': {'type': 'string',&#10;                                                             'enum': ['F05b5bf743577']},&#10;                                                   'minItems': 1,&#10;                                                   'title': 'Source Fact '&#10;                                                            'Ids',&#10;                                                   'type': 'array',&#10;                                                   'maxItems': 1},&#10;                               'rationale': {'minLength': 1,&#10;                                             'title': 'Rationale',&#10;                                             'type': 'string'},&#10;                               'field_references': {'additionalProperties': {'items': {'type': 'string'},&#10;                                                                             'type': 'array'},&#10;                                                    'propertyNames': {'enum': ['quantity',&#10;                                                                               'device_type',&#10;                                                                               'function_hosts',&#10;                                                                               'ports',&#10;                                                                               'measurements',&#10;                                                                               'commands',&#10;                                                                               'communication']},&#10;                                                    'title': 'Field '&#10;                                                             'References',&#10;                                                    'type': 'object'},&#10;                               'device_id': {'type': 'string',&#10;                                             'minLength': 1,&#10;                                             'enum': ['existing-3']}},&#10;                'required': ['choice_kind',&#10;                             'source_fact_ids',&#10;                             'rationale',&#10;                             'field_references',&#10;                             'device_id'],&#10;                'additionalProperties': False},&#10;               {'type': 'object',&#10;                'properties': {'choice_kind': {'type': 'string',&#10;                                               'enum': ['EXISTING']},&#10;                               'source_fact_ids': {'items': {'type': 'string',&#10;                                                             'enum': ['F05b5bf743577']},&#10;                                                   'minItems': 1,&#10;                                                   'title': 'Source Fact '&#10;                                                            'Ids',&#10;                                                   'type': 'array',&#10;                                                   'maxItems': 1},&#10;                               'rationale': {'minLength': 1,&#10;                                             'title': 'Rationale',&#10;                                             'type': 'string'},&#10;                               'field_references': {'additionalProperties': {'items': {'type': 'string'},&#10;                                                                             'type': 'array'},&#10;                                                    'propertyNames': {'enum': ['quantity',&#10;                                                                               'device_type',&#10;                                                                               'function_hosts',&#10;                                                                               'ports',&#10;                                                                               'measurements',&#10;                                                                               'commands',&#10;                                                                               'communication']},&#10;                                                    'title': 'Field '&#10;                                                             'References',&#10;                                                    'type': 'object'},&#10;                               'device_id': {'type': 'string',&#10;                                             'minLength': 1,&#10;                                             'enum': ['existing-4']}},&#10;                'required': ['choice_kind',&#10;                             'source_fact_ids',&#10;                             'rationale',&#10;                             'field_references',&#10;                             'device_id'],&#10;                'additionalProperties': False},&#10;               {'type': 'object',&#10;                'properties': {'choice_kind': {'type': 'string',&#10;                                               'enum': ['EXISTING']},&#10;                               'source_fact_ids': {'items': {'type': 'string',&#10;                                                             'enum': ['F05b5bf743577']},&#10;                                                   'minItems': 1,&#10;                                                   'title': 'Source Fact '&#10;                                                            'Ids',&#10;                                                   'type': 'array',&#10;                                                   'maxItems': 1},&#10;                               'rationale': {'minLength': 1,&#10;                                             'title': 'Rationale',&#10;                                             'type': 'string'},&#10;                               'field_references': {'additionalProperties': {'items': {'type': 'string'},&#10;                                                                             'type': 'array'},&#10;                                                    'propertyNames': {'enum': ['quantity',&#10;                                                                               'device_type',&#10;                                                                               'function_hosts',&#10;                                                                               'ports',&#10;                                                                               'measurements',&#10;                                                                               'commands',&#10;                                                                               'communication']},&#10;                                                    'title': 'Field '&#10;                                                             'References',&#10;                                                    'type': 'object'},&#10;                               'device_id': {'type': 'string',&#10;                                             'minLength': 1,&#10;                                             'enum': ['existing-5']}},&#10;                'required': ['choice_kind',&#10;                             'source_fact_ids',&#10;                             'rationale',&#10;                             'field_references',&#10;                             'device_id'],&#10;                'additionalProperties': False},&#10;               {'type': 'object',&#10;                'properties': {'choice_kind': {'type': 'string',&#10;                                               'enum': ['EXISTING']},&#10;                               'source_fact_ids': {'items': {'type': 'string',&#10;                                                             'enum': ['F05b5bf743577']},&#10;                                                   'minItems': 1,&#10;                                                   'title': 'Source Fact '&#10;                                                            'Ids',&#10;                                                   'type': 'array',&#10;                                                   'maxItems': 1},&#10;                               'rationale': {'minLength': 1,&#10;                                             'title': 'Rationale',&#10;                                             'type': 'string'},&#10;                               'field_references': {'additionalProperties': {'items': {'type': 'string'},&#10;                                                                             'type': 'array'},&#10;                                                    'propertyNames': {'enum': ['quantity',&#10;                                                                               'device_type',&#10;                                                                               'function_hosts',&#10;                                                                               'ports',&#10;                                                                               'measurements',&#10;                                                                               'commands',&#10;                                                                               'communication']},&#10;                                                    'title': 'Field '&#10;                                                             'References',&#10;                                                    'type': 'object'},&#10;                               'device_id': {'type': 'string',&#10;                                             'minLength': 1,&#10;                                             'enum': ['existing-6']}},&#10;                'required': ['choice_kind',&#10;                             'source_fact_ids',&#10;                             'rationale',&#10;                             'field_references',&#10;                             'device_id'],&#10;                'additionalProperties': False},&#10;               {'type': 'object',&#10;                'properties': {'choice_kind': {'type': 'string',&#10;                                               'enum': ['EXISTING']},&#10;                               'source_fact_ids': {'items': {'type': 'string',&#10;                                                             'enum': ['F05b5bf743577']},&#10;                                                   'minItems': 1,&#10;                                                   'title': 'Source Fact '&#10;                                                            'Ids',&#10;                                                   'type': 'array',&#10;                                                   'maxItems': 1},&#10;                               'rationale': {'minLength': 1,&#10;                                             'title': 'Rationale',&#10;                                             'type': 'string'},&#10;                               'field_references': {'additionalProperties': {'items': {'type': 'string'},&#10;                                                                             'type': 'array'},&#10;                                                    'propertyNames': {'enum': ['quantity',&#10;                                                                               'device_type',&#10;                                                                               'function_hosts',&#10;                                                                               'ports',&#10;                                                                               'measurements',&#10;                                                                               'commands',&#10;                                                                               'communication']},&#10;                                                    'title': 'Field '&#10;                                                             'References',&#10;                                                    'type': 'object'},&#10;                               'device_id': {'type': 'string',&#10;                                             'minLength': 1,&#10;                                             'enum': ['existing-7']}},&#10;                'required': ['choice_kind',&#10;                             'source_fact_ids',&#10;                             'rationale',&#10;                             'field_references',&#10;                             'device_id'],&#10;                'additionalProperties': False},&#10;               {'type': 'object',&#10;                'properties': {'choice_kind': {'type': 'string',&#10;                                               'enum': ['EXISTING']},&#10;                               'source_fact_ids': {'items': {'type': 'string',&#10;                                                             'enum': ['F05b5bf743577']},&#10;                                                   'minItems': 1,&#10;                                                   'title': 'Source Fact '&#10;                                                            'Ids',&#10;                                                   'type': 'array',&#10;                                                   'maxItems': 1},&#10;                               'rationale': {'minLength': 1,&#10;                                             'title': 'Rationale',&#10;                                             'type': 'string'},&#10;                               'field_references': {'additionalProperties': {'items': {'type': 'string'},&#10;                                                                             'type': 'array'},&#10;                                                    'propertyNames': {'enum': ['quantity',&#10;                                                                               'device_type',&#10;                                                                               'function_hosts',&#10;                                                                               'ports',&#10;                                                                               'measurements',&#10;                                                                               'commands',&#10;                                                                               'communication']},&#10;                                                    'title': 'Field '&#10;                                                             'References',&#10;                                                    'type': 'object'},&#10;                               'device_id': {'type': 'string',&#10;                                             'minLength': 1,&#10;                                             'enum': ['existing-8']}},&#10;                'required': ['choice_kind',&#10;                             'source_fact_ids',&#10;                             'rationale',&#10;                             'field_references',&#10;                             'device_id'],&#10;                'additionalProperties': False}]}&#10;&#10;On instance['inventory_choices'][0]:&#10;    {'choice_kind': 'EXISTING_BATCH',&#10;     'bindings': {'existing-0': {'source_fact_ids': ['F05b5bf743577'],&#10;                                 'rationale': 'Source-bound unit decision',&#10;                                 'field_references': {}},&#10;                  'existing-1': {'source_fact_ids': ['F05b5bf743577'],&#10;                                 'rationale': 'Source-bound unit decision',&#10;                                 'field_references': {}},&#10;                  'existing-2': {'source_fact_ids': ['F05b5bf743577'],&#10;                                 'rationale': 'Source-bound unit decision',&#10;                                 'field_references': {}},&#10;                  'existing-3': {'source_fact_ids': ['F05b5bf743577'],&#10;                                 'rationale': 'Source-bound unit decision',&#10;                                 'field_references': {}},&#10;                  'existing-4': {'source_fact_ids': ['F05b5bf743577'],&#10;                                 'rationale': 'Source-bound unit decision',&#10;                                 'field_references': {}},&#10;                  'existing-5': {'source_fact_ids': ['F05b5bf743577'],&#10;                                 'rationale': 'Source-bound unit decision',&#10;                                 'field_references': {}},&#10;                  'existing-6': {'source_fact_ids': ['F05b5bf743577'],&#10;                                 'rationale': 'Source-bound unit decision',&#10;                                 'field_references': {}},&#10;                  'existing-7': {'source_fact_ids': ['F05b5bf743577'],&#10;                                 'rationale': 'Source-bound unit decision',&#10;                                 'field_references': {}}}}">def test_native_keyed_bindings_preserve_eight_identities_and_missing_fact_sets():
+        _, known, fact, choices, schema, base = existing_batch_fixture()
+        keyed = {'choice_kind': 'EXISTING_BATCH', 'bindings': {
+            row['device_id']: {key: value for key, value in row.items() if key not in {'choice_kind', 'device_id'}}
+            for row in choices[:8]}}
+&gt;       Draft202012Validator(schema).validate({**base, 'inventory_choices': [keyed]})
+
+backend\tests\test_reference_source_binding.py:35: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = Draft202012Validator(schema={'$defs': {'ReferenceCommand': {'additionalProperties': False, 'properties': {'definition'....nalDependency'}, 'maxItems': 0, 'title': 'Functional Dependencies', 'type': 'array'}, ...}, ...}, format_checker=None)
+args = ({'devices': [], 'functions': [], 'ports': [], 'measurements': [], ...},)
+kwargs = {}
+
+    def validate(self, *args, **kwargs):
+        for error in self.iter_errors(*args, **kwargs):
+&gt;           raise error
+E           jsonschema.exceptions.ValidationError: {'choice_kind': 'EXISTING_BATCH', 'bindings': {'existing-0': {'source_fact_ids': ['F05b5bf743577'], 'rationale': 'Source-bound unit decision', 'field_references': {}}, 'existing-1': {'source_fact_ids': ['F05b5bf743577'], 'rationale': 'Source-bound unit decision', 'field_references': {}}, 'existing-2': {'source_fact_ids': ['F05b5bf743577'], 'rationale': 'Source-bound unit decision', 'field_references': {}}, 'existing-3': {'source_fact_ids': ['F05b5bf743577'], 'rationale': 'Source-bound unit decision', 'field_references': {}}, 'existing-4': {'source_fact_ids': ['F05b5bf743577'], 'rationale': 'Source-bound unit decision', 'field_references': {}}, 'existing-5': {'source_fact_ids': ['F05b5bf743577'], 'rationale': 'Source-bound unit decision', 'field_references': {}}, 'existing-6': {'source_fact_ids': ['F05b5bf743577'], 'rationale': 'Source-bound unit decision', 'field_references': {}}, 'existing-7': {'source_fact_ids': ['F05b5bf743577'], 'rationale': 'Source-bound unit decision', 'field_references': {}}}} is not valid under any of the given schemas
+E           
+E           Failed validating 'anyOf' in schema['properties']['inventory_choices']['items']:
+E               {'anyOf': [{'additionalProperties': False,
+E                           'properties': {'choice_kind': {'type': 'string',
+E                                                          'enum': ['NEW_CONTROLLER']},
+E                                          'rationale': {'minLength': 1,
+E                                                        'title': 'Rationale',
+E                                                        'type': 'string'},
+E                                          'field_references': {'additionalProperties': {'items': {'type': 'string'},
+E                                                                                        'type': 'array'},
+E                                                               'propertyNames': {'enum': ['quantity',
+E                                                                                          'device_type',
+E                                                                                          'function_hosts',
+E                                                                                          'ports',
+E                                                                                          'measurements',
+E                                                                                          'commands',
+E                                                                                          'communication']},
+E                                                               'title': 'Field '
+E                                                                        'References',
+E                                                               'type': 'object'},
+E                                          'id': {'type': 'string',
+E                                                 'enum': ['derived-4a5e41abd620c995b5cfc86f']},
+E                                          'name': {'minLength': 1,
+E                                                   'title': 'Name',
+E                                                   'type': 'string'},
+E                                          'kind': {'type': 'string',
+E                                                   'enum': ['CONTROLLER']},
+E                                          'context_kind': {'type': 'null'},
+E                                          'quantity': {'type': 'integer', 'enum': [1]},
+E                                          'source_fact_ids': {'items': {'type': 'string',
+E                                                                        'enum': ['F05b5bf743577']},
+E                                                              'minItems': 1,
+E                                                              'title': 'Source Fact '
+E                                                                       'Ids',
+E                                                              'type': 'array',
+E                                                              'maxItems': 1},
+E                                          'source_member_bindings': {'type': 'object',
+E                                                                     'properties': {},
+E                                                                     'additionalProperties': False},
+E                                          'owner_device_id': {'type': 'null'},
+E                                          'purpose': {'anyOf': [{'minLength': 1,
+E                                                                 'type': 'string'},
+E                                                                {'type': 'null'}],
+E                                                      'default': None,
+E                                                      'title': 'Purpose'},
+E                                          'contained_device_ids': {'items': {'type': 'string'},
+E                                                                   'title': 'Contained '
+E                                                                            'Device '
+E                                                                            'Ids',
+E                                                                   'type': 'array',
+E                                                                   'maxItems': 0}},
+E                           'required': ['choice_kind',
+E                                        'rationale',
+E                                        'id',
+E                                        'name',
+E                                        'kind',
+E                                        'quantity',
+E                                        'source_fact_ids'],
+E                           'title': 'ReferenceDevice',
+E                           'type': 'object'},
+E                          {'additionalProperties': False,
+E                           'properties': {'choice_kind': {'type': 'string',
+E                                                          'enum': ['NEW_GATEWAY']},
+E                                          'rationale': {'minLength': 1,
+E                                                        'title': 'Rationale',
+E                                                        'type': 'string'},
+E                                          'field_references': {'additionalProperties': {'items': {'type': 'string'},
+E                                                                                        'type': 'array'},
+E                                                               'propertyNames': {'enum': ['quantity',
+E                                                                                          'device_type',
+E                                                                                          'function_hosts',
+E                                                                                          'ports',
+E                                                                                          'measurements',
+E                                                                                          'commands',
+E                                                                                          'communication']},
+E                                                               'title': 'Field '
+E                                                                        'References',
+E                                                               'type': 'object'},
+E                                          'id': {'type': 'string',
+E                                                 'enum': ['derived-2139dfdf278f7af0a7c6ddb0']},
+E                                          'name': {'minLength': 1,
+E                                                   'title': 'Name',
+E                                                   'type': 'string'},
+E                                          'kind': {'type': 'string',
+E                                                   'enum': ['GATEWAY']},
+E                                          'context_kind': {'type': 'null'},
+E                                          'quantity': {'type': 'integer', 'enum': [1]},
+E                                          'source_fact_ids': {'items': {'type': 'string',
+E                                                                        'enum': ['F05b5bf743577']},
+E                                                              'minItems': 1,
+E                                                              'title': 'Source Fact '
+E                                                                       'Ids',
+E                                                              'type': 'array',
+E                                                              'maxItems': 1},
+E                                          'source_member_bindings': {'type': 'object',
+E                                                                     'properties': {},
+E                                                                     'additionalProperties': False},
+E                                          'owner_device_id': {'type': 'null'},
+E                                          'purpose': {'anyOf': [{'minLength': 1,
+E                                                                 'type': 'string'},
+E                                                                {'type': 'null'}],
+E                                                      'default': None,
+E                                                      'title': 'Purpose'},
+E                                          'contained_device_ids': {'items': {'type': 'string'},
+E                                                                   'title': 'Contained '
+E                                                                            'Device '
+E                                                                            'Ids',
+E                                                                   'type': 'array',
+E                                                                   'maxItems': 0}},
+E                           'required': ['choice_kind',
+E                                        'rationale',
+E                                        'id',
+E                                        'name',
+E                                        'kind',
+E                                        'quantity',
+E                                        'source_fact_ids'],
+E                           'title': 'ReferenceDevice',
+E                           'type': 'object'},
+E                          {'additionalProperties': False,
+E                           'properties': {'choice_kind': {'type': 'string',
+E                                                          'enum': ['NEW_SENSOR']},
+E                                          'rationale': {'minLength': 1,
+E                                                        'title': 'Rationale',
+E                                                        'type': 'string'},
+E                                          'field_references': {'additionalProperties': {'items': {'type': 'string'},
+E                                                                                        'type': 'array'},
+E                                                               'propertyNames': {'enum': ['quantity',
+E                                                                                          'device_type',
+E                                                                                          'function_hosts',
+E                                                                                          'ports',
+E                                                                                          'measurements',
+E                                                                                          'commands',
+E                                                                                          'communication']},
+E                                                               'title': 'Field '
+E                                                                        'References',
+E                                                               'type': 'object'},
+E                                          'id': {'type': 'string',
+E                                                 'enum': ['derived-69232244f4afbaa404ab2126']},
+E                                          'name': {'minLength': 1,
+E                                                   'title': 'Name',
+E                                                   'type': 'string'},
+E                                          'kind': {'type': 'string',
+E                                                   'enum': ['SENSOR']},
+E                                          'context_kind': {'type': 'null'},
+E                                          'quantity': {'type': 'integer', 'enum': [1]},
+E                                          'source_fact_ids': {'items': {'type': 'string',
+E                                                                        'enum': ['F05b5bf743577']},
+E                                                              'minItems': 1,
+E                                                              'title': 'Source Fact '
+E                                                                       'Ids',
+E                                                              'type': 'array',
+E                                                              'maxItems': 1},
+E                                          'source_member_bindings': {'type': 'object',
+E                                                                     'properties': {},
+E                                                                     'additionalProperties': False},
+E                                          'owner_device_id': {'anyOf': [{'type': 'string'},
+E                                                                        {'type': 'null'}],
+E                                                              'default': None,
+E                                                              'title': 'Owner Device '
+E                                                                       'Id'},
+E                                          'purpose': {'anyOf': [{'minLength': 1,
+E                                                                 'type': 'string'},
+E                                                                {'type': 'null'}],
+E                                                      'default': None,
+E                                                      'title': 'Purpose'},
+E                                          'contained_device_ids': {'items': {'type': 'string'},
+E                                                                   'title': 'Contained '
+E                                                                            'Device '
+E                                                                            'Ids',
+E                                                                   'type': 'array',
+E                                                                   'maxItems': 0}},
+E                           'required': ['choice_kind',
+E                                        'rationale',
+E                                        'id',
+E                                        'name',
+E                                        'kind',
+E                                        'quantity',
+E                                        'source_fact_ids'],
+E                           'title': 'ReferenceDevice',
+E                           'type': 'object'},
+E                          {'additionalProperties': False,
+E                           'properties': {'choice_kind': {'type': 'string',
+E                                                          'enum': ['NEW_ACTUATOR']},
+E                                          'rationale': {'minLength': 1,
+E                                                        'title': 'Rationale',
+E                                                        'type': 'string'},
+E                                          'field_references': {'additionalProperties': {'items': {'type': 'string'},
+E                                                                                        'type': 'array'},
+E                                                               'propertyNames': {'enum': ['quantity',
+E                                                                                          'device_type',
+E                                                                                          'function_hosts',
+E                                                                                          'ports',
+E                                                                                          'measurements',
+E                                                                                          'commands',
+E                                                                                          'communication']},
+E                                                               'title': 'Field '
+E                                                                        'References',
+E                                                               'type': 'object'},
+E                                          'id': {'type': 'string',
+E                                                 'enum': ['derived-2b07f316d342a4b07f83b132']},
+E                                          'name': {'minLength': 1,
+E                                                   'title': 'Name',
+E                                                   'type': 'string'},
+E                                          'kind': {'type': 'string',
+E                                                   'enum': ['ACTUATOR']},
+E                                          'context_kind': {'type': 'null'},
+E                                          'quantity': {'type': 'integer', 'enum': [1]},
+E                                          'source_fact_ids': {'items': {'type': 'string',
+E                                                                        'enum': ['F05b5bf743577']},
+E                                                              'minItems': 1,
+E                                                              'title': 'Source Fact '
+E                                                                       'Ids',
+E                                                              'type': 'array',
+E                                                              'maxItems': 1},
+E                                          'source_member_bindings': {'type': 'object',
+E                                                                     'properties': {},
+E                                                                     'additionalProperties': False},
+E                                          'owner_device_id': {'anyOf': [{'type': 'string'},
+E                                                                        {'type': 'null'}],
+E                                                              'default': None,
+E                                                              'title': 'Owner Device '
+E                                                                       'Id'},
+E                                          'purpose': {'anyOf': [{'minLength': 1,
+E                                                                 'type': 'string'},
+E                                                                {'type': 'null'}],
+E                                                      'default': None,
+E                                                      'title': 'Purpose'},
+E                                          'contained_device_ids': {'items': {'type': 'string'},
+E                                                                   'title': 'Contained '
+E                                                                            'Device '
+E                                                                            'Ids',
+E                                                                   'type': 'array',
+E                                                                   'maxItems': 0}},
+E                           'required': ['choice_kind',
+E                                        'rationale',
+E                                        'id',
+E                                        'name',
+E                                        'kind',
+E                                        'quantity',
+E                                        'source_fact_ids'],
+E                           'title': 'ReferenceDevice',
+E                           'type': 'object'},
+E                          {'additionalProperties': False,
+E                           'properties': {'choice_kind': {'type': 'string',
+E                                                          'enum': ['NEW_PHYSICAL_CONTEXT']},
+E                                          'rationale': {'minLength': 1,
+E                                                        'title': 'Rationale',
+E                                                        'type': 'string'},
+E                                          'field_references': {'additionalProperties': {'items': {'type': 'string'},
+E                                                                                        'type': 'array'},
+E                                                               'propertyNames': {'enum': ['quantity',
+E                                                                                          'device_type',
+E                                                                                          'function_hosts',
+E                                                                                          'ports',
+E                                                                                          'measurements',
+E                                                                                          'commands',
+E                                                                                          'communication']},
+E                                                               'title': 'Field '
+E                                                                        'References',
+E                                                               'type': 'object'},
+E                                          'id': {'type': 'string',
+E                                                 'enum': ['derived-442bd3c34a1727ea33ea3da7']},
+E                                          'name': {'minLength': 1,
+E                                                   'title': 'Name',
+E                                                   'type': 'string'},
+E                                          'kind': {'type': 'string',
+E                                                   'enum': ['PHYSICAL_CONTEXT']},
+E                                          'context_kind': {'type': 'string',
+E                                                           'enum': ['PASSIVE',
+E                                                                    'ASSEMBLY',
+E                                                                    'SOFTWARE_SERVICE']},
+E                                          'quantity': {'maximum': 1000,
+E                                                       'minimum': 1,
+E                                                       'title': 'Quantity',
+E                                                       'type': 'integer'},
+E                                          'source_fact_ids': {'items': {'type': 'string',
+E                                                                        'enum': ['F05b5bf743577']},
+E                                                              'minItems': 1,
+E                                                              'title': 'Source Fact '
+E                                                                       'Ids',
+E                                                              'type': 'array',
+E                                                              'maxItems': 1},
+E                                          'source_member_bindings': {'type': 'object',
+E                                                                     'properties': {},
+E                                                                     'additionalProperties': False},
+E                                          'owner_device_id': {'anyOf': [{'type': 'string'},
+E                                                                        {'type': 'null'}],
+E                                                              'default': None,
+E                                                              'title': 'Owner Device '
+E                                                                       'Id'},
+E                                          'purpose': {'anyOf': [{'minLength': 1,
+E                                                                 'type': 'string'},
+E                                                                {'type': 'null'}],
+E                                                      'default': None,
+E                                                      'title': 'Purpose'},
+E                                          'contained_device_ids': {'items': {'type': 'string'},
+E                                                                   'title': 'Contained '
+E                                                                            'Device '
+E                                                                            'Ids',
+E                                                                   'type': 'array'}},
+E                           'required': ['choice_kind',
+E                                        'rationale',
+E                                        'id',
+E                                        'name',
+E                                        'kind',
+E                                        'quantity',
+E                                        'source_fact_ids',
+E                                        'context_kind'],
+E                           'title': 'ReferenceDevice',
+E                           'type': 'object'},
+E                          {'type': 'object',
+E                           'properties': {'choice_kind': {'type': 'string',
+E                                                          'enum': ['EXISTING']},
+E                                          'source_fact_ids': {'items': {'type': 'string',
+E                                                                        'enum': ['F05b5bf743577']},
+E                                                              'minItems': 1,
+E                                                              'title': 'Source Fact '
+E                                                                       'Ids',
+E                                                              'type': 'array',
+E                                                              'maxItems': 1},
+E                                          'rationale': {'minLength': 1,
+E                                                        'title': 'Rationale',
+E                                                        'type': 'string'},
+E                                          'field_references': {'additionalProperties': {'items': {'type': 'string'},
+E                                                                                        'type': 'array'},
+E                                                               'propertyNames': {'enum': ['quantity',
+E                                                                                          'device_type',
+E                                                                                          'function_hosts',
+E                                                                                          'ports',
+E                                                                                          'measurements',
+E                                                                                          'commands',
+E                                                                                          'communication']},
+E                                                               'title': 'Field '
+E                                                                        'References',
+E                                                               'type': 'object'},
+E                                          'device_id': {'type': 'string',
+E                                                        'minLength': 1,
+E                                                        'enum': ['existing-0']}},
+E                           'required': ['choice_kind',
+E                                        'source_fact_ids',
+E                                        'rationale',
+E                                        'field_references',
+E                                        'device_id'],
+E                           'additionalProperties': False},
+E                          {'type': 'object',
+E                           'properties': {'choice_kind': {'type': 'string',
+E                                                          'enum': ['EXISTING']},
+E                                          'source_fact_ids': {'items': {'type': 'string',
+E                                                                        'enum': ['F05b5bf743577']},
+E                                                              'minItems': 1,
+E                                                              'title': 'Source Fact '
+E                                                                       'Ids',
+E                                                              'type': 'array',
+E                                                              'maxItems': 1},
+E                                          'rationale': {'minLength': 1,
+E                                                        'title': 'Rationale',
+E                                                        'type': 'string'},
+E                                          'field_references': {'additionalProperties': {'items': {'type': 'string'},
+E                                                                                        'type': 'array'},
+E                                                               'propertyNames': {'enum': ['quantity',
+E                                                                                          'device_type',
+E                                                                                          'function_hosts',
+E                                                                                          'ports',
+E                                                                                          'measurements',
+E                                                                                          'commands',
+E                                                                                          'communication']},
+E                                                               'title': 'Field '
+E                                                                        'References',
+E                                                               'type': 'object'},
+E                                          'device_id': {'type': 'string',
+E                                                        'minLength': 1,
+E                                                        'enum': ['existing-1']}},
+E                           'required': ['choice_kind',
+E                                        'source_fact_ids',
+E                                        'rationale',
+E                                        'field_references',
+E                                        'device_id'],
+E                           'additionalProperties': False},
+E                          {'type': 'object',
+E                           'properties': {'choice_kind': {'type': 'string',
+E                                                          'enum': ['EXISTING']},
+E                                          'source_fact_ids': {'items': {'type': 'string',
+E                                                                        'enum': ['F05b5bf743577']},
+E                                                              'minItems': 1,
+E                                                              'title': 'Source Fact '
+E                                                                       'Ids',
+E                                                              'type': 'array',
+E                                                              'maxItems': 1},
+E                                          'rationale': {'minLength': 1,
+E                                                        'title': 'Rationale',
+E                                                        'type': 'string'},
+E                                          'field_references': {'additionalProperties': {'items': {'type': 'string'},
+E                                                                                        'type': 'array'},
+E                                                               'propertyNames': {'enum': ['quantity',
+E                                                                                          'device_type',
+E                                                                                          'function_hosts',
+E                                                                                          'ports',
+E                                                                                          'measurements',
+E                                                                                          'commands',
+E                                                                                          'communication']},
+E                                                               'title': 'Field '
+E                                                                        'References',
+E                                                               'type': 'object'},
+E                                          'device_id': {'type': 'string',
+E                                                        'minLength': 1,
+E                                                        'enum': ['existing-2']}},
+E                           'required': ['choice_kind',
+E                                        'source_fact_ids',
+E                                        'rationale',
+E                                        'field_references',
+E                                        'device_id'],
+E                           'additionalProperties': False},
+E                          {'type': 'object',
+E                           'properties': {'choice_kind': {'type': 'string',
+E                                                          'enum': ['EXISTING']},
+E                                          'source_fact_ids': {'items': {'type': 'string',
+E                                                                        'enum': ['F05b5bf743577']},
+E                                                              'minItems': 1,
+E                                                              'title': 'Source Fact '
+E                                                                       'Ids',
+E                                                              'type': 'array',
+E                                                              'maxItems': 1},
+E                                          'rationale': {'minLength': 1,
+E                                                        'title': 'Rationale',
+E                                                        'type': 'string'},
+E                                          'field_references': {'additionalProperties': {'items': {'type': 'string'},
+E                                                                                        'type': 'array'},
+E                                                               'propertyNames': {'enum': ['quantity',
+E                                                                                          'device_type',
+E                                                                                          'function_hosts',
+E                                                                                          'ports',
+E                                                                                          'measurements',
+E                                                                                          'commands',
+E                                                                                          'communication']},
+E                                                               'title': 'Field '
+E                                                                        'References',
+E                                                               'type': 'object'},
+E                                          'device_id': {'type': 'string',
+E                                                        'minLength': 1,
+E                                                        'enum': ['existing-3']}},
+E                           'required': ['choice_kind',
+E                                        'source_fact_ids',
+E                                        'rationale',
+E                                        'field_references',
+E                                        'device_id'],
+E                           'additionalProperties': False},
+E                          {'type': 'object',
+E                           'properties': {'choice_kind': {'type': 'string',
+E                                                          'enum': ['EXISTING']},
+E                                          'source_fact_ids': {'items': {'type': 'string',
+E                                                                        'enum': ['F05b5bf743577']},
+E                                                              'minItems': 1,
+E                                                              'title': 'Source Fact '
+E                                                                       'Ids',
+E                                                              'type': 'array',
+E                                                              'maxItems': 1},
+E                                          'rationale': {'minLength': 1,
+E                                                        'title': 'Rationale',
+E                                                        'type': 'string'},
+E                                          'field_references': {'additionalProperties': {'items': {'type': 'string'},
+E                                                                                        'type': 'array'},
+E                                                               'propertyNames': {'enum': ['quantity',
+E                                                                                          'device_type',
+E                                                                                          'function_hosts',
+E                                                                                          'ports',
+E                                                                                          'measurements',
+E                                                                                          'commands',
+E                                                                                          'communication']},
+E                                                               'title': 'Field '
+E                                                                        'References',
+E                                                               'type': 'object'},
+E                                          'device_id': {'type': 'string',
+E                                                        'minLength': 1,
+E                                                        'enum': ['existing-4']}},
+E                           'required': ['choice_kind',
+E                                        'source_fact_ids',
+E                                        'rationale',
+E                                        'field_references',
+E                                        'device_id'],
+E                           'additionalProperties': False},
+E                          {'type': 'object',
+E                           'properties': {'choice_kind': {'type': 'string',
+E                                                          'enum': ['EXISTING']},
+E                                          'source_fact_ids': {'items': {'type': 'string',
+E                                                                        'enum': ['F05b5bf743577']},
+E                                                              'minItems': 1,
+E                                                              'title': 'Source Fact '
+E                                                                       'Ids',
+E                                                              'type': 'array',
+E                                                              'maxItems': 1},
+E                                          'rationale': {'minLength': 1,
+E                                                        'title': 'Rationale',
+E                                                        'type': 'string'},
+E                                          'field_references': {'additionalProperties': {'items': {'type': 'string'},
+E                                                                                        'type': 'array'},
+E                                                               'propertyNames': {'enum': ['quantity',
+E                                                                                          'device_type',
+E                                                                                          'function_hosts',
+E                                                                                          'ports',
+E                                                                                          'measurements',
+E                                                                                          'commands',
+E                                                                                          'communication']},
+E                                                               'title': 'Field '
+E                                                                        'References',
+E                                                               'type': 'object'},
+E                                          'device_id': {'type': 'string',
+E                                                        'minLength': 1,
+E                                                        'enum': ['existing-5']}},
+E                           'required': ['choice_kind',
+E                                        'source_fact_ids',
+E                                        'rationale',
+E                                        'field_references',
+E                                        'device_id'],
+E                           'additionalProperties': False},
+E                          {'type': 'object',
+E                           'properties': {'choice_kind': {'type': 'string',
+E                                                          'enum': ['EXISTING']},
+E                                          'source_fact_ids': {'items': {'type': 'string',
+E                                                                        'enum': ['F05b5bf743577']},
+E                                                              'minItems': 1,
+E                                                              'title': 'Source Fact '
+E                                                                       'Ids',
+E                                                              'type': 'array',
+E                                                              'maxItems': 1},
+E                                          'rationale': {'minLength': 1,
+E                                                        'title': 'Rationale',
+E                                                        'type': 'string'},
+E                                          'field_references': {'additionalProperties': {'items': {'type': 'string'},
+E                                                                                        'type': 'array'},
+E                                                               'propertyNames': {'enum': ['quantity',
+E                                                                                          'device_type',
+E                                                                                          'function_hosts',
+E                                                                                          'ports',
+E                                                                                          'measurements',
+E                                                                                          'commands',
+E                                                                                          'communication']},
+E                                                               'title': 'Field '
+E                                                                        'References',
+E                                                               'type': 'object'},
+E                                          'device_id': {'type': 'string',
+E                                                        'minLength': 1,
+E                                                        'enum': ['existing-6']}},
+E                           'required': ['choice_kind',
+E                                        'source_fact_ids',
+E                                        'rationale',
+E                                        'field_references',
+E                                        'device_id'],
+E                           'additionalProperties': False},
+E                          {'type': 'object',
+E                           'properties': {'choice_kind': {'type': 'string',
+E                                                          'enum': ['EXISTING']},
+E                                          'source_fact_ids': {'items': {'type': 'string',
+E                                                                        'enum': ['F05b5bf743577']},
+E                                                              'minItems': 1,
+E                                                              'title': 'Source Fact '
+E                                                                       'Ids',
+E                                                              'type': 'array',
+E                                                              'maxItems': 1},
+E                                          'rationale': {'minLength': 1,
+E                                                        'title': 'Rationale',
+E                                                        'type': 'string'},
+E                                          'field_references': {'additionalProperties': {'items': {'type': 'string'},
+E                                                                                        'type': 'array'},
+E                                                               'propertyNames': {'enum': ['quantity',
+E                                                                                          'device_type',
+E                                                                                          'function_hosts',
+E                                                                                          'ports',
+E                                                                                          'measurements',
+E                                                                                          'commands',
+E                                                                                          'communication']},
+E                                                               'title': 'Field '
+E                                                                        'References',
+E                                                               'type': 'object'},
+E                                          'device_id': {'type': 'string',
+E                                                        'minLength': 1,
+E                                                        'enum': ['existing-7']}},
+E                           'required': ['choice_kind',
+E                                        'source_fact_ids',
+E                                        'rationale',
+E                                        'field_references',
+E                                        'device_id'],
+E                           'additionalProperties': False},
+E                          {'type': 'object',
+E                           'properties': {'choice_kind': {'type': 'string',
+E                                                          'enum': ['EXISTING']},
+E                                          'source_fact_ids': {'items': {'type': 'string',
+E                                                                        'enum': ['F05b5bf743577']},
+E                                                              'minItems': 1,
+E                                                              'title': 'Source Fact '
+E                                                                       'Ids',
+E                                                              'type': 'array',
+E                                                              'maxItems': 1},
+E                                          'rationale': {'minLength': 1,
+E                                                        'title': 'Rationale',
+E                                                        'type': 'string'},
+E                                          'field_references': {'additionalProperties': {'items': {'type': 'string'},
+E                                                                                        'type': 'array'},
+E                                                               'propertyNames': {'enum': ['quantity',
+E                                                                                          'device_type',
+E                                                                                          'function_hosts',
+E                                                                                          'ports',
+E                                                                                          'measurements',
+E                                                                                          'commands',
+E                                                                                          'communication']},
+E                                                               'title': 'Field '
+E                                                                        'References',
+E                                                               'type': 'object'},
+E                                          'device_id': {'type': 'string',
+E                                                        'minLength': 1,
+E                                                        'enum': ['existing-8']}},
+E                           'required': ['choice_kind',
+E                                        'source_fact_ids',
+E                                        'rationale',
+E                                        'field_references',
+E                                        'device_id'],
+E                           'additionalProperties': False}]}
+E           
+E           On instance['inventory_choices'][0]:
+E               {'choice_kind': 'EXISTING_BATCH',
+E                'bindings': {'existing-0': {'source_fact_ids': ['F05b5bf743577'],
+E                                            'rationale': 'Source-bound unit decision',
+E                                            'field_references': {}},
+E                             'existing-1': {'source_fact_ids': ['F05b5bf743577'],
+E                                            'rationale': 'Source-bound unit decision',
+E                                            'field_references': {}},
+E                             'existing-2': {'source_fact_ids': ['F05b5bf743577'],
+E                                            'rationale': 'Source-bound unit decision',
+E                                            'field_references': {}},
+E                             'existing-3': {'source_fact_ids': ['F05b5bf743577'],
+E                                            'rationale': 'Source-bound unit decision',
+E                                            'field_references': {}},
+E                             'existing-4': {'source_fact_ids': ['F05b5bf743577'],
+E                                            'rationale': 'Source-bound unit decision',
+E                                            'field_references': {}},
+E                             'existing-5': {'source_fact_ids': ['F05b5bf743577'],
+E                                            'rationale': 'Source-bound unit decision',
+E                                            'field_references': {}},
+E                             'existing-6': {'source_fact_ids': ['F05b5bf743577'],
+E                                            'rationale': 'Source-bound unit decision',
+E                                            'field_references': {}},
+E                             'existing-7': {'source_fact_ids': ['F05b5bf743577'],
+E                                            'rationale': 'Source-bound unit decision',
+E                                            'field_references': {}}}}
+
+backend\.venv\Lib\site-packages\jsonschema\validators.py:450: ValidationError</failure></testcase><testcase classname="tests.test_reference_source_binding" name="test_native_decoder_rejects_duplicate_identity_even_when_facts_differ" time="1.515"><failure message="KeyError: 'F-independent-second-function'">def test_native_decoder_rejects_duplicate_identity_even_when_facts_differ():
+        prepared, known, fact, choices, _, base = existing_batch_fixture()
+        other = 'F-independent-second-function'
+        prepared['facts'][other] = deepcopy(prepared['facts'][fact])
+&gt;       schema = reasoner._reference_schema_for_stage(prepared, {'devices'}, derivation_fact_ids=[fact, other], existing_devices=known)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_source_binding.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\nis\agent\orchestration\local_reasoner.py:170: in _reference_schema_for_stage
+    properties['id'] = {'type': 'string', 'enum': [_reference_fresh_inventory_id(
+backend\nis\agent\orchestration\local_reasoner.py:117: in _reference_fresh_inventory_id
+    seed = json.dumps([kind, sorted(prepared['fact_id_map'][key] for key in available),
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = &lt;set_iterator object at 0x000001669E1A7240&gt;
+
+&gt;   seed = json.dumps([kind, sorted(prepared['fact_id_map'][key] for key in available),
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                       sorted(existing_ids)], ensure_ascii=False, separators=(',', ':'))
+E   KeyError: 'F-independent-second-function'
+
+backend\nis\agent\orchestration\local_reasoner.py:117: KeyError</failure></testcase><testcase classname="tests.test_reference_source_binding" name="test_each_rejected_native_answer_is_visible_and_followed_by_validation" time="9.090"><failure message="ValueError: Kein gültiger strukturierter Referenzvorschlag: Die IO-Stufe enthält Daten eines nicht ausgewählten Teilnehmers.">stage = 'Portabsicht der ausgewählten Teilnehmer', allowed = {'ports'}
+producer_ids = (), feedback = None, port_ids = (), function_ids = ()
+port_intent = True, device_ids = ('source-cc9cfd15a66c71f738a2e3ea',)
+inventory_target = None, derivation_fact_ids = None
+
+    async def infer(stage, allowed, producer_ids=(), feedback=None, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None):
+        nonlocal reference_messages, reference_prompt, reference_anchor
+        inventory_stage = inventory_target is not None or derivation_fact_ids is not None
+        if device_ids:
+            kinds = {'ports': {'CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR'},
+                     'measurements': {'SENSOR'}, 'commands': {'ACTUATOR'}}
+            owners = {row['id']: row['kind'] for row in current['devices']}
+            if (not 1 &lt;= len(device_ids) &lt;= 4 or len(device_ids) != len(set(device_ids))
+                    or not allowed &lt;= kinds.keys()
+                    or any(owners.get(key) not in kinds[field] for key in device_ids for field in allowed)):
+                raise ValueError('Die IO-Stufe benötigt höchstens vier eindeutige bestehende Teilnehmer passender Geräteart.')
+        stage_catalog = deepcopy(catalog)
+        if port_ids:
+            stage_catalog['technology_parameters'] = technology_schemas_for(
+                row['technology'] for row in current['ports'] if row['id'] in port_ids)
+        prompt = {**content, 'current_candidate': {field: value for field, value in current.items() if field != 'communication'},
+                  'registered_catalogs': stage_catalog,
+                  'known_communication': [
+                      {key: row.get(key) for key in ('id', 'producer_device_id', 'consumer_device_ids', 'scope', 'source_port_id', 'consumer_port_ids', 'transmission_mode', 'request_source', 'request_communication_id', 'cycle_ms', 'min_interval_ms')}
+                      for row in current['communication']],
+                  'validation_feedback': feedback, 'planning_stage': stage,
+                  'producer_device_ids_for_this_stage': list(producer_ids),
+                  'port_ids_for_this_stage': list(port_ids),
+                  'device_ids_for_this_stage': list(device_ids),
+                  'function_fact_ids_for_this_stage': list(function_ids),
+                  'inventory_target_for_this_stage': inventory_target,
+                  'derivation_fact_ids_for_this_stage': list(derivation_fact_ids) if derivation_fact_ids is not None else None,
+                  'output_fields_for_this_stage': list(allowed),
+                  'existing_inventory_for_this_stage': [
+                      {key: row[key] for key in ('id', 'name', 'kind')}
+                      for row in current['devices']] if inventory_stage else None,
+                  'instruction': ('Nur die genannten Outputfelder füllen; alle anderen Modellarrays leer. Echte offene Entscheidungen dürfen immer in unresolved stehen. '
+                      + ('Inventarstufen liefern inventory_choices und inventory_complete; devices und alle anderen Modelllisten bleiben leer, echte Rückfragen bleiben in unresolved zulässig. inventory_choices enthält gemeinsam neue Geräte ODER Bindungen an vorhandene Geräte. existing_inventory_for_this_stage zeigt den tatsächlichen aktuellen Bestand einschließlich vorhandener Sensoren und Aktoren. Diese bleiben auch bei anderen Quellenbefunden physisch vorhanden; niemals unter NEW erneut definieren. Bereits vollständig gebundene Teilnehmer nicht wiederholen. Die Hardwareentscheidung knapp begründen; anstehende eigene Planungsschritte gehören zu inventory_complete=false, nicht als vermeintliche Fachentscheidung in unresolved. ' if inventory_stage else '')
+                      + 'Nur den ausdrücklich ausgewählten Stufenbereich vollständig liefern; vorhandene eindeutige IDs erhalten. '
+                      'Jede Auswahl begründen; echte offene Auslegung explizit unresolved halten. '
+                      + ('Zunächst ausschließlich konkrete Portabsicht planen: parameters bleibt {}. Die folgende eigene Parameterstufe legt jeden Anschluss aus; diese Zwischenstufe ist keine vollständige Prüfung. ' if port_intent else '')
+                      + ('Ausschließlich IO für alle angeforderten vorhandenen Teilnehmer-IDs liefern; keine anderen Geräte, Anschlüsse, Messgrößen oder Befehle überschreiben. Teilnehmer und ihre IO getrennt erhalten. Alle Nachbarteilnehmer bleiben als Planungskontext sichtbar. ' if device_ids else '')
+                      + ('Jeder inventory_choices-Eintrag beginnt mit choice_kind: EXISTING für eine vorhandene ID-Bindung, NEW_&lt;Geräteart&gt; für wirklich neue Hardware (z.B. NEW_SENSOR passend zu kind=SENSOR). Bei EXISTING danach ausschließlich device_id, source_fact_ids, rationale und field_references auswählen; niemals id/name/kind eines alten Geräts neu schreiben. NIS erhält sämtliche unveränderlichen Gerätedaten und ergänzt nur die Quellen-/Typ-/Referenzbindung. Bei NEW_&lt;Geräteart&gt; danach die vollständigen neuen Gerätedaten liefern, niemals eine vorhandene ID. choice_kind wird nur intern geprüft und nicht als Modellfeld gespeichert. Die gemeinsame Stufengrenze gilt für alle Einträge zusammen. ' if inventory_stage else '')
+                      + ('Nur ein echtes Gerät oder eine vorhandene Gerätebindung für den angeforderten Quellenbefund/das Typmitglied liefern, keine zweite Platzhalterzeile. source_fact_ids enthält ausschließlich diese eine FactID; source_member_bindings neuer Geräte ausschließlich das angeforderte wörtliche Mitglied. Bei vorhandenen Geräten setzt NIS die angeforderte Typbindung selbst. Funktional zusätzlich notwendige Hardware wird danach in einem eigenen Schritt geplant. ' if inventory_target else '')
+                      + ('inventory_complete bewertet nur diesen deklarierten Quellenbereich. Bei vollständiger Abdeckung true; wenn er bereits abgedeckt ist, ist ein leeres Delta mit true zulässig. False verlangt eine echte weitere Instanz/Bindung dieses Bereichs. ' if inventory_target else '')
+                      + ('Prüfe jetzt die physische Hardware für die ausdrücklich angeforderten FUNCTION-/REQUIREMENT-FactIDs. Vollständige Quelle und sämtliche Nachbarfunktionen bleiben Konsistenzkontext; weitere Quellenbefunde werden in eigenen Hardwarestufen bearbeitet. Sensoren und Aktoren sind echte Teilnehmer, keine bloßen Werte im Controller. Vorhandene Geräte wiederverwenden oder fehlende Messquellen, Verarbeitung, Verbraucher und Aktoren ergänzen; unabhängige Messgrößen und Stellwirkungen berücksichtigen. Ports/Messgrößen/Befehle/Funktionen/Kommunikation folgen erst nach ALLEN Hardwarestufen und erzeugen KEINE Geräte mehr. Notwendige Peripherie dieses Quellenbereichs niemals in spätere IO-Schritte verschieben. source_fact_ids enthält nur passende angeforderte FUNCTION-/REQUIREMENT-FactIDs, jede höchstens einmal; keine neuen Bindungen an Quelleninventar. Alte Bindungen wiederverwendeter IDs bleiben serverseitig erhalten. Keine Originalmenge erhöhen oder Hardwarebelege/Defaults erfinden. Pro Antwort entweder höchstens ein wirklich neues Gerät ODER bis zu acht verschiedene EXISTING-ID-Bindungen gemeinsam; niemals neue Hardware mit Bindungen mischen. Mehrere passende Quellenbelege desselben Teilnehmers gemeinsam angeben. Nur tatsächlich benötigte Teilnehmer binden, nicht sämtliche Geräte mit sämtlichen Funktionen verbinden. Weiteren Hardwarebedarf mit inventory_complete=false für die normale nächste Antwort offenhalten; die Gesamtzahl notwendiger Geräte ist dadurch nicht begrenzt. inventory_complete bewertet ausschließlich den Bedarf der angeforderten FactIDs und wird erst true, wenn vorhandene plus ergänzte Hardware diesen vollständig abdeckt; ohne Ergänzungsbedarf inventory_choices=[] und true. False verlangt neue Geräte/Quellenbindungen. Unklare Fachentscheidungen konkret unresolved nennen. ' if derivation_fact_ids is not None else '')
+                      + ('Genau die angeforderten Port-IDs liefern. id, device_id, technology, role und network_scope unverändert übernehmen; nur parameters und ports-spezifische Begründung/Referenzbelege auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
+                      + ('Genau die angeforderten Funktions-FactIDs abdecken; Abhängigkeiten nur mit diesen Senderfunktionen liefern. Andere ursprüngliche Funktions-FactIDs dürfen bewusste Empfänger oder COMPOSITE-Bestandteile sein. ' if function_ids else ''))}
+        messages, full_messages, context_rebased = _reference_context_messages(
+            reference_messages, reference_prompt, prompt, system, self.context_tokens, anchor=reference_anchor)
+        progress_details = {}
+        def report_progress(attempt):
+            progress = sink.get()
+            if progress:
+                metadata = {'source': 'document_reference_design', 'completed_calls': len(calls), 'canonical_writes': False,
+                            'planning_stage': stage, 'profile_index': profile_index, 'profile_count': len(groups),
+                            'attempt': attempt}
+                if inventory_stage:
+                    metadata.update(inventory_target=deepcopy(inventory_target), draft_inventory_by_kind={
+                        kind: sum(row['kind'] == kind for row in current['devices'])
+                        for kind in ('CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR', 'PHYSICAL_CONTEXT')})
+                    if derivation_fact_ids is not None:
+                        metadata['derivation_fact_ids'] = list(derivation_fact_ids)
+                scope_text = ''
+                if derivation_fact_ids:
+                    fact_ids = [key for key, fact in prepared['facts'].items()
+                        if fact['kind'] in {'FUNCTION', 'REQUIREMENT'}
+                        and tuple(document_system_scope(fact.get('source_context', []))) == profile]
+                    scope_index = fact_ids.index(derivation_fact_ids[0]) // 4 + 1
+                    scope_count = (len(fact_ids) + 3) // 4
+                    metadata.update(scope_index=scope_index, scope_count=scope_count)
+                    scope_text = f'; Quellenbereich {scope_index} von {scope_count}'
+                attempt_text = 'Planung' if attempt == 1 else f'Korrekturversuch {attempt}'
+                progress_details.update(metadata)
+                progress({'type': 'PROGRESS', 'text': f'Lokaler Qwen plant Referenzprofil {profile_index} von {len(groups)}: {stage}. {len(calls)} Modellantworten empfangen; {attempt_text}{scope_text}.',
+                          'status': 'RUNNING', 'metadata': metadata})
+        payload = {'model': self.model, 'messages': messages,
+                   'format': _reference_schema_for_stage(prepared, allowed, port_ids=port_ids,
+                       function_ids=function_ids, port_intent=port_intent, device_ids=device_ids,
+                       inventory_target=inventory_target, derivation_fact_ids=derivation_fact_ids,
+                       existing_devices=current['devices'] if inventory_stage else ()),
+                    'think': False, 'stream': True, 'keep_alive': self.keep_alive,
+                   'options': {'temperature': 0, 'num_predict': 8192, 'num_ctx': self.context_tokens}}
+        for attempt in range(2):
+            try:
+                payload['options']['num_ctx'] = _reference_context_window(payload['messages'], self.context_tokens)
+            except ValueError:
+                if not reference_messages:
+                    raise
+                # Preserve actual invalid reply and exact validation feedback on retry.
+                payload['messages'] = [*full_messages, *payload['messages'][-2:]] if attempt else full_messages
+                payload['options']['num_ctx'] = _reference_context_window(payload['messages'], self.context_tokens)
+                messages = full_messages
+                context_rebased = True
+            report_progress(attempt + 1)
+            def report_output(observation):
+                progress = sink.get()
+                if progress:
+                    state = observation['request_state']
+                    detail = ('Antwort vollständig empfangen; Validierung steht aus.' if state == 'RECEIVED'
+                              else 'Antwort wird empfangen.' if state == 'RECEIVING_OUTPUT'
+                              else 'Warte auf lokale Providerantwort; Eingabeverarbeitung und Ausgabe noch nicht getrennt beobachtbar.')
+                    progress({'type': 'PROGRESS', 'status': 'RUNNING',
+                              'text': f'Lokaler Qwen · {stage}: {detail} '
+                                      f'{observation["received_characters"]} Antwortzeichen empfangen; '
+                                      f'{observation["elapsed_seconds"]:g} s für diesen Aufruf. '
+                                      f'{len(calls)} frühere Modellantworten; kein freigegebenes Modell.',
+                              'metadata': {**deepcopy(progress_details), 'source': 'document_reference_output',
+                                  'completed_calls': len(calls), 'canonical_writes': False,
+                                  'planning_stage': stage, 'profile_index': profile_index,
+                                  'profile_count': len(groups), 'attempt': attempt + 1,
+                                  'context_rebased': context_rebased,
+                                  'input_utf8_bytes': sum(len(row['content'].encode('utf8')) for row in payload['messages']),
+                                  **observation}})
+            try:
+                body = await _reference_stream_response(self.client, self.chat_url, payload, report_output)
+            except httpx.TimeoutException as error:
+                raise ValueError(f'Lokaler Qwen hat die Referenzstufe „{stage}“ innerhalb des '
+                    'konfigurierten Zeitlimits nicht abgeschlossen. Kein unvollständiger Entwurf wurde übernommen.') from error
+            if body.get('done_reason') == 'length':
+                raise ValueError('Die lokale Referenzantwort wurde an der Ausgabegrenze abgeschnitten. Es wurde kein unvollständiger Entwurf übernommen.')
+            native_content = str((body.get('message') or {}).get('content') or '')
+            raw = native_content.strip()
+            calls.append({'profile': list(profile), 'stage': stage, 'attempt': attempt + 1,
+                          'request_sha256': hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True).encode()).hexdigest(),
+                          'response_sha256': hashlib.sha256(raw.encode()).hexdigest(),
+                          'context_tokens': payload['options']['num_ctx'],
+                          'context_rebased': context_rebased, 'context_message_count': len(payload['messages']),
+                          'port_ids': list(port_ids), 'function_fact_ids': list(function_ids),
+                          'device_ids': list(device_ids),
+                          'inventory_target': inventory_target,
+                          'derivation_fact_ids': list(derivation_fact_ids) if derivation_fact_ids is not None else None,
+                          'prompt_eval_count': body.get('prompt_eval_count'), 'eval_count': body.get('eval_count'),
+                          **{key: body.get(key) for key in ('load_duration', 'prompt_eval_duration', 'eval_duration', 'total_duration')}})
+            try:
+                decoded = document_response_json(raw)
+                inventory_complete = decoded.pop('inventory_complete', None) if inventory_stage else None
+                if inventory_stage:
+                    if decoded.get('devices', []) != []:
+                        raise ValueError('Inventarstufe liefert Geräte ausschließlich über inventory_choices, nicht über devices.')
+                    decoded['devices'] = _reference_expand_inventory_choices(
+                        current['devices'], decoded.pop('inventory_choices'),
+                        inventory_target=inventory_target)
+                result = ReferenceDesignProposal.model_validate(decoded).model_dump(mode='json')
+                if inventory_stage and type(inventory_complete) is not bool:
+                    raise ValueError('Inventarstufe benötigt eine ausdrückliche inventory_complete-Entscheidung.')
+                if any(result[field] for field in fields if field not in allowed and field != 'unresolved'):
+                    raise ValueError('Eine Planungsstufe darf keine Felder anderer Stufen überschreiben.')
+                if producer_ids and any(row['producer_device_id'] not in producer_ids for row in result['communication']):
+                    raise ValueError('Die Kommunikationsstufe enthält einen nicht ausgewählten Sender.')
+                if device_ids and any(row['device_id'] not in device_ids
+                                      for field in allowed for row in result[field]):
+&gt;                   raise ValueError('Die IO-Stufe enthält Daten eines nicht ausgewählten Teilnehmers.')
+E                   ValueError: Die IO-Stufe enthält Daten eines nicht ausgewählten Teilnehmers.
+
+backend\nis\agent\orchestration\local_reasoner.py:1234: ValueError
+
+The above exception was the direct cause of the following exception:
+
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001669E8EFCE0&gt;
+
+    def test_each_rejected_native_answer_is_visible_and_followed_by_validation(monkeypatch):
+        from backend.nis.engineering.goal_execution.progress import sink
+        from backend.tests.test_reference_reasoner import reasoner_with_transport, run_reference
+        events = []
+        instance, prepared, _ = reasoner_with_transport(monkeypatch, retry_foreign_port=True)
+        token = sink.set(events.append)
+        try:
+&gt;           run_reference(instance, prepared)
+
+backend\tests\test_reference_source_binding.py:74: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_reasoner.py:262: in run_reference
+    return asyncio.run(run())
+           ^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:196: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:119: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\base_events.py:725: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+backend\tests\test_reference_reasoner.py:259: in run
+    return await reasoner.plan_reference_design(prepared)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\local_reasoner.py:1402: in plan_reference_design
+    await plan_profile()
+backend\nis\agent\orchestration\local_reasoner.py:1363: in plan_profile
+    intents = await infer('Portabsicht der ausgewählten Teilnehmer', {'ports'},
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+stage = 'Portabsicht der ausgewählten Teilnehmer', allowed = {'ports'}
+producer_ids = (), feedback = None, port_ids = (), function_ids = ()
+port_intent = True, device_ids = ('source-cc9cfd15a66c71f738a2e3ea',)
+inventory_target = None, derivation_fact_ids = None
+
+    async def infer(stage, allowed, producer_ids=(), feedback=None, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None):
+        nonlocal reference_messages, reference_prompt, reference_anchor
+        inventory_stage = inventory_target is not None or derivation_fact_ids is not None
+        if device_ids:
+            kinds = {'ports': {'CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR'},
+                     'measurements': {'SENSOR'}, 'commands': {'ACTUATOR'}}
+            owners = {row['id']: row['kind'] for row in current['devices']}
+            if (not 1 &lt;= len(device_ids) &lt;= 4 or len(device_ids) != len(set(device_ids))
+                    or not allowed &lt;= kinds.keys()
+                    or any(owners.get(key) not in kinds[field] for key in device_ids for field in allowed)):
+                raise ValueError('Die IO-Stufe benötigt höchstens vier eindeutige bestehende Teilnehmer passender Geräteart.')
+        stage_catalog = deepcopy(catalog)
+        if port_ids:
+            stage_catalog['technology_parameters'] = technology_schemas_for(
+                row['technology'] for row in current['ports'] if row['id'] in port_ids)
+        prompt = {**content, 'current_candidate': {field: value for field, value in current.items() if field != 'communication'},
+                  'registered_catalogs': stage_catalog,
+                  'known_communication': [
+                      {key: row.get(key) for key in ('id', 'producer_device_id', 'consumer_device_ids', 'scope', 'source_port_id', 'consumer_port_ids', 'transmission_mode', 'request_source', 'request_communication_id', 'cycle_ms', 'min_interval_ms')}
+                      for row in current['communication']],
+                  'validation_feedback': feedback, 'planning_stage': stage,
+                  'producer_device_ids_for_this_stage': list(producer_ids),
+                  'port_ids_for_this_stage': list(port_ids),
+                  'device_ids_for_this_stage': list(device_ids),
+                  'function_fact_ids_for_this_stage': list(function_ids),
+                  'inventory_target_for_this_stage': inventory_target,
+                  'derivation_fact_ids_for_this_stage': list(derivation_fact_ids) if derivation_fact_ids is not None else None,
+                  'output_fields_for_this_stage': list(allowed),
+                  'existing_inventory_for_this_stage': [
+                      {key: row[key] for key in ('id', 'name', 'kind')}
+                      for row in current['devices']] if inventory_stage else None,
+                  'instruction': ('Nur die genannten Outputfelder füllen; alle anderen Modellarrays leer. Echte offene Entscheidungen dürfen immer in unresolved stehen. '
+                      + ('Inventarstufen liefern inventory_choices und inventory_complete; devices und alle anderen Modelllisten bleiben leer, echte Rückfragen bleiben in unresolved zulässig. inventory_choices enthält gemeinsam neue Geräte ODER Bindungen an vorhandene Geräte. existing_inventory_for_this_stage zeigt den tatsächlichen aktuellen Bestand einschließlich vorhandener Sensoren und Aktoren. Diese bleiben auch bei anderen Quellenbefunden physisch vorhanden; niemals unter NEW erneut definieren. Bereits vollständig gebundene Teilnehmer nicht wiederholen. Die Hardwareentscheidung knapp begründen; anstehende eigene Planungsschritte gehören zu inventory_complete=false, nicht als vermeintliche Fachentscheidung in unresolved. ' if inventory_stage else '')
+                      + 'Nur den ausdrücklich ausgewählten Stufenbereich vollständig liefern; vorhandene eindeutige IDs erhalten. '
+                      'Jede Auswahl begründen; echte offene Auslegung explizit unresolved halten. '
+                      + ('Zunächst ausschließlich konkrete Portabsicht planen: parameters bleibt {}. Die folgende eigene Parameterstufe legt jeden Anschluss aus; diese Zwischenstufe ist keine vollständige Prüfung. ' if port_intent else '')
+                      + ('Ausschließlich IO für alle angeforderten vorhandenen Teilnehmer-IDs liefern; keine anderen Geräte, Anschlüsse, Messgrößen oder Befehle überschreiben. Teilnehmer und ihre IO getrennt erhalten. Alle Nachbarteilnehmer bleiben als Planungskontext sichtbar. ' if device_ids else '')
+                      + ('Jeder inventory_choices-Eintrag beginnt mit choice_kind: EXISTING für eine vorhandene ID-Bindung, NEW_&lt;Geräteart&gt; für wirklich neue Hardware (z.B. NEW_SENSOR passend zu kind=SENSOR). Bei EXISTING danach ausschließlich device_id, source_fact_ids, rationale und field_references auswählen; niemals id/name/kind eines alten Geräts neu schreiben. NIS erhält sämtliche unveränderlichen Gerätedaten und ergänzt nur die Quellen-/Typ-/Referenzbindung. Bei NEW_&lt;Geräteart&gt; danach die vollständigen neuen Gerätedaten liefern, niemals eine vorhandene ID. choice_kind wird nur intern geprüft und nicht als Modellfeld gespeichert. Die gemeinsame Stufengrenze gilt für alle Einträge zusammen. ' if inventory_stage else '')
+                      + ('Nur ein echtes Gerät oder eine vorhandene Gerätebindung für den angeforderten Quellenbefund/das Typmitglied liefern, keine zweite Platzhalterzeile. source_fact_ids enthält ausschließlich diese eine FactID; source_member_bindings neuer Geräte ausschließlich das angeforderte wörtliche Mitglied. Bei vorhandenen Geräten setzt NIS die angeforderte Typbindung selbst. Funktional zusätzlich notwendige Hardware wird danach in einem eigenen Schritt geplant. ' if inventory_target else '')
+                      + ('inventory_complete bewertet nur diesen deklarierten Quellenbereich. Bei vollständiger Abdeckung true; wenn er bereits abgedeckt ist, ist ein leeres Delta mit true zulässig. False verlangt eine echte weitere Instanz/Bindung dieses Bereichs. ' if inventory_target else '')
+                      + ('Prüfe jetzt die physische Hardware für die ausdrücklich angeforderten FUNCTION-/REQUIREMENT-FactIDs. Vollständige Quelle und sämtliche Nachbarfunktionen bleiben Konsistenzkontext; weitere Quellenbefunde werden in eigenen Hardwarestufen bearbeitet. Sensoren und Aktoren sind echte Teilnehmer, keine bloßen Werte im Controller. Vorhandene Geräte wiederverwenden oder fehlende Messquellen, Verarbeitung, Verbraucher und Aktoren ergänzen; unabhängige Messgrößen und Stellwirkungen berücksichtigen. Ports/Messgrößen/Befehle/Funktionen/Kommunikation folgen erst nach ALLEN Hardwarestufen und erzeugen KEINE Geräte mehr. Notwendige Peripherie dieses Quellenbereichs niemals in spätere IO-Schritte verschieben. source_fact_ids enthält nur passende angeforderte FUNCTION-/REQUIREMENT-FactIDs, jede höchstens einmal; keine neuen Bindungen an Quelleninventar. Alte Bindungen wiederverwendeter IDs bleiben serverseitig erhalten. Keine Originalmenge erhöhen oder Hardwarebelege/Defaults erfinden. Pro Antwort entweder höchstens ein wirklich neues Gerät ODER bis zu acht verschiedene EXISTING-ID-Bindungen gemeinsam; niemals neue Hardware mit Bindungen mischen. Mehrere passende Quellenbelege desselben Teilnehmers gemeinsam angeben. Nur tatsächlich benötigte Teilnehmer binden, nicht sämtliche Geräte mit sämtlichen Funktionen verbinden. Weiteren Hardwarebedarf mit inventory_complete=false für die normale nächste Antwort offenhalten; die Gesamtzahl notwendiger Geräte ist dadurch nicht begrenzt. inventory_complete bewertet ausschließlich den Bedarf der angeforderten FactIDs und wird erst true, wenn vorhandene plus ergänzte Hardware diesen vollständig abdeckt; ohne Ergänzungsbedarf inventory_choices=[] und true. False verlangt neue Geräte/Quellenbindungen. Unklare Fachentscheidungen konkret unresolved nennen. ' if derivation_fact_ids is not None else '')
+                      + ('Genau die angeforderten Port-IDs liefern. id, device_id, technology, role und network_scope unverändert übernehmen; nur parameters und ports-spezifische Begründung/Referenzbelege auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
+                      + ('Genau die angeforderten Funktions-FactIDs abdecken; Abhängigkeiten nur mit diesen Senderfunktionen liefern. Andere ursprüngliche Funktions-FactIDs dürfen bewusste Empfänger oder COMPOSITE-Bestandteile sein. ' if function_ids else ''))}
+        messages, full_messages, context_rebased = _reference_context_messages(
+            reference_messages, reference_prompt, prompt, system, self.context_tokens, anchor=reference_anchor)
+        progress_details = {}
+        def report_progress(attempt):
+            progress = sink.get()
+            if progress:
+                metadata = {'source': 'document_reference_design', 'completed_calls': len(calls), 'canonical_writes': False,
+                            'planning_stage': stage, 'profile_index': profile_index, 'profile_count': len(groups),
+                            'attempt': attempt}
+                if inventory_stage:
+                    metadata.update(inventory_target=deepcopy(inventory_target), draft_inventory_by_kind={
+                        kind: sum(row['kind'] == kind for row in current['devices'])
+                        for kind in ('CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR', 'PHYSICAL_CONTEXT')})
+                    if derivation_fact_ids is not None:
+                        metadata['derivation_fact_ids'] = list(derivation_fact_ids)
+                scope_text = ''
+                if derivation_fact_ids:
+                    fact_ids = [key for key, fact in prepared['facts'].items()
+                        if fact['kind'] in {'FUNCTION', 'REQUIREMENT'}
+                        and tuple(document_system_scope(fact.get('source_context', []))) == profile]
+                    scope_index = fact_ids.index(derivation_fact_ids[0]) // 4 + 1
+                    scope_count = (len(fact_ids) + 3) // 4
+                    metadata.update(scope_index=scope_index, scope_count=scope_count)
+                    scope_text = f'; Quellenbereich {scope_index} von {scope_count}'
+                attempt_text = 'Planung' if attempt == 1 else f'Korrekturversuch {attempt}'
+                progress_details.update(metadata)
+                progress({'type': 'PROGRESS', 'text': f'Lokaler Qwen plant Referenzprofil {profile_index} von {len(groups)}: {stage}. {len(calls)} Modellantworten empfangen; {attempt_text}{scope_text}.',
+                          'status': 'RUNNING', 'metadata': metadata})
+        payload = {'model': self.model, 'messages': messages,
+                   'format': _reference_schema_for_stage(prepared, allowed, port_ids=port_ids,
+                       function_ids=function_ids, port_intent=port_intent, device_ids=device_ids,
+                       inventory_target=inventory_target, derivation_fact_ids=derivation_fact_ids,
+                       existing_devices=current['devices'] if inventory_stage else ()),
+                    'think': False, 'stream': True, 'keep_alive': self.keep_alive,
+                   'options': {'temperature': 0, 'num_predict': 8192, 'num_ctx': self.context_tokens}}
+        for attempt in range(2):
+            try:
+                payload['options']['num_ctx'] = _reference_context_window(payload['messages'], self.context_tokens)
+            except ValueError:
+                if not reference_messages:
+                    raise
+                # Preserve actual invalid reply and exact validation feedback on retry.
+                payload['messages'] = [*full_messages, *payload['messages'][-2:]] if attempt else full_messages
+                payload['options']['num_ctx'] = _reference_context_window(payload['messages'], self.context_tokens)
+                messages = full_messages
+                context_rebased = True
+            report_progress(attempt + 1)
+            def report_output(observation):
+                progress = sink.get()
+                if progress:
+                    state = observation['request_state']
+                    detail = ('Antwort vollständig empfangen; Validierung steht aus.' if state == 'RECEIVED'
+                              else 'Antwort wird empfangen.' if state == 'RECEIVING_OUTPUT'
+                              else 'Warte auf lokale Providerantwort; Eingabeverarbeitung und Ausgabe noch nicht getrennt beobachtbar.')
+                    progress({'type': 'PROGRESS', 'status': 'RUNNING',
+                              'text': f'Lokaler Qwen · {stage}: {detail} '
+                                      f'{observation["received_characters"]} Antwortzeichen empfangen; '
+                                      f'{observation["elapsed_seconds"]:g} s für diesen Aufruf. '
+                                      f'{len(calls)} frühere Modellantworten; kein freigegebenes Modell.',
+                              'metadata': {**deepcopy(progress_details), 'source': 'document_reference_output',
+                                  'completed_calls': len(calls), 'canonical_writes': False,
+                                  'planning_stage': stage, 'profile_index': profile_index,
+                                  'profile_count': len(groups), 'attempt': attempt + 1,
+                                  'context_rebased': context_rebased,
+                                  'input_utf8_bytes': sum(len(row['content'].encode('utf8')) for row in payload['messages']),
+                                  **observation}})
+            try:
+                body = await _reference_stream_response(self.client, self.chat_url, payload, report_output)
+            except httpx.TimeoutException as error:
+                raise ValueError(f'Lokaler Qwen hat die Referenzstufe „{stage}“ innerhalb des '
+                    'konfigurierten Zeitlimits nicht abgeschlossen. Kein unvollständiger Entwurf wurde übernommen.') from error
+            if body.get('done_reason') == 'length':
+                raise ValueError('Die lokale Referenzantwort wurde an der Ausgabegrenze abgeschnitten. Es wurde kein unvollständiger Entwurf übernommen.')
+            native_content = str((body.get('message') or {}).get('content') or '')
+            raw = native_content.strip()
+            calls.append({'profile': list(profile), 'stage': stage, 'attempt': attempt + 1,
+                          'request_sha256': hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True).encode()).hexdigest(),
+                          'response_sha256': hashlib.sha256(raw.encode()).hexdigest(),
+                          'context_tokens': payload['options']['num_ctx'],
+                          'context_rebased': context_rebased, 'context_message_count': len(payload['messages']),
+                          'port_ids': list(port_ids), 'function_fact_ids': list(function_ids),
+                          'device_ids': list(device_ids),
+                          'inventory_target': inventory_target,
+                          'derivation_fact_ids': list(derivation_fact_ids) if derivation_fact_ids is not None else None,
+                          'prompt_eval_count': body.get('prompt_eval_count'), 'eval_count': body.get('eval_count'),
+                          **{key: body.get(key) for key in ('load_duration', 'prompt_eval_duration', 'eval_duration', 'total_duration')}})
+            try:
+                decoded = document_response_json(raw)
+                inventory_complete = decoded.pop('inventory_complete', None) if inventory_stage else None
+                if inventory_stage:
+                    if decoded.get('devices', []) != []:
+                        raise ValueError('Inventarstufe liefert Geräte ausschließlich über inventory_choices, nicht über devices.')
+                    decoded['devices'] = _reference_expand_inventory_choices(
+                        current['devices'], decoded.pop('inventory_choices'),
+                        inventory_target=inventory_target)
+                result = ReferenceDesignProposal.model_validate(decoded).model_dump(mode='json')
+                if inventory_stage and type(inventory_complete) is not bool:
+                    raise ValueError('Inventarstufe benötigt eine ausdrückliche inventory_complete-Entscheidung.')
+                if any(result[field] for field in fields if field not in allowed and field != 'unresolved'):
+                    raise ValueError('Eine Planungsstufe darf keine Felder anderer Stufen überschreiben.')
+                if producer_ids and any(row['producer_device_id'] not in producer_ids for row in result['communication']):
+                    raise ValueError('Die Kommunikationsstufe enthält einen nicht ausgewählten Sender.')
+                if device_ids and any(row['device_id'] not in device_ids
+                                      for field in allowed for row in result[field]):
+                    raise ValueError('Die IO-Stufe enthält Daten eines nicht ausgewählten Teilnehmers.')
+                if allowed == {'devices'}:
+                    ids = [row['id'] for row in result['devices']]
+                    if len(ids) != len(set(ids)):
+                        raise ValueError('Teilnehmer benötigen eindeutige IDs.')
+                    if inventory_stage:
+                        result['devices'] = _reference_scoped_inventory_delta(current['devices'], result['devices'],
+                            inventory_target=inventory_target, derivation_fact_ids=derivation_fact_ids)
+                        merge_target = inventory_target if inventory_target is not None else {
+                            'derivation_fact_ids': list(derivation_fact_ids), 'minimum_rows': 0}
+                        merged = _reference_merge_inventory_devices(current['devices'], result['devices'], merge_target, prepared['facts'])
+                        check_inventory(merged)
+                        if not inventory_complete and not _reference_inventory_progress(current['devices'], merged):
+                            raise ValueError('Inventarergänzung hat keine fehlende ursprüngliche Geräteabdeckung ergänzt. Ist der angeforderte Bereich bereits vollständig, inventory_complete=true liefern; andere noch offene Stufen sind kein fehlendes Inventar dieses Bereichs.')
+                if port_intent:
+                    ids = [row['id'] for row in result['ports']]
+                    electronic_ids = {row['id'] for row in current['devices'] if row['kind'] != 'PHYSICAL_CONTEXT'}
+                    if (len(ids) != len(set(ids)) or any(row['parameters'] or row['device_id'] not in electronic_ids for row in result['ports'])):
+                        raise ValueError('Portabsichten benötigen eindeutige IDs, bestehende elektronische Teilnehmer und zunächst leere parameters.')
+                    if set(ids) &amp; {row['id'] for row in current['ports']}:
+                        raise ValueError('Die Portabsicht darf keine bereits geplante Port-ID überschreiben.')
+                if port_ids:
+                    _reference_merge_port_parameters(current['ports'], result['ports'], port_ids)
+                if function_ids:
+                    actual = [row['source_fact_id'] for row in result['functions']]
+                    if (len(actual) != len(set(actual)) or set(actual) != set(function_ids)
+                            or any(row['producer_fact_id'] not in function_ids for row in result['functional_dependencies'])):
+                        raise ValueError('Die Funktionsstufe muss genau ihre ursprünglichen Funktions-FactIDs abdecken; keine fremden Senderabhängigkeiten.')
+                if inventory_stage:
+                    result['inventory_complete'] = inventory_complete
+                    calls[-1]['inventory_complete'] = inventory_complete
+                reference_messages = [*deepcopy(payload['messages']), {'role': 'assistant', 'content': native_content}]
+                reference_prompt = deepcopy(prompt)
+                if reference_anchor is None or (context_rebased and len(full_messages) == 2):
+                    # Actual first request/reply, never a fabricated ACK
+                    # or inventory accepted from a previous whole run.
+                    reference_anchor = (deepcopy(reference_messages), deepcopy(prompt))
+                return result
+            except (ValueError, TypeError, KeyError) as error:
+                if attempt:
+                    logging.getLogger(__name__).warning(
+                        'Native reference validation failed: %s',
+                        json.dumps({'stage': stage, 'profile': list(profile),
+                                    'inventory_target': inventory_target,
+                                    'derivation_fact_ids': derivation_fact_ids,
+                                    'error': str(error), 'response': raw,
+                                    'response_sha256': calls[-1]['response_sha256']}, ensure_ascii=False))
+&gt;                   raise ValueError(f'Kein gültiger strukturierter Referenzvorschlag: {error}') from error
+E                   ValueError: Kein gültiger strukturierter Referenzvorschlag: Die IO-Stufe enthält Daten eines nicht ausgewählten Teilnehmers.
+
+backend\nis\agent\orchestration\local_reasoner.py:1281: ValueError</failure></testcase></testsuite></testsuites>

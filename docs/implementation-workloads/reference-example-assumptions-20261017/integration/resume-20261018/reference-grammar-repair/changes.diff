@@ -1,0 +1,221 @@
+--- before/backend/nis/agent/orchestration/project_intake.py
++++ after/backend/nis/agent/orchestration/project_intake.py
+@@ -1353,7 +1353,7 @@
+ 
+ 
+ def reference_design_schema(prepared: dict | None = None) -> dict:
+-    """Use one public grammar for Qwen candidates and server validation."""
++    """Expose the complete reference contract, including server-enforced bounds."""
+     schema = ReferenceDesignProposal.model_json_schema()
+     if prepared is not None:
+         schema['$defs']['ReferenceMeasurement']['properties']['measurement_id']['enum'] = [
+@@ -1363,6 +1363,42 @@
+             key for key, fact in prepared['facts'].items() if fact['kind'] == 'FUNCTION']
+         schema['$defs']['ReferencePort']['properties']['technology']['enum'] = prepared['catalog']['technology_ids']
+     return schema
++
++
++def reference_model_output_schema(prepared: dict | None = None) -> dict:
++    """Avoid expanding large finite repetitions in the local GBNF decoder.
++
++    Only the decoder omits positive array/string upper bounds. The public
++    schema and ReferenceDesignProposal validation retain every bound; each
++    response must still pass them before review or any model application.
++    Required fields, minimums, enums, numeric constraints and closed objects
++    remain in the decoder. Zero bounds continue to mean an empty value.
++    """
++    from copy import deepcopy
++
++    def project(value):
++        result = deepcopy(value)
++        if not isinstance(result, dict):
++            return result
++        for key in ('maxItems', 'maxLength'):
++            if isinstance(result.get(key), int) and result[key] > 0:
++                result.pop(key)
++        # Schema maps contain arbitrary property/definition names. Literal
++        # defaults, enums and custom annotations must not be interpreted as
++        # schema keywords just because they contain a key called maxLength.
++        for key in ('properties', 'patternProperties', '$defs', 'definitions', 'dependentSchemas'):
++            if isinstance(result.get(key), dict):
++                result[key] = {name: project(child) for name, child in result[key].items()}
++        for key in ('items', 'additionalProperties', 'unevaluatedProperties', 'contains',
++                    'propertyNames', 'if', 'then', 'else', 'not', 'additionalItems', 'unevaluatedItems'):
++            if isinstance(result.get(key), (dict, bool)):
++                result[key] = project(result[key])
++        for key in ('allOf', 'anyOf', 'oneOf', 'prefixItems', 'items'):
++            if isinstance(result.get(key), list):
++                result[key] = [project(child) for child in result[key]]
++        return result
++
++    return project(reference_design_schema(prepared))
+ 
+ 
+ def _reference_digest(value) -> str:
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -181,8 +181,11 @@
+         self.fast_keep_alive = os.environ.get("OLLAMA_FAST_KEEP_ALIVE", "30m")
+         # Tool schemas + results exceed Ollama's small device-dependent default.
+         # An explicit window keeps the user turn in Qwen's rendered chat template.
+-        self.context_tokens = max(8192, min(int(os.environ.get('LOCAL_AI_CONTEXT_TOKENS', '32768')), 131072))
+-        timeout_seconds = max(90, min(int(os.environ.get("LOCAL_AI_TIMEOUT_SECONDS", "600")), 1200))
++        # Complete reference documents include multiple technology catalogs.
++        # Use the supported local window without relying on a test-only env;
++        # document intake independently caps its individual calls at 16384.
++        self.context_tokens = max(8192, min(int(os.environ.get('LOCAL_AI_CONTEXT_TOKENS', '131072')), 131072))
++        timeout_seconds = max(90, min(int(os.environ.get("LOCAL_AI_TIMEOUT_SECONDS", "1200")), 1200))
+         self.chat_url = base_url.rstrip("/").removesuffix("/v1") + "/api/chat"
+         self.client = httpx.AsyncClient(timeout=timeout_seconds)
+ 
+@@ -385,7 +388,7 @@
+         import hashlib
+         from datetime import datetime, timezone
+         from backend.nis.agent.orchestration.project_intake import document_source_contexts, document_system_scope
+-        from backend.nis.agent.orchestration.project_intake import reference_design_schema, ReferenceDesignProposal, validate_reference_design, validate_reference_design_profile, document_response_json
++        from backend.nis.agent.orchestration.project_intake import reference_model_output_schema, ReferenceDesignProposal, validate_reference_design, validate_reference_design_profile, document_response_json
+         from backend.nis.engineering.goal_execution.progress import sink
+         from backend.nis.engineering.communication.device_communication import FUNCTIONAL_DEVICE_REASONING_RULES
+         from backend.nis.engineering.structure.spatial_architecture import REASONING_RULES
+@@ -495,7 +498,7 @@
+                 if progress:
+                     progress({'type': 'PROGRESS', 'text': f'Lokaler Qwen plant Referenzprofil {profile_index} von {len(groups)}: {stage}.',
+                               'status': 'RUNNING', 'metadata': {'source': 'document_reference_design', 'completed_calls': len(calls), 'canonical_writes': False}})
+-                payload = {'model': self.model, 'messages': messages, 'format': reference_design_schema(prepared),
++                payload = {'model': self.model, 'messages': messages, 'format': reference_model_output_schema(prepared),
+                            'think': False, 'stream': False, 'keep_alive': self.keep_alive,
+                            'options': {'temperature': 0, 'num_predict': 8192, 'num_ctx': self.context_tokens}}
+                 for attempt in range(2):
+--- before/backend/tests/test_reference_design.py
++++ after/backend/tests/test_reference_design.py
+@@ -777,3 +777,130 @@
+     partial['devices'][0]['name'] = 'LostOriginalScopedIdentity'
+     with pytest.raises(ValueError, match='Instanzidentität'):
+         intake.validate_reference_design_profile(partial, prepared, ['054. Roboterbeispiel'])
++
++
++def test_reference_decoder_preserves_contract_and_source_bindings(prepared):
++    public = intake.reference_design_schema(prepared)
++    original = deepcopy(public)
++    decoder = intake.reference_model_output_schema(prepared)
++    assert intake.reference_design_schema(prepared) == original
++    assert public['properties']['devices']['maxItems'] == 2000
++    assert public['$defs']['ReferenceDevice']['properties']['rationale']['maxLength'] == 2000
++    assert 'maxItems' not in decoder['properties']['devices']
++    assert 'maxLength' not in decoder['$defs']['ReferenceDevice']['properties']['rationale']
++    device = decoder['$defs']['ReferenceDevice']
++    assert device['additionalProperties'] is False
++    assert device['required'] == public['$defs']['ReferenceDevice']['required']
++    assert device['properties']['source_fact_ids']['minItems'] == 1
++    assert set(device['properties']['source_fact_ids']['items']['enum']) == set(prepared['facts'])
++    assert device['properties']['id']['minLength'] == 1
++    assert device['properties']['quantity'] == public['$defs']['ReferenceDevice']['properties']['quantity']
++    assert device['properties']['kind'] == public['$defs']['ReferenceDevice']['properties']['kind']
++    technology = decoder['$defs']['ReferencePort']['properties']['technology']
++    public_technology = public['$defs']['ReferencePort']['properties']['technology']
++    assert technology['enum'] == public_technology['enum']
++    assert technology['type'] == public_technology['type']
++    assert technology['minLength'] == public_technology['minLength']
++    assert public_technology['maxLength'] == 80 and 'maxLength' not in technology
++    device['properties']['source_fact_ids']['items']['enum'].clear()
++    assert public == original and intake.reference_design_schema(prepared) == original
++
++
++def test_reference_decoder_keeps_zero_bounds(monkeypatch):
++    public = {'type': 'object', 'properties': {'unused': {'type': 'array', 'maxItems': 0},
++              'empty': {'type': 'string', 'maxLength': 0}}, 'additionalProperties': False}
++    monkeypatch.setattr(intake, 'reference_design_schema', lambda prepared=None: public)
++    projected = intake.reference_model_output_schema()
++    assert projected == public and projected is not public
++
++
++def test_reference_decoder_distinguishes_schema_keywords_from_data_names(monkeypatch):
++    public = {'type': 'object', 'required': ['maxLength'],
++              'properties': {'maxLength': {'type': 'string', 'maxLength': 8},
++                             'payload': {'const': {'maxItems': 7, 'maxLength': 8},
++                                         'default': {'maxLength': 9}, 'enum': [{'maxItems': 10}]}},
++              '$defs': {'maxItems': {'type': 'array', 'maxItems': 11, 'items': {'type': 'string', 'maxLength': 12}}},
++              'x-metadata': {'maxLength': 13}}
++    original = deepcopy(public)
++    monkeypatch.setattr(intake, 'reference_design_schema', lambda prepared=None: public)
++    projected = intake.reference_model_output_schema()
++    assert projected['required'] == ['maxLength']
++    assert projected['properties']['maxLength'] == {'type': 'string'}
++    assert projected['properties']['payload'] == original['properties']['payload']
++    assert projected['x-metadata'] == original['x-metadata']
++    assert projected['$defs']['maxItems'] == {'type': 'array', 'items': {'type': 'string'}}
++    assert public == original
++
++
++@pytest.mark.parametrize('field', ['devices', 'rationale', 'port_technology'])
++def test_decoder_projection_does_not_accept_oversized_server_candidates(field):
++    from pydantic import ValidationError
++    device = {'id': 'C', 'name': 'Controller', 'kind': 'CONTROLLER', 'quantity': 1,
++              'source_fact_ids': ['F1'], 'rationale': 'Explicit example choice'}
++    intake.ReferenceDesignProposal.model_validate({'devices': [device]})
++    intake.reference_model_output_schema()
++    if field == 'devices':
++        candidate, location, error_type = {'devices': [device] * 2001}, ('devices',), 'too_long'
++    elif field == 'rationale':
++        candidate = {'devices': [{**device, 'rationale': 'x' * 2001}]}
++        location, error_type = ('devices', 0, 'rationale'), 'string_too_long'
++    else:
++        candidate = {'ports': [{'id': 'P', 'device_id': 'C', 'technology': 'x' * 81,
++                                'role': 'LOCAL', 'network_scope': 'Bus', 'rationale': 'Explicit choice'}]}
++        location, error_type = ('ports', 0, 'technology'), 'string_too_long'
++    with pytest.raises(ValidationError) as error:
++        intake.ReferenceDesignProposal.model_validate(candidate)
++    assert any(row['loc'] == location and row['type'] == error_type for row in error.value.errors())
++
++
++def test_local_reference_planner_uses_decoder_projection_but_rejects_oversized_response(prepared):
++    import asyncio
++    from backend.nis.agent.orchestration.local_reasoner import LocalEngineeringReasoner
++    candidate = {'devices': [{**fixture_design(prepared)['devices'][0], 'rationale': 'x' * 2001}]}
++    encoded_candidate = json.dumps(candidate)
++    requests = []
++    class Response:
++        is_error = False
++        def __init__(self, body): self.body = body
++        def json(self): return self.body
++    class Client:
++        async def post(self, url, *, json):
++            if url.endswith('/show'):
++                return Response({'details': {'family': 'qwen35'}, 'model_info': {'general.parameter_count': 27_000_000_000}})
++            requests.append(json)
++            return Response({'message': {'content': encoded_candidate}})
++    async def run():
++        reasoner = LocalEngineeringReasoner()
++        await reasoner.client.aclose()
++        reasoner.client = Client()
++        return await reasoner.plan_reference_design(prepared)
++    with pytest.raises(ValueError, match='2000'):
++        asyncio.run(run())
++    assert len(requests) == 2
++    for request in requests:
++        assert request['format'] == intake.reference_model_output_schema(prepared)
++        assert request['options']['num_predict'] == 8192
++    assert intake.reference_design_schema(prepared)['$defs']['ReferenceDevice']['properties']['rationale']['maxLength'] == 2000
++
++
++@pytest.mark.parametrize('context,timeout,expected_context,expected_timeout', [
++    (None, None, 131072, 1200),
++    ('65536', '900', 65536, 900),
++    ('1', '1', 8192, 90),
++    ('999999', '999999', 131072, 1200),
++])
++def test_local_reference_runtime_defaults_overrides_and_existing_caps(monkeypatch, context, timeout, expected_context, expected_timeout):
++    import asyncio
++    from backend.nis.agent.orchestration.local_reasoner import LocalEngineeringReasoner
++    for key, value in [('LOCAL_AI_CONTEXT_TOKENS', context), ('LOCAL_AI_TIMEOUT_SECONDS', timeout)]:
++        if value is None:
++            monkeypatch.delenv(key, raising=False)
++        else:
++            monkeypatch.setenv(key, value)
++    async def run():
++        reasoner = LocalEngineeringReasoner()
++        try:
++            return reasoner.context_tokens, reasoner.client.timeout.read
++        finally:
++            await reasoner.client.aclose()
++    assert asyncio.run(run()) == (expected_context, expected_timeout)

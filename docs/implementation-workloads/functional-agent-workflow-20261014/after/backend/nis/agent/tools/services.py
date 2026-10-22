@@ -640,6 +640,12 @@ register('prepare_project_request', 'Projektanforderung als versionierten Entwur
          operation_id=(str | None, Field(default=None, min_length=8, max_length=120)),
          revision=(int | None, Field(default=None, ge=1)))
 from backend.nis.agent.tools import project_draft as project_draft
+from backend.nis.agent.orchestration.project_intake import interpret_project_document
+register('interpret_project_document', 'Vollständige Projektquelle mit lokalem Qwen als quellengebundenen Prüfvorschlag auswerten: Instanzen, Kategorien, Funktionen, Anforderungen und Controller-Kürzel unterscheiden. Keine Modelländerung oder Freigabe.',
+         P.GENERATE_PROPOSAL, interpret_project_document,
+         source=(str, Field(min_length=1, max_length=80000)),
+         source_name=(str, Field(default='Projektbeschreibung', min_length=1, max_length=180)),
+         source_request_id=(str | None, Field(default=None, min_length=8, max_length=80)))
 from backend.nis.agent.tools import configuration as configuration
 from backend.nis.agent.tools import project_creation as project_creation
 from backend.nis.agent.tools import project_bundle_restore as project_bundle_restore

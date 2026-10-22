@@ -1,0 +1,24 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -382,8 +382,10 @@
+ def _reference_context_window(messages, maximum):
+     """Reserve complete UTF-8 input plus output; never shorten a source to fit."""
+     # Byte fallback tokenization cannot need more content tokens than UTF-8
+-    # bytes. Include the full retry history and room for native chat framing.
+-    required = len(json.dumps(messages, ensure_ascii=False).encode('utf-8')) + 8192 + 2048
++    # bytes. The provider tokenizes decoded message content, not the HTTP JSON
++    # wrapper and its additional string escaping. Include every retry message;
++    # the existing framing reserve also covers roles and chat-template tokens.
++    required = sum(len(message['content'].encode('utf-8')) for message in messages) + 8192 + 2048
+     if required > maximum:
+         raise ValueError('Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten '
+                          'das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.')
+@@ -855,7 +857,7 @@
+                               + ('Prüfe jetzt die physische Hardware für die ausdrücklich angeforderten FUNCTION-/REQUIREMENT-FactIDs. Vollständige Quelle und sämtliche Nachbarfunktionen bleiben Konsistenzkontext; weitere Quellenbefunde werden in eigenen Hardwarestufen bearbeitet. Sensoren und Aktoren sind echte Teilnehmer, keine bloßen Werte im Controller. Vorhandene Geräte wiederverwenden oder fehlende Messquellen, Verarbeitung, Verbraucher und Aktoren ergänzen; unabhängige Messgrößen und Stellwirkungen berücksichtigen. Ports/Messgrößen/Befehle/Funktionen/Kommunikation folgen erst nach ALLEN Hardwarestufen und erzeugen KEINE Geräte mehr. Notwendige Peripherie dieses Quellenbereichs niemals in spätere IO-Schritte verschieben. source_fact_ids enthält nur passende angeforderte FUNCTION-/REQUIREMENT-FactIDs, jede höchstens einmal; keine neuen Bindungen an Quelleninventar. Alte Bindungen wiederverwendeter IDs bleiben serverseitig erhalten. Keine Originalmenge erhöhen oder Hardwarebelege/Defaults erfinden. Höchstens zwei echte Ergänzungen, niemals Duplikat-Platzhalter. inventory_complete bewertet ausschließlich den Bedarf der angeforderten FactIDs und wird erst true, wenn vorhandene plus ergänzte Hardware diesen vollständig abdeckt; ohne Ergänzungsbedarf inventory_choices=[] und true. False verlangt neue Geräte/Quellenbindungen. Unklare Fachentscheidungen konkret unresolved nennen. ' if derivation_fact_ids is not None else '')
+                               + ('Genau die angeforderten Port-IDs liefern. id, device_id, technology, role und network_scope unverändert übernehmen; nur parameters und ports-spezifische Begründung/Referenzbelege auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
+                               + ('Genau die angeforderten Funktions-FactIDs abdecken; Abhängigkeiten nur mit diesen Senderfunktionen liefern. Andere ursprüngliche Funktions-FactIDs dürfen bewusste Empfänger oder COMPOSITE-Bestandteile sein. ' if function_ids else ''))}
+-                messages = [{'role': 'system', 'content': system}, {'role': 'user', 'content': json.dumps(prompt, ensure_ascii=False)}]
++                messages = [{'role': 'system', 'content': system}, {'role': 'user', 'content': json.dumps(prompt, ensure_ascii=False, separators=(',', ':'))}]
+                 progress = sink.get()
+                 if progress:
+                     metadata = {'source': 'document_reference_design', 'completed_calls': len(calls), 'canonical_writes': False}

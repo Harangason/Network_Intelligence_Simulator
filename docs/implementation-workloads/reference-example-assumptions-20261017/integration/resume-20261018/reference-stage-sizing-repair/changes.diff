@@ -1,0 +1,478 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -108,6 +108,69 @@
+             return resolve({**definitions[key], **{name: item for name, item in value.items() if name != '$ref'}}, (*seen, key))
+         return {name: resolve(item, seen) for name, item in value.items() if name not in {'$defs', 'definitions', 'title'}}
+     return resolve(root)
++
++
++def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False):
++    """Narrow the native decoder, without changing public proposal validation."""
++    from backend.nis.agent.orchestration.project_intake import reference_model_output_schema
++    schema = reference_model_output_schema(prepared)
++    for field, definition in schema['properties'].items():
++        if field not in allowed and field != 'unresolved':
++            definition['maxItems'] = 0
++
++    def item(field):
++        definition = schema['properties'][field]['items']
++        return schema['$defs'][definition['$ref'].rsplit('/', 1)[-1]]
++
++    if port_intent:
++        item('ports')['properties']['parameters'] = {
++            'type': 'object', 'properties': {}, 'additionalProperties': False}
++    if port_ids:
++        schema['properties']['ports'].update(minItems=len(port_ids), maxItems=len(port_ids))
++        item('ports')['properties']['id']['enum'] = list(port_ids)
++    if function_ids:
++        schema['properties']['functions'].update(minItems=len(function_ids), maxItems=len(function_ids))
++        item('functions')['properties']['source_fact_id']['enum'] = list(function_ids)
++        item('functional_dependencies')['properties']['producer_fact_id']['enum'] = list(function_ids)
++    return schema
++
++
++def _reference_context_window(messages, maximum):
++    """Reserve complete UTF-8 input plus output; never shorten a source to fit."""
++    # Byte fallback tokenization cannot need more content tokens than UTF-8
++    # bytes. Include the full retry history and room for native chat framing.
++    required = len(json.dumps(messages, ensure_ascii=False).encode('utf-8')) + 8192 + 2048
++    if required > maximum:
++        raise ValueError('Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten '
++                         'das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.')
++    return min(maximum, ((required + 4095) // 4096) * 4096)
++
++
++def _reference_merge_port_parameters(ports, proposed, selected):
++    """Merge native parameter choices only into exactly the requested ports."""
++    from copy import deepcopy
++    by_id = {row['id']: row for row in ports}
++    expected = set(selected)
++    actual = [row['id'] for row in proposed]
++    if (len(by_id) != len(ports) or len(expected) != len(selected)
++            or not expected <= set(by_id) or len(actual) != len(set(actual)) or set(actual) != expected):
++        raise ValueError('Portauslegung muss genau die angeforderten eindeutigen Port-IDs liefern; '
++                         'keine fehlenden, doppelten oder fremden Anschlüsse.')
++    updates = {}
++    for row in proposed:
++        previous = by_id[row['id']]
++        if any(row[key] != previous[key] for key in ('id', 'device_id', 'technology', 'role', 'network_scope')):
++            raise ValueError('Die Parameterstufe darf Portidentität, Teilnehmer, Technologie, Rolle '
++                             'oder Netzzuordnung nicht ändern. Die Portabsicht muss separat geplant werden.')
++        if set(row.get('field_references', {})) - {'ports'}:
++            raise ValueError('Die Parameterstufe darf ausschließlich ports-Referenzbelege ergänzen.')
++        merged = deepcopy(previous)
++        merged.update(parameters=deepcopy(row['parameters']), rationale=row['rationale'])
++        references = merged.setdefault('field_references', {})
++        for field, values in row.get('field_references', {}).items():
++            references[field] = list(dict.fromkeys([*references.get(field, []), *values]))
++        updates[row['id']] = merged
++    return [updates.get(row['id'], deepcopy(row)) for row in ports]
+ 
+ 
+ def _is_structured_wizard_request(messages) -> bool:
+@@ -388,7 +451,7 @@
+         import hashlib
+         from datetime import datetime, timezone
+         from backend.nis.agent.orchestration.project_intake import document_source_contexts, document_system_scope
+-        from backend.nis.agent.orchestration.project_intake import reference_model_output_schema, ReferenceDesignProposal, validate_reference_design, validate_reference_design_profile, document_response_json
++        from backend.nis.agent.orchestration.project_intake import ReferenceDesignProposal, validate_reference_design, validate_reference_design_profile, document_response_json
+         from backend.nis.engineering.goal_execution.progress import sink
+         from backend.nis.engineering.communication.device_communication import FUNCTIONAL_DEVICE_REASONING_RULES
+         from backend.nis.engineering.structure.spatial_architecture import REASONING_RULES
+@@ -448,7 +511,7 @@
+                                      for row in catalog.get('source_devices', [])]
+         catalog.pop('name_aliases', None)  # server preservation guard still uses the complete catalog
+         from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
+-        technology_schemas = {}
++        source_technologies = {}
+         for item in prepared['source_evidence'].get('technologies') or []:
+             if item.get('kind') != 'TRANSPORT':
+                 continue
+@@ -457,14 +520,29 @@
+                 definition = DEFAULT_TECHNOLOGY_REGISTRY.profile(technology)
+             except (KeyError, ValueError):
+                 continue
+-            technology_schemas[technology] = {
+-                'rate_model': definition['rate_model'],
+-                'parameters': {key: {name: field[name] for name in ('type', 'required', 'unit', 'min', 'max', 'options', 'enum') if name in field}
+-                               for key, field in definition['parameter_schema'].items()},
+-                'parameter_roles': DEFAULT_TECHNOLOGY_REGISTRY.parameter_roles(technology),
+-                'parameter_aliases': definition.get('parameter_aliases') or {},
+-            }
+-        catalog['technology_parameters'] = technology_schemas
++            source_technologies[technology] = {key: deepcopy(definition[key]) for key in (
++                'layer', 'hardware_interface', 'physical_layer_profile_id', 'implementation_status',
++                'rate_model', 'default_stack') if key in definition}
++        catalog['source_technologies'] = source_technologies
++
++        def technology_schemas_for(technologies):
++            result = {}
++            for selected in technologies:
++                technology = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(selected)
++                # Resolve the actual native port choice. Never substitute a
++                # foreign technology when that registered profile is missing.
++                definition = DEFAULT_TECHNOLOGY_REGISTRY.profile(technology)
++                result[technology] = {
++                    **{key: deepcopy(definition[key]) for key in (
++                        'layer', 'hardware_interface', 'physical_layer_profile_id', 'implementation_status',
++                        'default_stack') if key in definition},
++                    'rate_model': definition['rate_model'],
++                    'parameters': {key: {name: field[name] for name in ('type', 'required', 'unit', 'min', 'max', 'options', 'enum') if name in field}
++                                   for key, field in definition['parameter_schema'].items()},
++                    'parameter_roles': DEFAULT_TECHNOLOGY_REGISTRY.parameter_roles(technology),
++                    'parameter_aliases': definition.get('parameter_aliases') or {},
++                }
++            return result
+         fields = ('devices', 'functions', 'ports', 'measurements', 'commands', 'communication', 'functional_dependencies', 'unresolved')
+         combined = {field: [] for field in fields}
+         calls = []
+@@ -482,27 +560,44 @@
+                        'source_profile': list(profile), 'reserved_project_device_names': [row['name'] for row in combined['devices']], 'reference_sources': prepared['reference_sources'],
+                        'registered_catalogs': catalog,
+                        'protected_review_decisions': {key: prepared['source_evidence'].get(key) for key in ('answers', 'function_assignments', 'excluded_questions')}}
+-            async def infer(stage, allowed, producer_ids=(), feedback=None):
++            async def infer(stage, allowed, producer_ids=(), feedback=None, *, port_ids=(), function_ids=(), port_intent=False):
++                stage_catalog = deepcopy(catalog)
++                if port_ids:
++                    stage_catalog['technology_parameters'] = technology_schemas_for(
++                        row['technology'] for row in current['ports'] if row['id'] in port_ids)
+                 prompt = {**content, 'current_candidate': {field: value for field, value in current.items() if field != 'communication'},
+-                          'known_communication': current['communication'] if len(allowed) == len(fields) else [
++                          'registered_catalogs': stage_catalog,
++                          'known_communication': [
+                               {key: row.get(key) for key in ('id', 'producer_device_id', 'consumer_device_ids', 'scope', 'source_port_id', 'consumer_port_ids', 'transmission_mode', 'request_source', 'request_communication_id', 'cycle_ms', 'min_interval_ms')}
+                               for row in current['communication']],
+                           'validation_feedback': feedback, 'planning_stage': stage,
+                           'producer_device_ids_for_this_stage': list(producer_ids),
++                          'port_ids_for_this_stage': list(port_ids),
++                          'function_fact_ids_for_this_stage': list(function_ids),
+                           'output_fields_for_this_stage': list(allowed),
+-                          'instruction': 'Nur die genannten Outputfelder füllen; alle anderen Arrays leer. Jede Auswahl begründen; unbelegte oder fehlende Auslegung explizit unresolved halten.'}
++                          'instruction': ('Nur die genannten Outputfelder füllen; alle anderen Arrays leer. '
++                              'Diese Felder vollständig neu liefern; vorhandene eindeutige IDs erhalten, soweit kein Befund ihre Änderung verlangt. '
++                              'Jede Auswahl begründen; echte offene Auslegung explizit unresolved halten. '
++                              + ('Zunächst ausschließlich konkrete Portabsicht planen: parameters bleibt {}. Die folgende eigene Parameterstufe legt jeden Anschluss aus; diese Zwischenstufe ist keine vollständige Prüfung. ' if port_intent else '')
++                              + ('Genau die angeforderten Port-IDs liefern. id, device_id, technology, role und network_scope unverändert übernehmen; nur parameters und ports-spezifische Begründung/Referenzbelege auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
++                              + ('Genau die angeforderten Funktions-FactIDs abdecken; Abhängigkeiten nur mit diesen Senderfunktionen liefern. Andere ursprüngliche Funktions-FactIDs dürfen bewusste Empfänger oder COMPOSITE-Bestandteile sein. ' if function_ids else ''))}
+                 messages = [{'role': 'system', 'content': system}, {'role': 'user', 'content': json.dumps(prompt, ensure_ascii=False)}]
+-                if len(json.dumps(messages, ensure_ascii=False).encode('utf-8')) // 3 + 8192 > self.context_tokens:
+-                    raise ValueError('Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.')
+                 progress = sink.get()
+                 if progress:
+                     progress({'type': 'PROGRESS', 'text': f'Lokaler Qwen plant Referenzprofil {profile_index} von {len(groups)}: {stage}.',
+                               'status': 'RUNNING', 'metadata': {'source': 'document_reference_design', 'completed_calls': len(calls), 'canonical_writes': False}})
+-                payload = {'model': self.model, 'messages': messages, 'format': reference_model_output_schema(prepared),
++                payload = {'model': self.model, 'messages': messages,
++                           'format': _reference_schema_for_stage(prepared, allowed, port_ids=port_ids,
++                               function_ids=function_ids, port_intent=port_intent),
+                            'think': False, 'stream': False, 'keep_alive': self.keep_alive,
+                            'options': {'temperature': 0, 'num_predict': 8192, 'num_ctx': self.context_tokens}}
+                 for attempt in range(2):
+-                    response = await self.client.post(self.chat_url, json=payload)
++                    payload['options']['num_ctx'] = _reference_context_window(payload['messages'], self.context_tokens)
++                    try:
++                        response = await self.client.post(self.chat_url, json=payload)
++                    except httpx.TimeoutException as error:
++                        raise ValueError(f'Lokaler Qwen hat die Referenzstufe „{stage}“ innerhalb des '
++                            'konfigurierten Zeitlimits nicht abgeschlossen. Kein unvollständiger Entwurf wurde übernommen.') from error
+                     if response.is_error:
+                         raise RuntimeError(f'Lokale Referenzplanung fehlgeschlagen (HTTP {response.status_code}).')
+                     body = response.json()
+@@ -512,6 +607,8 @@
+                     calls.append({'profile': list(profile), 'stage': stage, 'attempt': attempt + 1,
+                                   'request_sha256': hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True).encode()).hexdigest(),
+                                   'response_sha256': hashlib.sha256(raw.encode()).hexdigest(),
++                                  'context_tokens': payload['options']['num_ctx'],
++                                  'port_ids': list(port_ids), 'function_fact_ids': list(function_ids),
+                                   'prompt_eval_count': body.get('prompt_eval_count'), 'eval_count': body.get('eval_count')})
+                     try:
+                         result = ReferenceDesignProposal.model_validate(document_response_json(raw)).model_dump(mode='json')
+@@ -519,6 +616,22 @@
+                             raise ValueError('Eine Planungsstufe darf keine Felder anderer Stufen überschreiben.')
+                         if producer_ids and any(row['producer_device_id'] not in producer_ids for row in result['communication']):
+                             raise ValueError('Die Kommunikationsstufe enthält einen nicht ausgewählten Sender.')
++                        if allowed == {'devices'}:
++                            ids = [row['id'] for row in result['devices']]
++                            if len(ids) != len(set(ids)):
++                                raise ValueError('Teilnehmer benötigen eindeutige IDs.')
++                        if port_intent:
++                            ids = [row['id'] for row in result['ports']]
++                            device_ids = {row['id'] for row in current['devices'] if row['kind'] != 'PHYSICAL_CONTEXT'}
++                            if (len(ids) != len(set(ids)) or any(row['parameters'] or row['device_id'] not in device_ids for row in result['ports'])):
++                                raise ValueError('Portabsichten benötigen eindeutige IDs, bestehende elektronische Teilnehmer und zunächst leere parameters.')
++                        if port_ids:
++                            _reference_merge_port_parameters(current['ports'], result['ports'], port_ids)
++                        if function_ids:
++                            actual = [row['source_fact_id'] for row in result['functions']]
++                            if (len(actual) != len(set(actual)) or set(actual) != set(function_ids)
++                                    or any(row['producer_fact_id'] not in function_ids for row in result['functional_dependencies'])):
++                                raise ValueError('Die Funktionsstufe muss genau ihre ursprünglichen Funktions-FactIDs abdecken; keine fremden Senderabhängigkeiten.')
+                         return result
+                     except (ValueError, TypeError, KeyError) as error:
+                         if attempt:
+@@ -526,17 +639,44 @@
+                         payload['messages'] = [*messages, {'role': 'assistant', 'content': raw},
+                                                {'role': 'user', 'content': f'Validierungsfehler: {error}. Vollständigen JSON-Entwurf dieser Stufe korrigieren, keine Quellen ändern.'}]
+                 raise AssertionError('Reference inference did not return')
+-            hardware = await infer('Teilnehmer, Anschlüsse, Messgrößen und Stellbefehle', {'devices', 'ports', 'measurements', 'commands'})
+-            for field in fields:
+-                current[field].extend(hardware[field])
+-            functions = await infer('Atomare und zusammengesetzte Funktionen', {'functions', 'functional_dependencies'})
+-            for field in fields:
+-                current[field].extend(functions[field])
+-            producers = [item['id'] for item in current['devices'] if item['kind'] in {'CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR'}]
+-            for start in range(0, len(producers), 2):
+-                communication = await infer('Fachliche Kommunikation', {'communication'}, producers[start:start + 2])
+-                for field in fields:
+-                    current[field].extend(communication[field])
++            async def plan_profile(feedback=None):
++                # Intermediate results remain internal native choices. No
++                # incomplete profile can reach draft review or canonical apply.
++                current['unresolved'] = []
++
++                def replace(result, allowed):
++                    for field in allowed:
++                        current[field] = deepcopy(result[field])
++                    current['unresolved'].extend(result['unresolved'])
++
++                devices = await infer('Teilnehmer', {'devices'}, feedback=feedback)
++                replace(devices, {'devices'})
++                intents = await infer('Portabsicht, Messgrößen und Stellbefehle',
++                    {'ports', 'measurements', 'commands'}, feedback=feedback, port_intent=True)
++                replace(intents, {'ports', 'measurements', 'commands'})
++                for port_id in [row['id'] for row in current['ports']]:
++                    parameters = await infer('Parameter des konkreten Anschlusses', {'ports'},
++                        feedback=feedback, port_ids=(port_id,))
++                    current['ports'] = _reference_merge_port_parameters(current['ports'], parameters['ports'], (port_id,))
++                    current['unresolved'].extend(parameters['unresolved'])
++                current['functions'] = []
++                current['functional_dependencies'] = []
++                function_ids = [key for key, fact in profile_facts.items() if fact['kind'] == 'FUNCTION']
++                for start in range(0, len(function_ids), 4):
++                    functions = await infer('Atomare und zusammengesetzte Funktionen',
++                        {'functions', 'functional_dependencies'}, feedback=feedback,
++                        function_ids=tuple(function_ids[start:start + 4]))
++                    for field in ('functions', 'functional_dependencies', 'unresolved'):
++                        current[field].extend(functions[field])
++                current['communication'] = []
++                producers = [item['id'] for item in current['devices'] if item['kind'] in {'CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR'}]
++                for start in range(0, len(producers), 2):
++                    communication = await infer('Fachliche Kommunikation', {'communication'},
++                        producers[start:start + 2], feedback=feedback)
++                    for field in ('communication', 'unresolved'):
++                        current[field].extend(communication[field])
++
++            await plan_profile()
+             # Ask the same native planner to repair concrete semantic failures
+             # in this complete original profile before aggregating other profiles.
+             # The final project validator still rechecks the entire original.
+@@ -555,7 +695,7 @@
+                     if repair_attempt == 2:
+                         raise ValueError(f'Referenzprofil {profile}: {error}') from error
+                     feedback = {'validation_error': str(error)}
+-                current = await infer('Konkrete fachliche Profilbefunde korrigieren', set(fields), feedback=feedback)
++                await plan_profile(feedback)
+             prefix = json.dumps(profile, ensure_ascii=False)
+             def local_id(kind, value):
+                 return kind + hashlib.sha256((prefix + ':' + value).encode()).hexdigest()[:20]
+--- before/backend/tests/test_reference_reasoner.py
++++ after/backend/tests/test_reference_reasoner.py
+@@ -7,7 +7,10 @@
+ import pytest
+ 
+ from backend.nis.agent.orchestration import project_intake as intake
+-from backend.nis.agent.orchestration.local_reasoner import LocalEngineeringReasoner
++from backend.nis.agent.orchestration.local_reasoner import (
++    LocalEngineeringReasoner, _reference_context_window,
++    _reference_merge_port_parameters, _reference_schema_for_stage,
++)
+ from backend.tests.test_reference_design import fixture_request, fixture_design, wire
+ 
+ 
+@@ -33,7 +36,7 @@
+     return value
+ 
+ 
+-def reasoner_with_transport(monkeypatch, *, family='qwen3', truncate=False):
++def reasoner_with_transport(monkeypatch, *, family='qwen3', truncate=False, capture=None, timeout=False):
+     prepared = intake.prepare_reference_design(fixture_request())
+     design = complete_design(prepared)
+     observed = []
+@@ -42,10 +45,24 @@
+         if request.url.path.endswith('/show'):
+             return httpx.Response(200, json={'details': {'family': family}, 'model_info': {'general.parameter_count': 27000000000}})
+         payload = json.loads(request.content)
++        if capture is not None:
++            capture.append(deepcopy(payload))
++        if timeout:
++            raise httpx.ReadTimeout('Unit provider deadline', request=request)
+         content = json.loads(payload['messages'][1]['content'])
+         observed.append(content)
+         allowed = set(content['output_fields_for_this_stage'])
+         candidate = {key: deepcopy(value) for key, value in design.items() if key in allowed}
++        if content.get('port_ids_for_this_stage'):
++            selected = set(content['port_ids_for_this_stage'])
++            candidate['ports'] = [row for row in candidate['ports'] if row['id'] in selected]
++        elif content['planning_stage'] == 'Portabsicht, Messgrößen und Stellbefehle':
++            for row in candidate['ports']:
++                row['parameters'] = {}
++        if content.get('function_fact_ids_for_this_stage'):
++            selected = set(content['function_fact_ids_for_this_stage'])
++            candidate['functions'] = [row for row in candidate['functions'] if row['source_fact_id'] in selected]
++            candidate['functional_dependencies'] = [row for row in candidate.get('functional_dependencies', []) if row['producer_fact_id'] in selected]
+         if allowed == {'communication'}:
+             selected = set(content['producer_device_ids_for_this_stage'])
+             candidate['communication'] = [row for row in candidate['communication'] if row['producer_device_id'] in selected]
+@@ -98,3 +115,135 @@
+             await reasoner.client.aclose()
+     asyncio.run(run())
+     assert len(observed) == 1
++
++
++def run_reference(reasoner, prepared):
++    async def run():
++        try:
++            return await reasoner.plan_reference_design(prepared)
++        finally:
++            await reasoner.client.aclose()
++    return asyncio.run(run())
++
++
++def test_stage_catalogs_preserve_originals_and_only_supply_selected_port_schemas(monkeypatch):
++    payloads = []
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch, capture=payloads)
++    result = run_reference(reasoner, prepared)
++    assert result['status'] == 'REVIEW_REQUIRED' and result['canonical_writes'] is False
++    assert len(result['proposal']['ports']) == 3
++    assert all(row['parameters'] == {'bitrate_bps': 500000} for row in result['proposal']['ports'])
++    parameter_stages = [row for row in observed if row['port_ids_for_this_stage']]
++    assert len(parameter_stages) == 3
++    assert {row['port_ids_for_this_stage'][0] for row in parameter_stages} == {'PC', 'PS', 'PA'}
++    for row in observed:
++        assert row['original_source'] == prepared['source_evidence']['source_text']
++        assert row['reference_sources'] == prepared['reference_sources']
++        schemas = row['registered_catalogs'].get('technology_parameters')
++        if row['port_ids_for_this_stage']:
++            assert len(row['port_ids_for_this_stage']) == 1
++            assert set(schemas) == {'can'}
++            from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
++            assert schemas['can']['parameter_roles'] == registry.parameter_roles('can')
++            assert schemas['can']['parameter_aliases'] == registry.profile('can').get('parameter_aliases', {})
++            assert schemas['can']['layer'] == registry.profile('can')['layer']
++        else:
++            assert schemas is None
++    # Known peer ports remain visible when the next native port is configured.
++    second = parameter_stages[1]['current_candidate']['ports']
++    assert next(row for row in second if row['id'] == 'PC')['parameters'] == {'bitrate_bps': 500000}
++    function_stages = [row for row in observed if row['function_fact_ids_for_this_stage']]
++    expected = {key for key, fact in prepared['facts'].items() if fact['kind'] == 'FUNCTION'}
++    assert {key for row in function_stages for key in row['function_fact_ids_for_this_stage']} == expected
++    assert all(len(row['function_fact_ids_for_this_stage']) <= 4 for row in function_stages)
++    for payload in payloads:
++        required = len(json.dumps(payload['messages'], ensure_ascii=False).encode()) + 8192 + 2048
++        assert required <= payload['options']['num_ctx'] <= 131072
++
++
++def test_stage_decoder_narrows_outputs_but_does_not_modify_public_schema(monkeypatch):
++    prepared = intake.prepare_reference_design(fixture_request())
++    public = deepcopy(intake.reference_design_schema(prepared))
++    intent = _reference_schema_for_stage(prepared, {'ports', 'measurements', 'commands'}, port_intent=True)
++    assert intent['properties']['devices']['maxItems'] == 0
++    port = intent['$defs']['ReferencePort']
++    assert port['properties']['parameters'] == {'type': 'object', 'properties': {}, 'additionalProperties': False}
++    parameters = _reference_schema_for_stage(prepared, {'ports'}, port_ids=('PC',))
++    assert parameters['properties']['ports']['minItems'] == parameters['properties']['ports']['maxItems'] == 1
++    assert parameters['$defs']['ReferencePort']['properties']['id']['enum'] == ['PC']
++    assert intake.reference_design_schema(prepared) == public
++    assert public['properties']['ports']['maxItems'] > 1
++
++
++@pytest.mark.parametrize('mode', ['missing', 'duplicate', 'foreign'])
++def test_parameter_merge_rejects_wrong_batch_membership(mode):
++    ports = [{'id': 'P', 'device_id': 'C', 'technology': 'can', 'role': 'LOCAL',
++              'network_scope': 'local', 'parameters': {}, 'rationale': 'Intent'}]
++    row = {**ports[0], 'parameters': {'bitrate_bps': 500000}}
++    proposed = [] if mode == 'missing' else [row, deepcopy(row)] if mode == 'duplicate' else [{**row, 'id': 'other'}]
++    with pytest.raises(ValueError, match='Port-IDs'):
++        _reference_merge_port_parameters(ports, proposed, ('P',))
++    assert ports[0]['parameters'] == {}
++
++
++@pytest.mark.parametrize(('field', 'value'), [
++    ('device_id', 'other'), ('technology', 'lin'), ('role', 'BACKBONE'), ('network_scope', 'other')])
++def test_parameter_merge_cannot_reassign_port_identity(field, value):
++    ports = [{'id': 'P', 'device_id': 'C', 'technology': 'can', 'role': 'LOCAL',
++              'network_scope': 'local', 'parameters': {}, 'rationale': 'Intent'}]
++    proposed = [{**ports[0], field: value, 'parameters': {'bitrate_bps': 500000}}]
++    with pytest.raises(ValueError, match='Portidentität'):
++        _reference_merge_port_parameters(ports, proposed, ('P',))
++    assert ports[0][field] != value
++
++
++def test_parameter_merge_preserves_prior_port_reference_sources_without_mutating_input():
++    ports = [{'id': 'P', 'device_id': 'C', 'technology': 'can', 'role': 'LOCAL',
++              'network_scope': 'local', 'parameters': {}, 'rationale': 'Intent',
++              'field_references': {'ports': ['original-clarification']}}]
++    proposed = [{**ports[0], 'parameters': {'bitrate_bps': 500000},
++                 'field_references': {'ports': ['supplement', 'original-clarification']}}]
++    merged = _reference_merge_port_parameters(ports, proposed, ('P',))
++    assert merged[0]['field_references'] == {'ports': ['original-clarification', 'supplement']}
++    assert merged[0]['parameters'] == {'bitrate_bps': 500000}
++    assert ports[0]['parameters'] == {} and ports[0]['field_references'] == {'ports': ['original-clarification']}
++    proposed[0]['field_references'] = {'commands': ['supplement']}
++    with pytest.raises(ValueError, match='ports-Referenzbelege'):
++        _reference_merge_port_parameters(ports, proposed, ('P',))
++
++
++def test_full_profile_repair_reuses_bounded_phases_and_complete_source(monkeypatch):
++    original = intake.validate_reference_design_profile
++    checks = []
++    def require_repair(value, prepared, profile):
++        checks.append(deepcopy(value))
++        if len(checks) == 1:
++            raise ValueError('Unit finding requires another complete native profile review')
++        return original(value, prepared, profile)
++    monkeypatch.setattr(intake, 'validate_reference_design_profile', require_repair)
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch)
++    result = run_reference(reasoner, prepared)
++    assert len(checks) == 2 and result['proposal']['unresolved'] == []
++    assert sum(row['planning_stage'] == 'Teilnehmer' for row in observed) == 2
++    assert sum(bool(row['port_ids_for_this_stage']) for row in observed) == 6
++    assert all(len(row['output_fields_for_this_stage']) <= 3 for row in observed)
++    assert all(row['original_source'] == prepared['source_evidence']['source_text'] for row in observed)
++    assert any(row['validation_feedback'] for row in observed)
++
++
++def test_timeout_identifies_actual_stage_without_returning_partial_design(monkeypatch):
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch, timeout=True)
++    with pytest.raises(ValueError, match='Referenzstufe.*Teilnehmer.*Zeitlimit'):
++        run_reference(reasoner, prepared)
++    assert observed == []
++
++
++def test_complete_retry_history_must_fit_without_source_truncation():
++    messages = [{'role': 'user', 'content': 'Vollständige Originalquelle äöü 🚗' * 100}]
++    before = deepcopy(messages)
++    window = _reference_context_window(messages, 131072)
++    assert messages == before
++    messages += [{'role': 'assistant', 'content': 'invalid response' * 10000}]
++    with pytest.raises(ValueError, match='keine Quelle gekürzt'):
++        _reference_context_window(messages, 131072)
++    assert messages[0] == before[0]
+--- before/backend/tests/test_reference_design.py
++++ after/backend/tests/test_reference_design.py
+@@ -877,8 +877,13 @@
+     with pytest.raises(ValueError, match='2000'):
+         asyncio.run(run())
+     assert len(requests) == 2
++    expected = intake.reference_model_output_schema(prepared)
++    # The participant phase preserves the public decoder's constraints while
++    # forbidding arrays that belong to later native planning phases.
++    for field in ('functions', 'ports', 'measurements', 'commands', 'communication', 'functional_dependencies'):
++        expected['properties'][field]['maxItems'] = 0
+     for request in requests:
+-        assert request['format'] == intake.reference_model_output_schema(prepared)
++        assert request['format'] == expected
+         assert request['options']['num_predict'] == 8192
+     assert intake.reference_design_schema(prepared)['$defs']['ReferenceDevice']['properties']['rationale']['maxLength'] == 2000
+ 

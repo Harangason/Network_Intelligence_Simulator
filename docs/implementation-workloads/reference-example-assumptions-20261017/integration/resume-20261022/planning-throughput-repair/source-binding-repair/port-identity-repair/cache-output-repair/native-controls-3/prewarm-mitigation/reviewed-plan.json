@@ -1,0 +1,50 @@
+{
+  "at_utc": "2026-10-22T18:50:13.385941+00:00",
+  "owner": "PROJECT_PRODUCT",
+  "first_failing_layer": "Legacy production launcher optional fast-model prewarm on shared main provider",
+  "actual_root_cause": "Production3792 /api/generate prewarm queued during Qwen, then loads llama3.1:8b at15:11:17UTC between Qwen calls. Main console proves model eviction and new Qwen worker/full re-prefill. Current candidate logs metadata absence without warming. Expired keep_alive alone is NOT established as cause.",
+  "evidence": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\native-77613-production-watchdog-pre-mitigation.json",
+      "sha256": "4f521ba806a0a76c96e02e4db6bead7927315f6b2f2c4c606843c88ff78d2ae1"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\native-77613-production-launcher-transition.log",
+      "sha256": "46aff95694753388cc2eb08acf030e37dd95666f143b0ca64a9c3b07c301f50d"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\native-77613-candidate-launcher-transition.log",
+      "sha256": "aae476208ace8bebe9e97615054c64add9febbb64a545d8c43656399e728d431"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\native-77613-worker-transition-console-full\\console-capture.json",
+      "sha256": "7c2a1aa1397e0897024793007588f1dbc37244a541745cfb45b9bc3f5cb0edbd"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\native-77613-worker-transition.json",
+      "sha256": "236a207fbd6b2c1758b58bcc066a0a923645b081a79fd8c54ea8b7defed5443d"
+    }
+  ],
+  "reviewed_action": "Temporarily SIGSTOP only production container PID1 launcher/watchdog; NOT docker pause, NOT backend13/frontend102/provider/native client.",
+  "expected_child_services": {
+    "13": "/usr/local/bin/python -m backend.nis.app",
+    "102": "next-server (v16.3.2)"
+  },
+  "exact_container_id": "3c92591fe43594d36275d2524869f58599e65d8d28e1661a841a69f7f27747ca",
+  "exact_image_id": "sha256:3792d2e086e43af616d9fb63fd371c352fe101db5136b84f381cd9999363785b",
+  "reversible": true,
+  "rollback_before_any_normal_stop_or_deploy": [
+    "docker",
+    "kill",
+    "--signal=SIGCONT",
+    "NetworkIS"
+  ],
+  "compensating_observation": "Read /api/ready through actual production frontend with each active native-worker observation; immediately restore launcher on any service failure. Docker independent healthcheck remains active.",
+  "application_source_change": false,
+  "build_or_release": false,
+  "model_request_cancellation": false,
+  "production_delivery_claimed": false,
+  "permanent_fix": "Already present in exact current candidate launcher, local startup regression53PASS; production update still requires both originals and complete exact-image PASS.",
+  "current_scope": "Synthetic controls3 only, original77613 terminal. Pause only legacy optional launcher; child services unchanged.",
+  "current_native_control_session": 68222
+}

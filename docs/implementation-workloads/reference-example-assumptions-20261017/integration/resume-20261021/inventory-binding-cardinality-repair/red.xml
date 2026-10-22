@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="5" time="14.415" timestamp="2026-10-21T09:14:01.357541+02:00" hostname="Haranga"><testcase classname="tests.test_reference_reasoner" name="test_native_hardware_choice_decides_one_identity_before_continuing[duplicate_existing]" time="4.883"><failure message="Failed: DID NOT RAISE ValidationError">pair = 'duplicate_existing'
+
+    @pytest.mark.parametrize('pair', ['duplicate_existing', 'distinct_existing', 'new_and_existing'])
+    def test_native_hardware_choice_decides_one_identity_before_continuing(pair):
+        from jsonschema import Draft202012Validator, ValidationError
+        prepared = intake.prepare_reference_design(fixture_request())
+        known, _ = _reference_declared_instances(prepared, prepared['facts'])
+        known.append({**deepcopy(known[0]), 'id': 'unit-second-existing', 'name': 'Second unit executor'})
+        fact = next(key for key, row in prepared['facts'].items() if row['kind'] == 'FUNCTION')
+        schema = _reference_schema_for_stage(prepared, {'devices'}, derivation_fact_ids=[fact], existing_devices=known)
+        first = {'choice_kind': 'EXISTING', 'device_id': known[0]['id'], 'source_fact_ids': [fact],
+                 'rationale': 'Authored unit identity selection, not a native original response', 'field_references': {}}
+        second = deepcopy(first)
+        if pair == 'distinct_existing':
+            second['device_id'] = known[1]['id']
+        elif pair == 'new_and_existing':
+            second = {**deepcopy(known[0]), 'choice_kind': 'NEW_SENSOR', 'kind': 'SENSOR',
+                      'id': 'unit-new-derived-sensor', 'name': 'Unit derived sensor',
+                      'owner_device_id': known[0]['id'], 'source_fact_ids': [fact]}
+        base = {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'inventory_complete': False}
+        validator = Draft202012Validator(schema)
+        validator.validate({**base, 'inventory_choices': [first]})
+        validator.validate({**base, 'inventory_choices': [second]})
+        validator.validate({**base, 'inventory_complete': True, 'inventory_choices': []})
+&gt;       with pytest.raises(ValidationError) as error:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValidationError
+
+backend\tests\test_reference_reasoner.py:1166: Failed</failure></testcase><testcase classname="tests.test_reference_reasoner" name="test_native_hardware_choice_decides_one_identity_before_continuing[distinct_existing]" time="1.970"><failure message="Failed: DID NOT RAISE ValidationError">pair = 'distinct_existing'
+
+    @pytest.mark.parametrize('pair', ['duplicate_existing', 'distinct_existing', 'new_and_existing'])
+    def test_native_hardware_choice_decides_one_identity_before_continuing(pair):
+        from jsonschema import Draft202012Validator, ValidationError
+        prepared = intake.prepare_reference_design(fixture_request())
+        known, _ = _reference_declared_instances(prepared, prepared['facts'])
+        known.append({**deepcopy(known[0]), 'id': 'unit-second-existing', 'name': 'Second unit executor'})
+        fact = next(key for key, row in prepared['facts'].items() if row['kind'] == 'FUNCTION')
+        schema = _reference_schema_for_stage(prepared, {'devices'}, derivation_fact_ids=[fact], existing_devices=known)
+        first = {'choice_kind': 'EXISTING', 'device_id': known[0]['id'], 'source_fact_ids': [fact],
+                 'rationale': 'Authored unit identity selection, not a native original response', 'field_references': {}}
+        second = deepcopy(first)
+        if pair == 'distinct_existing':
+            second['device_id'] = known[1]['id']
+        elif pair == 'new_and_existing':
+            second = {**deepcopy(known[0]), 'choice_kind': 'NEW_SENSOR', 'kind': 'SENSOR',
+                      'id': 'unit-new-derived-sensor', 'name': 'Unit derived sensor',
+                      'owner_device_id': known[0]['id'], 'source_fact_ids': [fact]}
+        base = {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'inventory_complete': False}
+        validator = Draft202012Validator(schema)
+        validator.validate({**base, 'inventory_choices': [first]})
+        validator.validate({**base, 'inventory_choices': [second]})
+        validator.validate({**base, 'inventory_complete': True, 'inventory_choices': []})
+&gt;       with pytest.raises(ValidationError) as error:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValidationError
+
+backend\tests\test_reference_reasoner.py:1166: Failed</failure></testcase><testcase classname="tests.test_reference_reasoner" name="test_native_hardware_choice_decides_one_identity_before_continuing[new_and_existing]" time="1.974"><failure message="Failed: DID NOT RAISE ValidationError">pair = 'new_and_existing'
+
+    @pytest.mark.parametrize('pair', ['duplicate_existing', 'distinct_existing', 'new_and_existing'])
+    def test_native_hardware_choice_decides_one_identity_before_continuing(pair):
+        from jsonschema import Draft202012Validator, ValidationError
+        prepared = intake.prepare_reference_design(fixture_request())
+        known, _ = _reference_declared_instances(prepared, prepared['facts'])
+        known.append({**deepcopy(known[0]), 'id': 'unit-second-existing', 'name': 'Second unit executor'})
+        fact = next(key for key, row in prepared['facts'].items() if row['kind'] == 'FUNCTION')
+        schema = _reference_schema_for_stage(prepared, {'devices'}, derivation_fact_ids=[fact], existing_devices=known)
+        first = {'choice_kind': 'EXISTING', 'device_id': known[0]['id'], 'source_fact_ids': [fact],
+                 'rationale': 'Authored unit identity selection, not a native original response', 'field_references': {}}
+        second = deepcopy(first)
+        if pair == 'distinct_existing':
+            second['device_id'] = known[1]['id']
+        elif pair == 'new_and_existing':
+            second = {**deepcopy(known[0]), 'choice_kind': 'NEW_SENSOR', 'kind': 'SENSOR',
+                      'id': 'unit-new-derived-sensor', 'name': 'Unit derived sensor',
+                      'owner_device_id': known[0]['id'], 'source_fact_ids': [fact]}
+        base = {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'inventory_complete': False}
+        validator = Draft202012Validator(schema)
+        validator.validate({**base, 'inventory_choices': [first]})
+        validator.validate({**base, 'inventory_choices': [second]})
+        validator.validate({**base, 'inventory_complete': True, 'inventory_choices': []})
+&gt;       with pytest.raises(ValidationError) as error:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValidationError
+
+backend\tests\test_reference_reasoner.py:1166: Failed</failure></testcase><testcase classname="tests.test_reference_reasoner" name="test_invalid_binding_feedback_identifies_the_actual_unknown_or_repeated_id[unknown]" time="2.048"><failure message="AssertionError: Regex pattern did not match.&#10;  Expected regex: 'Unbekannte Teilnehmer-ID.*unit-missing-identity'&#10;  Actual message: 'Inventarbindung benötigt eine eindeutige vorhandene Teilnehmer-ID.'">mode = 'unknown'
+
+    @pytest.mark.parametrize('mode', ['unknown', 'duplicate'])
+    def test_invalid_binding_feedback_identifies_the_actual_unknown_or_repeated_id(mode):
+        prepared = intake.prepare_reference_design(fixture_request())
+        known, _ = _reference_declared_instances(prepared, prepared['facts'])
+        choice = {'device_id': known[0]['id'], 'source_fact_ids': known[0]['source_fact_ids'],
+                  'rationale': 'Authored invalid binding', 'field_references': {}}
+        if mode == 'unknown':
+            choice['device_id'] = 'unit-missing-identity'
+            choices, expected = [choice], 'Unbekannte Teilnehmer-ID.*unit-missing-identity'
+        else:
+            choices, expected = [choice, deepcopy(choice)], 'Mehrfache Inventarbindung.*' + known[0]['id']
+        before = deepcopy(known)
+&gt;       with pytest.raises(ValueError, match=expected):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'Unbekannte Teilnehmer-ID.*unit-missing-identity'
+E         Actual message: 'Inventarbindung benötigt eine eindeutige vorhandene Teilnehmer-ID.'
+
+backend\tests\test_reference_reasoner.py:1183: AssertionError</failure></testcase><testcase classname="tests.test_reference_reasoner" name="test_invalid_binding_feedback_identifies_the_actual_unknown_or_repeated_id[duplicate]" time="2.080"><failure message="AssertionError: Regex pattern did not match.&#10;  Expected regex: 'Mehrfache Inventarbindung.*source-cc9cfd15a66c71f738a2e3ea'&#10;  Actual message: 'Inventarbindung benötigt eine eindeutige vorhandene Teilnehmer-ID.'">mode = 'duplicate'
+
+    @pytest.mark.parametrize('mode', ['unknown', 'duplicate'])
+    def test_invalid_binding_feedback_identifies_the_actual_unknown_or_repeated_id(mode):
+        prepared = intake.prepare_reference_design(fixture_request())
+        known, _ = _reference_declared_instances(prepared, prepared['facts'])
+        choice = {'device_id': known[0]['id'], 'source_fact_ids': known[0]['source_fact_ids'],
+                  'rationale': 'Authored invalid binding', 'field_references': {}}
+        if mode == 'unknown':
+            choice['device_id'] = 'unit-missing-identity'
+            choices, expected = [choice], 'Unbekannte Teilnehmer-ID.*unit-missing-identity'
+        else:
+            choices, expected = [choice, deepcopy(choice)], 'Mehrfache Inventarbindung.*' + known[0]['id']
+        before = deepcopy(known)
+&gt;       with pytest.raises(ValueError, match=expected):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'Mehrfache Inventarbindung.*source-cc9cfd15a66c71f738a2e3ea'
+E         Actual message: 'Inventarbindung benötigt eine eindeutige vorhandene Teilnehmer-ID.'
+
+backend\tests\test_reference_reasoner.py:1183: AssertionError</failure></testcase></testsuite></testsuites>

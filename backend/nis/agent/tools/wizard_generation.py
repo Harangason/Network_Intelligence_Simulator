@@ -61,7 +61,7 @@ _TOPOLOGY_BUS_BY_PROTOCOL = {
     'SOMEIP': 'automotive_ethernet',
 }
 
-MODEL_GENERATOR_VERSION = 'wizard-model-v24-functional-chain-review'
+MODEL_GENERATOR_VERSION = 'wizard-model-v28-reviewed-reference-design'
 ROUTING_GENERATOR_VERSION = 'wizard-routing-v11-confirmed-recipients-only'
 
 _CONTROLLER_DEVICE_TYPES = {
@@ -390,6 +390,28 @@ def _generation_policy_for_specification(prompt: str, specification: dict) -> di
     )
 
 
+def reference_design_catalog(prompt: str) -> dict:
+    """Read the existing wizard catalogs and exact source owners, without writes."""
+    node = shutil.which('node')
+    if not node:
+        raise ValueError('Node.js wird für den vorhandenen Wizard-Katalog benötigt.')
+    from backend.nis.infrastructure.paths import PROJECT_ROOT
+    script = PROJECT_ROOT / 'frontend/scripts/extract-wizard-specification.mjs'
+    result = subprocess.run(
+        [node, '--experimental-strip-types', str(script)],
+        input=json.dumps({'operation': 'reference-catalog', 'prompt': prompt}),
+        text=True, encoding='utf-8', capture_output=True, timeout=60, check=False,
+        creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0,
+    )
+    if result.returncode:
+        raise ValueError('Der vorhandene Wizard-Katalog konnte nicht gelesen werden: ' + result.stderr[-1000:])
+    catalog = json.loads(result.stdout)
+    if not catalog.get('measurements') or not isinstance(catalog.get('source_function_assignments'), dict):
+        raise ValueError('Der vorhandene Wizard-Katalog ist unvollständig.')
+    catalog['technology_ids'] = [profile['id'] for profile in DEFAULT_TECHNOLOGY_REGISTRY.profiles()]
+    return catalog
+
+
 def extract_specification(prompt: str) -> dict:
     node = shutil.which('node')
     if not node:
@@ -690,7 +712,483 @@ def generate_parameters(arguments: dict) -> dict:
     }
 
 
+def _reviewed_function_reuse_matches(fact: dict, existing: dict, *, shared_citation: bool) -> bool:
+    """A shared list citation cannot collapse distinct canonical functions."""
+    quote = str(existing.get('source_quote') or '').strip()
+    if len(quote) < 3 or quote not in fact['source_quote']:
+        return False
+    if not shared_citation:
+        return True
+    subject = str(fact['name']).rsplit(' [', 1)[0].strip().casefold()
+    return str(existing.get('name') or '').strip().casefold() == subject or quote.lstrip('-* ').casefold() == subject
+
+
+def _reviewed_document_functions(evidence: dict | None, hosts: list[str], chains: list[dict] | None = None) -> list[dict]:
+    """Resolve only explicit source-fact assignments to real executable hosts."""
+    from backend.nis.agent.orchestration.project_intake import document_fact_identity, document_source_scope, document_system_scope
+    duties = [fact for fact in (evidence or {}).get('components', []) if fact['kind'] == 'FUNCTION']
+    assignments = (evidence or {}).get('function_assignments', {})
+    def scoped_owners(fact, *, require_context=False):
+        shared_citation = any(other['name'] != fact['name'] and other['source_quote'] == fact['source_quote'] and other.get('source_context', []) == fact.get('source_context', []) for other in duties)
+        candidates = set()
+        for chain in chains or []:
+            if chain.get('device_type') not in _CONTROLLER_DEVICE_TYPES:
+                continue
+            configuration = chain.get('configuration') or {}
+            context = (configuration.get('document_equipment_evidence') or {}).get('source_context', [])
+            if require_context and not context:
+                continue
+            host_scope = document_source_scope(context)
+            fact_scope = document_source_scope(fact.get('source_context', []))
+            if host_scope != fact_scope and not (host_scope and fact_scope[:len(host_scope)] == host_scope):
+                continue
+            if any(len(duty.get('source_quote', '')) >= 3 and duty['source_quote'] in fact['source_quote'] and (not shared_citation or fact['name'] in duty['source_quote'])
+                   for duty in configuration.get('source_scoped_functions', [])):
+                candidates.add(chain['hardware_name'].casefold())
+        return candidates
+
+    result = []
+    for fact in duties:
+        identity = document_fact_identity(fact)
+        candidates = scoped_owners(fact)
+        if not candidates and fact.get('source_context') and fact.get('role') == 'OTHER' and fact.get('quantity') is None and fact['name'] in fact['source_quote']:
+            # Repeat a literal responsibility only within its source system.
+            # A witness must independently resolve under the declaring host.
+            system = document_system_scope(fact.get('source_context', []))
+            for witness in duties:
+                if (witness.get('source_context') and witness['name'] == fact['name'] and witness.get('role') == 'OTHER'
+                        and witness.get('quantity') is None and witness['name'] in witness['source_quote']
+                        and document_system_scope(witness.get('source_context', [])) == system):
+                    candidates.update(scoped_owners(witness, require_context=True))
+        scoped_host = next(iter(candidates)) if len(candidates) == 1 else ''
+        host = str(assignments.get(identity) or scoped_host).casefold()
+        if not host or host not in hosts:
+            raise ValueError(f"Funktionszuordnung fehlt oder ist ungültig für: {fact['name']}. Bitte den ausführenden Controller festlegen.")
+        # The source identity disambiguates equal names in separate profiles.
+        import hashlib
+        suffix = hashlib.sha256(identity.encode('utf-8')).hexdigest()[:10]
+        result.append({**fact, 'name': f"{fact['name']} [{suffix}]", 'host': host,
+                       'fact_id': identity, 'source_sha256': evidence['source_sha256'],
+                       'assignment_source': 'source_scoped_function' if host == scoped_host else 'explicit_user_statement'})
+    return result
+
+
+def _assign_reference_message_identifiers(spec, existing):
+    """Allocate proposed wire identifiers through existing owners and profiles.
+
+    Only new reference-model messages are candidates. Existing frame IDs are
+    never changed. LIN frame-kind/edition choices must already be review data.
+    """
+    ports = {str(port['id']): port for port in existing.get('HardwareNetworkInterface', [])}
+    used = {}
+    for message in existing.get('Message', []):
+        network = (ports.get(str(message.get('hardware_interface_id'))) or {}).get('network_ref')
+        if network is not None and message.get('message_id_hex'):
+            used.setdefault(network, []).append(message)
+    names = {str(message['name']).casefold(): message for message in existing.get('Message', [])}
+    for chain in spec['chains']:
+        config = chain.get('configuration') or {}
+        if config.get('reference_receive_only'):
+            continue
+        if concise_name('Message', chain['message_name']).casefold() in names:
+            continue
+        technology = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(chain['interface_type'])
+        definition = DEFAULT_TECHNOLOGY_REGISTRY.profile(technology)
+        network = chain.get('transport_network_ref')
+        rows = used.setdefault(network, [])
+        schema = definition['parameter_schema']
+        if 'can_identifier' in schema:
+            candidate = _next_generated_can_identifier(rows, [])
+        elif 'lin_frame_id' in schema:
+            values = deepcopy((config.get('reference_port') or {}).get('parameters') or {})
+            if not values.get('lin_edition') or not values.get('lin_frame_kind'):
+                raise ValueError('LIN-Referenzentwurf: Edition und Frameart müssen vor der Identifiervergabe ausdrücklich geplant werden; keine CAN-Identifier als Ersatz.')
+            field = schema['lin_frame_id']
+            taken = {int(str(row['message_id_hex']), 16) for row in rows if row.get('message_id_hex')}
+            candidate = None
+            for value in range(int(field['min']), int(field['max']) + 1):
+                if value in taken:
+                    continue
+                checked = DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters(technology, {**values, 'lin_frame_id': value})
+                wrong_identifier = any((item.get('parameter') == 'lin_frame_id'
+                    or str(item.get('message') or '').startswith('lin_frame_id '))
+                    and item.get('severity') in {'ERROR', 'BLOCKER'} for item in checked['findings'])
+                if not wrong_identifier:
+                    candidate = hex(value)
+                    break
+            if candidate is None:
+                raise ValueError('Für die geplante LIN-Frameart ist im tatsächlichen Netz kein freier gültiger Identifier verfügbar. Das Netz durch NIS neu auslegen.')
+        else:
+            # Other registered bindings retain the existing transport-record
+            # alias. Their protocol-specific identifier gates remain intact.
+            continue
+        chain['message_id_hex'] = candidate
+        rows.append({'message_id_hex': candidate})
+        config['reference_identifier_design'] = {'source': 'REFERENCE_ASSUMPTION', 'technology': technology,
+            'network_ref': network, 'value': candidate, 'hardware_evidence': False,
+            'basis': 'existing_can_allocator' if 'can_identifier' in schema else 'TechnologyProfile native identifier constraints'}
+
+
+def _materialize_reference_bindings(reference, spec, changes, existing, ensure, hardware_refs, document_evidence):
+    """Bind an accepted NIS plan to the ordinary proposed canonical objects.
+
+    This adapter does not write, approve, infer extra recipients, or claim
+    executable processing. All writes remain proposal validate/review/apply.
+    """
+    from backend.nis.agent.orchestration.project_intake import document_fact_identity
+    plan = deepcopy(reference['proposal'])
+    source_hosts = reference_design_catalog(reference['request']['prompt'])['source_function_assignments']
+    by_device = {row['id']: row for row in plan['devices']}
+    by_fact = {value: key for key, value in reference['fact_id_map'].items()}
+    facts = {by_fact[document_fact_identity(row)]: row for row in document_evidence['components']}
+    device_names, port_names, port_networks = {}, {}, {}
+    for chain in spec['chains']:
+        config = chain.get('configuration') or {}
+        device_id, port_id = config.get('reference_device_id'), config.get('reference_port_id')
+        if not device_id or (not port_id and not config.get('reference_no_port')):
+            raise ValueError('Der Referenzadapter verliert eine Teilnehmer-/Portidentität.')
+        if device_id in device_names and device_names[device_id] != chain['hardware_name']:
+            raise ValueError('Referenzgruppen mit mehreren Kommunikationsinstanzen müssen als konkrete Einzelgeräte geplant werden.')
+        device_names[device_id] = chain['hardware_name']
+        if not config.get('reference_no_port'):
+            port_names[port_id] = chain['interface_name']
+            port_networks[port_id] = chain.get('transport_network_ref')
+    device_refs = {key: hardware_refs[name.casefold()] for key, name in device_names.items()}
+    # An omitted proposal value inherits a previously confirmed owner. The
+    # canonical adapter must not erase it merely because Qwen did not repeat it.
+    inherited_owners = {name.casefold(): owner.casefold() for name, owner in reference['protected_fields'].get('owners', {}).items()}
+    ids_by_name = {name.casefold(): key for key, name in device_names.items()}
+    for key, device in by_device.items():
+        if device.get('owner_device_id') or key not in device_names:
+            continue
+        inherited = inherited_owners.get(device_names[key].casefold())
+        if inherited:
+            owner_id = ids_by_name.get(inherited)
+            if owner_id is None:
+                raise ValueError('Der zuvor bestätigte Verantwortliche fehlt im Referenzentwurf.')
+            device['owner_device_id'] = owner_id
+    stamp = {'source': 'REFERENCE_ASSUMPTION', 'design_id': reference['design_id'],
+             'revision': reference['revision'], 'request_sha256': reference['request_sha256'],
+             'source_sha256': reference['source_sha256'], 'review_source': reference['review_source'],
+             'processing_evidence': 'NONE', 'timing_evidence': 'NONE',
+             'hardware_evidence': False, 'qualification': 'UNVERIFIED'}
+    created = {('$' + item['local_ref']): item for item in changes}
+
+    def row_for(ref, kind):
+        item = created.get(ref)
+        if item:
+            if item['object_type'] != kind:
+                raise ValueError('Referenzbindung verwendet einen falschen kanonischen Objekttyp.')
+            return item['data']
+        return next((row for row in existing.get(kind, []) if str(row['id']) == ref), None)
+
+    def source_metadata(ids):
+        return [{'fact_id': reference['fact_id_map'][key], 'source_sha256': reference['source_sha256'],
+                 'source_context': facts[key].get('source_context', []), 'source_quote': facts[key]['source_quote'],
+                 'kind': facts[key]['kind'], 'role': facts[key]['role']} for key in ids]
+
+    # Preserve the original requirement catalog in the canonical saved model.
+    # A scope catalog is not a guessed function/ASIL/deadline allocation.
+    from backend.nis.agent.orchestration.project_intake import document_system_scope
+    requirement_facts = [(key, fact) for key, fact in facts.items() if fact['kind'] == 'REQUIREMENT']
+    for device_id, hardware_ref in device_refs.items():
+        if by_device[device_id]['kind'] not in {'CONTROLLER', 'GATEWAY'} or hardware_ref not in created:
+            continue
+        scopes = {tuple(document_system_scope(facts[key].get('source_context', []))) for key in by_device[device_id]['source_fact_ids']}
+        catalog = [{'fact_id': reference['fact_id_map'][key], 'source_sha256': reference['source_sha256'],
+                    'source_name': reference['source_evidence'].get('source_name'), 'name': fact['name'],
+                    'kind': 'REQUIREMENT', 'source_quote': fact['source_quote'], 'source_context': fact.get('source_context', []),
+                    'allocation': 'UNALLOCATED_SOURCE_SCOPE', 'assessment': 'UNASSESSED',
+                    'processing_evidence': 'NONE', 'timing_evidence': 'NONE', 'source': 'ORIGINAL_DOCUMENT'}
+                   for key, fact in requirement_facts if not document_system_scope(fact.get('source_context', []))
+                   or tuple(document_system_scope(fact.get('source_context', []))) in scopes]
+        created[hardware_ref]['data'].setdefault('identity', {})['reference_source_requirements'] = catalog
+
+    # Concrete inventory and non-communicating context retain their own roles.
+    # A passive chassis or software service is not a fabricated ECU or packet.
+    def context_hardware_refs(device_id):
+        if device_id in device_refs:
+            return [device_refs[device_id]]
+        context = by_device[device_id]
+        refs = [device_refs[context['owner_device_id']]] if context.get('owner_device_id') in device_refs else []
+        refs.extend(ref for child in context.get('contained_device_ids', []) for ref in context_hardware_refs(child))
+        return list(dict.fromkeys(refs))
+
+    context_bindings = []
+    for device in plan['devices']:
+        if device['kind'] == 'PHYSICAL_CONTEXT':
+            context_bindings.append({**deepcopy(device), 'source_bindings': source_metadata(device['source_fact_ids']),
+                'contained_hardware_node_refs': list(dict.fromkeys(ref for key in device.get('contained_device_ids', []) for ref in context_hardware_refs(key))),
+                'owner_hardware_node_ref': device_refs.get(device.get('owner_device_id')), 'provenance': stamp})
+            continue
+        ref = device_refs.get(device['id'])
+        node = row_for(ref, 'HardwareNode')
+        if node is None:
+            raise ValueError(f"Referenzteilnehmer {device['name']} fehlt im kanonischen Vorschlag.")
+        if ref in created:
+            identity = node.setdefault('identity', {})
+            identity.update(reference_design=stamp, source_bindings=source_metadata(device['source_fact_ids']))
+            for binding, fact_id in zip(identity['source_bindings'], device['source_fact_ids']):
+                if fact_id in device.get('source_member_bindings', {}):
+                    binding['reference_member'] = {'label': device['source_member_bindings'][fact_id], **stamp}
+            if device.get('owner_device_id'):
+                owner = device_refs[device['owner_device_id']]
+                previous = identity.get('system_owner_id')
+                if previous and previous != owner:
+                    raise ValueError('Die Referenzzuordnung darf eine bestehende Eigentümerschaft nicht ersetzen.')
+                identity['system_owner_id'] = owner
+    document_evidence['context_bindings'] = context_bindings
+    for context in context_bindings:
+        linked = list(dict.fromkeys([*context['contained_hardware_node_refs'],
+                                    *([context['owner_hardware_node_ref']] if context['owner_hardware_node_ref'] else [])]))
+        for ref in linked:
+            node = row_for(ref, 'HardwareNode')
+            if ref in created and node is not None:
+                # No forward references back to children: ownership CREATE
+                # ordering remains acyclic. Each saved node records membership.
+                node.setdefault('identity', {}).setdefault('reference_context_memberships', []).append({
+                    key: deepcopy(value) for key, value in context.items()
+                    if key not in {'contained_hardware_node_refs', 'owner_hardware_node_ref'}})
+
+    # Canonical Function requires real hardware. COMPOSITE is coverage of its
+    # atomic children, never one executable function copied onto all hosts.
+    function_refs = {}
+    function_rows = {row['source_fact_id']: row for row in plan['functions']}
+    for function in plan['functions']:
+        if function['realization'] != 'ATOMIC':
+            continue
+        fact_id = function['source_fact_id']
+        fact = facts[fact_id]
+        refs = []
+        for executor in function['executor_device_ids']:
+            name = concise_name('Function', f"{fact['name']} [{fact_id[1:11]} {executor[1:7]}]")
+            ref = ensure('Function', name, {'hardware_node_id': device_refs[executor], 'domain': spec['domain'],
+                'description': fact['source_quote'], 'configuration': {
+                    'reviewed_document_function': {**fact, 'fact_id': reference['fact_id_map'][fact_id],
+                        'source_sha256': reference['source_sha256'],
+                        # The shared validator already enforces the existing
+                        # source/user host through its canonical alias owner.
+                        'assignment_source': ('source_scoped_function' if reference['fact_id_map'][fact_id] in source_hosts
+                            else 'explicit_user_statement' if reference['fact_id_map'][fact_id] in reference['source_evidence']['function_assignments']
+                            else 'REFERENCE_ASSUMPTION')},
+                    'reference_design': {**stamp, 'rationale': function['rationale'], 'realization': 'ATOMIC'},
+                    'processing_evidence': 'NONE', 'dependency_review': 'REFERENCE_DESIGN'}}, 'hardware_node_id')
+            refs.append(ref)
+        function_refs[fact_id] = refs
+
+    def realized(fact_id):
+        if fact_id not in function_refs:
+            function_refs[fact_id] = list(dict.fromkeys(ref for child in function_rows[fact_id]['realized_by_fact_ids'] for ref in realized(child)))
+        return function_refs[fact_id]
+
+    for function in plan['functions']:
+        key = function['source_fact_id']
+        refs = realized(key)
+        for ref in refs:
+            item = next((item for item in changes if '$' + item.get('local_ref', '') == ref and item['object_type'] == 'Function'), None)
+            if item is not None:
+                item['data'].setdefault('configuration', {}).setdefault('reference_source_coverage', []).append({
+                    'fact_id': reference['fact_id_map'][key], 'source_sha256': reference['source_sha256'],
+                    'source_quote': facts[key]['source_quote'], 'source_context': facts[key].get('source_context', []),
+                    'realization': function['realization'], 'relationship': 'COVERED_BY_ATOMIC_FUNCTION',
+                    'provenance': stamp})
+        document_evidence.setdefault('function_bindings', []).append({
+            'fact_id': reference['fact_id_map'][key], 'function_refs': refs,
+            'realization': function['realization'], 'provenance': stamp})
+
+    # Device acquisition/execution remains a marked design function. It is
+    # distinct from source responsibilities and is never a measured algorithm.
+    for device_id, ref in device_refs.items():
+        node = row_for(ref, 'HardwareNode')
+        profile = DeviceClassificationRegistry().resolve_profile(name=node['name'], device_type=node['device_type'], device_class=node.get('device_class'))
+        if profile.requires_function_model and not any(item['object_type'] == 'Function' and item['data'].get('hardware_node_id') == ref for item in changes):
+            ensure('Function', concise_name('Function', node['name'] + ' Gerätefunktion'), {
+                'hardware_node_id': ref, 'domain': spec['domain'],
+                'description': by_device[device_id].get('purpose') or by_device[device_id]['rationale'],
+                'configuration': {'reference_design': stamp, 'processing_evidence': 'NONE', 'dependency_review': 'REFERENCE_DESIGN'}}, 'hardware_node_id')
+
+    def assumptions(port):
+        technology = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(port['technology'])
+        roles = DEFAULT_TECHNOLOGY_REGISTRY.parameter_roles(technology)
+        normalized = DEFAULT_TECHNOLOGY_REGISTRY.normalize_parameters(technology, port['parameters'])
+        values = {key: value for key, value in normalized.items() if roles.get(key) == 'CONFIGURATION'}
+        return {technology: {'values': values, 'provenance': {key: {
+            'source': 'NIS_SIMULATION_ASSUMPTION', 'status': 'ASSUMED', 'technology': technology,
+            'hardware_evidence': False, 'value': deepcopy(value), 'reference_origin': stamp,
+            'rationale': port['rationale']} for key, value in values.items()}}}
+
+    # Preserve the exact proposed physical endpoint, bitrate and network. A
+    # receive-only port has no fabricated message or default status transmission.
+    port_refs = {}
+    for port in plan['ports']:
+        name = port_names.get(port['id'])
+        network = port_networks.get(port['id'])
+        if not name:
+            raise ValueError('Ein geplanter physischer Empfangs-/Sendeport fehlt im Referenzadapter.')
+        port_chain = next(chain for chain in spec['chains'] if chain['configuration']['reference_port_id'] == port['id'])
+        technology = port_chain['interface_type']
+        contract = _technology_contract(technology)
+        ref = ensure('HardwareNetworkInterface', name, {
+            'hardware_node_id': device_refs[port['device_id']], 'technology': technology,
+            'physical_port_ref': f"reference:{reference['design_id']}:{port['id']}",
+            'network_ref': network, 'channel_index': 1,
+            'capabilities': {**contract['capabilities'], 'hardware_interface': contract['hardware_interface'],
+                'technology_stack': contract['stack'], 'simulation_parameter_assumptions': assumptions(port), 'reference_design': {**stamp, 'parameters': deepcopy(port['parameters'])}}}, 'hardware_node_id')
+        port_refs[port['id']] = ref
+        if ref in created:
+            current = created[ref]['data']
+            current.setdefault('capabilities', {})['simulation_parameter_assumptions'] = assumptions(port)
+            current.setdefault('capabilities', {})['reference_design'] = {**stamp, 'parameters': deepcopy(port['parameters'])}
+        # Network is the existing workflow parameter scope used by capacity,
+        # physical realization and simulation, not a parallel parameter store.
+        if network:
+            net = next((item['data'] for item in changes if item['object_type'] == 'Network' and item['data']['id'] == network), None)
+            if net is not None:
+                group = net.setdefault('simulation_parameter_assumptions', {})
+                for technology, incoming in assumptions(port).items():
+                    saved = group.setdefault(technology, {'values': {}, 'provenance': {}})
+                    for key, value in incoming['values'].items():
+                        if key in saved['values'] and saved['values'][key] != value:
+                            raise ValueError(f'Unvereinbare Referenzannahmen im selben physischen Netz: {network}/{key}.')
+                        saved['values'][key] = deepcopy(value)
+                        saved['provenance'][key] = deepcopy(incoming['provenance'][key])
+                net.setdefault('reference_parameter_decisions', []).append({**stamp, 'port_id': port['id'], 'parameters': deepcopy(port['parameters'])})
+    # ensure() can append after the initial created map was built.
+    created.update({('$' + item['local_ref']): item for item in changes})
+
+    comm_by_id = {row['id']: row for row in plan['communication']}
+    for chain in spec['chains']:
+        config = chain.get('configuration') or {}
+        key = (config.get('reference_communication') or {}).get('id')
+        if not key:
+            continue
+        communication = comm_by_id[key]
+        source = device_refs[communication['producer_device_id']]
+        consumers = [device_refs[key] for key in communication['consumer_device_ids']]
+        technology = _technology_contract(chain['interface_type'])['technology_id']
+        from backend.nis.communication.catalog import DIRECT_IO_TECHNOLOGIES
+        signal = next((item['data'] for item in changes if item['object_type'] == 'Signal' and item['data']['name'] == concise_name('Signal', chain['signal_name'])), None)
+        if signal is None:
+            raise ValueError('Eine geplante Nutzdatenkodierung fehlt im kanonischen Vorschlag.')
+        role = communication.get('role') or ('COMMAND' if any(by_device[key]['kind'] == 'ACTUATOR' for key in communication['consumer_device_ids'])
+                else 'MEASUREMENT' if by_device[communication['producer_device_id']]['kind'] == 'SENSOR'
+                else 'FEEDBACK' if by_device[communication['producer_device_id']]['kind'] == 'ACTUATOR' else 'FUNCTION_OUTPUT')
+        signal.setdefault('configuration', {}).update(reference_design={**stamp, 'communication_id': key}, generation_role=role)
+        if technology in DIRECT_IO_TECHNOLOGIES:
+            if len(consumers) != 1:
+                raise ValueError('Direktes I/O benötigt eine explizite einzelne Zielbindung je Leitung.')
+            signal['configuration']['direct_signal_binding'] = {
+                'source_hardware_node_ref': source, 'destination_hardware_node_ref': consumers[0],
+                'physical_port_ref': port_refs[communication['source_port_id']],
+                'signal_type': technology.upper(), 'electrical_profile': {},
+                'update_rate_hz': 1000 / communication['cycle_ms'] if communication.get('cycle_ms') else None,
+                'timing_profile': {}, 'validation_status': 'REFERENCE_DESIGN', 'provenance': stamp}
+            continue
+        message = next((item['data'] for item in changes if item['object_type'] == 'Message' and item['data']['name'] == concise_name('Message', chain['message_name'])), None)
+        if message is None:
+            raise ValueError('Eine geplante Übertragung fehlt im kanonischen Vorschlag.')
+        message['hardware_interface_id'] = port_refs[communication['source_port_id']]
+        producer = communication.get('producer_fact_id')
+        if producer:
+            fn = next((ref for ref in realized(producer) if row_for(ref, 'Function')['hardware_node_id'] == source), None)
+            if not fn:
+                raise ValueError('Die sendende Funktion ist nicht auf dem geplanten Teilnehmer gebunden.')
+            logical = ensure('Interface', concise_name('Interface', f"{chain['interface_name']} {producer[1:9]}"), {
+                'function_id': fn, 'interface_type': chain['interface_type'],
+                'configuration': {'physical_interface_ids': [message['hardware_interface_id']], 'reference_design': stamp}}, 'function_id')
+            message['interface_id'] = logical
+        role = communication.get('role') or ('COMMAND' if any(by_device[key]['kind'] == 'ACTUATOR' for key in communication['consumer_device_ids'])
+                else 'MEASUREMENT' if by_device[communication['producer_device_id']]['kind'] == 'SENSOR'
+                else 'FEEDBACK' if by_device[communication['producer_device_id']]['kind'] == 'ACTUATOR' else 'EXPLICIT')
+        transmission = {'mode': communication['transmission_mode']}
+        if communication.get('cycle_ms') is not None:
+            transmission['period_ms'] = communication['cycle_ms']
+        if communication.get('min_interval_ms') is not None:
+            transmission['minimum_interval_ms'] = communication['min_interval_ms']
+        for field in ('trigger', 'trigger_description', 'release_times_ms', 'request_source', 'response_processing_ms', 'request_times_ms'):
+            if communication.get(field) is not None:
+                transmission[field] = deepcopy(communication[field])
+        message_config = message.setdefault('configuration', {})
+        if config.get('reference_identifier_design'):
+            message_config['reference_identifier_design'] = deepcopy(config['reference_identifier_design'])
+        message_config['reference_design'] = {**stamp, 'communication_id': key}
+        message_config['communication_contract'] = {'version': 2, 'scope': communication['scope'], 'role': 'DEVICE_STATUS' if role == 'STATUS' else role,
+            'basis': 'Geprüfter NIS-Referenzentwurf; keine Quellenbehauptung', 'producer_ref': source,
+            'consumer_refs': consumers, 'transmission': transmission}
+        message_config.setdefault('transport_unit', {}).update(producer_ref=source, consumer_refs=consumers,
+            timing={'cycle_ms': communication.get('cycle_ms')}, provenance=stamp)
+        message_config['receiver_port_refs'] = [port_refs[key] for key in communication['consumer_port_ids']]
+
+    for communication in plan['communication']:
+        request_id = communication.get('request_communication_id')
+        if not request_id:
+            continue
+        message_refs = {item['data'].get('configuration', {}).get('reference_design', {}).get('communication_id'): '$' + item['local_ref']
+                        for item in changes if item['object_type'] == 'Message'}
+        response_ref = message_refs.get(communication['id'])
+        request_ref = message_refs.get(request_id)
+        if not response_ref or not request_ref:
+            raise ValueError('Die geplante Bus-Anfrage/Antwort ist nicht vollständig auf kanonische Nachrichten gebunden.')
+        row_for(response_ref, 'Message')['configuration']['communication_contract']['transmission']['request_message_ref'] = request_ref
+
+    for dependency in plan.get('functional_dependencies', []):
+        host = device_refs[dependency['executor_device_id']]
+        producer = next(ref for ref in realized(dependency['producer_fact_id']) if row_for(ref, 'Function')['hardware_node_id'] == host)
+        consumers = [ref for key in dependency['consumer_fact_ids'] for ref in realized(key) if row_for(ref, 'Function')['hardware_node_id'] == host]
+        changes.append({'object_type': 'DataObject', 'local_ref': f'reference-dependency-{len(changes)}', 'data': {
+            'name': concise_name('DataObject', f"{dependency['signal_name']} [{dependency['id']}]"), 'producer_function_ref': producer,
+            'consumer_function_refs': consumers, 'fields': [{'name': dependency['signal_name'], **deepcopy(dependency['encoding'])}],
+            'description': dependency['rationale'], 'provenance': stamp, 'binding': 'LOGICAL_SAME_EXECUTOR',
+            'processing_evidence': 'NONE', 'timing_evidence': 'NONE'}})
+    # New example devices participate in the existing functional audit. A
+    # missing measurement or command must be an error, not legacy compatibility.
+    selected_measurements = {item['device_id']: item['measurement_id'] for item in plan['measurements']}
+    previous_measurements = {name.casefold(): value for name, value in reference['protected_fields'].get('measurements', {}).items()}
+    created.update({('$' + item['local_ref']): item for item in changes})
+    for device_id, hardware_ref in device_refs.items():
+        if hardware_ref not in created:
+            continue
+        device = by_device[device_id]
+        node = created[hardware_ref]['data']
+        role = {'SENSOR': 'SENSOR', 'ACTUATOR': 'ACTUATOR', 'CONTROLLER': 'PROCESSOR'}.get(device['kind'])
+        if role is None:
+            continue
+        contract = {'version': 1, 'role': role, 'evidence': 'REFERENCE_ASSUMPTION',
+                    'reference_design': stamp, 'processing_evidence': 'NONE'}
+        owner = device_refs.get(device.get('owner_device_id'))
+        if owner:
+            contract['owner_ref'] = owner
+        if role == 'SENSOR':
+            measurement = selected_measurements.get(device_id) or previous_measurements.get(device_names[device_id].casefold())
+            contract.update(measurement=measurement, measurements=[measurement] if measurement else [])
+        inputs = list(dict.fromkeys(device_refs[item['producer_device_id']] for item in plan['communication']
+            if device_id in item['consumer_device_ids'] and by_device[item['producer_device_id']]['kind'] != 'ACTUATOR'
+            and (item['encoding'].get('semantic') or {}).get('meaning') not in {'Betriebszustand', 'Diagnosezustand'}))
+        node.setdefault('identity', {})['functional_device_contract'] = deepcopy(contract)
+        if role == 'PROCESSOR':
+            # Only functions hold cross-device inputs, avoiding Hardware CREATE
+            # cycles between controller ownership and sensor measurement refs.
+            for item in changes:
+                if item['object_type'] == 'Function' and item['data'].get('hardware_node_id') == hardware_ref:
+                    item['data'].setdefault('configuration', {})['functional_device_contract'] = {
+                        **contract, 'input_refs': inputs,
+                        'actuator_refs': [device_refs[key] for key, row in by_device.items()
+                                          if row['kind'] == 'ACTUATOR' and row.get('owner_device_id') == device_id]}
+    document_evidence['reference_design'] = {**stamp,
+        'qualification_findings': deepcopy(reference.get('qualification_findings', [])),
+        'coverage': deepcopy(reference['coverage']),
+        'decision_evidence': deepcopy(reference['decision_evidence']), 'context_bindings': context_bindings}
+
+
 def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> dict:
+    from backend.nis.agent.orchestration.project_intake import reviewed_document_evidence
+    from backend.nis.agent.tools.project_draft import reference_design_for_prompt
+    reference = reference_design_for_prompt(arguments.get('prompt', ''))
+    document_evidence = reviewed_document_evidence(arguments.get('prompt', ''))
+    if document_evidence is not None:
+        source_evidence = [*(source_evidence or []), document_evidence]
+    if reference:
+        source_evidence.append({'source': 'REFERENCE_ASSUMPTION', 'reference_design': deepcopy(reference)})
     state = WorkflowStatusService(current_project_id()).get()
     prompt = _canonical_wizard_prompt(arguments['prompt'])
     draft_marker = re.search(r'^- Projektentwurf: ([A-Za-z0-9._-]+) Revision (\d+)\s*$', prompt, re.M)
@@ -720,6 +1218,23 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
     existing = {kind: model.objects(kind) for kind in kinds}
     proposal_identity = _proposal_identity('engineering_model', prompt, existing, state, MODEL_GENERATOR_VERSION)
     proposals = proposal_store.list_proposals(limit=100)
+    if reference:
+        for prior in proposals:
+            contract = prior.get('engineering_contract') or {}
+            if prior['proposal_type'] != 'WIZARD_ENGINEERING_MODEL' or contract.get('status') != 'APPLIED':
+                continue
+            saved_reference = next((item.get('reference_design') for item in prior.get('evidence') or []
+                if item.get('source') == 'REFERENCE_ASSUMPTION'), None)
+            if not saved_reference or any(saved_reference.get(key) != reference[key]
+                    for key in ('design_id', 'revision', 'request_sha256', 'source_sha256', 'proposal')):
+                continue
+            same_generator = any(item.get('generator_version') == MODEL_GENERATOR_VERSION
+                                 for item in prior.get('evidence') or [])
+            if same_generator and contract.get('applied_model_revision') == model.model_revision():
+                return proposal_service.envelope(prior)
+            from backend.nis.infrastructure.persistence.db import ConcurrentUpdateError
+            raise ConcurrentUpdateError('Der bereits übernommene Referenzentwurf gehört zu einem geänderten Modell- oder Generatorstand. '
+                'Änderungen müssen als neuer geprüfter Modellvorschlag übernommen werden; keine doppelte Modellanlage.')
     reusable = _reusable_proposal('WIZARD_ENGINEERING_MODEL', proposal_identity, proposals)
     if reusable:
         return reusable
@@ -728,7 +1243,20 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
         context = state.get("context") or {}
         arguments = {**arguments, "prompt": with_project_limits(arguments["prompt"], context)}
     spec = extract_specification(arguments['prompt'])
+    if reference:
+        from backend.nis.domain.vocabulary import INTERFACE_TYPES
+        for chain in spec['chains']:
+            if not (chain.get('configuration') or {}).get('reference_no_port'):
+                technology = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(chain['interface_type'])
+                legacy = next((value for value in INTERFACE_TYPES if DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(value) == technology), None)
+                if legacy is None:
+                    raise ValueError(f'Für {technology} ist keine kanonische Modell-Interfaceidentität registriert.')
+                # Preserve the registered complete protocol binding. Physical
+                # realization still validates its own profile and lower layers.
+                chain['interface_type'] = legacy
     spec.setdefault('generationPolicy', _generation_policy_for_specification(arguments['prompt'], spec))
+    if reference:
+        _assign_reference_message_identifiers(spec, existing)
     confirmed_spec = deepcopy(spec) if '\n\nBestaetigte Ergaenzung des Nutzers:\n' in prompt else spec
     # Gateway status uses a real controller backbone, not an unconnected
     # catalogue-default transport. Resolve this before creating messages.
@@ -747,11 +1275,11 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
             network = _local_io_physical_network(bus, local_memberships, hardware, {'name': owner})
         else:
             network = _segmented_physical_network(bus, segment_memberships, hardware)
-        if network:
+        if network and not reference:
             chain['transport_network_ref'] = network[0]
             chain['transport_network_name'] = network[1]
     graph_match = re.search(r'^- Systemcluster-Graph:\s*(\[[^\r\n]*\])', arguments['prompt'], re.M)
-    if graph_match:
+    if graph_match and not reference:
         controller_names = {str(c.get('ecu', '')).casefold() for cluster in json.loads(graph_match.group(1))
                             for c in cluster.get('controllers') or []}
         backbones = sorted({(c['interface_type'], c['transport_network_ref']) for c in spec['chains']
@@ -790,6 +1318,7 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
             str(data.get('hardware_node_id') or ''),
             _network_protocol(str(data.get('technology') or '')),
             str(data.get('network_ref') or '').casefold(),
+            str(data.get('physical_port_ref') or '') if str(data.get('physical_port_ref') or '').startswith('reference:') else '',
         )
 
     def rebound_device_status_identity(data):
@@ -809,7 +1338,14 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
         return ('DEVICE_STATUS', str(producer_ref))
 
     def ensure(kind, name, data, parent=None):
-        if kind == 'HardwareNetworkInterface' and is_ethernet(data.get('technology')):
+        if (kind == 'HardwareNetworkInterface' and is_ethernet(data.get('technology'))
+                and str(data.get('physical_port_ref') or '').startswith('reference:')):
+            row = named_networks.get(data.get('network_ref'))
+            if row:
+                name = f"{row['name']} Port {data['channel_index']}"
+                data = {**data, 'capabilities': {**(data.get('capabilities') or {}),
+                    'name_source': 'network', 'name_network_id': row['id']}}
+        if kind == 'HardwareNetworkInterface' and is_ethernet(data.get('technology')) and not str(data.get('physical_port_ref') or '').startswith('reference:'):
             row = named_networks.get(data.get('network_ref'))
             if row:
                 name = row['name']
@@ -833,7 +1369,7 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
         if kind == 'HardwareNetworkInterface':
             matches = [row for row in existing[kind]
                        if hardware_interface_identity(row) == hardware_interface_identity(data)]
-            if not matches:
+            if not matches and not str(data.get('physical_port_ref') or '').startswith('reference:'):
                 same_named_port = [row for row in existing[kind]
                     if row['name'].casefold() == name.casefold()
                     and str(row.get('hardware_node_id')) == str(data.get('hardware_node_id'))]
@@ -904,6 +1440,14 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
             raise ValueError(f"Netzwerk {row['id']}: bestehende Technologie {current.get('technology')} "
                 f"weicht von der bestätigten Ergänzung {row['technology']} ab. "
                 "Der Technologiewechsel benötigt eine explizite Änderung der betroffenen Anschlüsse und Nachrichten.")
+    if reference:
+        from backend.nis.agent.orchestration.project_intake import document_system_scope
+        for row in network_rows:
+            chain = next(item for item in spec['chains'] if item.get('transport_network_ref') == row['id'])
+            config = chain.get('configuration') or {}
+            scopes = {tuple(document_system_scope(context)) for context in config.get('reference_source_contexts', [])}
+            scoped = next(iter(scopes)) if len(scopes) == 1 else ()
+            row['name_context'] = ' / '.join(scoped) if scoped else (config.get('reference_port') or {}).get('network_scope') or chain['hardware_name']
     reserved_networks = [{**n, 'name_source': 'user'} for n in existing_networks.values() if n['id'] not in declared_networks]
     named_all = ethernet_names([*reserved_networks, *network_rows], topology=naming_topology)
     named_networks = {row['id']: existing_networks.get(row['id'], named_all[row['id']]) for row in network_rows}
@@ -919,7 +1463,8 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
 
     pending_direct_bindings = []
     for chain in spec['chains']:
-        technology_contract = _technology_contract(chain['interface_type'])
+        no_port = reference and (chain.get('configuration') or {}).get('reference_no_port')
+        technology_contract = None if no_port else _technology_contract(chain['interface_type'])
         local_main_controller = _is_local_main_controller(chain, spec)
         profile = DeviceClassificationRegistry().resolve_profile(
             name=chain['hardware_name'], device_type=chain['device_type'],
@@ -937,12 +1482,17 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
             'description': chain['hardware_description']})
         hardware_refs[str(chain['hardware_name']).casefold()] = hw
         fn = None
-        if profile.requires_function_model:
+        if profile.requires_function_model and not reference:
             fn = ensure('Function', concise_name('Function', chain['function_name']), {
                 'hardware_node_id': hw, 'domain': spec['domain'], 'description': chain['function_description']}, 'hardware_node_id')
         function_refs.setdefault(str(chain['hardware_name']).casefold(), fn)
+        if no_port:
+            continue
         port = ensure('HardwareNetworkInterface', chain['interface_name'], {
-            'hardware_node_id': hw, 'technology': chain['interface_type'], 'channel_index': 1,
+            'hardware_node_id': hw, 'technology': chain['interface_type'],
+            **({'physical_port_ref': f"reference:{reference['design_id']}:{chain['configuration']['reference_port_id']}",
+                'channel_index': 1 + next(index for index, port in enumerate([port for port in reference['proposal']['ports'] if port['device_id'] == chain['configuration']['reference_device_id'] and port['technology'] == chain['configuration']['reference_port']['technology']]) if port['id'] == chain['configuration']['reference_port_id'])}
+               if reference else {'channel_index': 1}),
             'network_ref': chain.get('transport_network_ref'),
             'capabilities': {
                 'hardware_interface': technology_contract['hardware_interface'],
@@ -954,6 +1504,8 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
             'configuration': {'physical_interface_ids': [port],
                 **({'endpoint_role': 'SYSTEM_CONTROLLER'} if fn and chain is chain_by_name[str(chain['hardware_name']).casefold()] else {})},
             'interface_type': chain['interface_type']}, 'function_id' if fn else 'hardware_node_id')
+        if reference and (chain.get('configuration') or {}).get('reference_receive_only'):
+            continue
         if technology_contract['technology_id'] in DIRECT_IO_TECHNOLOGIES:
             configuration = dict(chain.get('configuration') or {})
             configuration['direct_signal_binding'] = {
@@ -1036,7 +1588,25 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
     # A named functional requirement must not disappear behind the generic
     # controller status function. A sole function host is unambiguous; with
     # several hosts an explicit mapping is needed instead of choosing one.
-    declared_functions = _declared_function_names(arguments['prompt'])
+    # Responsibilities already scoped by the shared, source-bound document
+    # parser have their host. Keep them as functions, without inventing data
+    # dependencies, executable processing or a co-located transport mechanism.
+    for host, chain in ([] if reference else chain_by_name.items()):
+        if chain.get('device_type') not in _CONTROLLER_DEVICE_TYPES:
+            continue
+        duties = (chain.get('configuration') or {}).get('source_scoped_functions') or []
+        for duty in duties:
+            name, quote = str(duty.get('name') or '').strip(), str(duty.get('source_quote') or '').strip()
+            if not name or not quote:
+                raise ValueError(f'{chain["hardware_name"]}: Quellenbezug der Funktion fehlt.')
+            ensure('Function', concise_name('Function', f'{chain["hardware_name"]}_{name}'), {
+                'hardware_node_id': hardware_refs[host], 'domain': spec['domain'],
+                'description': f'Explizite Aufgabe des Controllers: {quote}. Ein-/Ausgänge und Ausführung separat prüfen.',
+                'configuration': {'source_scoped_function': {'name': name, 'source_quote': quote,
+                    'source': 'document_controller_responsibility'},
+                    'processing_evidence': 'NONE', 'dependency_review': 'REQUIRED'},
+            }, 'hardware_node_id')
+    declared_functions = [] if reference else _declared_function_names(arguments['prompt'])
     existing_function_names = {row['name'].casefold() for row in existing['Function']}
     existing_function_names.update(change['data']['name'].casefold() for change in changes
                                    if change['object_type'] == 'Function')
@@ -1057,12 +1627,43 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
                 'description': 'Explizit benannte Nutzerfunktion; Ausführung auf dem bestätigten Funktionscontroller. '
                                'Ein-/Ausgangszuordnung und funktionale Anforderungen separat prüfen.'}, 'hardware_node_id')
 
+    # Typed document duties have no inferred owner, even with a single host.
+    # Source evidence remains complete; execution and dependencies remain open.
+    for duty in ([] if reference else _reviewed_document_functions(document_evidence, function_hosts, spec['chains'])):
+        host_ref = hardware_refs[duty['host']]
+        linked = []
+        for row in [*(change['data'] for change in changes if change['object_type'] == 'Function'), *existing['Function']]:
+            configuration = row.get('configuration') or {}
+            quote = (configuration.get('source_scoped_function') or {}).get('source_quote', '')
+            shared_citation = any(other.get('kind') == 'FUNCTION' and other.get('source_quote') == duty['source_quote']
+                                  and other.get('name') != duty['name'].rsplit(' [', 1)[0]
+                                  and other.get('source_context', []) == duty.get('source_context', [])
+                                  for other in (document_evidence or {}).get('components', []))
+            if row.get('hardware_node_id') == host_ref and _reviewed_function_reuse_matches(
+                    duty, configuration.get('source_scoped_function') or {}, shared_citation=shared_citation):
+                linked.append(row)
+        if linked:
+            for row in linked:
+                document_evidence.setdefault('function_bindings', []).append({
+                    'fact_id': duty['fact_id'], 'function_name': row['name'], 'hardware_node_ref': host_ref})
+                # Existing canonical functions stay linked through proposal
+                # evidence. Newly proposed functions receive both provenances.
+                if any(change['data'] is row for change in changes if change['object_type'] == 'Function'):
+                    configuration = row.setdefault('configuration', {})
+                    configuration.setdefault('reviewed_document_functions', []).append(duty)
+            continue
+        ensure('Function', duty['name'], {'hardware_node_id': hardware_refs[duty['host']],
+            'domain': spec['domain'], 'description': duty['source_quote'],
+            'configuration': {'reviewed_document_function': duty,
+                              'source_scoped_function': {'name': duty['name'], 'source_quote': duty['source_quote'], 'source': 'reviewed_document'},
+                              'processing_evidence': 'NONE', 'dependency_review': 'REQUIRED'}}, 'hardware_node_id')
+
     # The selected cluster technology is the ECU/Gateway backbone. Controllers
     # also need a matching local interface for every endpoint technology they
     # own; otherwise a LIN sensor connected to a CAN-FD ECU is incorrectly
     # translated through the central gateway by the route generator.
     graph_raw = re.search(r'^- Systemcluster-Graph:\s*(\[[^\r\n]*\])\s*$', arguments['prompt'], re.M)
-    if graph_raw:
+    if graph_raw and not reference:
         # A single central gateway must terminate the confirmed controller
         # backbones before routing can validate them. Local sensor/actuator
         # buses belong to their controller and are deliberately excluded.
@@ -1197,12 +1798,13 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
                                 bindings.append({'hardware_interface_id': port, 'network_id': network_ref})
     from backend.nis.engineering.communication.device_communication import complete_new_actuator_messages
     command_definitions = _confirmed_actuator_commands(arguments['prompt'])
-    complete_new_actuator_messages(changes, existing, command_definitions)
+    if not reference:
+        complete_new_actuator_messages(changes, existing, command_definitions)
     # Persist the confirmed graph as identity references, independently of the
     # physical routing derived later. Never replace an explicit existing edit.
     hardware_changes = {"$" + change["local_ref"]: change for change in changes if change["object_type"] == "HardwareNode"}
     existing_hardware = {str(item["id"]): item for item in existing["HardwareNode"]}
-    for endpoint, (owner, *_membership) in _confirmed_local_io_memberships(arguments["prompt"]).items():
+    for endpoint, (owner, *_membership) in ([] if reference else _confirmed_local_io_memberships(arguments["prompt"]).items()):
         endpoint_ref, owner_ref = hardware_refs.get(endpoint), hardware_refs.get(owner)
         if not endpoint_ref or not owner_ref:
             raise ValueError(f"Bestätigte Systemzuordnung fehlt im Modell: {endpoint} → {owner}")
@@ -1223,13 +1825,17 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
             changes.append({"object_type": "HardwareNode", "action": "UPDATE", "object_id": endpoint_ref,
                             "local_ref": f"ownership-{len(changes)}", "data": {"identity": identity}})
     from backend.nis.engineering.communication.wizard_communication import attach_new_message_contracts
-    attach_new_message_contracts(arguments['prompt'], changes, existing)
+    if reference:
+        _materialize_reference_bindings(reference, spec, changes, existing, ensure, hardware_refs, document_evidence)
+    else:
+        attach_new_message_contracts(arguments['prompt'], changes, existing)
     from backend.nis.engineering.communication.device_communication import attach_functional_device_contracts
     attach_functional_device_contracts(changes, spec['chains'], hardware_refs,
-        enabled=bool(re.search(r'^- Funktionaler Generierungsvertrag:\s*sensor-actuator-v1\s*$', arguments['prompt'], re.M))
+        enabled=not reference and (bool(re.search(r'^- Funktionaler Generierungsvertrag:\s*sensor-actuator-v1\s*$', arguments['prompt'], re.M))
                 or not ('per Wizard-Uebernehmen bestaetigt' in arguments['prompt']
-                        and not re.search(r'^- Generierungsmodus:\s*EXAMPLE_PROJECT\s*$', arguments['prompt'], re.M)))
-    _bind_generated_gateway_status(changes, existing)
+                        and not re.search(r'^- Generierungsmodus:\s*EXAMPLE_PROJECT\s*$', arguments['prompt'], re.M))))
+    if not reference:
+        _bind_generated_gateway_status(changes, existing)
     # Owners precede their endpoints so nested local references resolve on apply.
     new_hardware = [change for change in changes if change["object_type"] == "HardwareNode" and change.get("action", "CREATE") == "CREATE"]
     new_hardware.sort(key=lambda change: bool((change["data"].get("identity") or {}).get("system_owner_id")))

@@ -1,0 +1,22 @@
+{
+  "at_utc": "2026-10-18T15:30:09.946724+00:00",
+  "scope": "Read-only code review, not native inference or test execution",
+  "files": [
+    {
+      "path": "backend/nis/agent/orchestration/project_intake.py",
+      "sha256": "d25dd78be00495c4ad05f3b4e9ac1af1ff3f1ec9962781baccb7bd20c1611b1e"
+    },
+    {
+      "path": "backend/nis/agent/orchestration/local_reasoner.py",
+      "sha256": "1585ccfbe17e7f17549510e15499ca440b25ca1ec67e9dbd7b01c0b909d74674"
+    }
+  ],
+  "observations": [
+    "Decoder helper obtains a fresh full public schema and deep-copies each schema node; public schema is not mutated.",
+    "Only positive maxItems/maxLength at schema nodes are removed; zero bounds, minima, enums, numeric constraints and closed objects remain.",
+    "Traversal follows schema-valued keywords; literal defaults/enums/annotations and arbitrary property names are not treated as schema keyword objects.",
+    "LocalReasoner uses the projection only as Ollama format; every raw model response immediately undergoes ReferenceDesignProposal.model_validate.",
+    "Profile validation and final all-profile validate_reference_design remain in the normal planning path."
+  ],
+  "conclusion": "No static finding in reviewed separation of decoder grammar and authoritative NIS validation. Requires owner regression tests, exact final hash match and real native original-file execution before release."
+}

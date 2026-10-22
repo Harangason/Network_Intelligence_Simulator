@@ -1,0 +1,102 @@
+{
+  "status": "DIAGNOSED_ACTIVE_REQUEST_UNCHANGED",
+  "worker_pid": 69896,
+  "task_id": 0,
+  "from_utc": "2026-10-21T13:40:36.3117845Z",
+  "to_utc": "2026-10-21T13:40:57.9455307Z",
+  "elapsed_seconds": 21.633746,
+  "decoded_before": 175,
+  "decoded_after": 218,
+  "tokens_per_second": 1.9876354284644002,
+  "prompt_tokens_processed": 29700,
+  "prompt_tokens_cache": 0,
+  "context_allocated": 114688,
+  "latest_saved_progress": {
+    "type": "PROGRESS",
+    "text": "Lokaler Qwen plant Referenzprofil 1 von 1: Funktionsbedingte physische Hardware.",
+    "status": "RUNNING",
+    "metadata": {
+      "source": "document_reference_design",
+      "completed_calls": 22,
+      "canonical_writes": false,
+      "inventory_target": null,
+      "draft_inventory_by_kind": {
+        "CONTROLLER": 5,
+        "GATEWAY": 0,
+        "SENSOR": 12,
+        "ACTUATOR": 3,
+        "PHYSICAL_CONTEXT": 0
+      },
+      "derivation_fact_ids": [
+        "F68996ac67aa7",
+        "F48364d213b20",
+        "Fbba97782262e",
+        "F2fba63f852c7"
+      ]
+    }
+  },
+  "findings": [
+    {
+      "certainty": "OBSERVED",
+      "finding": "Same worker and task produced additional output tokens. Not stalled during the measured interval."
+    },
+    {
+      "certainty": "SOURCE_CONFIRMED",
+      "finding": "Each inventory answer makes one identity decision. Each call serializes complete original_source, visible original_facts, reference_sources, registered_catalogs and current_candidate."
+    },
+    {
+      "certainty": "OBSERVED",
+      "finding": "Current fresh worker has zero prompt-token cache and processed approximately 29700 input tokens before decoding."
+    },
+    {
+      "certainty": "SOURCE_CONFIRMED",
+      "finding": "Per-call context allocation is calculated from complete UTF-8 message byte length plus 8192 output and 2048 framing, rounded by 4096, capped at unchanged 131072. Growing messages can change the requested context."
+    },
+    {
+      "certainty": "OBSERVED",
+      "finding": "Current worker context114688 differs from earlier observed90112; current worker started13:36:32UTC. No worker restart was performed by this chat."
+    },
+    {
+      "certainty": "INFERENCE_NOT_YET_PROVEN",
+      "finding": "Context-size changes may cause expensive worker reloads and loss of prefix cache; live provider reload cause is not yet proven. Old default server.log dated19October cannot establish current cause."
+    },
+    {
+      "certainty": "SOURCE_CONFIRMED",
+      "finding": "Progress text only names the common stage; completed_calls and fact IDs are metadata, so unchanged phase wording conceals actual progress."
+    },
+    {
+      "certainty": "OBSERVED",
+      "finding": "Later same worker60900/task218 reused30135 cached tokens, processed54 new prompt tokens. Prefix caching DOES work when the worker/context/prefix is reusable. Zero cache in earlier fresh workers must not be generalized to every call."
+    }
+  ],
+  "repair_plan_after_actual_terminal": [
+    "Preserve all original facts, one identity per response, full continuation, strict gates, model and unchanged context/output/timeout limits.",
+    "Record actual per-call load_duration, prompt_eval_duration, eval_duration and selected context; emit completed call and scoped work progress in visible status.",
+    "Measure exact reload/cache cause before changing provider scheduling; prefer lossless stable-prefix/request reuse in the existing planner over source truncation or increased budgets.",
+    "Bundle the separately reported profile/classification repair before a new application image; perform RED/GREEN and relevant isolated regressions.",
+    "Continue both complete originals and exact-image release/deployment only after actual acceptance."
+  ],
+  "no_inference_started": true,
+  "no_request_cancelled": true,
+  "application_source_changed": false,
+  "tests_or_builds_started": false,
+  "evidence": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261021\\inventory-binding-cardinality-repair\\progress-decoder-repair\\worker-latency-check-20261021T133738Z\\sample0.json",
+      "sha256": "b9ca3cb305a8edcf8c74fc69bf9500f0f2e580e2ff9f819bf47b4c13b619ad37"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261021\\inventory-binding-cardinality-repair\\progress-decoder-repair\\worker-latency-check-20261021T133738Z\\sample1.json",
+      "sha256": "873fa327279d567c71c3beac0edf906f34631959f3386126e098e7e69869e9ab"
+    }
+  ],
+  "later_cache_evidence": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261021\\inventory-binding-cardinality-repair\\progress-decoder-repair\\worker-latency-check-20261021T133738Z\\later-cache-sample.json",
+    "sha256": "ef9d74d6323ffadeeb17b4c55fb301e1ffe28d9c51b8209797c20d7478e2261b",
+    "at_utc": "2026-10-21T13:54:59.1968965Z",
+    "worker_pid": 60900,
+    "task_id": 218,
+    "cached_tokens": 30135,
+    "new_prompt_tokens_processed": 54
+  }
+}

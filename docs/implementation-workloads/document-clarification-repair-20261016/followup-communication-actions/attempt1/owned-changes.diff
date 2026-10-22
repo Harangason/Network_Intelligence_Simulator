@@ -1,0 +1,83 @@
+--- before/backend/nis/agent/orchestration/project_intake.py
++++ after/backend/nis/agent/orchestration/project_intake.py
+@@ -12,7 +12,13 @@
+ 
+ _DOCUMENT_CONTROLLER_LABEL = r'(?:Controller|Computer|ECU|Steuergerät|Steuergeraet|Rechner|PLC|SPS|Gateway)'
+ _DOCUMENT_TRANSPORT_QUALIFIER = r'\s*[- ]?(?:ähnlich\w*|aehnlich\w*|like|artig\w*|optional\w*|möglich\w*|moeglich\w*)\b'
+-_DOCUMENT_ACTION = r'\b(?:erkennen|behandeln|verarbeitet|verarbeiten|steuert|steuern|erfasst|erfassen|überwachen|überwacht|bereitstellen|bereitstellt|protokollieren|sicherstellen|verwalten|detects?|process(?:es)?|controls?|monitors?|provides?)\b'
++_DOCUMENT_ACTION = (
++    r'\b(?:erkennen|behandeln|verarbeitet|verarbeiten|steuert|steuern|erfasst|erfassen|'
++    r'überwachen|überwacht|bereitstellen|bereitstellt|protokollieren|sicherstellen|verwalten|'
++    r'kommunizier(?:t|en)|sendet|senden|empfängt|empfaengt|empfangen|'
++    r'überträgt|uebertraegt|übertragen|uebertragen|'
++    r'detects?|process(?:es)?|controls?|monitors?|provides?|communicates?|sends?|receives?|transmits?)\b'
++)
+ 
+ 
+ class DocumentComponent(BaseModel):
+--- before/backend/tests/test_qwen_document_intake.py
++++ after/backend/tests/test_qwen_document_intake.py
+@@ -54,6 +54,63 @@
+ def test_generic_or_alternative_hardware_is_not_an_installed_instance(label, role):
+     from backend.nis.agent.orchestration.project_intake import document_component_policy
+     assert document_component_policy(label) == {'kind': 'CATEGORY', 'role': role, 'quantity': None}
++
++
++@pytest.mark.parametrize('source', [
++    'mit externen Systemen kommunizieren (Backend, OTA\u2011Server, Diagnosegeräte).',
++    'Der Roboter kommuniziert mit dem Fleet-Server.',
++    'mit der Leitwarte kommunizieren (Leitserver, SPS)',
++    'Batteriedaten an den Gebäudecontroller senden.',
++    'Der Sensor sendet Messwerte an den Controller.',
++    'Telemetrie von der Drohnensteuerung empfangen.',
++    'Der Controller empfängt Stellbefehle vom Leitsystem.',
++    'Der Controller empfaengt Stellbefehle vom Leitsystem.',
++    'Roboterdaten an den Fleet-Server übertragen.',
++    'Der Gateway überträgt Kameradaten an den Rechner.',
++    'Roboterdaten an den Fleet-Server uebertragen.',
++    'Der Gateway uebertraegt Kameradaten an den Rechner.',
++    'communicate with a backend server.',
++    'The robot communicates with the gateway.',
++    'transmit sensor readings to the controller.',
++    'The gateway transmits actuator data to the server.',
++    'The controller receives commands from the server.',
++    'The robot sends actuator commands to the motor.',
++])
++def test_communication_actions_do_not_declare_hardware(source):
++    from backend.nis.agent.orchestration.project_intake import document_component_policy
++    assert document_component_policy(source) == {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}
++
++
++@pytest.mark.parametrize('source,role', [
++    ('Backend-Server', 'CONTROLLER'),
++    ('OTA-Server', 'CONTROLLER'),
++    ('Kommunikationscontroller', 'CONTROLLER'),
++    ('Transmit-Controller', 'CONTROLLER'),
++    ('Empfangscontroller', 'CONTROLLER'),
++    ('kommunizierendes Gateway', 'GATEWAY'),
++])
++def test_communication_hardware_nouns_keep_their_physical_role(source, role):
++    from backend.nis.agent.orchestration.project_intake import document_component_policy
++    assert document_component_policy(source) == {'kind': 'CATEGORY', 'role': role, 'quantity': None}
++
++
++def test_communication_action_hardware_claim_is_rejected_before_handoff():
++    source = 'mit externen Systemen kommunizieren (Backend, OTA\u2011Server, Diagnosegeräte).'
++    claim = {'name': 'mit externen Systemen kommunizieren', 'source_quote': source,
++             'kind': 'CATEGORY', 'role': 'CONTROLLER', 'quantity': None}
++    proposal = {**interpretation(), 'components': [claim], 'technologies': []}
++    with pytest.raises(ValueError):
++        validate_document_interpretation(proposal, source)
++    claim.update(kind='FUNCTION', role='OTHER')
++    result = validate_document_interpretation(proposal, source)
++    assert result['components'][0]['kind'] == 'FUNCTION'
++    assert result['components'][0]['source_quote'] == source
++
++
++def test_communication_requirement_keeps_requirement_precedence():
++    from backend.nis.agent.orchestration.project_intake import document_component_policy
++    source = 'REQ-COM-01: Das System muss mit dem Backend-Server kommunizieren.'
++    assert document_component_policy(source) == {'kind': 'REQUIREMENT', 'role': 'OTHER', 'quantity': None}
+ 
+ 
+ def test_processing_and_all_named_function_groups_are_preserved():

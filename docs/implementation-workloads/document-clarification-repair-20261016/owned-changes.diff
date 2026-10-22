@@ -1,0 +1,1141 @@
+--- before/backend/nis/agent/orchestration/project_intake.py
++++ after/backend/nis/agent/orchestration/project_intake.py
+@@ -10,6 +10,7 @@
+ 
+ _DOCUMENT_CONTROLLER_LABEL = r'(?:Controller|Computer|ECU|Steuergerät|Steuergeraet|Rechner|PLC|SPS|Gateway)'
+ _DOCUMENT_TRANSPORT_QUALIFIER = r'\s*[- ]?(?:ähnlich\w*|aehnlich\w*|like|artig\w*|optional\w*|möglich\w*|moeglich\w*)\b'
++_DOCUMENT_ACTION = r'\b(?:erkennen|behandeln|verarbeitet|verarbeiten|steuert|steuern|erfasst|erfassen|überwachen|überwacht|bereitstellen|bereitstellt|protokollieren|sicherstellen|verwalten|detects?|process(?:es)?|controls?|monitors?|provides?)\b'
+ 
+ 
+ class DocumentComponent(BaseModel):
+@@ -196,9 +197,16 @@
+     """Source constraints for a claim, independent of industry or filename."""
+     from backend.nis.agent.tools.inventory_quantities import quantities
+     text = text.translate(str.maketrans({char: '-' for char in '\u2010\u2011\u2012\u2013\u2014\u2212'}))
+-    if re.search(r'^\s*(?:[\w-]*REQ[-_]|Anforderungen\s*:|Requirements\s*:)|\b(?:muss|müssen|must|shall)\b', text, re.I):
++    if re.search(r'^\s*(?:[\w-]*REQ[-_]|Anforderungen\s*:|Requirements\s*:)|\b(?:muss|müssen|must|shall|soll|sollen|should)\b', text, re.I):
+         return {'kind': 'REQUIREMENT', 'role': 'OTHER', 'quantity': None}
+     if re.search(r'\b(?:Funktionen?|Functions?|Aufgaben|Responsibilities)\s*:|software|algorithm|logik|processing|fusion|regelung|planung|kontrolle|zeitprogramme|schnittstell|interface|fronthaul|backhaul', text, re.I):
++        return {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}
++    # Actions describe behavior even when their objects contain hardware words.
++    # Apply before lexical device detection, without treating noun declarations
++    # such as "Motorcontroller (MC)" as capabilities.
++    if not any(quantities(text).values()) and not document_device_aliases(text) and re.search(_DOCUMENT_ACTION, text, re.I):
++        return {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}
++    if re.search(r'\b(?:Sensorlinks?|sensor links?|Punkt-zu-Punkt-Links|point-to-point links?)\b', text, re.I):
+         return {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}
+     role = None
+     if re.search(r'[\w-]*gateway\b', text, re.I):
+@@ -238,6 +246,8 @@
+     function_section = None
+     first_function_body = False
+     excluded_section = None
++    requirement_section = None
++    requirement_lead = False
+     context_rows = [{**row, 'source_ref': 'CTX-' + row['source_ref']} for row in document_source_references(scope_prefix)]
+     for row in [*context_rows, *rows]:
+         text = row['text'].strip()
+@@ -245,6 +255,21 @@
+         normative_row = row_policy and row_policy['kind'] == 'REQUIREMENT'
+         heading = re.match(r'^(\d+(?:\.\d+)*)[.)]?\s+(.+)', text)
+         structural = heading[2] if heading else text
++        requirement_header = re.fullmatch(r'(?:Anforderungen|Requirements)\s*:?\s*', structural, re.I)
++        if requirement_header:
++            requirement_section = heading[1] if heading else ''
++            requirement_lead = False
++        elif heading and (requirement_section is not None or requirement_lead) and (not requirement_section or not heading[1].startswith(requirement_section + '.')):
++            requirement_section = None
++            requirement_lead = False
++        elif re.fullmatch(r'(?:Hardware|Architektur|Architecture|Interfaces|Schnittstellen|Aufgaben|Responsibilities|Funktionen|Functions)\s*:', structural, re.I):
++            requirement_section = None
++            requirement_lead = False
++        if re.fullmatch(r'(?:Das System|The system)\s+(?:muss|must|shall|soll|should)\s*:?\s*', text, re.I):
++            requirement_lead = True
++        if (requirement_section is not None or requirement_lead) and not requirement_header:
++            row_policy = {'kind': 'REQUIREMENT', 'role': 'OTHER', 'quantity': None}
++            normative_row = True
+         if re.match(r'^(?:Testfälle|Test cases|Erweiterungen|Erweiterungsmöglichkeiten|Extensions|Software[- ]?Schnittstellen|Software interfaces|ROS2 Topics|Services)\b', structural, re.I):
+             excluded_section = heading[1] if heading else ''
+         elif heading and excluded_section is not None and (not excluded_section or not heading[1].startswith(excluded_section + '.')):
+@@ -284,7 +309,9 @@
+                 pass
+             else:
+                 continue  # "CAN-Bus für Motoren" declares communication, not another motor.
+-        if heading and function_section is None and document_component_policy(text) is None:
++        if requirement_header:
++            continue
++        if heading and not normative_row and function_section is None and (document_component_policy(text) is None or re.search(r'(?:design|architecture|architektur|übersicht|overview)\s*$', structural, re.I)):
+             continue
+         if re.search(r'→|\b(?:angebunden|angeschlossen|verbunden)\b', text, re.I) and function_section is None:
+             continue  # Connection statements are technology evidence, not additional hardware declarations.
+@@ -302,11 +329,12 @@
+         mixed_hardware = len({p['role'] for p in policies if p and p['kind'] in {'CATEGORY', 'INSTANCE'}}) > 1
+         split = len(clauses) > 1 and (prefix or (mixed_hardware and not re.search(r'Funktion|Function|Anforderung|REQ|Testf', text, re.I)))
+         for index, clause in enumerate(clauses if split else [text]):
+-            policy = document_component_policy(clause)
++            policy = row_policy if normative_row else document_component_policy(clause)
+             if function_section is not None and not (policy and policy['kind'] == 'REQUIREMENT'):
+                 policy = {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}
+             required = bool(split or in_functions or required_body or re.match(r'^(?:Funktionen?|Functions?)\s*:', text, re.I)
+-                            or (policy and (policy['kind'] in {'CATEGORY', 'INSTANCE', 'REQUIREMENT'})))
++                            or (policy and policy['kind'] in {'CATEGORY', 'INSTANCE', 'REQUIREMENT'})
++                            or (policy and policy['kind'] == 'FUNCTION' and re.search(_DOCUMENT_ACTION, clause, re.I)))
+             if function_section is not None and not function_header:
+                 required = True
+             transport_controller = re.fullmatch(r'([\w-]+)-Controller', clause, re.I)
+@@ -406,6 +434,7 @@
+     result = {}
+     in_section = False
+     ignored = False
++    aliases = {name.casefold() for name in document_device_aliases(scope_prefix + ''.join(row['text'] for row in rows))}
+     context_rows = [{**row, 'source_ref': 'CTX-' + row['source_ref']} for row in document_source_references(scope_prefix)]
+     for row in [*context_rows, *rows]:
+         text = row['text'].strip()
+@@ -438,6 +467,16 @@
+                 content = assignment[1] if assignment else text
+         if not content:
+             continue
++        # A functional partner ("CDC (Lenk-/Bremsanforderungen)") is not a
++        # physical interface. Keep ADC usable when explicitly named as a port.
++        partner = re.fullmatch(r'([A-Z][A-Z0-9_-]{1,15})\s*\(([^)]+)\)\s*\.?', content)
++        if partner and partner[1].casefold() in aliases:
++            continue
++        links = re.fullmatch(r'(?:Direkte?\s+|Direct\s+)?(?:Sensorlinks?|sensor links?|Anschlüsse|Interfaces)\s*\(([^)]+)\)\s*\.?', content, re.I)
++        if links:
++            content = links[1]
++        if document_qualified_transports(content, profiles):
++            content = re.sub(_DOCUMENT_TRANSPORT_QUALIFIER, '', content, flags=re.I)
+         protected = set()
+         for profile in candidates:
+             for alias in profile.get('aliases', []):
+@@ -451,12 +490,18 @@
+         pieces.append(content[start:])
+         for piece in pieces:
+             piece = piece.strip().rstrip('.')
+-            if not piece or any(document_registered_transport_citation(p['id'], piece, profiles=profiles) for p in candidates):
++            if not piece or any(document_registered_transport_citation(p['id'], piece, profiles=profiles) for p in profiles):
+                 continue
+             match = re.match(r'[^\W\d][\w\u2010\u2011\u2012\u2013\u2014\u2212-]*', piece)
+             if not match:
+                 continue
+             name = match.group()
++            # Unknown technology labels may have descriptive suffixes, but
++            # ordinary connection prose does not introduce a new protocol.
++            if name.casefold() in aliases or re.match(r'^(?:Verbindung(?:en)?|connections?)\s+(?:zum|zur|zu|mit|to|with)\b', piece, re.I):
++                continue
++            if re.fullmatch(r'[\w\u2010\u2011\u2012\u2013\u2014\u2212-]*(?:Signale|Nachrichten|Signals|Messages)\s*(?:\([^)]*\))?', piece, re.I):
++                continue
+             if len(name) > 80 or row['source_ref'].startswith('CTX-'):
+                 continue
+             result.setdefault(name, set()).add(row['source_ref'])
+--- before/backend/nis/communication/registry.py
++++ after/backend/nis/communication/registry.py
+@@ -18,7 +18,8 @@
+ 
+ 
+ def _identity_token(value: Any) -> str:
+-    token = str(value or "custom_protocol").strip().lower().replace("-", "_").replace("/", "_").replace(" ", "_")
++    value = str(value or "custom_protocol").translate(str.maketrans({char: "-" for char in "\u2010\u2011\u2012\u2013\u2014\u2212"}))
++    token = value.strip().lower().replace("-", "_").replace("/", "_").replace(" ", "_")
+     while "__" in token:
+         token = token.replace("__", "_")
+     return token
+--- before/backend/tests/test_qwen_document_intake.py
++++ after/backend/tests/test_qwen_document_intake.py
+@@ -1018,3 +1018,76 @@
+         assert (await client.call('calculate_message_size', {'payload_bytes': 1})).success
+     asyncio.run(run())
+     assert observed == [('interpret_project_document', {'read_timeout_seconds': 9600}), ('calculate_message_size', {})]
++
++
++
++@pytest.mark.parametrize('statement', [
++    'Sensor- und Aktorfehler erkennen und behandeln.',
++    'Das System verarbeitet kontinuierlich Sensordaten und steuert Aktuatoren.',
++    'Der Gebäuderegler überwacht die Sensoren und steuert Aktoren.',
++    'The robot processes sensor readings and controls actuators.',
++])
++def test_action_statements_do_not_declare_installed_device_categories(statement):
++    from backend.nis.agent.orchestration.project_intake import document_component_policy
++    assert document_component_policy(statement) == {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}
++
++
++def test_numbered_architecture_headings_do_not_become_controller_inventory():
++    from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
++    units = document_component_sources(document_source_references('2. Domain-Controller-Design\nController (PDC)'))
++    assert len(units) == 1
++    assert units[0]['policy'] == {'kind': 'INSTANCE', 'role': 'CONTROLLER', 'quantity': 1}
++
++
++def test_normative_list_scope_preserves_unnumbered_requirements_across_windows():
++    from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
++    prefix = '5. Anforderungen\nDas System muss\n'
++    source = '\nEnergieversorgung für alle Subsysteme sicherstellen.\nSystemzustände überwachen und protokollieren.\n6. Hardware\nRaumcontroller'
++    units = document_component_sources(document_source_references(source), scope_prefix=prefix)
++    requirements = [unit for unit in units if unit['policy'] and unit['policy']['kind'] == 'REQUIREMENT']
++    assert requirements and all(unit['required'] for unit in requirements)
++    assert all(any(line in unit['text'] for unit in requirements) for line in source.splitlines()[1:3])
++    assert units[-1]['policy']['kind'] == 'CATEGORY'
++    assert units[-1]['policy']['role'] == 'CONTROLLER'
++
++
++def test_standalone_normative_lead_ends_at_a_new_hardware_section():
++    from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
++    units = document_component_sources(document_source_references('Das System muss\nSystemzustände überwachen.\n2. Hardware\nRaumcontroller'))
++    assert units[0]['policy']['kind'] == 'REQUIREMENT'
++    assert units[-1]['policy'] == {'kind': 'CATEGORY', 'role': 'CONTROLLER', 'quantity': None}
++
++
++@pytest.mark.parametrize('statement', [
++    'NIS soll die Sensoren und Aktoren mit dem Controller fachlich verbinden.',
++    'Der Gebäuderegler soll Sensordaten auswerten.',
++    'Die Controller sollen die Aktoren steuern.',
++    'The robot should process sensor data and control actuators.',
++])
++def test_soft_normative_statements_are_requirements_not_additional_hardware(statement):
++    from backend.nis.agent.orchestration.project_intake import document_component_policy
++    assert document_component_policy(statement) == {'kind': 'REQUIREMENT', 'role': 'OTHER', 'quantity': None}
++
++
++@pytest.mark.parametrize('lead', ['Das System soll', 'The system should'])
++def test_soft_normative_list_lead_preserves_scoped_clauses(lead):
++    from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
++    units = document_component_sources(document_source_references(f'{lead}\nSensoren überwachen.\n2. Hardware\nRaumcontroller'))
++    assert units[0]['policy']['kind'] == 'REQUIREMENT'
++    assert units[-1]['policy']['kind'] == 'CATEGORY'
++
++
++def test_functional_partner_aliases_and_direct_sensor_links_are_not_false_protocols():
++    from backend.nis.agent.orchestration.project_intake import document_declared_unknown_transports, document_source_references
++    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
++    source = 'Chassis Controller (CDC)\nSchnittstellen:\nCDC (Lenk-/Bremsanforderungen)\nDirekte Sensorlinks (GMSL, FPD-Link, GigE)\nEthernet möglich'
++    unknown = document_declared_unknown_transports(document_source_references(source), DEFAULT_TECHNOLOGY_REGISTRY.profiles())
++    assert set(unknown) == {'GMSL', 'FPD-Link', 'GigE'}
++
++
++def test_unicode_transport_spelling_has_one_registry_identity_and_merged_fact():
++    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
++    from backend.nis.agent.orchestration.project_intake import compose_document_proposal
++    assert {DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(name) for name in ['CAN-FD', 'CAN‑FD', 'can_fd']} == {'can_fd'}
++    parts = [{'components': [], 'technologies': [{'name': name, 'kind': 'TRANSPORT', 'source_quote': name}]} for name in ['CAN‑FD', 'can_fd']]
++    assert len(compose_document_proposal(parts)['technologies']) == 1
+--- before/frontend/e2e/document-intake.spec.ts
++++ after/frontend/e2e/document-intake.spec.ts
+@@ -12,11 +12,29 @@
+   await expect(dialog.getByText(/vollständig gelesen \(19\.088 Zeichen\)/)).toBeVisible();
+   await dialog.getByRole('button', { name: '4', exact: true }).click();
+   await expect(dialog.getByRole('heading', { name: 'Geräteumfang aus dem Dokument noch offen' })).toBeVisible();
+-  await expect(dialog.getByText(/Sensorik \(Radar, Kamera, Lidar, Ultraschall, IMU, Raddrehzahl\)/)).toBeVisible();
++  await expect(dialog.getByRole('spinbutton', { name: 'Anzahl Kamera', exact: true })).toHaveValue('');
++  await expect(dialog.getByRole('spinbutton', { name: 'Anzahl IMU', exact: true })).toHaveValue('');
+   await expect(dialog.getByRole('spinbutton', { name: 'Controller: verbindliche Anzahl', exact: true })).toHaveValue('5');
+-  await expect(dialog.getByText(/Aktorik \(Bremsaktuator, Lenkaktuator, Antriebsaktuator\)/)).toBeVisible();
++  await expect(dialog.getByRole('spinbutton', { name: 'Anzahl Bremsaktuator', exact: true })).toHaveValue('');
+   await expect(dialog.getByRole('spinbutton', { name: 'Aktoren: verbindliche Anzahl', exact: true })).toHaveValue('0');
+   await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+   await expect(dialog.getByRole('table', { name: 'Kommunikationssysteme prüfen' })).not.toContainText('embedded_systems · adc');
+   await expect(dialog).not.toContainText('degradieren /');
+ });
++
++test('document scope answers enter inventory without hiding unanswered sensor types @parser', async ({ page }) => {
++  await page.goto(`/studio/engineering?assistant=project&project=nis-e2e-clarification-${randomUUID()}`);
++  const dialog = page.getByRole('dialog', { name: 'Engineering-Auftrag erstellen' });
++  await dialog.locator('#engineering-project-name').fill('Dokument-Rückfragen');
++  await dialog.locator('fieldset.agent-project-name-step input[type=file]').setInputFiles(
++    fileURLToPath(new URL('./fixtures/document-intake-vehicle.txt', import.meta.url)));
++  await dialog.getByRole('button', { name: '4', exact: true }).click();
++  await dialog.getByRole('spinbutton', { name: 'Anzahl Kamera', exact: true }).fill('2');
++  await dialog.getByRole('checkbox', { name: /Angaben sind ein Mindestumfang/ }).check();
++  await dialog.getByRole('button', { name: 'Geprüfte Dokumentangaben übernehmen', exact: true }).click();
++  await expect(dialog.getByRole('spinbutton', { name: 'Sensoren: verbindliche Anzahl', exact: true })).toHaveValue('2');
++  await expect(dialog.getByRole('alert', { name: 'Offene Gerätegruppen' })).toContainText('IMU');
++  await expect(dialog.getByRole('alert', { name: 'Offene Gerätegruppen' })).toContainText('Radar');
++  await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
++  await expect(dialog.getByRole('spinbutton', { name: 'Anzahl Kamera', exact: true })).toHaveValue('2');
++});
+--- before/frontend/src/features/agent/lib/document-clarification.ts
++++ after/frontend/src/features/agent/lib/document-clarification.ts
+@@ -0,0 +1,131 @@
++import type { DocumentIntakeProposal } from './engineering-agent.ts';
++
++type DeviceRole = 'CONTROLLER' | 'GATEWAY' | 'SENSOR' | 'ACTUATOR';
++export type DocumentDeviceQuestion = { id: string; label: string; role: DeviceRole; source_quote: string; covered_by?: string[] };
++export type ReviewedDocumentEquipment = {
++  source_sha256?: string;
++  questions: DocumentDeviceQuestion[];
++  devices: { name: string; role: DeviceRole; quantity: number; source_quote: string; minimum: boolean }[];
++  answers: (DocumentDeviceQuestion & { quantity: number; minimum: boolean; coverage_confirmed?: boolean })[];
++};
++
++const roles = new Set(['CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR']);
++export const DOCUMENT_EQUIPMENT_MARKER = '- Dokument-Geräte: ';
++
++/** Review selections do not change the original document submitted to Qwen. */
++export function documentReviewSource(source: string) {
++  return source.replace(/^- (?:Sensor-Messgrößen|Aktor-Befehle|Geräteanschlüsse|Gerätezuordnungen|Geräte-Spezifikationen|Dokument-Geräte):[^\r\n]*(?:\r?\n|$)/gm, '').trim();
++}
++
++/** Strip wizard selections only from the editable description, never files. */
++export function documentRequestSource(description: string, attachments: string[]) {
++  return `${documentReviewSource(description)}\n${attachments.join('\n')}`;
++}
++
++export function documentDeviceQuestions(source: string, proposal?: DocumentIntakeProposal | null): DocumentDeviceQuestion[] {
++  const result: DocumentDeviceQuestion[] = [];
++  const add = (label: string, role: DeviceRole, quote: string) => {
++    label = label.trim();
++    if (!label || !source.includes(quote)) return;
++    const id = `${role}:${quote}:${label}`;
++    if (!result.some(item => item.id === id)) result.push({ id, label, role, source_quote: quote });
++  };
++  for (const line of source.split(/\r?\n/)) {
++    const group = line.match(/^\s*(?:[-*]\s*)?(Sensorik|Aktorik|Sensor\s+types|Sensortypen|Actuator\s+types|Aktortypen)\s*[:(]\s*(.+?)\)?\s*$/iu);
++    if (group) {
++      const role = /^sensor/iu.test(group[1]) ? 'SENSOR' : 'ACTUATOR';
++      // Only explicit list members; no one-of-each assumption and no catalog.
++      for (const label of group[2].split(/\s*[,;]\s*/)) add(label, role, line.trim());
++    }
++  }
++  for (const item of proposal?.interpretation.components ?? []) {
++    if (item.kind !== 'CATEGORY' || !roles.has(item.role)) continue;
++    if (result.some(question => item.source_quote.includes(question.source_quote))) continue;
++    add(item.name, item.role as DeviceRole, item.source_quote);
++  }
++  const instances = (proposal?.interpretation.components ?? []).filter(item => item.kind === 'INSTANCE' && roles.has(item.role));
++  const normalize = (label: string) => label.toLocaleLowerCase().replace(/[^\p{L}\d]/gu, '');
++  for (const question of result) {
++    const group = question.source_quote.match(/\(([^)]+)\)/)?.[1];
++    if (!group || /\bz\.\s*b\.|\be\.\s*g\.|\b(?:oder|or)\b/iu.test(group)) continue;
++    const references: string[] = [];
++    let complete = true;
++    for (const member of group.split(/\s*[,/]\s*/)) {
++      const token = normalize(member);
++      const named = instances.filter(item => normalize(item.name).includes(token));
++      if (named.length) { references.push(...named.map(item => item.name)); continue; }
++      // A class overview can refer to the separately enumerated sensor/actor
++      // questions; these are references, never additional anonymous devices.
++      const role = /^sensor(?:ecus?|controllers?|nodes?|knoten)$/u.test(token) ? 'SENSOR'
++        : /^(?:aktor|aktuator|actuator)(?:ecus?|controllers?|nodes?|knoten)$/u.test(token) ? 'ACTUATOR' : null;
++      const children = role ? result.filter(item => item.role === role && item.id !== question.id) : [];
++      if (children.length) references.push(...children.map(item => item.id));
++      else { complete = false; break; }
++    }
++    if (complete && references.length) question.covered_by = [...new Set(references)];
++  }
++  return result;
++}
++
++/** Build inventory only from reviewed, literal facts and explicit user answers. */
++export function reviewDocumentEquipment(source: string, proposal: DocumentIntakeProposal | null,
++  values: Record<string, string>, minimum: boolean): ReviewedDocumentEquipment {
++  const answers = documentDeviceQuestions(source, proposal).flatMap(question => {
++    const value = values[question.id];
++    if (value === undefined || value === '') return [];
++    if (value === 'covered' && question.covered_by?.length) return [{ ...question, quantity: 0, minimum: false, coverage_confirmed: true }];
++    if (!/^\d+$/.test(value) || Number(value) > 1000) throw new Error(`Ungültige Anzahl für ${question.label}.`);
++    return [{ ...question, quantity: Number(value), minimum }];
++  });
++  const devices = (proposal?.interpretation.components ?? []).flatMap(item => {
++    if (item.kind !== 'INSTANCE' || !roles.has(item.role)) return [];
++    if (!source.includes(item.source_quote) || !Number.isSafeInteger(item.quantity) || !item.quantity || item.quantity > 1000) {
++      throw new Error('Der Gerätebefund hat keine belegte Identität oder Anzahl.');
++    }
++    return [{ name: item.name, role: item.role as DeviceRole, quantity: item.quantity, source_quote: item.source_quote, minimum: false }];
++  });
++  return { source_sha256: proposal?.source_sha256, questions: documentDeviceQuestions(source, proposal), devices, answers };
++}
++
++/** The normal wizard prompt carries the same reviewed input to its shared parser. */
++export function readReviewedDocumentEquipment(source: string): ReviewedDocumentEquipment | undefined {
++  const raw = source.match(/^- Dokument-Geräte:\s*([^\r\n]+)$/m)?.[1];
++  if (!raw) return;
++  const value: unknown = JSON.parse(raw);
++  if (!value || typeof value !== 'object') throw new Error('Ungültige Dokument-Geräte.');
++  const equipment = value as ReviewedDocumentEquipment;
++  const original = source.replace(/^- Dokument-Geräte:[^\r\n]*$/gm, '');
++  if (!Array.isArray(equipment.devices) || !Array.isArray(equipment.answers) || !Array.isArray(equipment.questions)) throw new Error('Unvollständige Dokument-Geräte.');
++  for (const question of equipment.questions) {
++    if (!roles.has(question.role) || typeof question.source_quote !== 'string' || !question.source_quote
++      || !original.includes(question.source_quote) || typeof question.label !== 'string' || !question.label.trim()
++      || typeof question.id !== 'string' || question.id !== `${question.role}:${question.source_quote}:${question.label}`) {
++      throw new Error('Unbelegte Dokument-Rückfrage.');
++    }
++    if (question.covered_by !== undefined && (!Array.isArray(question.covered_by)
++      || question.covered_by.some(reference => typeof reference !== 'string' || !reference))) {
++      throw new Error('Ungültige Abdeckungsreferenzen der Gerätegruppe.');
++    }
++  }
++  for (const item of [...equipment.devices, ...equipment.answers]) {
++    if (!roles.has(item.role) || !Number.isSafeInteger(item.quantity) || item.quantity < 0 || item.quantity > 1000
++      || typeof item.source_quote !== 'string' || !item.source_quote || !original.includes(item.source_quote)
++      || typeof item.minimum !== 'boolean') throw new Error('Unbelegte Dokument-Geräte oder ungültige Rückfrageantwort.');
++    const label = 'name' in item ? item.name : item.label;
++    if (typeof label !== 'string' || !label.trim() || label.length > 120) throw new Error('Ungültiger Gerätename.');
++  }
++  for (const answer of equipment.answers) {
++    const question = equipment.questions.find(question => question.id === answer.id && question.label === answer.label
++      && question.role === answer.role && question.source_quote === answer.source_quote);
++    if (!question) {
++      throw new Error('Die Rückfrageantwort gehört nicht zur belegten Gerätegruppe.');
++    }
++    if (answer.coverage_confirmed && (!Array.isArray(answer.covered_by) || !answer.covered_by.length || answer.quantity !== 0
++      || JSON.stringify([...answer.covered_by].sort()) !== JSON.stringify([...(question.covered_by ?? [])].sort())
++      || !answer.covered_by.every(reference => equipment.devices.some(item => item.name === reference)
++        || equipment.questions.some(question => question.id === reference && question.id !== answer.id)))) {
++      throw new Error('Die Abdeckung der Gerätegruppe ist nicht belegt.');
++    }
++  }
++  return equipment;
++}
+--- before/frontend/src/features/agent/lib/engineering-specification.test.mjs
++++ after/frontend/src/features/agent/lib/engineering-specification.test.mjs
+@@ -1,3 +1,4 @@
++import { documentDeviceQuestions, reviewDocumentEquipment, documentReviewSource, documentRequestSource, readReviewedDocumentEquipment } from './document-clarification.ts';
+ import assert from "node:assert/strict";
+ test('device connection selection applies only to the named device', () => {
+   const task = '2 Aktoren für Ventile, 4 Sensoren für Temperaturen, und ein RaspberryPi';
+@@ -282,9 +283,10 @@
+   assert.equal(result.chains.some(chain => chain.hardware_name === 'degradieren'), false);
+   assert.equal(result.targetCounts.sensors, 0);
+   assert.equal(result.targetCounts.actuators, 0);
+-  assert.equal(result.unresolvedInventoryGroups.length, 2);
+-  assert.match(result.unresolvedInventoryGroups[0], /Radar.*Kamera.*Stückzahlen/);
+-  assert.match(result.unresolvedInventoryGroups[1], /Bremsaktuator.*Lenkaktuator.*Stückzahlen/);
++  assert.equal(result.unresolvedInventoryGroups.length, 9);
++  for (const member of ['Radar', 'Kamera', 'Lidar', 'Ultraschall', 'IMU', 'Raddrehzahl', 'Bremsaktuator', 'Lenkaktuator', 'Antriebsaktuator']) {
++    assert.ok(result.unresolvedInventoryGroups.some(finding => finding.includes(`(${member})`) && finding.includes('Stückzahl')));
++  }
+   assert.equal(result.communicationSystems.includes('ADC'), false);
+   assert.equal(result.communicationSystemCounts.ADC, undefined);
+   assert.equal(result.communicationSystemCounts.LIN, 1);
+@@ -1410,3 +1412,106 @@
+   assert.equal(new Set(packed.map(chain => chain.message_name)).size, 2);
+   assert.ok(packed.every(chain => chain.length_bits === 8 && chain.dlc === 1));
+ });
++
++
++test('document questions transfer each reviewed member, retaining partial gaps and minimum provenance', () => {
++  const source = 'Controller: PerceptionUnit\nSensorik (Kamera, IMU, Lidar)\nAktorik (Greifer, Antrieb)';
++  const questions = documentDeviceQuestions(source);
++  assert.equal(questions.length, 5);
++  const camera = questions.find(question => question.label === 'Kamera');
++  const equipment = reviewDocumentEquipment(source, null, { [camera.id]: '2' }, true);
++  const prompt = `${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`;
++  const spec = extractEngineeringSpecification(prompt);
++  assert.deepEqual(spec.chains.filter(chain => chain.device_type === 'SensorController').map(chain => chain.hardware_name), ['Kamera1', 'Kamera2']);
++  assert.equal(spec.unresolvedInventoryGroups.length, 4);
++  assert.ok(spec.unresolvedInventoryGroups.some(finding => finding.includes('IMU')));
++  assert.ok(spec.unresolvedInventoryGroups.some(finding => finding.includes('Lidar')));
++  assert.equal(readReviewedDocumentEquipment(prompt).answers[0].minimum, true);
++  assert.ok(spec.chains.filter(chain => chain.device_type === 'SensorController').every(chain => chain.configuration.document_equipment_evidence.minimum === true));
++  assert.ok(spec.chains.filter(chain => chain.device_type === 'SensorController').every(chain => chain.interface_type === 'Other'));
++  assert.equal(documentReviewSource(prompt), source);
++});
++
++test('native reviewed device facts enter the normal inventory without copying proposal prose', () => {
++  const source = 'Control Computer (CC)\nSensor types (Camera, IMU)\nFunction: Processing sensor data.';
++  const proposal = { source_sha256: 'a'.repeat(64), interpretation: { components: [
++    { name: 'Control Computer (CC)', kind: 'INSTANCE', role: 'CONTROLLER', quantity: 1, source_quote: 'Control Computer (CC)' },
++    { name: 'Processing sensor data', kind: 'FUNCTION', role: 'OTHER', quantity: null, source_quote: 'Function: Processing sensor data.' },
++  ] } };
++  const questions = documentDeviceQuestions(source, proposal);
++  const equipment = reviewDocumentEquipment(source, proposal, Object.fromEntries(questions.map(question => [question.id, '1'])), true);
++  const spec = extractEngineeringSpecification(`${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`);
++  assert.equal(new Set(spec.chains.filter(chain => isEngineeringControllerDevice(chain.device_type)).map(chain => chain.hardware_name)).size, 1);
++  assert.equal(spec.targetCounts.sensors, 2);
++  assert.equal(spec.unresolvedInventoryGroups.length, 0);
++  assert.ok(!spec.chains.some(chain => chain.hardware_name.includes('Processing')));
++});
++
++test('a different sensor never resolves a missing category and forged document citations fail', () => {
++  const source = 'Sensor: Temperature1\nSensorik (Kamera, IMU)';
++  assert.equal(extractEngineeringSpecification(source).unresolvedInventoryGroups.length, 2);
++  const equipment = reviewDocumentEquipment(source, null, {}, false);
++  equipment.answers.push({ ...equipment.questions[0], quantity: 1, minimum: false, source_quote: 'Erfundene Quelle' });
++  assert.throws(() => extractEngineeringSpecification(`${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`), /Unbelegte/);
++});
++
++test('wizard review selections never discard literal metadata-like lines from an original attachment', () => {
++  const attachment = 'Original\r\n- Geräteanschlüsse: {"Pumpe":"UART"}\r\n\r\n';
++  assert.equal(documentRequestSource('Aufgabe\n- Sensor-Messgrößen: {"S":"temperature"}', [attachment]), `Aufgabe\n${attachment}`);
++  assert.equal(documentRequestSource('Aufgabe\n- Sensor-Messgrößen: {"S":"voltage"}', [attachment]), `Aufgabe\n${attachment}`);
++});
++
++test('a reviewed overview references existing instances without duplicating controllers or masking child gaps', () => {
++  const source = 'Domain-Controller (Alpha, Beta)\nAlpha Controller (AC)\nBeta Controller (BC)\nSensorik (Kamera, IMU)';
++  const proposal = { source_sha256: 'a'.repeat(64), interpretation: { components: [
++    { name: 'Domain-Controller (Alpha, Beta)', kind: 'CATEGORY', role: 'CONTROLLER', quantity: null, source_quote: 'Domain-Controller (Alpha, Beta)' },
++    ...['Alpha Controller (AC)', 'Beta Controller (BC)'].map(name => ({ name, kind: 'INSTANCE', role: 'CONTROLLER', quantity: 1, source_quote: name })),
++  ] } };
++  const questions = documentDeviceQuestions(source, proposal);
++  const overview = questions.find(item => item.role === 'CONTROLLER');
++  assert.deepEqual(overview.covered_by, ['Alpha Controller (AC)', 'Beta Controller (BC)']);
++  const equipment = reviewDocumentEquipment(source, proposal, { [overview.id]: 'covered' }, false);
++  const spec = extractEngineeringSpecification(`${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`);
++  assert.equal(spec.targetCounts.ecus, 2);
++  assert.equal(spec.targetCounts.sensors, 0);
++  assert.equal(spec.unresolvedInventoryGroups.length, 2);
++});
++
++test('answered group members retain separate measurement meaning and literal source evidence', () => {
++  const source = 'Sensorik (Kamera, IMU, Lidar)\nAktorik (Bremsaktuator, Lenkaktuator)';
++  const equipment = reviewDocumentEquipment(source, null, Object.fromEntries(documentDeviceQuestions(source).map(item => [item.id, '1'])), true);
++  const spec = extractEngineeringSpecification(`${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`);
++  const measurements = Object.fromEntries(spec.chains.map(chain => [chain.hardware_name, chain.configuration.sensor_measurement]));
++  assert.equal(measurements.Kamera, 'image_frame');
++  assert.equal(measurements.IMU, 'inertial_vector');
++  assert.equal(measurements.Lidar, 'point_cloud');
++  assert.ok(spec.chains.every(chain => source.includes(chain.configuration.document_equipment_evidence.source_quote)));
++});
++
++test('responsibilities bind endpoints to uniquely scoped controllers across industries without first-owner fallback', () => {
++  for (const domain of ['automotive', 'building_automation', 'robotics_ros', 'custom']) {
++    const source = 'Controller: Alpha\nAufgaben:\nKamera auswerten\nSchnittstellen:\nUART\nController: Beta\nAufgaben:\nLenkung regeln\nSchnittstellen:\nCAN\nSensorik (Kamera)\nAktorik (Lenkaktuator)';
++    const equipment = reviewDocumentEquipment(source, null, Object.fromEntries(documentDeviceQuestions(source).map(item => [item.id, '1'])), true);
++    const spec = extractEngineeringSpecification(`${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`, {}, domain);
++    assert.equal(spec.chains.find(chain => chain.hardware_name === 'Kamera').configuration.functional_owner, 'Alpha');
++    assert.equal(spec.chains.find(chain => chain.hardware_name === 'Lenk').configuration.functional_owner, 'Beta');
++    assert.equal(spec.chains.find(chain => chain.hardware_name === 'Kamera').configuration.functional_owner_source, 'source_scoped_function');
++  }
++  const source = 'Controller: Alpha\nAufgaben:\nKamera auswerten\nSchnittstellen:\nUART\nController: Beta\nAufgaben:\nKamera auswerten\nSchnittstellen:\nCAN\nSensorik (Kamera)';
++  const equipment = reviewDocumentEquipment(source, null, Object.fromEntries(documentDeviceQuestions(source).map(item => [item.id, '1'])), true);
++  assert.equal(extractEngineeringSpecification(`${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`).chains.find(chain => chain.hardware_name === 'Kamera').configuration.functional_owner, undefined);
++});
++
++test('document controller aliases stay distinct from explicitly declared ADC ports in their own section', () => {
++  for (const hyphen of ['-', '\u2011', '\u2013']) {
++    const source = `ADAS Domain Controller (ADC)\nAufgaben:\nKamera auswerten\nSchnittstellen:\nEthernet\nAnforderungen:\nREQ${hyphen}ADC${hyphen}01 Der ADC MUSS Objekte erkennen.`;
++    const spec = extractEngineeringSpecification(source);
++    const controller = spec.chains.find(chain => chain.hardware_name === 'ADAS Domain');
++    assert.equal(controller.interface_type, 'Ethernet');
++    assert.ok(!extractCommunicationSystems(source).includes('ADC'));
++    assert.ok(!spec.communicationSystems.includes('ADC'));
++    const withPort = extractEngineeringSpecification(source.replace('Schnittstellen:\nEthernet', 'Schnittstellen:\nEthernet\nADC Anschluss'));
++    assert.ok(withPort.communicationSystems.includes('ADC'));
++    assert.deepEqual(withPort.chains.find(chain => chain.hardware_name === 'ADAS Domain').configuration.connection_candidates, ['Ethernet', 'ADC']);
++  }
++});
+--- before/frontend/src/features/agent/lib/engineering-specification.ts
++++ after/frontend/src/features/agent/lib/engineering-specification.ts
+@@ -1,3 +1,4 @@
++import { documentDeviceQuestions, readReviewedDocumentEquipment } from './document-clarification.ts';
+ import { industryTemplateLabel, industryTemplateProfile } from "./industry-templates/index.ts";
+ import { conciseGeneratedName } from "../../engineering/lib/engineering-names.ts";
+ import { automotiveFunctionOutputs } from "./industry-templates/automotive-functions.ts";
+@@ -1575,6 +1576,39 @@
+   return owners.length === 1 ? owners[0] : undefined;
+ }
+ 
++/** Responsibilities belong to their declared controller section, regardless
++ * of industry or controller name. Interfaces and requirements are separate. */
++function sourceScopedDuties(lines: string[], originalLines: string[]) {
++  let active = false;
++  const duties: Array<{ name: string; source_quote: string }> = [];
++  const sourceKey = (line: string) => line.trim().replace(/[\u2010\u2011\u2212]/g, '-').replace(/\u00ad/g, '');
++  for (const line of lines) {
++    const text = line.trim();
++    if (/^(?:Aufgaben|Tasks|Responsibilities|Funktionen|Functions)\s*:\s*$/iu.test(text)) { active = true; continue; }
++    if (/^(?:Schnittstellen|Interfaces|Anschlüsse|Anforderungen|Requirements|Plattform|Platform)\s*:\s*$/iu.test(text)) { active = false; continue; }
++    const explicit = text.match(/^(?:Funktion|Function)\s*:\s*(.+)$/iu);
++    if (!text || (!active && !explicit)) continue;
++    const name = (explicit?.[1] ?? text).replace(/^[-*]\s+/, '');
++    const original = originalLines.filter(candidate => sourceKey(candidate) === sourceKey(line));
++    if (name && name.length <= 120 && original.length) duties.push({ name, source_quote: original[0].trim() });
++  }
++  return duties;
++}
++
++function sourceScopedOwner(name: string, deviceType: string,
++  duties: Map<string, Array<{ name: string; source_quote: string }>>) {
++  const stem = normalized(normalizeHardwareName(name)).replace(/\d+$/, '').replace(/s$/, '');
++  const measurement = deviceType === 'SensorController' ? SENSOR_MEASUREMENTS.find(item => item.match.test(name)) : undefined;
++  const owners = [...duties].flatMap(([owner, functions]) => {
++    const matches = functions.filter(item => {
++      const words = normalized(item.name).split(/[^\p{L}\d]+/u);
++      return (stem.length >= 3 && words.some(word => word.startsWith(stem))) || measurement?.match.test(item.name);
++    });
++    return matches.length ? [{ owner, evidence: matches.map(item => item.source_quote) }] : [];
++  });
++  return owners.length === 1 ? owners[0] : undefined;
++}
++
+ function impliedHardwareNames(line: string, confirmedActuators?: number, specification = line) {
+   const key = normalized(line);
+   const names: string[] = [];
+@@ -1684,7 +1718,7 @@
+ }
+ 
+ function protocolFrom(text: string, fallback = 'CAN') {
+-  const key = normalized(text);
++  const key = normalized(withoutDeviceAliases(text));
+   if (/\blin\b/.test(key)) return "LIN";
+   if (key.includes("can fd") || key.includes("canfd")) return "CAN_FD";
+   if (key.includes("canopen")) return "CANopen";
+@@ -1718,9 +1752,13 @@
+ 
+ /** Explicitly declared device abbreviations are not transport tokens. */
+ function withoutDeviceAliases(text: string) {
++  // Mask identifiers before transport scanning for both original document
++  // punctuation and already normalized wizard text.
++  text = text.replace(/[\u2010\u2011\u2012\u2013\u2014\u2212]/g, '-');
+   const aliases = [...text.matchAll(/^\s*(?:#{1,6}\s*)?(?:\d+(?:\.\d+)*[.)]?\s+)?[^\r\n()]+\b(?:Controller|Computer|ECU|Gateway|Sensor)\s*\(([A-Z][A-Z\d_-]{1,15})\)\s*$/gm)]
+     .map(match => match[1]);
+   for (const alias of aliases) {
++    text = text.replace(new RegExp('\\bREQ[-_]' + alias + '[-_]\\d+\\b', 'g'), 'requirement_reference');
+     text = text.replace(new RegExp('\\b' + alias + '\\b(?=\\)\\s*$|[-_]\\d+\\s*:|\\s+(?:MUSS|MÜSSEN|must|shall)\\b|\\s*\\()', 'gm'), 'device_reference');
+   }
+   return text;
+@@ -2076,6 +2114,8 @@
+   domainOverride?: string,
+   completenessFirst = false,
+ ): ExtractedEngineeringSpecification {
++  const originalLines = text.split(/\r?\n/);
++  const documentEquipment = readReviewedDocumentEquipment(text);
+   text = withoutPlanningLimits(text).replace(/[\u2010\u2011\u2212]/g, '-').replace(/\u00ad/g, '');
+   const explicitMode = text.match(/^- Generierungsmodus:\s*(REAL_PROJECT|EXAMPLE_PROJECT)\s*$/mi)?.[1]?.toUpperCase();
+   const legacyConfirmed = !explicitMode && /per Wizard-Uebernehmen bestaetigt/.test(text);
+@@ -2083,7 +2123,7 @@
+   const measurements = sensorMeasurementSelections(text);
+   // Structured review selections are metadata, not natural-language hardware
+   // inventory. Their JSON numbers and role names must not create extra nodes.
+-  const lines = specificationBody(text).replace(/^- (?:Sensor-Messgrößen|Aktor-Befehle|Geräteanschlüsse|Gerätezuordnungen|Geräte-Spezifikationen):[^\r\n]*$/gm, '').split(/\r?\n/);
++  const lines = specificationBody(text).replace(/^- (?:Sensor-Messgrößen|Aktor-Befehle|Geräteanschlüsse|Gerätezuordnungen|Geräte-Spezifikationen|Dokument-Geräte):[^\r\n]*$/gm, '').split(/\r?\n/);
+   const confirmedCounts = { ...confirmedHardwareCounts(text), ...overrides };
+   const grouped = groupedHardwareNames(lines);
+   const groupedLineIndexes = new Set(grouped.map((item) => item.index));
+@@ -2098,7 +2138,7 @@
+     const candidates = [...names.map(name => ({ index, name })), ...declaredHardwareNames(line).map(item => ({ index, ...item })), ...singularControllers.map(item => ({ index, ...item }))];
+     return [...new Map(candidates.map(item => [normalized(normalizeHardwareName(item.name)), item])).values()];
+   }), ...grouped].sort((left, right) => left.index - right.index);
+-  const contexts = new Map<string, { name: string; lines: string[]; declaredType?: string; declaredInterface?: string }>();
++  const contexts = new Map<string, { name: string; lines: string[]; declaredType?: string; declaredInterface?: string; documentEvidence?: Record<string, unknown> }>();
+   occurrences.forEach((occurrence, occurrenceIndex) => {
+     const nextIndex = occurrences[occurrenceIndex + 1]?.index ?? lines.length;
+     const sectionBoundary = lines.findIndex((line, index) => index > occurrence.index && index < nextIndex
+@@ -2115,6 +2155,22 @@
+     existing.lines.push(...lines.slice(occurrence.index, Math.max(occurrence.index + 1, contextEnd)));
+     contexts.set(key, existing);
+   });
++
++  // One shared inventory path: native source facts and reviewed quantity
++  // answers feed the same contexts, ownership and connection gates as text.
++  for (const item of [...(documentEquipment?.devices ?? []), ...(documentEquipment?.answers ?? [])]) {
++    const baseName = ('name' in item ? item.name : item.label).replace(/\s*\([A-Z][A-Z0-9_-]{1,15}\)\s*$/, '');
++    for (let index = 0; index < item.quantity; index += 1) {
++      const name = item.quantity === 1 ? baseName : `${baseName}${index + 1}`;
++      const key = normalized(normalizeHardwareName(name));
++      const existing = contexts.get(key);
++      contexts.set(key, { name, lines: existing?.lines ?? [name],
++        documentEvidence: { source_sha256: documentEquipment?.source_sha256 ?? null, source_quote: item.source_quote,
++          evidence: 'name' in item ? 'reviewed_native_document_fact' : 'explicit_user_clarification', minimum: item.minimum,
++          quantity: item.quantity, device_role: item.role },
++        declaredType: ({ CONTROLLER: 'ECU', GATEWAY: 'Gateway', SENSOR: 'SensorController', ACTUATOR: 'ActuatorController' })[item.role] });
++    }
++  }
+ 
+   // Explicit choices can resolve count-only Sensor1… slots without inventing a function.
+   for (const name of Object.keys(measurements)) {
+@@ -2150,6 +2206,8 @@
+   }
+   const declaredControllers = [...contexts.values()].filter(entry =>
+     isEngineeringControllerDevice(entry.declaredType ?? deviceType(entry.name))).map(entry => normalizeHardwareName(entry.name));
++  const scopedDuties = new Map([...contexts.values()].filter(entry => isEngineeringControllerDevice(entry.declaredType ?? deviceType(entry.name)))
++    .map(entry => [normalizeHardwareName(entry.name), sourceScopedDuties(entry.lines, originalLines)]));
+   const recognizedChains = [...contexts.values()].map((entry, index): ExtractedEngineeringChain => {
+     const hardwareName = normalizeHardwareName(entry.name);
+     const context = [deviceSpecifications[hardwareName], ...entry.lines.map((line) => cleanLabel(line))].filter(Boolean).join("; ");
+@@ -2157,8 +2215,11 @@
+     const selectedOwner = deviceOwners[hardwareName.toLocaleLowerCase('de')];
+     const confirmedOwner = selectedOwner && declaredControllers.some(owner => normalized(owner) === normalized(selectedOwner))
+       ? declaredControllers.find(owner => normalized(owner) === normalized(selectedOwner)) : undefined;
+-    const functionalOwner = ['SensorController', 'ActuatorController'].includes(declaredType)
++    const textualOwner = ['SensorController', 'ActuatorController'].includes(declaredType)
+       ? confirmedOwner ?? explicitFunctionalOwner(entry.name, declaredControllers, lines.join('\n')) : undefined;
++    const scopedOwner = !textualOwner && ['SensorController', 'ActuatorController'].includes(declaredType)
++      ? sourceScopedOwner(entry.name, declaredType, scopedDuties) : undefined;
++    const functionalOwner = textualOwner ?? scopedOwner?.owner;
+     const countedTemperature = hardwareName.match(/^Temperatursensor(\d+)$/);
+     const explicitMeasurementId = Object.entries(measurements)
+       .find(([name]) => normalized(normalizeHardwareName(name)) === normalized(hardwareName))?.[1];
+@@ -2195,10 +2256,13 @@
+       || (legacyConfirmed && communicationSystems.length === 1);
+     const documentController = /\b(?:Controller|Computer|ECU)\s*\([A-Z][A-Z\d_-]{1,15}\)/.test(entry.lines[0] ?? '')
+       && isEngineeringControllerDevice(declaredType);
+-    const contextualSystems = extractCommunicationSystems(context).filter(system => !['SOME_IP', 'DDS', 'MQTT', 'OPCUA'].includes(system));
++    // Keep declaration boundaries: flattening the ADC controller declaration
++    // into prose makes its abbreviation look like an analog ADC connection.
++    const connectionContext = [deviceSpecifications[hardwareName], ...entry.lines].filter(Boolean).join('\n');
++    const contextualSystems = extractCommunicationSystems(connectionContext).filter(system => !['SOME_IP', 'DDS', 'MQTT', 'OPCUA'].includes(system));
+     const ambiguousDocumentConnection = documentController && contextualSystems.length > 1;
+     const contextualInterfaceType = entry.declaredInterface ?? (ambiguousDocumentConnection ? 'Other'
+-      : protocolFrom(context, mayUseProjectInterface ? interfaceType : "Other"));
++      : protocolFrom(connectionContext, mayUseProjectInterface ? interfaceType : "Other"));
+     const chainInterfaceType = explicitConnection || (contextualInterfaceType === "CAN" && /kamera|camera|radar|lidar|umfeld|objekt/i.test(`${hardwareName} ${context}`)
+       ? "Ethernet"
+       : contextualInterfaceType);
+@@ -2268,8 +2332,12 @@
+             semantic: { semantic_type: 'BOOLEAN', meaning: 'Sicherer Stopp angefordert' },
+             data: { enum_values: { RUN: 0, SAFE_STOP: 1 }, default_value: 'RUN' } },
+         } : {}),
++        ...(entry.documentEvidence ? { document_equipment_evidence: entry.documentEvidence } : {}),
+         ...(explicitConnection ? { connection_source: 'explicit_device_connection' } : {}),
+-        ...(functionalOwner ? { functional_owner: functionalOwner, functional_owner_source: 'explicit_user_statement' } : {}) },
++        ...(scopedDuties.get(hardwareName)?.length ? { source_scoped_functions: scopedDuties.get(hardwareName) } : {}),
++        ...(functionalOwner ? { functional_owner: functionalOwner,
++          functional_owner_source: textualOwner ? 'explicit_user_statement' : 'source_scoped_function',
++          ...(scopedOwner ? { functional_owner_evidence: scopedOwner.evidence } : {}) } : {}) },
+       domain,
+     };
+   });
+@@ -2297,12 +2365,18 @@
+     communicationSystemCounts,
+     networkArchitecture,
+     targetCounts: expanded.targets,
+-    unresolvedInventoryGroups: lines.flatMap(line => {
+-      const group = line.match(/^\s*(Sensorik|Aktorik|Sensor\s+types|Sensortypen|Actuator\s+types|Aktortypen)\s*[:(]\s*(.+?)\)?\s*$/iu);
+-      if (!group) return [];
+-      const sensorGroup = /^(?:Sensorik|Sensor\s+types|Sensortypen)$/iu.test(group[1]);
+-      if ((sensorGroup ? expanded.targets.sensors : expanded.targets.actuators) > 0) return [];
+-      return [`${sensorGroup ? 'Sensorik' : 'Aktorik'} (${group[2]}): Stückzahlen und konkrete Teilnehmer fehlen. Bitte ${sensorGroup ? 'Sensoren' : 'Aktoren'} in der Projektbeschreibung ergänzen und ${sensorGroup ? 'Messgrößen' : 'Stellbefehle'}, Anschlüsse sowie Zuordnungen prüfen.`];
++    unresolvedInventoryGroups: [...new Map([
++      ...documentDeviceQuestions(lines.join('\n')),
++      ...(documentEquipment?.questions ?? []),
++    ].map(question => [question.id, question])).values()].flatMap(question => {
++      const answer = documentEquipment?.answers.find(item => item.id === question.id);
++      if (answer && (!answer.coverage_confirmed || answer.covered_by?.every(reference =>
++        documentEquipment?.devices.some(item => item.name === reference)
++        || documentEquipment?.answers.some(item => item.id === reference && item.quantity > 0)))) return [];
++      const type = question.role === 'SENSOR' ? 'SensorController' : question.role === 'ACTUATOR' ? 'ActuatorController' : question.role === 'GATEWAY' ? 'Gateway' : 'ECU';
++      const label = normalized(question.label);
++      if (expanded.chains.some(chain => chain.device_type === type && normalized(chain.hardware_name).includes(label))) return [];
++      return [`${question.role === 'SENSOR' ? 'Sensorik' : question.role === 'ACTUATOR' ? 'Aktorik' : 'Gerätegruppe'} (${question.label}): Stückzahl und konkrete Teilnehmer fehlen. Bitte die gezielte Dokument-Rückfrage beantworten; Anschlüsse und Funktionszuordnungen bleiben getrennt zu prüfen.`];
+     }),
+   };
+ }
+--- before/frontend/src/features/agent/ui/agent-chat-core.tsx
++++ after/frontend/src/features/agent/ui/agent-chat-core.tsx
+@@ -1,4 +1,6 @@
+ "use client";
++
++import { DOCUMENT_EQUIPMENT_MARKER, documentDeviceQuestions, documentRequestSource, reviewDocumentEquipment, type ReviewedDocumentEquipment } from '@/features/agent/lib/document-clarification';
+ import type { AgentInput } from "@/features/agent/lib/agent-response";
+ import { readConversation, type ConversationSnapshot } from '@/features/agent/lib/conversation-client';
+ import { wizardContextForRequest, wizardConversationMatches, wizardQuestionFromConversation, wizardReceipt, wizardRequestRevision, wizardTargets, type WizardCommand } from '@/features/agent/lib/wizard-protocol';
+@@ -1173,8 +1175,25 @@
+     target: string;
+   }>(null);
+   const [activeEquipmentClusterId, setActiveEquipmentClusterId] = useState("");
++  const [projectId] = useState(() => readActiveProjectId());
+   const [acceptedDomainMismatch, setAcceptedDomainMismatch] = useState("");
+-  const taskSource = `${taskText}\n${taskFiles.map(formatTaskAttachment).join("\n")}`;
++  const [reviewedDocument, setReviewedDocument] = useState<{ source: string; project: string; equipment: ReviewedDocumentEquipment } | null>(null);
++  const [documentAnswers, setDocumentAnswers] = useState<{ source: string; project: string; values: Record<string, string> }>({ source: '', project: '', values: {} });
++  const [documentMinimum, setDocumentMinimum] = useState(false);
++  const originalTaskSource = `${taskText}\n${taskFiles.map(formatTaskAttachment).join("\n")}`;
++  const documentSourceIdentity = documentRequestSource(taskText, taskFiles.map(formatTaskAttachment));
++  const currentDocumentProposal = documentIntake?.source === documentSourceIdentity && documentIntake.project === projectId ? documentIntake.proposal : null;
++  const activeDocumentEquipment = reviewedDocument?.source === documentSourceIdentity && reviewedDocument.project === projectId ? reviewedDocument.equipment : null;
++  const taskSource = originalTaskSource + (activeDocumentEquipment ? `\n${DOCUMENT_EQUIPMENT_MARKER}${JSON.stringify(activeDocumentEquipment)}` : '');
++  const documentQuestions = documentDeviceQuestions(originalTaskSource, currentDocumentProposal);
++  const activeDocumentAnswers = documentAnswers.source === documentSourceIdentity && documentAnswers.project === projectId ? documentAnswers.values : {};
++  function adoptDocumentEquipment() {
++    try {
++      const equipment = reviewDocumentEquipment(originalTaskSource, currentDocumentProposal, activeDocumentAnswers, documentMinimum);
++      setReviewedDocument({ source: documentSourceIdentity, project: projectId, equipment });
++      setDocumentIntakeError('');
++    } catch (error) { setDocumentIntakeError(error instanceof Error ? error.message : 'Dokumentangaben konnten nicht übernommen werden.'); }
++  }
+   const detectedDomain = useMemo(() => engineeringDomainEvidence(taskSource), [taskSource]);
+   const selectedDomainId = canonicalWizardDomain(selectedIndustry);
+   const domainMismatch = detectedDomain.domain !== "generic"
+@@ -1275,7 +1294,6 @@
+     setNewControllerName('');
+     setControllerAdditionError('');
+   }
+-  const [projectId] = useState(() => readActiveProjectId());
+   const wizardRunRef = useRef('');
+   const requestRevisionRef = useRef<string | undefined>(undefined);
+   const pendingCommandRef = useRef<{ signature: string; command: WizardCommand } | null>(null);
+@@ -2035,7 +2053,6 @@
+   const projectReady = projectName.trim().length > 0;
+   const taskReady = taskText.trim().length > 0 || taskFiles.length > 0;
+   const effectiveBusy = busy || submitting || documentIntakeBusy || !wizardPreferencesReady || Boolean(wizardRestoreError);
+-  const currentDocumentProposal = documentIntake?.source === taskSource && documentIntake.project === projectId ? documentIntake.proposal : null;
+   const selectedArchitecture = architectureOption(networkArchitecture);
+   const plannedNetworkConnections = plannedNetworkConnectionCount({
+     architectureId: selectedArchitecture?.id,
+@@ -2128,7 +2145,7 @@
+ 
+   async function reviewDocumentWithQwen() {
+     if (documentIntakeBusy || !taskSource.trim()) return;
+-    const source = taskSource;
++    const source = documentSourceIdentity;
+     const sourceRequestId = Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join('');
+     setDocumentIntakeBusy(true); setDocumentIntakeProgress('Lokaler Qwen startet …'); setDocumentIntakeError(''); setDocumentIntake(null);
+     try {
+@@ -2272,7 +2289,7 @@
+     const confirmedTaskText = selectSensorMeasurements(taskText, resolvedSensorMeasurements);
+     const confirmedTaskSource = `${confirmedTaskText}\n${taskFiles.map(formatTaskAttachment).join("\n")}`;
+     setTaskText(confirmedTaskText);
+-    const concreteTask = `${confirmedTaskText.trim() || "Aufgabe wurde als Datei uebergeben."}${attachments}`;
++    const concreteTask = `${confirmedTaskText.trim() || "Aufgabe wurde als Datei uebergeben."}${attachments}${activeDocumentEquipment ? `\n${DOCUMENT_EQUIPMENT_MARKER}${JSON.stringify(activeDocumentEquipment)}` : ""}`;
+     const nextRunId = crypto.randomUUID();
+     const confirmedAt = new Date().toISOString();
+     const topologyKnowledge = topologyClusterKnowledgeSummary(projectId, mode === "can" ? selectedIndustry : selectedDomain?.id ?? selectedIndustry);
+@@ -3194,11 +3211,9 @@
+             <h4>Entwurfsidee</h4><p style={{ whiteSpace: 'pre-wrap' }}>{currentDocumentProposal.interpretation.proposed_task}</p>
+             {currentDocumentProposal.interpretation.assumptions.length > 0 && <><h4>Annahmen zur Prüfung</h4><ul>{currentDocumentProposal.interpretation.assumptions.map((item, index) => <li key={index}>{item}</li>)}</ul></>}
+             {currentDocumentProposal.interpretation.open_questions.length > 0 && <><h4>Offene Angaben</h4><ul>{currentDocumentProposal.interpretation.open_questions.map((item, index) => <li key={index}>{item}</li>)}</ul></>}
+-            <p>Du kannst die Entwurfsidee in der Projektbeschreibung ausarbeiten. Geräteumfang, Anschlüsse und Modellvorschlag werden anschließend im normalen Wizard geprüft; dieser Dokumentvorschlag erteilt keine Freigabe.</p>
+-            <button className="button secondary" type="button" disabled={effectiveBusy} onClick={() => {
+-              const choices = taskText.split(/\r?\n/).filter(line => /^[ \t]*- (?:Sensor-Messgrößen|Aktor-Befehle|Geräteanschlüsse|Gerätezuordnungen|Geräte-Spezifikationen):/.test(line));
+-              setTaskText([currentDocumentProposal.interpretation.proposed_task, ...choices].join('\n'));
+-            }}>Entwurfstext in Projektbeschreibung übernehmen</button>
++            <p>Geprüfte Gerätebefunde werden mit ihrer Quelle in den Wizard übernommen. Fehlende Stückzahlen beantwortest du im Geräteumfang. Funktionen und Anforderungen bleiben in der vollständigen Originalquelle erhalten; Modelländerungen benötigen weiterhin die normale Prüfung und Freigabe.</p>
++            <button className="button secondary" type="button" disabled={effectiveBusy} onClick={adoptDocumentEquipment}>Geprüfte Dokumentangaben übernehmen</button>
++            {activeDocumentEquipment && <p role="status">Dokumentangaben im Wizard übernommen. Offene Rückfragen und Anschlüsse bleiben zu prüfen.</p>}
+           </section>}
+           {taskFiles.some((file) => file.source === "task") && (
+             <ul className="agent-file-list">
+@@ -3398,6 +3413,20 @@
+           {domainMismatchAccepted && (
+             <p className="agent-domain-override"><strong>Bewusste Abweichung:</strong> {selectedDomain?.label ?? selectedIndustry} wird trotz erkannter {detectedDomainOption?.label ?? detectedDomain.domain}-Evidence verwendet.</p>
+           )}
++          {documentQuestions.length > 0 && <section className="agent-cluster-review" aria-label="Gezielte Dokument-Rückfragen">
++            <h3>Geräteangaben gezielt klären</h3>
++            <p>Welche Anzahl ist für jede genannte Geräteart vorgesehen? Eine leere Angabe bleibt offen. NIS erzeugt daraus die Teilnehmer für den normalen Geräte- und Funktionsreview.</p>
++            <label><input type="checkbox" checked={documentMinimum} disabled={effectiveBusy} onChange={event => setDocumentMinimum(event.target.checked)} /> Angaben sind ein Mindestumfang; zusätzlicher fachlicher Bedarf muss getrennt vorgeschlagen und bestätigt werden.</label>
++            {documentQuestions.map(question => <div key={question.id} className="agent-device-choice"><label><span>{question.label}</span>
++              <input type="number" min="0" max="1000" step="1" aria-label={`Anzahl ${question.label}`} disabled={effectiveBusy}
++                value={activeDocumentAnswers[question.id] === 'covered' ? '' : activeDocumentAnswers[question.id] ?? ''} onChange={event => setDocumentAnswers({ source: documentSourceIdentity, project: projectId, values: { ...activeDocumentAnswers, [question.id]: event.target.value } })} /></label>
++              {question.covered_by?.length ? <label><input type="checkbox" checked={activeDocumentAnswers[question.id] === 'covered'} disabled={effectiveBusy}
++                onChange={event => setDocumentAnswers({ source: documentSourceIdentity, project: projectId, values: { ...activeDocumentAnswers, [question.id]: event.target.checked ? 'covered' : '' } })} />
++                Vorhandene Teilnehmer und getrennt beantwortete Gerätegruppen decken diese Übersicht ab: {question.covered_by.map(reference => documentQuestions.find(item => item.id === reference)?.label ?? reference).join(', ')}</label> : null}
++              <small>Quelle: {question.source_quote}</small></div>)}
++            <button className="button secondary" type="button" disabled={effectiveBusy} onClick={adoptDocumentEquipment}>Geprüfte Dokumentangaben übernehmen</button>
++            {documentIntakeError && <p role="alert">{documentIntakeError}</p>}
++          </section>}
+           {plannedEquipment.unresolvedInventoryGroups.length > 0 && <section className="agent-cluster-review" aria-label="Offene Gerätegruppen" role="alert">
+             <h3>Geräteumfang aus dem Dokument noch offen</h3>
+             <ul>{plannedEquipment.unresolvedInventoryGroups.map(finding => <li key={finding}>{finding}</li>)}</ul>
+@@ -3695,7 +3724,7 @@
+ 
+           <p>Es wurde noch kein Auftrag gestartet. Prüfe die Beschreibung und ergänze offene Angaben.</p>
+           <h4>{projectName || 'Projektname fehlt'}</h4>
+-          <p style={{ whiteSpace: 'pre-wrap' }}>{taskText || 'Projektbeschreibung fehlt'}</p>
++          <p style={{ whiteSpace: 'pre-wrap' }}>{taskText || (taskFiles.length ? `Vollständige Aufgabenquelle: ${taskFiles.map(file => file.name).join(', ')}` : 'Projektbeschreibung fehlt')}</p>
+           {startBlockers.length ? <ul>{startBlockers.map((blocker) => <li key={blocker.text}>
+             <span>{blocker.text} </span><button type="button" className="button secondary tiny"
+               onClick={() => setStep(questionnaireSteps.findIndex((item) => item.id === blocker.step))}>Angabe ergänzen</button>
+--- before/frontend/src/features/agent/lib/functional-device-design.ts
++++ after/frontend/src/features/agent/lib/functional-device-design.ts
+@@ -86,7 +86,8 @@
+   if (!includeOutputs) return result;
+   for (const device of devices.values()) {
+     if (device.device_type === 'SensorController' || device.device_type === 'ActuatorController' || device.device_type === 'Gateway') continue;
+-    const role = perceptionRole(`${device.hardware_name} ${device.function_name}`);
++    const duties = device.configuration?.source_scoped_functions as Array<{ name: string; source_quote: string }> | undefined;
++    const role = perceptionRole(`${device.hardware_name} ${device.function_name} ${(duties ?? []).map(item => item.name).join(' ')}`);
+     const sensors = [...devices.values()].filter(item => item.device_type === 'SensorController'
+       && item.configuration?.functional_owner === device.hardware_name).map(item => item.hardware_name);
+     const actuators = [...devices.values()].filter(item => item.device_type === 'ActuatorController'
+@@ -132,7 +133,8 @@
+           accepted_measurements: role === 'object_list' ? ['object_list', 'radar_detections']
+             : role === 'image_frame' ? ['image_frame', 'object_list']
+               : role === 'point_cloud' ? ['point_cloud', 'object_list'] : ['distance'],
+-          input_names: sensors, actuator_names: actuators, output_signal: name, evidence: 'semantic_draft_requires_review' },
++          input_names: sensors, actuator_names: actuators, output_signal: name,
++          ...(duties?.length ? { source_functions: duties } : {}), evidence: 'semantic_draft_requires_review' },
+         design_evidence: 'illustrative_template_requires_review' },
+     });
+   }
+--- before/frontend/src/features/agent/lib/functional-device-design.test.mjs
++++ after/frontend/src/features/agent/lib/functional-device-design.test.mjs
+@@ -77,6 +77,21 @@
+   assert.equal(completeFunctionalDeviceDesign(input, 'per Wizard-Uebernehmen bestaetigt'), input);
+ });
+ 
++test('a generic controller with source-scoped camera processing gets a reviewable object output', () => {
++  for (const domain of ['automotive', 'robotics_ros', 'building_automation', 'custom']) {
++    const input = [chain('ControlAlpha', 'ECU', domain, { source_scoped_functions: [
++      { name: 'Kamera auswerten', source_quote: 'Kamera auswerten' },
++    ] }), chain('Kamera', 'SensorController', domain, { functional_owner: 'ControlAlpha', sensor_measurement: 'image_frame' })];
++    const result = completeFunctionalDeviceDesign(input);
++    const output = result.find(item => item.configuration.functional_output_template);
++    assert.ok(output);
++    assert.equal(output.hardware_name, 'ControlAlpha');
++    assert.deepEqual(output.configuration.functional_device_contract.input_names, ['Kamera']);
++    assert.equal(output.configuration.functional_device_contract.source_functions[0].source_quote, 'Kamera auswerten');
++    assert.equal(output.configuration.processing_contract.evidence, 'NONE');
++  }
++});
++
+ test('object outputs keep an explicitly selected narrow transport and remain oversized for validation', () => {
+   const source = { ...chain('RadarProcessing', 'IndustrialPC'), interface_type: 'CAN', interface_name: 'explicit_CAN' };
+   const result = completeFunctionalDeviceDesign([source]);
+@@ -85,3 +100,16 @@
+   assert.equal(output.length_bits, 1168 * 8);
+   assert.equal(OBJECT_LIST_SCHEMA.header.find(field => field.name === 'timestamp').time_base, 'SOURCE_CLOCK_REQUIRES_REVIEW');
+ });
++
++test('co-located perception and planning remain distinct reviewed functions without a fake external receiver', () => {
++  const host = chain('ControlAlpha', 'ECU', 'robotics_ros', { source_scoped_functions: [
++    { name: 'Kamera auswerten', source_quote: 'Kamera auswerten' },
++    { name: 'Motion Planning', source_quote: 'Motion Planning' },
++  ] });
++  const clusters = buildEquipmentClusters([host, chain('Kamera', 'SensorController', 'robotics_ros',
++    { functional_owner: 'ControlAlpha', sensor_measurement: 'image_frame' })], [], 'robotics_ros');
++  const branch = clusters.flatMap(cluster => cluster.controllers).find(controller => controller.name === 'ControlAlpha');
++  assert.ok(branch.functions.some(fn => fn.name === 'ControlAlpha_Motion Planning' && fn.signals.length === 0));
++  assert.equal(clusters.flatMap(cluster => cluster.functionalRoutes).length, 0);
++  assert.ok(clusters.flatMap(cluster => cluster.functionalIssues).some(issue => issue.includes('innerhalb desselben Controllers') && issue.includes('Motion Planning')));
++});
+--- before/frontend/src/features/agent/lib/equipment-clustering.ts
++++ after/frontend/src/features/agent/lib/equipment-clustering.ts
+@@ -1,5 +1,6 @@
+ import { addAutomotiveFunctionOutputs, isEngineeringControllerDevice, normalizeHardwareName, type ExtractedEngineeringChain } from "./engineering-specification.ts";
+ import { completeFunctionalDeviceDesign, perceptionConsumer } from './functional-device-design.ts';
++import { conciseGeneratedName } from '../../engineering/lib/engineering-names.ts';
+ import type { EquipmentAssignmentLearningSuggestion, FunctionalPartnerSuggestion } from "../../../shared/api/engineering-api.ts";
+ import {
+   compareTopologyClusterKeys,
+@@ -306,9 +307,10 @@
+ function chainCorpus(chain: ExtractedEngineeringChain) {
+   const semantic = record(chain.semantic);
+   const data = record(chain.data);
++  const duties = chain.configuration?.source_scoped_functions as Array<{ name: string }> | undefined;
+   return [
+     chain.hardware_name,
+-    chain.hardware_description,
++    duties?.length ? duties.map(item => item.name).join(' ') : chain.hardware_description,
+     text(semantic.category),
+     text(semantic.system_frame),
+     text(semantic.systemFrame),
+@@ -458,16 +460,18 @@
+       ? endpoint.configuration.functional_owner
+       : "";
+     const learned = learnedAssignments.find((suggestion) => compactKey(suggestion.endpoint_name) === compactKey(endpoint.hardware_name));
+-    const explicitOwnerName = endpoint.configuration?.functional_owner_source === 'explicit_user_statement'
++    const sourceOwned = ['explicit_user_statement', 'source_scoped_function'].includes(String(endpoint.configuration?.functional_owner_source));
++    const explicitOwnerName = sourceOwned
+       ? configuredOwner : learned?.controller_name || configuredOwner || "";
+     const explicitOwner = controllers.find((controller) => compactKey(controller.hardware_name) === compactKey(explicitOwnerName));
+     if (explicitOwner) {
+       const branch = branches.find((candidate) => candidate.name === explicitOwner.hardware_name)!;
+       const leaf = deviceLeaf(
+         endpoint,
+-        endpoint.configuration?.functional_owner_source === 'explicit_user_statement' ? 1 : learned?.confidence ?? 1,
++        endpoint.configuration?.functional_owner_source === 'explicit_user_statement' ? 1 : sourceOwned ? 0.9 : learned?.confidence ?? 1,
+         endpoint.configuration?.functional_owner_source === 'explicit_user_statement'
+           ? "Vom Nutzer ausdrücklich diesem Controller zugeordnet."
++          : sourceOwned ? 'Aus den Aufgaben des eindeutig genannten Controllers abgeleitet; Quellenbezug und Funktionszuordnung prüfen.'
+           : learned?.controller_name === explicitOwnerName ? learned.reason
+             : "Vom Vollständigkeitsgenerator fachlich an diesen Controller gebunden.",
+       );
+@@ -600,11 +604,15 @@
+       const stem = ownershipStem(chain.hardware_name);
+       const configuredOwner = typeof chain.configuration?.functional_owner === "string" ? chain.configuration.functional_owner : "";
+       const learnedOwner = learnedAssignments.find((suggestion) => compactKey(suggestion.endpoint_name) === compactKey(chain.hardware_name))?.controller_name ?? "";
+-      const ownerName = chain.configuration?.functional_owner_source === 'explicit_user_statement'
++      const ownerName = ['explicit_user_statement', 'source_scoped_function'].includes(String(chain.configuration?.functional_owner_source))
+         ? configuredOwner : learnedOwner || configuredOwner;
++      const endpointGraph = graphMode ? graphClusterFor(chain, profile) : null;
++      const matchingFamilyControllers = endpointGraph && !endpointGraph.key.startsWith('system:')
++        ? controllerGraphs.filter(candidate => !candidate.graph.key.startsWith('system:') && candidate.graph.familyKey === endpointGraph.familyKey) : [];
+       const inheritedGraph = (chain.device_type === "SensorController" || chain.device_type === "ActuatorController")
+         ? controllerGraphs.find((candidate) => ownerName && compactKey(candidate.name) === compactKey(ownerName))?.graph
+           ?? controllerGraphs.find((candidate) => stem.length >= 3 && candidate.stem === stem)?.graph
++          ?? (matchingFamilyControllers.length === 1 ? matchingFamilyControllers[0].graph : undefined)
+           ?? (controllerGraphs.length === 1 ? controllerGraphs[0].graph : undefined)
+         : undefined;
+       const graph = graphMode ? inheritedGraph ?? controllerGraphs.find(candidate => candidate.name === chain.hardware_name)?.graph ?? graphClusterFor(chain, profile) : null;
+@@ -632,6 +640,8 @@
+       const ownership = controllerBranches(sortedDevices, profile, learnedAssignments);
+       for (const branch of ownership.branches as EquipmentEcuBranch[]) {
+         const functions = new Map<string, string[]>();
++        const duties = sortedDevices.find(item => item.hardware_name === branch.name)?.configuration?.source_scoped_functions as Array<{ name: string }> | undefined;
++        for (const duty of duties ?? []) functions.set(conciseGeneratedName('Function', `${branch.name}_${duty.name}`), []);
+         for (const chain of chains.filter(item => item.hardware_name === branch.name && item.configuration?.functional_output_template)) {
+           functions.set(chain.function_name, [...new Set([...(functions.get(chain.function_name) ?? []), chain.signal_name])]);
+         }
+@@ -680,7 +690,13 @@
+         && (chain.configuration?.functional_device_contract as { role?: string } | undefined)?.role === 'PERCEPTION');
+       if (!outputs.length) continue;
+       const consumers = clusters.flatMap(item => item.controllers).filter(target => target.name !== source.name && perceptionConsumer(target.name));
+-      if (!consumers.length) cluster.functionalIssues.push(`${source.name}: Empfänger der verarbeiteten Objektdaten fachlich festlegen.`);
++      if (!consumers.length) {
++        const localDuties = chains.find(chain => chain.hardware_name === source.name)?.configuration?.source_scoped_functions as Array<{ name: string }> | undefined;
++        const localConsumer = localDuties?.filter(duty => /\bplanning\b|\bcontrol\b|planung|regelung|führung/i.test(duty.name));
++        cluster.functionalIssues.push(localConsumer?.length
++          ? `${source.name}: Empfänger der Objektdaten innerhalb desselben Controllers prüfen (${localConsumer.map(duty => duty.name).join('; ')}). Ein-/Ausgangszuordnung und lokalen Datenaustausch bestätigen; daraus folgt kein externer Bus-Empfänger.`
++          : `${source.name}: Empfänger der verarbeiteten Objektdaten fachlich festlegen.`);
++      }
+       for (const target of consumers) cluster.functionalRoutes.push({ source: source.name, target: target.name,
+         signals: outputs.map(item => item.signal_name), path: [source.name, target.name],
+         reason: 'Wahrnehmungsdaten für Navigation, Assistenz oder Sensorfusion; Bedarf und Empfänger bestätigen.',
+--- before/frontend/src/features/network/lib/topology-cluster-knowledge.ts
++++ after/frontend/src/features/network/lib/topology-cluster-knowledge.ts
+@@ -69,7 +69,7 @@
+   { key: "powertrain_transmission", label: "Getriebe", role: "plant", terms: ["drehmomentkoordination", "getriebe", "gear", "transmission", "kupplung", "clutch", "torque", "moment"], related: ["powertrain_motor", "emobility"] },
+   { key: "emobility", label: "E-Mobilitaet", role: "plant", terms: ["elektromotor", "emotor", "electricmotor", "inverter", "traction", "hv", "hochvolt", "charging", "laden", "ladesteuerung", "ladegeraet", "obc", "dcdc"], related: ["powertrain_motor", "powertrain_transmission", "energy"] },
+   { key: "energy", label: "Energie / HV", role: "infrastructure", terms: ["energie", "energy", "batterie", "battery", "bms", "bordnetz", "alternator", "generator", "spannung", "voltage", "strom", "current", "zellspannung", "soc", "soh"], related: ["emobility", "powertrain_motor", "body_comfort"] },
+-  { key: "chassis", label: "Fahrdynamik", role: "controller", terms: ["bremse", "brems", "bremsen", "brake", "lenkung", "steering", "fahrwerk", "suspension", "daempfer", "damper", "reifen", "tire", "rad", "wheel", "yaw", "pitch", "roll", "allrad", "stabilitaet", "anhaenger"], related: ["driver_assistance", "powertrain_motor"] },
++  { key: "chassis", label: "Fahrdynamik", role: "controller", terms: ["bremse", "brems", "bremsen", "brake", "lenkung", "steering", "fahrwerk", "suspension", "daempfer", "damper", "reifen", "tire", "rad", "wheel", "raddrehzahl", "wheel speed", "wheelspeed", "yaw", "pitch", "roll", "allrad", "stabilitaet", "anhaenger"], related: ["driver_assistance", "powertrain_motor"] },
+   { key: "safety", label: "Passive Sicherheit", role: "controller", terms: ["airbag", "restraint", "rueckhalt", "crash", "impact", "seatbelt", "gurt"], related: ["chassis", "diagnostics"] },
+   { key: "driver_assistance", label: "Fahrerassistenz", role: "source", terms: ["adas", "fahrerassistenz", "radar", "kamera", "camera", "lidar", "park", "parking", "spur", "lane", "ultraschall"], related: ["chassis", "body_comfort"] },
+   { key: "body_comfort", label: "Karosserie / Komfort", role: "actuation", terms: ["karosserie", "body", "bodycontrol", "comfort", "komfort", "wischer", "wiper", "tuer", "tuere", "door", "fenster", "window", "seat", "sitz", "keyless", "wegfahrsperre", "heckklappe", "tailgate", "schiebedach", "sunroof"], related: ["energy", "lighting", "climate"] },
+--- before/frontend/src/features/network/lib/topology-cluster-knowledge.test.mjs
++++ after/frontend/src/features/network/lib/topology-cluster-knowledge.test.mjs
+@@ -82,3 +82,10 @@
+   assert.equal(topologyClusterForText('Unbekannt ECU', 'automotive').key, 'control');
+   assert.notEqual(topologyClusterForText('Radarverarbeitung ECU', 'rail').key, 'driver_assistance');
+ });
++
++test('wheel speed vocabulary belongs to chassis only in its industry profile', () => {
++  for (const name of ['Raddrehzahl', 'WheelSpeed', 'Wheel Speed']) {
++    assert.equal(topologyClusterForText(name, 'automotive').key, 'chassis');
++    assert.notEqual(topologyClusterForText(name, 'building_automation').key, 'chassis');
++  }
++});
+--- before/backend/nis/agent/tools/wizard_generation.py
++++ after/backend/nis/agent/tools/wizard_generation.py
+@@ -61,7 +61,7 @@
+     'SOMEIP': 'automotive_ethernet',
+ }
+ 
+-MODEL_GENERATOR_VERSION = 'wizard-model-v24-functional-chain-review'
++MODEL_GENERATOR_VERSION = 'wizard-model-v25-document-scoped-functions'
+ ROUTING_GENERATOR_VERSION = 'wizard-routing-v11-confirmed-recipients-only'
+ 
+ _CONTROLLER_DEVICE_TYPES = {
+@@ -1036,6 +1036,24 @@
+     # A named functional requirement must not disappear behind the generic
+     # controller status function. A sole function host is unambiguous; with
+     # several hosts an explicit mapping is needed instead of choosing one.
++    # Responsibilities already scoped by the shared, source-bound document
++    # parser have their host. Keep them as functions, without inventing data
++    # dependencies, executable processing or a co-located transport mechanism.
++    for host, chain in chain_by_name.items():
++        if chain.get('device_type') not in _CONTROLLER_DEVICE_TYPES:
++            continue
++        duties = (chain.get('configuration') or {}).get('source_scoped_functions') or []
++        for duty in duties:
++            name, quote = str(duty.get('name') or '').strip(), str(duty.get('source_quote') or '').strip()
++            if not name or not quote:
++                raise ValueError(f'{chain["hardware_name"]}: Quellenbezug der Funktion fehlt.')
++            ensure('Function', concise_name('Function', f'{chain["hardware_name"]}_{name}'), {
++                'hardware_node_id': hardware_refs[host], 'domain': spec['domain'],
++                'description': f'Explizite Aufgabe des Controllers: {quote}. Ein-/Ausgänge und Ausführung separat prüfen.',
++                'configuration': {'source_scoped_function': {'name': name, 'source_quote': quote,
++                    'source': 'document_controller_responsibility'},
++                    'processing_evidence': 'NONE', 'dependency_review': 'REQUIRED'},
++            }, 'hardware_node_id')
+     declared_functions = _declared_function_names(arguments['prompt'])
+     existing_function_names = {row['name'].casefold() for row in existing['Function']}
+     existing_function_names.update(change['data']['name'].casefold() for change in changes
+--- before/backend/tests/test_wizard_generation.py
++++ after/backend/tests/test_wizard_generation.py
+@@ -118,6 +118,43 @@
+     }
+     with pytest.raises(ValueError, match='Ungültige Funktionszuordnungen'):
+         wizard_generation._declared_function_assignments('- Funktionszuordnungen: {"MotionControl":42}')
++
++
++def test_source_scoped_responsibilities_keep_their_host_and_literal_evidence(monkeypatch):
++    def controller(name, duty):
++        return {
++            'hardware_name': name, 'hardware_description': name, 'device_type': 'ECU', 'device_class': 4,
++            'function_name': name + 'Function', 'function_description': name,
++            'interface_name': name + '_Ethernet', 'interface_type': 'Ethernet',
++            'transport_network_ref': None, 'message_name': name + 'Data',
++            'message_id_hex': None, 'direction': 'tx', 'cycle_ms': 20, 'dlc': 1,
++            'signal_name': name + 'Status', 'start_bit': 0, 'length_bits': 8,
++            'byte_order': 'little_endian', 'data_type': 'unsigned', 'factor': 1, 'offset_value': 0,
++            'configuration': {'source_scoped_functions': [{'name': duty, 'source_quote': duty}]},
++        }
++    spec = {'domain': 'custom', 'modelType': 'custom',
++            'targetCounts': {'gateways': 0, 'ecus': 2, 'sensors': 0, 'actuators': 0},
++            'communicationSystemCounts': {'ethernet': 1},
++            'chains': [controller('Alpha', 'Perception (Objekte, Spuren)'),
++                       controller('Beta', 'Thermomanagement')]}
++    monkeypatch.setattr(wizard_generation.proposal_store, 'list_proposals', lambda limit: [])
++    monkeypatch.setattr(wizard_generation.model, 'objects', lambda _kind: [])
++    monkeypatch.setattr(wizard_generation, 'extract_specification', lambda _prompt: spec)
++    monkeypatch.setattr(wizard_generation.proposal_service, 'create',
++                        lambda proposal_type, changes, summary, **metadata: {'changes': changes})
++    changes = wizard_generation.generate({'prompt': 'Explizite Aufgaben auf zwei Controllern'})['changes']
++    hardware = {item['data']['name']: '$' + item['local_ref'] for item in changes
++                if item['object_type'] == 'HardwareNode'}
++    functions = [item['data'] for item in changes if item['object_type'] == 'Function'
++                 and (item['data'].get('configuration') or {}).get('source_scoped_function')]
++    assert len(functions) == 2
++    for function, host, duty in zip(functions, ['Alpha', 'Beta'],
++                                    ['Perception (Objekte, Spuren)', 'Thermomanagement']):
++        assert function['hardware_node_id'] == hardware[host]
++        assert function['configuration']['source_scoped_function']['source_quote'] == duty
++        assert function['configuration']['processing_evidence'] == 'NONE'
++        assert function['configuration']['dependency_review'] == 'REQUIRED'
++        assert 'consumer_refs' not in function['configuration']
+ 
+ 
+ def test_wizard_direct_gpio_signal_has_binding_without_message_or_bus(monkeypatch):
+--- before/backend/nis/engineering/communication/device_communication.py
++++ after/backend/nis/engineering/communication/device_communication.py
+@@ -213,7 +213,13 @@
+             for function in changes:
+                 if (function['object_type'] == 'Function' and function.get('action', 'CREATE') == 'CREATE'
+                         and function['data'].get('hardware_node_id') == node_ref):
+-                    function['data'].setdefault('configuration', {})['functional_device_contract'] = contract
++                    configuration = function['data'].setdefault('configuration', {})
++                    # A literal responsibility is a separate function awaiting
++                    # dependency review, not another implementation of every
++                    # processing role hosted on the same hardware.
++                    if configuration.get('source_scoped_function') and configuration.get('dependency_review') == 'REQUIRED':
++                        continue
++                    configuration['functional_device_contract'] = contract
+         else:
+             node.setdefault('identity', {})['functional_device_contract'] = contract
+ 
+--- before/backend/tests/test_functional_device_design.py
++++ after/backend/tests/test_functional_device_design.py
+@@ -31,6 +31,33 @@
+ 
+ def codes(model):
+     return {finding['code'] for finding in communication_findings(model)}
++
++
++@pytest.mark.parametrize('role', ['PERCEPTION', 'PROCESSOR'])
++def test_unresolved_scoped_duties_do_not_inherit_other_hosted_processing_roles(role):
++    for domain in ('automotive', 'robotics', 'aerospace', 'building', 'custom'):
++        declared = {'source_scoped_function': {'name': 'Planning', 'source_quote': 'Planning'},
++                    'processing_evidence': 'NONE', 'dependency_review': 'REQUIRED'}
++        changes = [
++            {'object_type': 'HardwareNode', 'local_ref': 'host',
++             'data': {'name': 'ControlAlpha', 'device_type': 'ECU'}},
++            {'object_type': 'Function', 'local_ref': 'planning', 'data': {
++                'name': 'Planning', 'domain': domain, 'hardware_node_id': '$host',
++                'configuration': deepcopy(declared)}},
++            {'object_type': 'Function', 'local_ref': 'processing', 'data': {
++                'name': 'ObjectProcessing', 'domain': domain, 'hardware_node_id': '$host'}},
++        ]
++        chains = [{'hardware_name': 'ControlAlpha', 'configuration': {
++            'functional_device_contract': {'version': 1, 'role': role,
++                                           'input_names': ['Sensor1'], 'output_signal': 'Objects'}}}]
++        attach_functional_device_contracts(changes, chains,
++                                          {'controlalpha': '$host', 'sensor1': '$sensor'})
++        assert changes[1]['data']['configuration'] == declared
++        processing = changes[2]['data']['configuration']['functional_device_contract']
++        assert processing['role'] == role
++        assert processing['input_refs'] == ['$sensor']
++        assert processing['output_signal'] == 'Objects'
++        assert changes[0]['data']['identity']['functional_device_contract']['role'] == role
+ 
+ 
+ def test_functional_acceptance_is_industry_independent_and_requires_real_receptions():
+--- before/docs/migrations/structure_mapping.csv
++++ after/docs/migrations/structure_mapping.csv
+@@ -4013,3 +4013,4 @@
+ backend/tests/test_qwen_logic_blocks_sql.py,backend/tests/test_qwen_logic_blocks_sql.py,add,QWEN authored shared Boolean decisions in existing SignalBehaviorRegistry,"[""backend/tests/test_qwen_logic_blocks.py"", ""backend/tests/test_qwen_logic_blocks_sql.py""]",No guessed project function; guarded existing proposal path and original catalog ownership,"Independent full truth tables, isolated SQL review/apply, actual received fields and required release",CANONICAL_PRESENT,backend/tests,"[""backend/tests/test_qwen_logic_blocks.py"", ""backend/tests/test_qwen_logic_blocks_sql.py""]",Existing registry/tool/runtime owners; no second execution engine,No compatibility wrapper
+ backend/tests/test_qwen_document_intake.py,backend/tests/test_qwen_document_intake.py,add,"Native Qwen document source, classification, alias and transport contract regression tests",[],Test coverage only; no stored identity or schema change,Targeted native document tests; backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; complete shared release receipt,CANONICAL_PRESENT,backend/tests,[],Test files discovered by existing backend and frontend runners; no compatibility wrapper or persisted external consumer introduced,Not a removable compatibility wrapper
+ frontend/src/features/agent/lib/document-intake-response.test.mjs,frontend/src/features/agent/lib/document-intake-response.test.mjs,add,Native document response and review-required frontend contract regression tests,[],Test coverage only; no stored identity or schema change,Targeted native document tests; backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; complete shared release receipt,CANONICAL_PRESENT,frontend/src/features/agent/lib,[],Test files discovered by existing backend and frontend runners; no compatibility wrapper or persisted external consumer introduced,Not a removable compatibility wrapper
++frontend/src/features/agent/lib/document-clarification.ts,frontend/src/features/agent/lib/document-clarification.ts,canonical-owner,Source-bound document equipment review and explicit clarification handoff into the existing wizard inventory,"[""frontend/src/features/agent/lib/engineering-specification.test.mjs"", ""frontend/src/features/agent/lib/engineering-specification.ts"", ""frontend/src/features/agent/ui/agent-chat-core.tsx""]",Existing confirmed wizard prompt and model ownership preserved; no stored identity or schema change,backend/tests/test_structure_architecture.py; backend/tests/test_structure_completion.py; full release receipt linked in completion report,CANONICAL_PRESENT,frontend/src/features/agent/lib,"[""frontend/src/features/agent/lib/engineering-specification.test.mjs"", ""frontend/src/features/agent/lib/engineering-specification.ts"", ""frontend/src/features/agent/ui/agent-chat-core.tsx""]","Python AST (including retired alias module paths, relative and literal dynamic imports), TypeScript imports, literal paths and documentation links; external/persisted consumers not observable",Not a removable compatibility wrapper

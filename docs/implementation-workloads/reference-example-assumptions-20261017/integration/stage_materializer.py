@@ -1,0 +1,38 @@
+from pathlib import Path
+import ast
+
+STAGED = Path(__file__).parent / 'staged'
+path = STAGED / 'backend/nis/agent/tools/wizard_generation.py'
+text = path.read_text(encoding='utf-8')
+fragment = (Path(__file__).parent / 'reference_materializer.fragment.py').read_text(encoding='utf-8')
+fragment = fragment.replace("from backend.nis.agent.orchestration.project_intake import document_fact_identity", "from backend.nis.agent.orchestration.project_intake import document_fact_identity")
+fragment = fragment.replace("    by_device =", "    source_hosts = reference_design_catalog(reference['request']['prompt'])['source_function_assignments']\n    by_device =", 1)
+fragment = fragment.replace("'assignment_source': 'REFERENCE_ASSUMPTION'", "'assignment_source': ('source_scoped_function' if source_hosts.get(reference['fact_id_map'][fact_id], '').casefold() == device_names[executor].casefold() else 'REFERENCE_ASSUMPTION')")
+fragment = fragment.replace("key = config.get('reference_communication_id')", "key = (config.get('reference_communication') or {}).get('id')")
+fragment = fragment.replace("contract = _technology_contract(port['technology'])", "port_chain = next(chain for chain in spec['chains'] if chain['configuration']['reference_port_id'] == port['id'])\n        technology = port_chain['interface_type']\n        contract = _technology_contract(technology)")
+fragment = fragment.replace("'technology': port['technology'],\n            'network_ref'", "'technology': technology,\n            'physical_port_ref': f\"reference:{reference['design_id']}:{port['id']}\",\n            'network_ref'")
+text = text.replace("MODEL_GENERATOR_VERSION = 'wizard-model-v27-source-bound-function-atoms'", "MODEL_GENERATOR_VERSION = 'wizard-model-v28-reviewed-reference-design'")
+point = text.index('def generate(arguments: dict,')
+text = text[:point] + fragment + text[point:]
+text = text.replace("    document_evidence = reviewed_document_evidence(arguments.get('prompt', ''))", "    from backend.nis.agent.tools.project_draft import reference_design_for_prompt\n    reference = reference_design_for_prompt(arguments.get('prompt', ''))\n    document_evidence = reviewed_document_evidence(arguments.get('prompt', ''))", 1)
+text = text.replace("        source_evidence = [*(source_evidence or []), document_evidence]", "        source_evidence = [*(source_evidence or []), document_evidence]\n    if reference:\n        source_evidence.append({'source': 'REFERENCE_ASSUMPTION', 'reference_design': deepcopy(reference)})", 1)
+text = text.replace("        if network:\n            chain['transport_network_ref']", "        if network and not reference:\n            chain['transport_network_ref']", 1)
+text = text.replace("    if graph_match:\n        controller_names", "    if graph_match and not reference:\n        controller_names", 1)
+text = text.replace("            str(data.get('network_ref') or '').casefold(),\n        )", "            str(data.get('network_ref') or '').casefold(),\n            str(data.get('physical_port_ref') or '') if str(data.get('physical_port_ref') or '').startswith('reference:') else '',\n        )", 1)
+text = text.replace("        if kind == 'HardwareNetworkInterface' and is_ethernet(data.get('technology')):", "        if kind == 'HardwareNetworkInterface' and is_ethernet(data.get('technology')) and not data.get('physical_port_ref', '').startswith('reference:'):", 1)
+text = text.replace("            if not matches:\n                same_named_port", "            if not matches and not str(data.get('physical_port_ref') or '').startswith('reference:'):\n                same_named_port", 1)
+text = text.replace("        if profile.requires_function_model:\n            fn = ensure", "        if profile.requires_function_model and not reference:\n            fn = ensure", 1)
+text = text.replace("            'hardware_node_id': hw, 'technology': chain['interface_type'], 'channel_index': 1,", "            'hardware_node_id': hw, 'technology': chain['interface_type'],\n            **({'physical_port_ref': f\"reference:{reference['design_id']}:{chain['configuration']['reference_port_id']}\",\n                'channel_index': 1 + next(index for index, port in enumerate([port for port in reference['proposal']['ports'] if port['device_id'] == chain['configuration']['reference_device_id'] and port['technology'] == chain['configuration']['reference_port']['technology']]) if port['id'] == chain['configuration']['reference_port_id'])}\n               if reference else {'channel_index': 1}),", 1)
+text = text.replace("        if technology_contract['technology_id'] in DIRECT_IO_TECHNOLOGIES:", "        if reference and (chain.get('configuration') or {}).get('reference_receive_only'):\n            continue\n        if technology_contract['technology_id'] in DIRECT_IO_TECHNOLOGIES:", 1)
+text = text.replace("    for host, chain in chain_by_name.items():\n        if chain.get('device_type')", "    for host, chain in ([] if reference else chain_by_name.items()):\n        if chain.get('device_type')", 1)
+text = text.replace("    declared_functions = _declared_function_names(arguments['prompt'])", "    declared_functions = [] if reference else _declared_function_names(arguments['prompt'])", 1)
+text = text.replace("    for duty in _reviewed_document_functions(document_evidence, function_hosts, spec['chains']):", "    for duty in ([] if reference else _reviewed_document_functions(document_evidence, function_hosts, spec['chains'])):", 1)
+text = text.replace("    if graph_raw:\n        # A single central", "    if graph_raw and not reference:\n        # A single central", 1)
+text = text.replace("    complete_new_actuator_messages(changes, existing, command_definitions)", "    if not reference:\n        complete_new_actuator_messages(changes, existing, command_definitions)", 1)
+text = text.replace("    for endpoint, (owner, *_membership) in _confirmed_local_io_memberships(arguments[\"prompt\"]).items():", "    for endpoint, (owner, *_membership) in ([] if reference else _confirmed_local_io_memberships(arguments[\"prompt\"]).items()):", 1)
+text = text.replace("    attach_new_message_contracts(arguments['prompt'], changes, existing)", "    if reference:\n        _materialize_reference_bindings(reference, spec, changes, existing, ensure, hardware_refs, document_evidence)\n    else:\n        attach_new_message_contracts(arguments['prompt'], changes, existing)", 1)
+text = text.replace("        enabled=bool(re.search(", "        enabled=not reference and (bool(re.search(", 1)
+text = text.replace("                        and not re.search(r'^- Generierungsmodus:\\s*EXAMPLE_PROJECT\\s*$', arguments['prompt'], re.M)))", "                        and not re.search(r'^- Generierungsmodus:\\s*EXAMPLE_PROJECT\\s*$', arguments['prompt'], re.M))))", 1)
+text = text.replace("    _bind_generated_gateway_status(changes, existing)", "    if not reference:\n        _bind_generated_gateway_status(changes, existing)", 1)
+ast.parse(text)
+path.write_text(text, encoding='utf-8', newline='\n')

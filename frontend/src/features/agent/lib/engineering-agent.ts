@@ -15,7 +15,7 @@ export type DocumentIntakeProposal = {
   canonical_writes: false;
   interpretation: {
     summary: string;
-    components: { name: string; kind: 'INSTANCE' | 'CATEGORY' | 'FUNCTION' | 'REQUIREMENT'; role: string; quantity: number | null; source_quote: string }[];
+    components: { name: string; kind: 'INSTANCE' | 'CATEGORY' | 'FUNCTION' | 'REQUIREMENT'; role: string; quantity: number | null; source_quote: string; source_context?: string[] }[];
     technologies: { name: string; kind: 'TRANSPORT' | 'DEVICE_ALIAS' | 'UNRESOLVED'; source_quote: string }[];
     proposed_task: string;
     assumptions: string[];
@@ -86,11 +86,23 @@ export type EngineeringProposal = {
 };
 export type EngineeringAgentUIMessage = UIMessage<unknown, { engineering: EngineeringAgentEvent; attachment: ChatAttachment }, Record<string, { input: Record<string, unknown>; output: unknown }>>;
 
-type DocumentToolResult = { success: boolean; data?: DocumentIntakeProposal; error?: string; findings?: { message?: string }[] };
-export async function readDocumentIntakeResponse(response: Response, onProgress: (text: string) => void): Promise<DocumentIntakeProposal> {
-  let result: DocumentToolResult | undefined;
+type DocumentToolResult<T> = { success: boolean; data?: T; error?: string; findings?: { message?: string }[] };
+export function documentRequestErrorMessage(error: unknown, stage: 'document' | 'reference' = 'document'): string {
+  const message = error instanceof Error ? error.message : '';
+  const operation = stage === 'reference' ? 'Referenzplanung' : 'Dokumentauswertung';
+  if (/^(?:network error|failed to fetch|fetch failed|load failed|NetworkError(?: when attempting to fetch resource)?|The network connection was lost)[.!]?$/i.test(message.trim())) {
+    return `Die Verbindung zur lokalen ${operation} wurde unterbrochen. Es wurde kein vollständiges Prüfergebnis empfangen. Datei und Eingaben bleiben erhalten. Bitte die Prüfung erneut starten.`;
+  }
+  return message || `Die lokale ${operation} ist fehlgeschlagen. Bitte die Prüfung erneut starten.`;
+}
+
+export async function readDocumentIntakeResponse<T = DocumentIntakeProposal>(response: Response, onProgress: (text: string) => void, maxBytes = 2_000_000, signal?: AbortSignal): Promise<T> {
+  signal?.throwIfAborted();
+  let result: DocumentToolResult<T> | undefined;
   if (response.headers.get('Content-Type')?.includes('application/x-ndjson') && response.body) {
     const reader = response.body.getReader();
+    const abort = () => { void reader.cancel(signal?.reason).catch(() => undefined); };
+    signal?.addEventListener('abort', abort, { once: true });
     const decoder = new TextDecoder();
     let buffer = '';
     let bytes = 0;
@@ -103,9 +115,10 @@ export async function readDocumentIntakeResponse(response: Response, onProgress:
     try {
       while (true) {
         const part = await reader.read();
+        signal?.throwIfAborted();
         if (part.done) break;
         bytes += part.value.byteLength;
-        if (bytes > 2_000_000) throw new Error('Die lokale Dokumentantwort ist zu groß.');
+        if (bytes > maxBytes) throw new Error('Die lokale Dokumentantwort ist zu groß.');
         buffer += decoder.decode(part.value, { stream: true });
         let boundary: number;
         while ((boundary = buffer.indexOf('\n')) >= 0) {
@@ -113,10 +126,51 @@ export async function readDocumentIntakeResponse(response: Response, onProgress:
         }
       }
       receive(buffer + decoder.decode());
-    } finally { await reader.cancel(); reader.releaseLock(); }
+    } finally {
+      signal?.removeEventListener('abort', abort);
+      try { await reader.cancel().catch(() => undefined); } finally { reader.releaseLock(); }
+    }
   } else result = await response.json();
+  signal?.throwIfAborted();
   if (!response.ok || !result?.success || !result.data) {
     throw new Error(result?.error ?? result?.findings?.[0]?.message ?? 'Die vollständige lokale Dokumentauswertung ist fehlgeschlagen.');
   }
   return result.data;
+}
+
+
+export type ReferenceSource = {
+  id: string; name: string; role: 'REFERENCE_SUPPLEMENT' | 'USER_CLARIFICATION';
+  text: string; source_sha256: string;
+  allowed_fields: ('quantity' | 'device_type' | 'function_hosts' | 'ports' | 'measurements' | 'commands' | 'communication')[];
+};
+export type ReferenceDesignRecord = {
+  schema_version: 1; design_id: string; revision: number;
+  project_id: string; source_sha256: string; request_sha256: string;
+  status: 'REVIEW_REQUIRED' | 'ACCEPTED'; canonical_writes: false;
+  qualification?: 'UNVERIFIED'; hardware_evidence?: false;
+  qualification_findings?: { target_ref: string; technology: string; parameter: string; value_role: string;
+    qualification: 'UNVERIFIED'; hardware_evidence: false; finding: Record<string, unknown> }[];
+  request: { mode: 'EXAMPLE_PROJECT'; prompt: string; reference_sources: ReferenceSource[]; source_request_id?: string };
+  fact_id_map: Record<string, string>;
+  proposal: {
+    devices: { id: string; name: string; kind: string; quantity: number; rationale: string; owner_device_id?: string | null }[];
+    functions: { source_fact_id: string; realization: 'ATOMIC' | 'COMPOSITE'; executor_device_ids: string[]; realized_by_fact_ids: string[]; rationale: string }[];
+    ports: { id: string; device_id: string; technology: string; role: string; network_scope: string; parameters: Record<string, unknown>; rationale: string }[];
+    measurements: { device_id: string; measurement_id: string; rationale: string }[];
+    commands: { device_id: string; definition: Record<string, unknown>; rationale: string }[];
+    communication: { id: string; producer_device_id: string; consumer_device_ids: string[]; signal_name: string; rationale: string; encoding: Record<string, unknown> }[];
+    functional_dependencies: { id: string; producer_fact_id: string; consumer_fact_ids: string[]; executor_device_id: string; signal_name: string; rationale: string; encoding: Record<string, unknown> }[];
+    unresolved: { code: string; target_ref: string; message: string }[];
+  };
+  decision_evidence: Record<string, unknown>[];
+  protected_fields: Record<string, unknown>;
+};
+
+export function referenceDesignMarker(record: ReferenceDesignRecord) {
+  if (record.status !== 'ACCEPTED' || record.canonical_writes !== false) throw new Error('Referenzannahmen zuerst prüfen und übernehmen.');
+  return '- Dokument-Referenzentwurf: ' + JSON.stringify(Object.fromEntries([
+    'schema_version', 'design_id', 'revision', 'request_sha256', 'source_sha256', 'status',
+    'proposal', 'fact_id_map', 'decision_evidence', 'protected_fields',
+  ].map(key => [key, record[key as keyof ReferenceDesignRecord]])));
 }

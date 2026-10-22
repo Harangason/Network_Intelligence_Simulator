@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="25.846" timestamp="2026-10-20T14:38:39.767420+02:00" hostname="Haranga"><testcase classname="tests.test_document_stream_cancellation" name="test_production_waitress_observes_document_disconnect" time="21.124"><failure message="AssertionError: Production HTTP server must observe the closed document stream&#10;assert False&#10; +  where False = wait(20)&#10; +    where wait = &lt;threading.Event at 0x2eaa8002ad0: unset&gt;.wait">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000002EAA6031350&gt;
+
+    def test_production_waitress_observes_document_disconnect(monkeypatch):
+        """Exercise the real production entry point, not Flask's iterator.close()."""
+        import socket
+        from types import SimpleNamespace
+        from urllib.request import Request, urlopen
+        from waitress import create_server
+        import waitress
+        from backend.nis.app import __main__ as entry
+    
+        started, interrupted, finished, listening = (threading.Event() for _ in range(4))
+        controls, servers, exits = [], [], []
+        def execute(*args):
+            controls.append(active_document_request.get())
+            async def inference():
+                bind_document_request()
+                started.set()
+                try:
+                    await asyncio.sleep(120)
+                    pytest.fail('Abandoned document must not reach a later stage')
+                except asyncio.CancelledError:
+                    interrupted.set()
+                    raise
+            try:
+                asyncio.run(inference())
+            finally:
+                finished.set()
+    
+        app = Flask(__name__)
+        app.post('/document')(lambda: api._local_document_response('interpret_project_document', None, 'initial'))
+        def serve(application, **kwargs):
+            server = create_server(application, **kwargs)
+            servers.append(server)
+            listening.set()
+            server.run()
+        with socket.socket() as reservation:
+            reservation.bind(('127.0.0.1', 0))
+            port = reservation.getsockname()[1]
+        monkeypatch.setenv('FLASK_HOST', '127.0.0.1')
+        monkeypatch.setenv('FLASK_PORT', str(port))
+        monkeypatch.setenv('FLASK_DEBUG', '0')
+        monkeypatch.setattr(entry, 'create_app', lambda: app)
+        monkeypatch.setattr(entry, 'runtime_settings', lambda: SimpleNamespace(api_threads=2, simulation_workers=1))
+        monkeypatch.setattr(waitress, 'serve', serve)
+        monkeypatch.setattr(api, 'execute', execute)
+        monkeypatch.setattr(api, '_slots', threading.BoundedSemaphore(1))
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            monkeypatch.setattr(api, '_executor', executor)
+            server_thread = threading.Thread(target=lambda: exits.append(entry.main()), daemon=True)
+            server_thread.start()
+            try:
+                assert listening.wait(5)
+                response = urlopen(Request(f'http://127.0.0.1:{port}/document', data=b'{}', headers={
+                    'Content-Type': 'application/json', 'Accept': 'application/x-ndjson', 'X-Project-ID': 'wire-cancel'}), timeout=10)
+                assert json.loads(response.readline())['type'] == 'PROGRESS'
+                assert started.wait(5)
+                response.close()
+&gt;               assert interrupted.wait(20), 'Production HTTP server must observe the closed document stream'
+E               AssertionError: Production HTTP server must observe the closed document stream
+E               assert False
+E                +  where False = wait(20)
+E                +    where wait = &lt;threading.Event at 0x2eaa8002ad0: unset&gt;.wait
+
+backend\tests\test_document_stream_cancellation.py:75: AssertionError</failure></testcase></testsuite></testsuites>

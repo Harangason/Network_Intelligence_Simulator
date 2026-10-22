@@ -1,0 +1,327 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -110,7 +110,7 @@
+     return resolve(root)
+ 
+ 
+-def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None):
++def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None, existing_devices=()):
+     """Narrow the native decoder, without changing public proposal validation."""
+     from backend.nis.agent.orchestration.project_intake import reference_model_output_schema
+     schema = reference_model_output_schema(prepared)
+@@ -138,6 +138,13 @@
+     if inventory_target or derivation_fact_ids is not None:
+         from copy import deepcopy
+         available = {inventory_target['fact_id']} if inventory_target else set(derivation_fact_ids)
++        binding_devices = [row for row in existing_devices
++                           if any(prepared['facts'][key]['role'] in {row['kind'], 'OTHER'} for key in available)
++                           and (not inventory_target or not inventory_target.get('names')
++                                or row['name'] in inventory_target['names'])
++                           and (not inventory_target or not inventory_target.get('member')
++                                or row.get('source_member_bindings', {}).get(inventory_target['fact_id'])
++                                in {None, inventory_target['member']})]
+         definition = deepcopy(item('devices'))
+         variants = []
+         for kind in definition['properties']['kind']['enum']:
+@@ -173,11 +180,51 @@
+             variants.append(variant)
+         schema['$defs'][schema['properties']['devices']['items']['$ref'].rsplit('/', 1)[-1]] = {'anyOf': variants}
+         schema['properties']['devices'].update(
+-            minItems=min(1, inventory_target['minimum_rows']) if inventory_target else 0,
++            minItems=min(1, inventory_target['minimum_rows']) if inventory_target and not binding_devices else 0,
+             maxItems=1 if inventory_target else 2)
++        binding_properties = {key: deepcopy(definition['properties'][key])
++                              for key in ('source_fact_ids', 'rationale', 'field_references')}
++        binding_properties['source_fact_ids']['items']['enum'] = sorted(available)
++        if inventory_target:
++            binding_properties['source_fact_ids'].update(minItems=1, maxItems=1)
++        binding_properties['device_id'] = {'type': 'string', 'minLength': 1}
++        if binding_devices:
++            binding_properties['device_id']['enum'] = [row['id'] for row in binding_devices]
++        schema['properties']['inventory_bindings'] = {
++            'type': 'array', 'minItems': 0,
++            'maxItems': (1 if inventory_target else 2) if binding_devices else 0,
++            'items': {'type': 'object', 'properties': binding_properties,
++                      'required': list(binding_properties), 'additionalProperties': False}}
+         schema['properties']['inventory_complete'] = {'type': 'boolean'}
+-        schema.setdefault('required', []).append('inventory_complete')
++        schema.setdefault('required', []).extend(['inventory_complete', 'inventory_bindings'])
+     return schema
++
++
++def _reference_expand_inventory_bindings(devices, proposed, bindings, *, inventory_target=None):
++    """Resolve an existing-ID choice without asking inference to rewrite identity."""
++    from copy import deepcopy
++    current = {row['id']: row for row in devices}
++    limit = 1 if inventory_target else 2
++    if (not isinstance(proposed, list) or not isinstance(bindings, list)
++            or len(proposed) + len(bindings) > limit or any(not isinstance(row, dict) for row in proposed)):
++        raise ValueError('Neue Geräte und Inventarbindungen überschreiten die gemeinsame Stufengrenze.')
++    if any(row.get('id') in current for row in proposed):
++        raise ValueError('Vorhandene Teilnehmer ausschließlich über inventory_bindings auswählen; keine Gerätedefinition ersetzen.')
++    selected = set()
++    expanded = deepcopy(proposed)
++    for binding in bindings:
++        if not isinstance(binding, dict) or set(binding) != {'device_id', 'source_fact_ids', 'rationale', 'field_references'}:
++            raise ValueError('Inventarbindung erlaubt nur vorhandene ID, Quellenbelege und begründete Referenzmetadaten.')
++        key = binding['device_id']
++        if not isinstance(key, str) or key not in current or key in selected:
++            raise ValueError('Inventarbindung benötigt eine eindeutige vorhandene Teilnehmer-ID.')
++        selected.add(key)
++        row = deepcopy(current[key])
++        row.update({field: deepcopy(binding[field]) for field in ('source_fact_ids', 'rationale', 'field_references')})
++        row['source_member_bindings'] = ({inventory_target['fact_id']: inventory_target['member']}
++                                         if inventory_target and inventory_target.get('member') else {})
++        expanded.append(row)
++    return expanded
+ 
+ 
+ def _reference_merge_inventory_devices(devices, proposed, target, facts):
+@@ -753,13 +800,15 @@
+                           'derivation_fact_ids_for_this_stage': list(derivation_fact_ids) if derivation_fact_ids is not None else None,
+                           'output_fields_for_this_stage': list(allowed),
+                           'instruction': ('Nur die genannten Outputfelder füllen; alle anderen Arrays leer. '
+-                              'Nur den ausdrücklich ausgewählten Stufenbereich vollständig liefern; vorhandene eindeutige IDs erhalten. '
++                              + ('Inventarstufen liefern zusätzlich inventory_bindings und inventory_complete; diese beiden privaten Entscheidungsfelder sind ausdrücklich erlaubt. ' if inventory_stage else '')
++                              + 'Nur den ausdrücklich ausgewählten Stufenbereich vollständig liefern; vorhandene eindeutige IDs erhalten. '
+                               'Jede Auswahl begründen; echte offene Auslegung explizit unresolved halten. '
+                               + ('Zunächst ausschließlich konkrete Portabsicht planen: parameters bleibt {}. Die folgende eigene Parameterstufe legt jeden Anschluss aus; diese Zwischenstufe ist keine vollständige Prüfung. ' if port_intent else '')
+                               + ('Ausschließlich IO für die angeforderte vorhandene Teilnehmer-ID liefern; keine anderen Geräte, Anschlüsse, Messgrößen oder Befehle überschreiben. Alle Nachbarteilnehmer bleiben als Planungskontext sichtbar. ' if device_ids else '')
+-                              + ('Nur ein echtes Gerät für den angeforderten Quellenbefund/das Typmitglied liefern, keine zweite Platzhalterzeile. source_fact_ids enthält ausschließlich diese eine FactID; source_member_bindings ausschließlich das angeforderte wörtliche Mitglied. Alte Quellen-/Typ-/Referenzbindungen bleiben serverseitig erhalten. Vorhandene ID nur mit unveränderter Identität/Realisierung wiederverwenden. Funktional zusätzlich notwendige Hardware wird danach in einem eigenen Schritt geplant. ' if inventory_target else '')
++                              + ('Für vorhandene Geräte ausschließlich inventory_bindings mit device_id, source_fact_ids, rationale und field_references liefern. NIS erhält sämtliche unveränderlichen Gerätedaten und ergänzt nur die Quellen-/Typ-/Referenzbindung. devices enthält ausschließlich wirklich NEUE Geräte, niemals eine vorhandene ID mit erneut geschriebenen Feldern. Die gemeinsame Stufengrenze gilt für neue Geräte plus Bindungen. ' if inventory_stage else '')
++                              + ('Nur ein echtes Gerät oder eine vorhandene Gerätebindung für den angeforderten Quellenbefund/das Typmitglied liefern, keine zweite Platzhalterzeile. source_fact_ids enthält ausschließlich diese eine FactID; source_member_bindings neuer Geräte ausschließlich das angeforderte wörtliche Mitglied. Bei vorhandenen Geräten setzt NIS die angeforderte Typbindung selbst. Funktional zusätzlich notwendige Hardware wird danach in einem eigenen Schritt geplant. ' if inventory_target else '')
+                               + ('inventory_complete bewertet nur diesen deklarierten Quellenbereich. Bei vollständiger Abdeckung true; wenn er bereits abgedeckt ist, ist ein leeres Delta mit true zulässig. False verlangt eine echte weitere Instanz/Bindung dieses Bereichs. ' if inventory_target else '')
+-                              + ('Prüfe jetzt die physische Hardware für sämtliche Funktionen/Anforderungen des Profils. Sensoren und Aktoren sind echte Teilnehmer, keine bloßen Werte im Controller. Vorhandene Geräte wiederverwenden oder fehlende Messquellen, Verarbeitung, Verbraucher und Aktoren ergänzen; unabhängige Messgrößen und Stellwirkungen berücksichtigen. Ports/Messgrößen/Befehle/Funktionen/Kommunikation folgen erst danach und erzeugen KEINE Geräte mehr. Notwendige Peripherie niemals in spätere Schritte verschieben. source_fact_ids enthält nur passende angeforderte FUNCTION-/REQUIREMENT-FactIDs, keine neuen Bindungen an Quelleninventar; alte Bindungen wiederverwendeter IDs bleiben serverseitig erhalten. Keine Originalmenge erhöhen oder Hardwarebelege/Defaults erfinden. Höchstens zwei echte Ergänzungen, niemals Duplikat-Platzhalter. inventory_complete erst true, wenn vorhandene plus ergänzte Hardware den Funktionsbedarf abdeckt; ohne Ergänzungsbedarf devices=[] und true. False verlangt neue Geräte/Quellenbindungen. Unklare Fachentscheidungen konkret unresolved nennen. ' if derivation_fact_ids is not None else '')
++                              + ('Prüfe jetzt die physische Hardware für sämtliche Funktionen/Anforderungen des Profils. Sensoren und Aktoren sind echte Teilnehmer, keine bloßen Werte im Controller. Vorhandene Geräte wiederverwenden oder fehlende Messquellen, Verarbeitung, Verbraucher und Aktoren ergänzen; unabhängige Messgrößen und Stellwirkungen berücksichtigen. Ports/Messgrößen/Befehle/Funktionen/Kommunikation folgen erst danach und erzeugen KEINE Geräte mehr. Notwendige Peripherie niemals in spätere Schritte verschieben. source_fact_ids enthält nur passende angeforderte FUNCTION-/REQUIREMENT-FactIDs, keine neuen Bindungen an Quelleninventar; alte Bindungen wiederverwendeter IDs bleiben serverseitig erhalten. Keine Originalmenge erhöhen oder Hardwarebelege/Defaults erfinden. Höchstens zwei echte Ergänzungen, niemals Duplikat-Platzhalter. inventory_complete erst true, wenn vorhandene plus ergänzte Hardware den Funktionsbedarf abdeckt; ohne Ergänzungsbedarf devices=[] und inventory_bindings=[] und true. False verlangt neue Geräte/Quellenbindungen. Unklare Fachentscheidungen konkret unresolved nennen. ' if derivation_fact_ids is not None else '')
+                               + ('Genau die angeforderten Port-IDs liefern. id, device_id, technology, role und network_scope unverändert übernehmen; nur parameters und ports-spezifische Begründung/Referenzbelege auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
+                               + ('Genau die angeforderten Funktions-FactIDs abdecken; Abhängigkeiten nur mit diesen Senderfunktionen liefern. Andere ursprüngliche Funktions-FactIDs dürfen bewusste Empfänger oder COMPOSITE-Bestandteile sein. ' if function_ids else ''))}
+                 messages = [{'role': 'system', 'content': system}, {'role': 'user', 'content': json.dumps(prompt, ensure_ascii=False)}]
+@@ -770,7 +819,8 @@
+                 payload = {'model': self.model, 'messages': messages,
+                            'format': _reference_schema_for_stage(prepared, allowed, port_ids=port_ids,
+                                function_ids=function_ids, port_intent=port_intent, device_ids=device_ids,
+-                               inventory_target=inventory_target, derivation_fact_ids=derivation_fact_ids),
++                               inventory_target=inventory_target, derivation_fact_ids=derivation_fact_ids,
++                               existing_devices=current['devices'] if inventory_stage else ()),
+                            'think': False, 'stream': False, 'keep_alive': self.keep_alive,
+                            'options': {'temperature': 0, 'num_predict': 8192, 'num_ctx': self.context_tokens}}
+                 for attempt in range(2):
+@@ -798,6 +848,10 @@
+                     try:
+                         decoded = document_response_json(raw)
+                         inventory_complete = decoded.pop('inventory_complete', None) if inventory_stage else None
++                        if inventory_stage:
++                            decoded['devices'] = _reference_expand_inventory_bindings(
++                                current['devices'], decoded.get('devices', []), decoded.pop('inventory_bindings'),
++                                inventory_target=inventory_target)
+                         result = ReferenceDesignProposal.model_validate(decoded).model_dump(mode='json')
+                         if inventory_stage and type(inventory_complete) is not bool:
+                             raise ValueError('Inventarstufe benötigt eine ausdrückliche inventory_complete-Entscheidung.')
+--- before/backend/tests/test_reference_reasoner.py
++++ after/backend/tests/test_reference_reasoner.py
+@@ -11,6 +11,7 @@
+     LocalEngineeringReasoner, _reference_context_window,
+     _reference_merge_port_parameters, _reference_schema_for_stage, _reference_merge_inventory_devices,
+     _reference_declared_instances, _reference_scoped_inventory_delta,
++    _reference_expand_inventory_bindings,
+ )
+ from backend.tests.test_reference_design import fixture_request, fixture_design, wire, reference
+ 
+@@ -40,7 +41,7 @@
+ def reasoner_with_transport(monkeypatch, *, family='qwen3', truncate=False, capture=None, timeout=False,
+                             foreign_io=None, duplicate_port_ids=False, retry_foreign_port=False, omit_inventory_role=None,
+                             request=None, design_factory=complete_design, never_complete_inventory_role=None,
+-                            instance_derived_ids=(), inventory_mutator=None, derivation_mutator=None):
++                            instance_derived_ids=(), inventory_mutator=None, derivation_mutator=None, binding_mutator=None):
+     prepared = intake.prepare_reference_design(request or fixture_request())
+     design = design_factory(prepared)
+     observed = []
+@@ -135,6 +136,22 @@
+         if allowed == {'communication'}:
+             selected = set(content['producer_device_ids_for_this_stage'])
+             candidate['communication'] = [row for row in candidate['communication'] if row['producer_device_id'] in selected]
++        if 'inventory_bindings' in payload['format']['properties']:
++            candidate['inventory_bindings'] = []
++            known = {row['id']: row for row in current}
++            new = []
++            defaults = {'owner_device_id': None, 'context_kind': None, 'purpose': None, 'contained_device_ids': []}
++            for row in candidate['devices']:
++                previous = known.get(row['id'])
++                if previous and all(row.get(key, defaults.get(key)) == value for key, value in previous.items()
++                                    if key not in {'source_fact_ids', 'source_member_bindings', 'rationale', 'field_references'}):
++                    candidate['inventory_bindings'].append({'device_id': row['id'], 'source_fact_ids': row['source_fact_ids'],
++                        'rationale': row['rationale'], 'field_references': row.get('field_references', {})})
++                else:
++                    new.append(row)
++            candidate['devices'] = new
++            if binding_mutator:
++                binding_mutator(candidate, content, payload, prepared)
+         return httpx.Response(200, json={'message': {'content': json.dumps(candidate)}, 'done_reason': 'length' if truncate else 'stop',
+                                        'prompt_eval_count': 500, 'eval_count': 500})
+     instance = LocalEngineeringReasoner()
+@@ -659,3 +676,132 @@
+     with pytest.raises(ValueError, match='[Dd]oppelte'):
+         _reference_scoped_inventory_delta([old], [incoming], derivation_fact_ids=[function_id])
+     assert incoming == before
++
++
++def test_existing_binding_schema_offers_only_identity_selection_and_scoped_metadata():
++    prepared = intake.prepare_reference_design(fixture_request())
++    devices, _ = _reference_declared_instances(prepared, prepared['facts'])
++    fact = next(key for key, row in prepared['facts'].items() if row['kind'] == 'FUNCTION')
++    schema = _reference_schema_for_stage(prepared, {'devices'}, derivation_fact_ids=[fact], existing_devices=devices)
++    choice = schema['properties']['inventory_bindings']['items']
++    assert choice['additionalProperties'] is False
++    assert set(choice['properties']) == {'device_id', 'source_fact_ids', 'rationale', 'field_references'}
++    assert choice['properties']['device_id']['enum'] == [row['id'] for row in devices]
++    assert choice['properties']['source_fact_ids']['items']['enum'] == [fact]
++    assert set(choice['required']) == set(choice['properties'])
++    assert 'inventory_bindings' in schema['required']
++    assert 'inventory_bindings' not in intake.reference_model_output_schema(prepared)['properties']
++    empty = _reference_schema_for_stage(prepared, {'devices'}, derivation_fact_ids=[fact])
++    assert empty['properties']['inventory_bindings']['maxItems'] == 0
++    assert 'enum' not in empty['properties']['inventory_bindings']['items']['properties']['device_id']
++
++
++@pytest.mark.parametrize('mismatch', ['role', 'name', 'member'])
++def test_existing_binding_schema_excludes_incompatible_immutable_identities(mismatch):
++    prepared = intake.prepare_reference_design(fixture_request(sensor_group='Sensortypen (Temperatur links, Temperatur rechts)'))
++    devices = intake.ReferenceDesignProposal.model_validate(complete_design(prepared)).model_dump(mode='json')['devices']
++    sensor = next(row for row in devices if row['kind'] == 'SENSOR')
++    fact = sensor['source_fact_ids'][0]
++    sensor['source_member_bindings'] = {fact: 'Temperatur links'}
++    target = {'fact_id': fact, 'member': 'Temperatur links', 'names': [], 'minimum_rows': 1}
++    valid = _reference_schema_for_stage(prepared, {'devices'}, inventory_target=target, existing_devices=devices)
++    assert valid['properties']['inventory_bindings']['items']['properties']['device_id']['enum'] == [sensor['id']]
++    if mismatch == 'role':
++        target['fact_id'] = next(key for key, row in prepared['facts'].items() if row['role'] == 'CONTROLLER')
++        target['member'] = None
++    elif mismatch == 'name':
++        target['names'] = ['A different explicit original name']
++    else:
++        target['member'] = 'Temperatur rechts'
++    schema = _reference_schema_for_stage(prepared, {'devices'}, inventory_target=target, existing_devices=[sensor])
++    assert schema['properties']['inventory_bindings']['maxItems'] == 0
++    assert 'enum' not in schema['properties']['inventory_bindings']['items']['properties']['device_id']
++    assert schema['properties']['devices']['minItems'] == 1
++
++
++def test_binding_expansion_preserves_identity_then_appends_source_metadata_without_mutation():
++    prepared = intake.prepare_reference_design(fixture_request())
++    devices, _ = _reference_declared_instances(prepared, prepared['facts'])
++    old = devices[0]
++    old['purpose'] = 'Existing reviewed purpose'
++    old['field_references'] = {'device_type': ['R_OLD']}
++    fact = next(key for key, row in prepared['facts'].items() if row['kind'] == 'FUNCTION')
++    target = {'fact_id': fact, 'member': None, 'names': [], 'minimum_rows': 1}
++    choice = {'device_id': old['id'], 'source_fact_ids': [fact], 'rationale': 'Reuse actual executor', 'field_references': {}}
++    before, raw_choice = deepcopy(devices), deepcopy(choice)
++    expanded = _reference_expand_inventory_bindings(devices, [], [choice], inventory_target=target)
++    typed = intake.ReferenceDesignProposal.model_validate({'devices': expanded}).model_dump(mode='json')['devices']
++    delta = _reference_scoped_inventory_delta(devices, typed, inventory_target=target)
++    merged = _reference_merge_inventory_devices(devices, delta, target, prepared['facts'])
++    assert devices == before and choice == raw_choice
++    assert merged[0]['source_fact_ids'] == [*old['source_fact_ids'], fact]
++    assert merged[0]['field_references'] == old['field_references']
++    assert all(merged[0][key] == value for key, value in old.items()
++               if key not in {'source_fact_ids', 'rationale'})
++
++
++@pytest.mark.parametrize('field', ['id', 'name', 'kind', 'quantity', 'owner_device_id', 'context_kind', 'purpose', 'contained_device_ids', 'source_member_bindings'])
++def test_binding_cannot_write_any_immutable_device_or_cursor_field(field):
++    prepared = intake.prepare_reference_design(fixture_request())
++    devices, _ = _reference_declared_instances(prepared, prepared['facts'])
++    choice = {'device_id': devices[0]['id'], 'source_fact_ids': devices[0]['source_fact_ids'],
++              'rationale': 'Invalid unit choice', 'field_references': {}, field: 'foreign'}
++    with pytest.raises(ValueError, match='Inventarbindung erlaubt nur'):
++        _reference_expand_inventory_bindings(devices, [], [choice])
++
++
++@pytest.mark.parametrize('mode', ['unknown', 'duplicate', 'joint-limit', 'redeclare'])
++def test_binding_rejects_unknown_duplicate_over_budget_and_redeclared_identities(mode):
++    prepared = intake.prepare_reference_design(fixture_request())
++    devices, _ = _reference_declared_instances(prepared, prepared['facts'])
++    choice = {'device_id': devices[0]['id'], 'source_fact_ids': devices[0]['source_fact_ids'],
++              'rationale': 'Unit choice', 'field_references': {}}
++    target = {'fact_id': devices[0]['source_fact_ids'][0], 'member': None}
++    if mode == 'unknown':
++        choice['device_id'] = 'not-an-existing-device'
++        proposed, bindings, target = [], [choice], None
++    elif mode == 'duplicate':
++        proposed, bindings, target = [], [choice, deepcopy(choice)], None
++    elif mode == 'joint-limit':
++        proposed, bindings = [{**devices[0], 'id': 'new-device'}], [choice]
++    else:
++        proposed, bindings, target = [devices[0]], [], None
++    with pytest.raises(ValueError):
++        _reference_expand_inventory_bindings(devices, proposed, bindings, inventory_target=target)
++
++
++@pytest.mark.parametrize('field', ['source_fact_ids', 'field_references'])
++def test_binding_expansion_does_not_hide_duplicate_native_metadata(field):
++    prepared = intake.prepare_reference_design(fixture_request())
++    devices, _ = _reference_declared_instances(prepared, prepared['facts'])
++    fact = next(key for key, row in prepared['facts'].items() if row['kind'] == 'FUNCTION')
++    choice = {'device_id': devices[0]['id'], 'source_fact_ids': [fact], 'rationale': 'Unit choice', 'field_references': {}}
++    if field == 'source_fact_ids':
++        choice[field].append(fact)
++    else:
++        choice[field] = {'device_type': ['R1', 'R1']}
++    expanded = _reference_expand_inventory_bindings(devices, [], [choice])
++    with pytest.raises(ValueError, match='[Dd]oppelte'):
++        _reference_scoped_inventory_delta(devices, expanded, derivation_fact_ids=[fact])
++
++
++def test_full_reference_protocol_reuses_existing_id_without_echoing_identity(monkeypatch):
++    captured = []
++    def reuse(candidate, content, payload, prepared):
++        old = next(row for row in content['current_candidate']['devices'] if row['kind'] == 'CONTROLLER')
++        fact = content['derivation_fact_ids_for_this_stage'][0]
++        candidate.update(devices=[{**old, 'source_fact_ids': [fact], 'source_member_bindings': {},
++                                  'rationale': 'Reuse existing physical executor'}], inventory_complete=True)
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch, derivation_mutator=reuse, capture=captured)
++    result = run_reference(reasoner, prepared)
++    step = next(row for row in observed if row['derivation_fact_ids_for_this_stage'] is not None)
++    old = next(row for row in step['current_candidate']['devices'] if row['kind'] == 'CONTROLLER')
++    saved = [row for row in result['proposal']['devices'] if row['name'] == old['name'] and row['kind'] == old['kind']]
++    assert len(saved) == 1
++    assert all(saved[0][key] == old[key]
++               for key in ('name', 'kind', 'quantity', 'context_kind', 'purpose', 'owner_device_id', 'contained_device_ids'))
++    native = next(row for row in captured if 'inventory_bindings' in row['format']['properties']
++                  and json.loads(row['messages'][1]['content'])['derivation_fact_ids_for_this_stage'] is not None)
++    assert set(native['format']['properties']['inventory_bindings']['items']['properties']) == {
++        'device_id', 'source_fact_ids', 'rationale', 'field_references'}
++    assert result['proposal']['unresolved'] == [] and result['canonical_writes'] is False
+--- before/backend/tests/test_reference_design.py
++++ after/backend/tests/test_reference_design.py
+@@ -956,7 +956,7 @@
+     import asyncio
+     from backend.nis.agent.orchestration.local_reasoner import LocalEngineeringReasoner
+     candidate = {'devices': [{**fixture_design(prepared)['devices'][0], 'rationale': 'x' * 2001}]}
+-    encoded_candidate = json.dumps({**candidate, 'inventory_complete': True})
++    encoded_candidate = json.dumps({**candidate, 'inventory_complete': True, 'inventory_bindings': []})
+     requests = []
+     class Response:
+         is_error = False
+@@ -983,7 +983,20 @@
+         expected['properties'][field]['maxItems'] = 0
+     expected['properties']['devices'].update(minItems=1, maxItems=1)
+     expected['properties']['inventory_complete'] = {'type': 'boolean'}
+-    expected.setdefault('required', []).append('inventory_complete')
++    device_properties = expected['$defs']['ReferenceDevice']['properties']
++    binding_properties = {key: deepcopy(device_properties[key])
++                          for key in ('source_fact_ids', 'rationale', 'field_references')}
++    binding_properties['source_fact_ids'].update(minItems=1, maxItems=1)
++    binding_properties['source_fact_ids']['items']['enum'] = sorted(
++        key for key, fact in prepared['facts'].items() if fact['role'] == 'SENSOR')
++    binding_properties['device_id'] = {'type': 'string', 'minLength': 1}
++    # Only the source-compiled controller exists at this first sensor cursor;
++    # it is not a sensor candidate and cannot be selected as a substitute.
++    expected['properties']['inventory_bindings'] = {
++        'type': 'array', 'minItems': 0, 'maxItems': 0,
++        'items': {'type': 'object', 'properties': binding_properties,
++                  'required': list(binding_properties), 'additionalProperties': False}}
++    expected.setdefault('required', []).extend(['inventory_complete', 'inventory_bindings'])
+     for request in requests:
+         actual = deepcopy(request['format'])
+         variants = actual['$defs']['ReferenceDevice']['anyOf']

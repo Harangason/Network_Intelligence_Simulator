@@ -1,0 +1,244 @@
+--- before/frontend/src/features/agent/lib/document-clarification.ts
++++ after/frontend/src/features/agent/lib/document-clarification.ts
+@@ -208,11 +208,24 @@
+   name: string; source_context?: string[]; duties: { source_quote: string }[];
+ }[]) {
+   const result: Record<string, string> = {};
+-  for (const fact of facts.filter(fact => fact.kind === 'FUNCTION')) {
+-    const sharedCitation = facts.some(other => other.kind === 'FUNCTION' && other.name !== fact.name && other.source_quote === fact.source_quote && JSON.stringify(other.source_context ?? []) === JSON.stringify(fact.source_context ?? []));
+-    const candidates = owners.filter(owner => documentOwnerScopeMatches(owner.source_context ?? [], fact.source_context ?? [])
++  const functions = facts.filter(fact => fact.kind === 'FUNCTION');
++  const scopedOwners = (fact: DocumentFact, requireContext = false) => {
++    const sharedCitation = functions.some(other => other.name !== fact.name && other.source_quote === fact.source_quote && JSON.stringify(other.source_context ?? []) === JSON.stringify(fact.source_context ?? []));
++    return owners.filter(owner => (!requireContext || Boolean(owner.source_context?.length))
++      && documentOwnerScopeMatches(owner.source_context ?? [], fact.source_context ?? [])
+       && owner.duties.some(duty => duty.source_quote.length >= 3 && fact.source_quote.includes(duty.source_quote) && (!sharedCitation || duty.source_quote.includes(fact.name))));
+-    const names = [...new Set(candidates.map(owner => owner.name))];
++  };
++  for (const fact of functions) {
++    let names = [...new Set(scopedOwners(fact).map(owner => owner.name))];
++    if (!names.length && fact.source_context?.length && fact.role === 'OTHER' && fact.quantity === null && fact.source_quote.includes(fact.name)) {
++      // A chapter overview may repeat an individually declared responsibility.
++      // Require an exact source subject and its scoped witness in this system;
++      // never infer ownership from a substring, a sole host, or another profile.
++      const witnesses = functions.filter(other => other.source_context?.length && other.name === fact.name && other.role === 'OTHER'
++        && other.quantity === null && other.source_quote.includes(other.name)
++        && sameDocumentSystem(other.source_context, fact.source_context));
++      names = [...new Set(witnesses.flatMap(witness => scopedOwners(witness, true).map(owner => owner.name)))];
++    }
+     if (names.length === 1) result[documentFactIdentity(fact)] = names[0];
+   }
+   return result;
+--- before/frontend/src/features/agent/lib/engineering-specification.test.mjs
++++ after/frontend/src/features/agent/lib/engineering-specification.test.mjs
+@@ -1641,6 +1641,59 @@
+   assert.deepEqual(documentSourceFunctionAssignments([fact], owners), { [documentFactIdentity(fact)]: 'ADC' });
+ });
+ 
++for (const system of ['Vehicle', 'Robot Alpha', 'Plant Alpha']) {
++  test(`exact source responsibility crosses chapters only within ${system}`, () => {
++    const fact = { name: 'Fahrdynamikregelung', kind: 'FUNCTION', role: 'OTHER', quantity: null,
++      source_quote: 'Fahrdynamikregelung', source_context: [system, '4. Systemfunktionen', '4.4 Fahrzeugsteuerung'] };
++    const context = [system, '2. Domain‑Controller‑Design', '2.2 Chassis Domain Controller (CDC)'];
++    const witness = { ...fact, source_context: context };
++    const owner = { name: 'CDC', source_context: context, duties: [{ source_quote: fact.source_quote }] };
++    const assignments = documentSourceFunctionAssignments([fact, witness], [owner]);
++    assert.equal(assignments[documentFactIdentity(fact)], 'CDC');
++    assert.equal(assignments[documentFactIdentity(witness)], 'CDC');
++  });
++}
++
++for (const invalid of ['different-profile', 'ambiguous-owner', 'qualified-subject', 'composite',
++  'missing-witness', 'wrong-kind', 'wrong-role', 'quantity', 'nonliteral-subject', 'shared-citation',
++  'empty-fact-context', 'empty-owner-context', 'empty-witness-context']) {
++  test(`cross-chapter source assignment rejects ${invalid}`, () => {
++    const fact = { name: 'Fahrdynamikregelung', kind: 'FUNCTION', role: 'OTHER', quantity: null,
++      source_quote: 'Fahrdynamikregelung', source_context: ['Vehicle A', '4. Systemfunktionen', '4.4 Fahrzeugsteuerung'] };
++    const context = ['Vehicle A', '2. Domain‑Controller‑Design', '2.2 CDC'];
++    let witnesses = [{ ...fact, source_context: context }];
++    let owners = [{ name: 'CDC', source_context: context, duties: [{ source_quote: fact.source_quote }] }];
++    if (invalid === 'different-profile') {
++      witnesses[0].source_context = ['Vehicle B', ...context.slice(1)];
++      owners[0].source_context = witnesses[0].source_context;
++    } else if (invalid === 'ambiguous-owner') {
++      const otherContext = [...context.slice(0, -1), '2.3 Other'];
++      witnesses.push({ ...fact, source_context: otherContext });
++      owners.push({ ...owners[0], name: 'Other', source_context: otherContext });
++    } else if (invalid === 'qualified-subject') {
++      fact.name += ' (Steering)'; fact.source_quote = fact.name;
++    } else if (invalid === 'composite') {
++      fact.name += ' und Planning'; fact.source_quote = fact.name;
++    } else if (invalid === 'missing-witness') witnesses = [];
++    else if (invalid === 'wrong-kind') witnesses[0].kind = 'CATEGORY';
++    else if (invalid === 'wrong-role') witnesses[0].role = 'CONTROLLER';
++    else if (invalid === 'quantity') witnesses[0].quantity = 1;
++    else if (invalid === 'nonliteral-subject') fact.source_quote = 'Other source line';
++    else if (invalid === 'empty-fact-context') fact.source_context = [];
++    else if (invalid === 'empty-owner-context') {
++      owners[0].source_context = []; witnesses[0].source_context = ['Functions'];
++    } else if (invalid === 'empty-witness-context') {
++      owners[0].source_context = ['Architecture']; witnesses[0].source_context = [];
++    }
++    else if (invalid === 'shared-citation') {
++      witnesses[0].source_quote = 'Fahrdynamikregelung und Planning';
++      witnesses.push({ ...witnesses[0], name: 'Planning' });
++      owners[0].duties = [{ source_quote: 'Planning' }];
++    }
++    assert.equal(documentSourceFunctionAssignments([fact, ...witnesses], owners)[documentFactIdentity(fact)], undefined);
++  });
++}
++
+ test('same numeric profile ordinal in different roots keeps unique stable device names', () => {
+   const source = '# Industry A\n## 054. Arm\n### Architecture\nEncoder\n# Industry B\n## 054. Other\n### Architecture\nEncoder';
+   const components = [
+--- before/backend/nis/agent/orchestration/project_intake.py
++++ after/backend/nis/agent/orchestration/project_intake.py
+@@ -300,6 +300,19 @@
+     label = re.sub(r'^\d+(?:\.\d+)*[.)]?\s+', '', context[-1]).rstrip(':').strip()
+     if re.fullmatch(r'(?:Architektur|Architecture|Hardware(?:komponenten| components)?|Systemfunktionen|Funktionsbeschreibung|Functional description|Funktionen|Functions|Aufgaben|Responsibilities|(?:Referenz[- ]?)?Anforderungen|(?:Reference )?Requirements|Schnittstellen|Interfaces|Anschlüsse|Connections|Übersicht|Overview|Systemübersicht|System overview)', label, re.I):
+         return context[:-1]
++    return context[:]
++
++
++def document_system_scope(context: list[str]) -> list[str]:
++    """Keep named source systems/profiles while crossing semantic chapters."""
++    import unicodedata
++    for index, caption in enumerate(context):
++        if not document_source_scope([caption]):
++            return context[:index]
++        title = re.sub(r'[\u2010-\u2015\u2212]', '-', unicodedata.normalize('NFKC', caption))
++        title = re.sub(r'^\d+(?:\.\d+)*[.)]?\s+', '', title).rstrip(':').strip()
++        if re.fullmatch(r'(?:Systemstruktur(?:\s*\(Top-Level-Architektur\))?|System structure(?:\s*\(Top-Level Architecture\))?|Systemgrenzen(?: und Systemkontext)?|System boundaries(?: and System context)?|Systemkontext|System context|Zielbild der (?:E/E[- ]?)?Architektur|Architecture (?:vision|target)|Target architecture|Domain[- ]Controller[- ]Design|Controller[- ]Design|(?:Elektronische|Elektrische|Mechanische|Software)\s*Domäne|(?:Electronic|Electrical|Mechanical|Software) domain)', title, re.I):
++            return context[:index]
+     return context[:]
+ 
+ 
+--- before/backend/nis/agent/tools/wizard_generation.py
++++ after/backend/nis/agent/tools/wizard_generation.py
+@@ -703,12 +703,10 @@
+ 
+ def _reviewed_document_functions(evidence: dict | None, hosts: list[str], chains: list[dict] | None = None) -> list[dict]:
+     """Resolve only explicit source-fact assignments to real executable hosts."""
+-    from backend.nis.agent.orchestration.project_intake import document_fact_identity, document_source_scope
++    from backend.nis.agent.orchestration.project_intake import document_fact_identity, document_source_scope, document_system_scope
+     duties = [fact for fact in (evidence or {}).get('components', []) if fact['kind'] == 'FUNCTION']
+     assignments = (evidence or {}).get('function_assignments', {})
+-    result = []
+-    for fact in duties:
+-        identity = document_fact_identity(fact)
++    def scoped_owners(fact, *, require_context=False):
+         shared_citation = any(other['name'] != fact['name'] and other['source_quote'] == fact['source_quote'] and other.get('source_context', []) == fact.get('source_context', []) for other in duties)
+         candidates = set()
+         for chain in chains or []:
+@@ -716,6 +714,8 @@
+                 continue
+             configuration = chain.get('configuration') or {}
+             context = (configuration.get('document_equipment_evidence') or {}).get('source_context', [])
++            if require_context and not context:
++                continue
+             host_scope = document_source_scope(context)
+             fact_scope = document_source_scope(fact.get('source_context', []))
+             if host_scope != fact_scope and not (host_scope and fact_scope[:len(host_scope)] == host_scope):
+@@ -723,6 +723,21 @@
+             if any(len(duty.get('source_quote', '')) >= 3 and duty['source_quote'] in fact['source_quote'] and (not shared_citation or fact['name'] in duty['source_quote'])
+                    for duty in configuration.get('source_scoped_functions', [])):
+                 candidates.add(chain['hardware_name'].casefold())
++        return candidates
++
++    result = []
++    for fact in duties:
++        identity = document_fact_identity(fact)
++        candidates = scoped_owners(fact)
++        if not candidates and fact.get('source_context') and fact.get('role') == 'OTHER' and fact.get('quantity') is None and fact['name'] in fact['source_quote']:
++            # Repeat a literal responsibility only within its source system.
++            # A witness must independently resolve under the declaring host.
++            system = document_system_scope(fact.get('source_context', []))
++            for witness in duties:
++                if (witness.get('source_context') and witness['name'] == fact['name'] and witness.get('role') == 'OTHER'
++                        and witness.get('quantity') is None and witness['name'] in witness['source_quote']
++                        and document_system_scope(witness.get('source_context', [])) == system):
++                    candidates.update(scoped_owners(witness, require_context=True))
+         scoped_host = next(iter(candidates)) if len(candidates) == 1 else ''
+         host = str(assignments.get(identity) or scoped_host).casefold()
+         if not host or host not in hosts:
+--- before/backend/tests/test_wizard_generation.py
++++ after/backend/tests/test_wizard_generation.py
+@@ -1252,6 +1252,78 @@
+         wizard_generation._reviewed_document_functions(evidence, ['adc', 'other'], [chain, {**chain, 'hardware_name': 'Other'}])
+ 
+ 
++@pytest.mark.parametrize('reviewed', [False, True])
++def test_source_cross_section_function_keeps_declared_owner_provenance(reviewed):
++    from backend.nis.agent.orchestration.project_intake import document_fact_identity
++    fact = {'name': 'Fahrdynamikregelung', 'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None,
++            'source_quote': 'Fahrdynamikregelung', 'source_context': ['Vehicle', '4. Systemfunktionen', '4.4 Fahrzeugsteuerung']}
++    context = ['Vehicle', '2. Domain‑Controller‑Design', '2.2 Chassis Domain Controller (CDC)']
++    witness = {**fact, 'source_context': context}
++    evidence = {'components': [fact, witness], 'source_sha256': 'c' * 64}
++    if reviewed:
++        evidence['function_assignments'] = {document_fact_identity(fact): 'CDC'}
++    chain = {'hardware_name': 'CDC', 'device_type': 'ECU', 'configuration': {
++        'source_scoped_functions': [{'source_quote': fact['source_quote']}],
++        'document_equipment_evidence': {'source_context': context}}}
++    result = wizard_generation._reviewed_document_functions(evidence, ['cdc'], [chain])
++    assert len(result) == 2
++    assert all(item['host'] == 'cdc' and item['assignment_source'] == 'source_scoped_function' for item in result)
++    assert result[0]['fact_id'] == document_fact_identity(fact)
++    assert result[0]['source_quote'] == fact['source_quote']
++    assert result[0]['source_sha256'] == 'c' * 64
++
++
++@pytest.mark.parametrize('invalid', ['different-profile', 'ambiguous-owner', 'qualified-subject', 'composite',
++                                   'missing-witness', 'wrong-kind', 'wrong-role', 'quantity',
++                                   'nonliteral-subject', 'shared-citation', 'empty-fact-context',
++                                   'empty-owner-context', 'empty-witness-context'])
++def test_source_cross_section_function_rejects_unproved_owner(invalid):
++    fact = {'name': 'Fahrdynamikregelung', 'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None,
++            'source_quote': 'Fahrdynamikregelung', 'source_context': ['Vehicle A', '4. Systemfunktionen', '4.4 Fahrzeugsteuerung']}
++    context = ['Vehicle A', '2. Domain‑Controller‑Design', '2.2 CDC']
++    witnesses = [{**fact, 'source_context': context}]
++    chains = [{'hardware_name': 'CDC', 'device_type': 'ECU', 'configuration': {
++        'source_scoped_functions': [{'source_quote': fact['source_quote']}],
++        'document_equipment_evidence': {'source_context': context}}}]
++    if invalid == 'different-profile':
++        witnesses[0]['source_context'] = ['Vehicle B', *context[1:]]
++        chains[0]['configuration']['document_equipment_evidence']['source_context'] = witnesses[0]['source_context']
++    elif invalid == 'ambiguous-owner':
++        other_context = [*context[:-1], '2.3 Other']
++        witnesses.append({**fact, 'source_context': other_context})
++        chains.append({'hardware_name': 'Other', 'device_type': 'ECU', 'configuration': {
++            'source_scoped_functions': [{'source_quote': fact['source_quote']}],
++            'document_equipment_evidence': {'source_context': other_context}}})
++    elif invalid in {'qualified-subject', 'composite'}:
++        fact['name'] += ' (Steering)' if invalid == 'qualified-subject' else ' und Planning'
++        fact['source_quote'] = fact['name']
++    elif invalid == 'missing-witness':
++        witnesses = []
++    elif invalid == 'wrong-kind':
++        witnesses[0]['kind'] = 'CATEGORY'
++    elif invalid == 'wrong-role':
++        witnesses[0]['role'] = 'CONTROLLER'
++    elif invalid == 'quantity':
++        witnesses[0]['quantity'] = 1
++    elif invalid == 'nonliteral-subject':
++        fact['source_quote'] = 'Other source line'
++    elif invalid == 'empty-fact-context':
++        fact['source_context'] = []
++    elif invalid == 'empty-owner-context':
++        chains[0]['configuration']['document_equipment_evidence']['source_context'] = []
++        witnesses[0]['source_context'] = ['Functions']
++    elif invalid == 'empty-witness-context':
++        chains[0]['configuration']['document_equipment_evidence']['source_context'] = ['Architecture']
++        witnesses[0]['source_context'] = []
++    elif invalid == 'shared-citation':
++        witnesses[0]['source_quote'] = 'Fahrdynamikregelung und Planning'
++        witnesses.append({**witnesses[0], 'name': 'Planning'})
++        chains[0]['configuration']['source_scoped_functions'] = [{'source_quote': 'Planning'}]
++    with pytest.raises(ValueError, match='Funktionszuordnung'):
++        wizard_generation._reviewed_document_functions({'components': [fact, *witnesses], 'source_sha256': 'c' * 64},
++                                                     ['cdc', 'other'], chains)
++
++
+ @pytest.mark.parametrize('with_scoped', [False, True])
+ def test_typed_document_duties_enter_model_proposal_with_complete_requirements(monkeypatch, with_scoped):
+     import hashlib

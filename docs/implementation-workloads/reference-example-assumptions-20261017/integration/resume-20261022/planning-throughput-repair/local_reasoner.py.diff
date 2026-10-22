@@ -1,0 +1,412 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -246,6 +246,27 @@
+         incomplete['properties']['inventory_complete'] = {'type': 'boolean', 'enum': [False]}
+         incomplete['properties']['inventory_choices']['minItems'] = 1
+         schema['anyOf'] = [complete, incomplete]
++        if derivation_fact_ids is not None:
++            existing_choices = [row for row in choices
++                                if row['properties']['choice_kind']['enum'] == ['EXISTING']]
++            if existing_choices:
++                # Bind known identities together; a NEW participant remains a
++                # separate one-identity decision with all original gates.
++                bound = min(8, len(existing_choices))
++                schema['properties']['inventory_choices']['maxItems'] = bound
++                schema['properties']['inventory_choices']['uniqueItems'] = True
++                schema['anyOf'] = []
++                for terminal in (True, False):
++                    for existing in (False, True):
++                        alternative = deepcopy(complete)
++                        alternative['properties']['inventory_complete'] = {'type': 'boolean', 'enum': [terminal]}
++                        array = alternative['properties']['inventory_choices']
++                        array['minItems'] = 0 if terminal else 1
++                        array['maxItems'] = bound if existing else 1
++                        array['uniqueItems'] = True
++                        array['items'] = {'anyOf': existing_choices if existing else [
++                            row for row in choices if row not in existing_choices]}
++                        schema['anyOf'].append(alternative)
+     return schema
+ 
+ 
+@@ -253,7 +274,7 @@
+     """Resolve an existing-ID choice without asking inference to rewrite identity."""
+     from copy import deepcopy
+     current = {row['id']: row for row in devices}
+-    limit = 1 if inventory_target else 2
++    limit = 1 if inventory_target else (8 if not proposed else 1)
+     if (not isinstance(proposed, list) or not isinstance(bindings, list)
+             or len(proposed) + len(bindings) > limit or any(not isinstance(row, dict) for row in proposed)):
+         raise ValueError('Neue Geräte und Inventarbindungen überschreiten die gemeinsame Stufengrenze.')
+@@ -286,7 +307,7 @@
+ def _reference_expand_inventory_choices(devices, choices, *, inventory_target=None):
+     """Apply one shared bound before resolving new rows or known-ID bindings."""
+     minimum = 1 if inventory_target and (inventory_target['minimum_rows'] or inventory_target.get('names')) else 0
+-    maximum = 1 if inventory_target else 2
++    maximum = 1 if inventory_target else 8
+     if not isinstance(choices, list) or not minimum <= len(choices) <= maximum:
+         raise ValueError('Inventarstufe benötigt eindeutige Geräte innerhalb ihrer Grenze; leer ist nur ein bereits abgedeckter Bereich zulässig. Auswahl über inventory_choices liefern.')
+     if any(not isinstance(row, dict) for row in choices):
+@@ -305,6 +326,8 @@
+             proposed.append(row)
+         else:
+             raise ValueError('Inventarauswahl benötigt EXISTING oder eine zum Gerät passende NEW_<Geräteart>-Kennzeichnung.')
++    if not inventory_target and proposed and (bindings or len(proposed) != 1):
++        raise ValueError('Neue Hardware benötigt eine eigene einzelne Entscheidung; nicht mit vorhandenen Bindungen mischen.')
+     return _reference_expand_inventory_bindings(
+         devices, proposed, bindings, inventory_target=inventory_target)
+ 
+@@ -319,7 +342,8 @@
+         and (not target.get('member') or row['source_member_bindings'].get(target['fact_id']) == target['member'])]
+     required = 0 if derived else (facts[target['fact_id']]['quantity'] if facts[target['fact_id']]['kind'] == 'INSTANCE' else 1)
+     empty_allowed = target['minimum_rows'] == 0 and not target.get('names') and (derived or len(previous_selected) >= required)
+-    if (not ids and not empty_allowed) or len(ids) > target.get('max_rows', 2) or len(ids) != len(set(ids)):
++    bound = 8 if derived and all(key in by_id for key in ids) else target.get('max_rows', 2)
++    if (not ids and not empty_allowed) or len(ids) > bound or len(ids) != len(set(ids)):
+         raise ValueError('Inventarstufe benötigt eindeutige Geräte innerhalb ihrer Grenze; leer ist nur ein bereits abgedeckter Bereich zulässig.')
+     selected = proposed if derived else [row for row in proposed if target['fact_id'] in row['source_fact_ids']
+                 and (not target.get('member') or row['source_member_bindings'].get(target['fact_id']) == target['member'])]
+@@ -354,7 +378,8 @@
+     """Append cursor metadata; never reinterpret or remove an earlier decision."""
+     from copy import deepcopy
+     current = {row['id']: row for row in devices}
+-    if len(proposed) > (1 if inventory_target else 2):
++    maximum = 1 if inventory_target else (8 if all(row['id'] in current for row in proposed) else 2)
++    if len(proposed) > maximum:
+         raise ValueError('Ein Quelleninventarschritt liefert höchstens ein Gerät; funktionale Ergänzungen höchstens zwei.')
+     result = []
+     for incoming in proposed:
+@@ -467,8 +492,119 @@
+     return []
+ 
+ 
+-def _reference_context_messages(history, previous, current, system, maximum):
++def _reference_context_snapshot(current):
++    """Lossless private wire: tabular records and RFC6902 copies, no omissions."""
++    from copy import deepcopy
++
++    def serialized(value):
++        return json.dumps(value, ensure_ascii=False, separators=(',', ':'))
++
++    def pointer(path, key):
++        return path + '/' + str(key).replace('~', '~0').replace('/', '~1')
++
++    seen, copies, tables = {}, [], []
++
++    def share(value, path):
++        literal = serialized(value)
++        if path and len(literal.encode('utf8')) > 160:
++            if literal in seen:
++                operation = {'op': 'copy', 'from': seen[literal], 'path': path}
++                if len(serialized(operation).encode('utf8')) + 4 < len(literal.encode('utf8')):
++                    copies.append(operation)
++                    return None
++            else:
++                seen[literal] = path
++        if isinstance(value, dict):
++            return {key: share(item, pointer(path, key)) for key, item in value.items()}
++        if isinstance(value, list):
++            return [share(item, pointer(path, index)) for index, item in enumerate(value)]
++        return deepcopy(value)
++
++    def tabulate(value, path=''):
++        rows = list(value.values()) if isinstance(value, dict) else value if isinstance(value, list) else []
++        if path and len(rows) >= 3 and all(isinstance(row, dict) for row in rows):
++            columns = list(rows[0])
++            if columns and all(set(row) == set(columns) for row in rows):
++                # Compare serialized values so False, 0, 0.0 and null never
++                # collapse into each other under Python's numeric equality.
++                constants = {key: deepcopy(rows[0][key]) for key in columns
++                             if all(serialized(row[key]) == serialized(rows[0][key]) for row in rows)}
++                variable = [key for key in columns if key not in constants]
++                table = {'columns': variable, 'constants': constants,
++                         'rows': [[deepcopy(row[key]) for key in variable] for row in rows]}
++                if isinstance(value, dict):
++                    table['keys'] = list(value)
++                if len(serialized(table).encode('utf8')) + len(path.encode('utf8')) + 4 < len(serialized(value).encode('utf8')):
++                    tables.append(path)
++                    return table
++        if isinstance(value, dict):
++            return {key: tabulate(item, pointer(path, key)) for key, item in value.items()}
++        if isinstance(value, list):
++            return [tabulate(item, pointer(path, index)) for index, item in enumerate(value)]
++        return value
++
++    packed = {'nis_context_snapshot': tabulate(share(current, '')),
++              'nis_context_tables': tables, 'nis_context_copies': copies}
++    return packed if len(serialized(packed).encode('utf8')) < len(serialized(current).encode('utf8')) else deepcopy(current)
++
++
++async def _reference_stream_response(client, url, payload, report):
++    """Receive actual native output; never infer tokens from a heartbeat."""
++    import asyncio
++    from contextlib import suppress
++    from time import monotonic
++    started, last_report = monotonic(), 0.0
++    chunks, received, final = [], 0, None
++
++    def progress(state):
++        nonlocal last_report
++        last_report = monotonic()
++        report({'request_state': state, 'elapsed_seconds': round(last_report - started, 1),
++                'received_characters': received})
++
++    progress('WAITING_FOR_PROVIDER')
++
++    async def pulse():
++        while True:
++            await asyncio.sleep(10)
++            if final is None:
++                progress('RECEIVING_OUTPUT' if received else 'WAITING_FOR_PROVIDER')
++
++    heartbeat = asyncio.create_task(pulse())
++    try:
++        async with client.stream('POST', url, json=payload) as response:
++            if response.is_error:
++                raise RuntimeError(f'Lokale Referenzplanung fehlgeschlagen (HTTP {response.status_code}).')
++            async for line in response.aiter_lines():
++                if not line.strip():
++                    continue
++                body = json.loads(line)
++                if body.get('error'):
++                    raise RuntimeError('Lokale Referenzplanung: ' + str(body['error']))
++                if final is not None:
++                    raise ValueError('Lokaler Qwen lieferte Daten nach seiner terminalen Antwort.')
++                content = (body.get('message') or {}).get('content', '')
++                if not isinstance(content, str):
++                    raise ValueError('Lokaler Qwen lieferte kein gültiges Antwortfragment.')
++                chunks.append(content)
++                received += len(content)
++                if body.get('done') is True:
++                    final = body
++                    progress('RECEIVED')
++                elif received and monotonic() - last_report >= 1:
++                    progress('RECEIVING_OUTPUT')
++            if final is None:
++                raise ValueError('Lokale Referenzantwort endete ohne terminale Providerbestätigung; kein Entwurf wurde übernommen.')
++    finally:
++        heartbeat.cancel()
++        with suppress(asyncio.CancelledError):
++            await heartbeat
++    return {**final, 'message': {**(final.get('message') or {}), 'content': ''.join(chunks)}}
++
++
++def _reference_context_messages(history, previous, current, system, maximum, *, anchor=None):
+     """Append exact native replies; rebase only to a complete current snapshot."""
++    from copy import deepcopy
+     import json
+     protocol = (
+         ' NIS-Kontextfortsetzung: Die erste Nutzernachricht enthält den vollständigen Planungskontext. '
+@@ -477,12 +613,38 @@
+         'planning_stage und output_fields_for_this_stage. Vorherige Modellantworten sind Vorschläge; '
+         'nur die NIS-Kontextupdates bestätigen den serverseitig geprüften Zwischenstand. '
+         'Keine ursprünglichen Fakten, Teilnehmer oder offenen Quellenbereiche verwerfen. '
+-        'Weiter ausschließlich im aktuellen Antwortschema antworten.')
++        'Weiter ausschließlich im aktuellen Antwortschema antworten. '
++        'Verlustfreie Tabellendarstellung: Enthält eine Nachricht nis_context_snapshot, '
++        'ist dies ihr vollständiger Dateninhalt in kompakter Darstellung. An jedem JSON-Pointer '
++        'in nis_context_tables steht eine Tabelle: columns benennt die variablen Felder; '
++        'jede rows-Zeile enthält deren Werte in derselben Reihenfolge. constants gelten '
++        'unverändert für jede Zeile. Mit keys entsteht ein Objekt keys[i] -> Zeile[i], '
++        'sonst eine Liste von Datensätzen. Zuerst alle Tabellen rekonstruieren, danach '
++        'nis_context_copies der Reihe nach als RFC6902-copy ausführen: der vollständige '
++        'Wert von from ersetzt den Platzhalter an path. Das ist keine Kürzung; sämtliche '
++        'Quellen, Felder und Werte bleiben exakt erhalten. Enthält die rekonstruierte Nachricht '
++        'nis_context_patch, diese Operationen anschließend auf den aktuellen Planungskontext '
++        'anwenden, nicht auf die Tabellendarstellung. Bei einem Anker-Neustand gilt der '
++        'Patch ab dem ursprünglichen Kontext der ersten Nachricht; zwischenzeitliche '
++        'Vorschläge sind durch diesen vollständigen aktuellen Neustand ersetzt.')
+     full = [{'role': 'system', 'content': system + protocol},
+-            {'role': 'user', 'content': json.dumps(current, ensure_ascii=False, separators=(',', ':'))}]
++            {'role': 'user', 'content': json.dumps(_reference_context_snapshot(current), ensure_ascii=False, separators=(',', ':'))}]
++    if anchor is not None:
++        anchor_messages, anchor_context = anchor
++        if not anchor_messages or anchor_messages[0] != full[0]:
++            raise ValueError('Der native Kontextanker gehört nicht zu diesem Planungsprotokoll.')
++        anchored = [*deepcopy(anchor_messages), {'role': 'user', 'content': json.dumps(
++            _reference_context_snapshot({'nis_context_patch': _reference_context_patch(anchor_context, current)}),
++            ensure_ascii=False, separators=(',', ':'))}]
++        try:
++            _reference_context_window(anchored, maximum)
++        except ValueError:
++            pass  # Complete fresh snapshot still has to pass the same guard.
++        else:
++            full = anchored
+     if history and previous is not None:
+         appended = [*history, {'role': 'user', 'content': json.dumps(
+-            {'nis_context_patch': _reference_context_patch(previous, current)},
++            _reference_context_snapshot({'nis_context_patch': _reference_context_patch(previous, current)}),
+             ensure_ascii=False, separators=(',', ':'))}]
+         try:
+             _reference_context_window(appended, maximum)
+@@ -910,7 +1072,7 @@
+                              for key, fact in facts.items()
+                              if key in profile_facts or fact['kind'] == 'REQUIREMENT' and tuple(document_system_scope(fact.get('source_context', []))) in {profile, ()}}
+             current = {field: [] for field in fields}
+-            reference_messages, reference_prompt = [], None
++            reference_messages, reference_prompt, reference_anchor = [], None, None
+             content = {'original_source': profile_text, 'original_facts': visible_facts,
+                        'source_profile': list(profile), 'reserved_project_device_names': [row['name'] for row in combined['devices']], 'reference_sources': prepared['reference_sources'],
+                        'registered_catalogs': catalog,
+@@ -923,15 +1085,16 @@
+                     raise ValueError('Ungültige Teilnehmerbindung: ' + json.dumps(blocking, ensure_ascii=False))
+ 
+             async def infer(stage, allowed, producer_ids=(), feedback=None, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None):
+-                nonlocal reference_messages, reference_prompt
++                nonlocal reference_messages, reference_prompt, reference_anchor
+                 inventory_stage = inventory_target is not None or derivation_fact_ids is not None
+                 if device_ids:
+                     kinds = {'ports': {'CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR'},
+                              'measurements': {'SENSOR'}, 'commands': {'ACTUATOR'}}
+                     owners = {row['id']: row['kind'] for row in current['devices']}
+-                    if (len(device_ids) != 1 or not allowed <= kinds.keys()
+-                            or any(owners.get(device_ids[0]) not in kinds[field] for field in allowed)):
+-                        raise ValueError('Die IO-Stufe benötigt genau einen bestehenden Teilnehmer passender Geräteart.')
++                    if (not 1 <= len(device_ids) <= 4 or len(device_ids) != len(set(device_ids))
++                            or not allowed <= kinds.keys()
++                            or any(owners.get(key) not in kinds[field] for key in device_ids for field in allowed)):
++                        raise ValueError('Die IO-Stufe benötigt höchstens vier eindeutige bestehende Teilnehmer passender Geräteart.')
+                 stage_catalog = deepcopy(catalog)
+                 if port_ids:
+                     stage_catalog['technology_parameters'] = technology_schemas_for(
+@@ -957,15 +1120,16 @@
+                               + 'Nur den ausdrücklich ausgewählten Stufenbereich vollständig liefern; vorhandene eindeutige IDs erhalten. '
+                               'Jede Auswahl begründen; echte offene Auslegung explizit unresolved halten. '
+                               + ('Zunächst ausschließlich konkrete Portabsicht planen: parameters bleibt {}. Die folgende eigene Parameterstufe legt jeden Anschluss aus; diese Zwischenstufe ist keine vollständige Prüfung. ' if port_intent else '')
+-                              + ('Ausschließlich IO für die angeforderte vorhandene Teilnehmer-ID liefern; keine anderen Geräte, Anschlüsse, Messgrößen oder Befehle überschreiben. Alle Nachbarteilnehmer bleiben als Planungskontext sichtbar. ' if device_ids else '')
++                              + ('Ausschließlich IO für alle angeforderten vorhandenen Teilnehmer-IDs liefern; keine anderen Geräte, Anschlüsse, Messgrößen oder Befehle überschreiben. Teilnehmer und ihre IO getrennt erhalten. Alle Nachbarteilnehmer bleiben als Planungskontext sichtbar. ' if device_ids else '')
+                               + ('Jeder inventory_choices-Eintrag beginnt mit choice_kind: EXISTING für eine vorhandene ID-Bindung, NEW_<Geräteart> für wirklich neue Hardware (z.B. NEW_SENSOR passend zu kind=SENSOR). Bei EXISTING danach ausschließlich device_id, source_fact_ids, rationale und field_references auswählen; niemals id/name/kind eines alten Geräts neu schreiben. NIS erhält sämtliche unveränderlichen Gerätedaten und ergänzt nur die Quellen-/Typ-/Referenzbindung. Bei NEW_<Geräteart> danach die vollständigen neuen Gerätedaten liefern, niemals eine vorhandene ID. choice_kind wird nur intern geprüft und nicht als Modellfeld gespeichert. Die gemeinsame Stufengrenze gilt für alle Einträge zusammen. ' if inventory_stage else '')
+                               + ('Nur ein echtes Gerät oder eine vorhandene Gerätebindung für den angeforderten Quellenbefund/das Typmitglied liefern, keine zweite Platzhalterzeile. source_fact_ids enthält ausschließlich diese eine FactID; source_member_bindings neuer Geräte ausschließlich das angeforderte wörtliche Mitglied. Bei vorhandenen Geräten setzt NIS die angeforderte Typbindung selbst. Funktional zusätzlich notwendige Hardware wird danach in einem eigenen Schritt geplant. ' if inventory_target else '')
+                               + ('inventory_complete bewertet nur diesen deklarierten Quellenbereich. Bei vollständiger Abdeckung true; wenn er bereits abgedeckt ist, ist ein leeres Delta mit true zulässig. False verlangt eine echte weitere Instanz/Bindung dieses Bereichs. ' if inventory_target else '')
+-                              + ('Prüfe jetzt die physische Hardware für die ausdrücklich angeforderten FUNCTION-/REQUIREMENT-FactIDs. Vollständige Quelle und sämtliche Nachbarfunktionen bleiben Konsistenzkontext; weitere Quellenbefunde werden in eigenen Hardwarestufen bearbeitet. Sensoren und Aktoren sind echte Teilnehmer, keine bloßen Werte im Controller. Vorhandene Geräte wiederverwenden oder fehlende Messquellen, Verarbeitung, Verbraucher und Aktoren ergänzen; unabhängige Messgrößen und Stellwirkungen berücksichtigen. Ports/Messgrößen/Befehle/Funktionen/Kommunikation folgen erst nach ALLEN Hardwarestufen und erzeugen KEINE Geräte mehr. Notwendige Peripherie dieses Quellenbereichs niemals in spätere IO-Schritte verschieben. source_fact_ids enthält nur passende angeforderte FUNCTION-/REQUIREMENT-FactIDs, jede höchstens einmal; keine neuen Bindungen an Quelleninventar. Alte Bindungen wiederverwendeter IDs bleiben serverseitig erhalten. Keine Originalmenge erhöhen oder Hardwarebelege/Defaults erfinden. Pro Antwort höchstens ein echtes Gerät oder eine vorhandene ID-Bindung, niemals Duplikat-Platzhalter. Mehrere passende Quellenbelege desselben Teilnehmers gemeinsam in dieser einen Bindung angeben. Weiteren Hardwarebedarf mit inventory_complete=false für die normale nächste Antwort offenhalten; die Gesamtzahl notwendiger Geräte ist dadurch nicht begrenzt. inventory_complete bewertet ausschließlich den Bedarf der angeforderten FactIDs und wird erst true, wenn vorhandene plus ergänzte Hardware diesen vollständig abdeckt; ohne Ergänzungsbedarf inventory_choices=[] und true. False verlangt neue Geräte/Quellenbindungen. Unklare Fachentscheidungen konkret unresolved nennen. ' if derivation_fact_ids is not None else '')
++                              + ('Prüfe jetzt die physische Hardware für die ausdrücklich angeforderten FUNCTION-/REQUIREMENT-FactIDs. Vollständige Quelle und sämtliche Nachbarfunktionen bleiben Konsistenzkontext; weitere Quellenbefunde werden in eigenen Hardwarestufen bearbeitet. Sensoren und Aktoren sind echte Teilnehmer, keine bloßen Werte im Controller. Vorhandene Geräte wiederverwenden oder fehlende Messquellen, Verarbeitung, Verbraucher und Aktoren ergänzen; unabhängige Messgrößen und Stellwirkungen berücksichtigen. Ports/Messgrößen/Befehle/Funktionen/Kommunikation folgen erst nach ALLEN Hardwarestufen und erzeugen KEINE Geräte mehr. Notwendige Peripherie dieses Quellenbereichs niemals in spätere IO-Schritte verschieben. source_fact_ids enthält nur passende angeforderte FUNCTION-/REQUIREMENT-FactIDs, jede höchstens einmal; keine neuen Bindungen an Quelleninventar. Alte Bindungen wiederverwendeter IDs bleiben serverseitig erhalten. Keine Originalmenge erhöhen oder Hardwarebelege/Defaults erfinden. Pro Antwort entweder höchstens ein wirklich neues Gerät ODER bis zu acht verschiedene EXISTING-ID-Bindungen gemeinsam; niemals neue Hardware mit Bindungen mischen. Mehrere passende Quellenbelege desselben Teilnehmers gemeinsam angeben. Nur tatsächlich benötigte Teilnehmer binden, nicht sämtliche Geräte mit sämtlichen Funktionen verbinden. Weiteren Hardwarebedarf mit inventory_complete=false für die normale nächste Antwort offenhalten; die Gesamtzahl notwendiger Geräte ist dadurch nicht begrenzt. inventory_complete bewertet ausschließlich den Bedarf der angeforderten FactIDs und wird erst true, wenn vorhandene plus ergänzte Hardware diesen vollständig abdeckt; ohne Ergänzungsbedarf inventory_choices=[] und true. False verlangt neue Geräte/Quellenbindungen. Unklare Fachentscheidungen konkret unresolved nennen. ' if derivation_fact_ids is not None else '')
+                               + ('Genau die angeforderten Port-IDs liefern. id, device_id, technology, role und network_scope unverändert übernehmen; nur parameters und ports-spezifische Begründung/Referenzbelege auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
+                               + ('Genau die angeforderten Funktions-FactIDs abdecken; Abhängigkeiten nur mit diesen Senderfunktionen liefern. Andere ursprüngliche Funktions-FactIDs dürfen bewusste Empfänger oder COMPOSITE-Bestandteile sein. ' if function_ids else ''))}
+                 messages, full_messages, context_rebased = _reference_context_messages(
+-                    reference_messages, reference_prompt, prompt, system, self.context_tokens)
++                    reference_messages, reference_prompt, prompt, system, self.context_tokens, anchor=reference_anchor)
++                progress_details = {}
+                 def report_progress(attempt):
+                     progress = sink.get()
+                     if progress:
+@@ -988,6 +1152,7 @@
+                             metadata.update(scope_index=scope_index, scope_count=scope_count)
+                             scope_text = f'; Quellenbereich {scope_index} von {scope_count}'
+                         attempt_text = 'Planung' if attempt == 1 else f'Korrekturversuch {attempt}'
++                        progress_details.update(metadata)
+                         progress({'type': 'PROGRESS', 'text': f'Lokaler Qwen plant Referenzprofil {profile_index} von {len(groups)}: {stage}. {len(calls)} Modellantworten empfangen; {attempt_text}{scope_text}.',
+                                   'status': 'RUNNING', 'metadata': metadata})
+                 payload = {'model': self.model, 'messages': messages,
+@@ -995,7 +1160,7 @@
+                                function_ids=function_ids, port_intent=port_intent, device_ids=device_ids,
+                                inventory_target=inventory_target, derivation_fact_ids=derivation_fact_ids,
+                                existing_devices=current['devices'] if inventory_stage else ()),
+-                           'think': False, 'stream': False, 'keep_alive': self.keep_alive,
++                            'think': False, 'stream': True, 'keep_alive': self.keep_alive,
+                            'options': {'temperature': 0, 'num_predict': 8192, 'num_ctx': self.context_tokens}}
+                 for attempt in range(2):
+                     try:
+@@ -1009,14 +1174,30 @@
+                         messages = full_messages
+                         context_rebased = True
+                     report_progress(attempt + 1)
++                    def report_output(observation):
++                        progress = sink.get()
++                        if progress:
++                            state = observation['request_state']
++                            detail = ('Antwort vollständig empfangen; Validierung steht aus.' if state == 'RECEIVED'
++                                      else 'Antwort wird empfangen.' if state == 'RECEIVING_OUTPUT'
++                                      else 'Warte auf lokale Providerantwort; Eingabeverarbeitung und Ausgabe noch nicht getrennt beobachtbar.')
++                            progress({'type': 'PROGRESS', 'status': 'RUNNING',
++                                      'text': f'Lokaler Qwen · {stage}: {detail} '
++                                              f'{observation["received_characters"]} Antwortzeichen empfangen; '
++                                              f'{observation["elapsed_seconds"]:g} s für diesen Aufruf. '
++                                              f'{len(calls)} frühere Modellantworten; kein freigegebenes Modell.',
++                                      'metadata': {**deepcopy(progress_details), 'source': 'document_reference_output',
++                                          'completed_calls': len(calls), 'canonical_writes': False,
++                                          'planning_stage': stage, 'profile_index': profile_index,
++                                          'profile_count': len(groups), 'attempt': attempt + 1,
++                                          'context_rebased': context_rebased,
++                                          'input_utf8_bytes': sum(len(row['content'].encode('utf8')) for row in payload['messages']),
++                                          **observation}})
+                     try:
+-                        response = await self.client.post(self.chat_url, json=payload)
++                        body = await _reference_stream_response(self.client, self.chat_url, payload, report_output)
+                     except httpx.TimeoutException as error:
+                         raise ValueError(f'Lokaler Qwen hat die Referenzstufe „{stage}“ innerhalb des '
+                             'konfigurierten Zeitlimits nicht abgeschlossen. Kein unvollständiger Entwurf wurde übernommen.') from error
+-                    if response.is_error:
+-                        raise RuntimeError(f'Lokale Referenzplanung fehlgeschlagen (HTTP {response.status_code}).')
+-                    body = response.json()
+                     if body.get('done_reason') == 'length':
+                         raise ValueError('Die lokale Referenzantwort wurde an der Ausgabegrenze abgeschnitten. Es wurde kein unvollständiger Entwurf übernommen.')
+                     native_content = str((body.get('message') or {}).get('content') or '')
+@@ -1083,6 +1264,10 @@
+                             calls[-1]['inventory_complete'] = inventory_complete
+                         reference_messages = [*deepcopy(payload['messages']), {'role': 'assistant', 'content': native_content}]
+                         reference_prompt = deepcopy(prompt)
++                        if reference_anchor is None or (context_rebased and len(full_messages) == 2):
++                            # Actual first request/reply, never a fabricated ACK
++                            # or inventory accepted from a previous whole run.
++                            reference_anchor = (deepcopy(reference_messages), deepcopy(prompt))
+                         return result
+                     except (ValueError, TypeError, KeyError) as error:
+                         if attempt:
+@@ -1098,8 +1283,8 @@
+                                                {'role': 'user', 'content': f'Validierungsfehler: {error}. Vollständigen JSON-Entwurf dieser Stufe korrigieren, keine Quellen ändern.'}]
+                 raise AssertionError('Reference inference did not return')
+             async def plan_profile(feedback=None):
+-                nonlocal reference_messages, reference_prompt
+-                reference_messages, reference_prompt = [], None
++                nonlocal reference_messages, reference_prompt, reference_anchor
++                reference_messages, reference_prompt, reference_anchor = [], None, None
+                 # Intermediate results remain internal native choices. No
+                 # incomplete profile can reach draft review or canonical apply.
+                 current['unresolved'] = []
+@@ -1169,25 +1354,32 @@
+                 for field in fields:
+                     if field not in {'devices', 'unresolved'}:
+                         current[field] = []
++                io_groups = {}
+                 for device in current['devices']:
+-                    if device['kind'] == 'PHYSICAL_CONTEXT':
+-                        continue
+-                    intents = await infer('Portabsicht des konkreten Teilnehmers', {'ports'},
+-                        feedback=feedback, port_intent=True, device_ids=(device['id'],))
+-                    for field in ('ports', 'unresolved'):
+-                        current[field].extend(intents[field])
+-                for port_id in [row['id'] for row in current['ports']]:
+-                    parameters = await infer('Parameter des konkreten Anschlusses', {'ports'},
+-                        feedback=feedback, port_ids=(port_id,))
+-                    current['ports'] = _reference_merge_port_parameters(current['ports'], parameters['ports'], (port_id,))
+-                    current['unresolved'].extend(parameters['unresolved'])
++                    if device['kind'] != 'PHYSICAL_CONTEXT':
++                        io_groups.setdefault(device['kind'], []).append(device['id'])
++                for ids in io_groups.values():
++                    for start in range(0, len(ids), 4):
++                        intents = await infer('Portabsicht der ausgewählten Teilnehmer', {'ports'},
++                            feedback=feedback, port_intent=True, device_ids=tuple(ids[start:start + 4]))
++                        for field in ('ports', 'unresolved'):
++                            current[field].extend(intents[field])
++                parameter_groups = {}
++                for port in current['ports']:
++                    parameter_groups.setdefault(port['technology'], []).append(port['id'])
++                for ids in parameter_groups.values():
++                    for start in range(0, len(ids), 4):
++                        selected_ports = tuple(ids[start:start + 4])
++                        parameters = await infer('Parameter der ausgewählten Anschlüsse', {'ports'},
++                            feedback=feedback, port_ids=selected_ports)
++                        current['ports'] = _reference_merge_port_parameters(current['ports'], parameters['ports'], selected_ports)
++                        current['unresolved'].extend(parameters['unresolved'])
+                 for field, kind, stage in (
+                         ('measurements', 'SENSOR', 'Messgrößen des konkreten Sensors'),
+                         ('commands', 'ACTUATOR', 'Stellbefehle des konkreten Aktors')):
+-                    for device in current['devices']:
+-                        if device['kind'] != kind:
+-                            continue
+-                        choices = await infer(stage, {field}, feedback=feedback, device_ids=(device['id'],))
++                    ids = io_groups.get(kind, [])
++                    for start in range(0, len(ids), 4):
++                        choices = await infer(stage, {field}, feedback=feedback, device_ids=tuple(ids[start:start + 4]))
+                         for key in (field, 'unresolved'):
+                             current[key].extend(choices[key])
+                 current['functions'] = []

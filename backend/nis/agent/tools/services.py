@@ -640,10 +640,10 @@ register('prepare_project_request', 'Projektanforderung als versionierten Entwur
          operation_id=(str | None, Field(default=None, min_length=8, max_length=120)),
          revision=(int | None, Field(default=None, ge=1)))
 from backend.nis.agent.tools import project_draft as project_draft
-from backend.nis.agent.orchestration.project_intake import interpret_project_document
+from backend.nis.agent.orchestration.project_intake import DOCUMENT_SOURCE_MAX_CHARS, interpret_project_document
 register('interpret_project_document', 'Vollständige Projektquelle mit lokalem Qwen als quellengebundenen Prüfvorschlag auswerten: Instanzen, Kategorien, Funktionen, Anforderungen und Controller-Kürzel unterscheiden. Keine Modelländerung oder Freigabe.',
          P.GENERATE_PROPOSAL, interpret_project_document,
-         source=(str, Field(min_length=1, max_length=80000)),
+         source=(str, Field(min_length=1, max_length=DOCUMENT_SOURCE_MAX_CHARS)),
          source_name=(str, Field(default='Projektbeschreibung', min_length=1, max_length=180)),
          source_request_id=(str | None, Field(default=None, min_length=8, max_length=80)))
 from backend.nis.agent.tools import configuration as configuration
@@ -654,6 +654,16 @@ register('plan_project_bundle_restore', 'Projektpaket als prüfbaren Vorschlag i
 register('create_project_from_draft', 'Aus einer bestimmten Entwurfsrevision ausdrücklich ein neues Projekt anlegen. Das Ursprungsmodell bleibt unverändert.', P.GENERATE_PROPOSAL,
          project_creation.create, operation_id=(str, Field(min_length=8, max_length=120)), draft_id=ID,
          revision=(int, Field(ge=1)), name=(str, Field(min_length=1, max_length=120)))
+from backend.nis.agent.orchestration.project_intake import ReferenceSource
+from backend.nis.agent.context.limits import MAX_REQUIREMENT_LENGTH
+register('generate_reference_design', 'Für ausdrücklich gewählte Beispielprojekte fehlende Auslegungsdaten mit lokalem Qwen als getrennte REFERENCE_ASSUMPTION planen. Quellen erhalten; keine kanonische Änderung oder Freigabe.',
+         P.GENERATE_PROPOSAL, project_draft.generate_reference_design,
+         mode=(str, Field(pattern='^EXAMPLE_PROJECT$')),
+         prompt=(str, Field(min_length=1, max_length=MAX_REQUIREMENT_LENGTH)),
+         reference_sources=(list[ReferenceSource], Field(default_factory=list, max_length=16)),
+         source_request_id=(str | None, Field(default=None, min_length=8, max_length=120)))
+register('inspect_reference_design', 'Aktuellen quellengebundenen Referenzentwurf im gemeinsamen Projektentwurf lesen.',
+         P.READ_MODEL, lambda _: project_draft.inspect_reference_design())
 register('inspect_project_draft', 'Gespeicherten Projektentwurf und offene Entscheidungen lesen.', P.READ_MODEL, project_draft.inspect)
 register('prepare_draft_workflow', 'Gespeicherten Entwurf für den vorhandenen dauerhaften Workflow vorbereiten. Start und Review erfolgen separat.', P.READ_MODEL,
          project_draft.workflow_request, draft_id=ID, revision=(int, Field(ge=1)),

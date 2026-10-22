@@ -213,7 +213,13 @@ def attach_functional_device_contracts(changes, chains, hardware_refs, *, enable
             for function in changes:
                 if (function['object_type'] == 'Function' and function.get('action', 'CREATE') == 'CREATE'
                         and function['data'].get('hardware_node_id') == node_ref):
-                    function['data'].setdefault('configuration', {})['functional_device_contract'] = contract
+                    configuration = function['data'].setdefault('configuration', {})
+                    # A literal responsibility is a separate function awaiting
+                    # dependency review, not another implementation of every
+                    # processing role hosted on the same hardware.
+                    if configuration.get('source_scoped_function') and configuration.get('dependency_review') == 'REQUIRED':
+                        continue
+                    configuration['functional_device_contract'] = contract
         else:
             node.setdefault('identity', {})['functional_device_contract'] = contract
 

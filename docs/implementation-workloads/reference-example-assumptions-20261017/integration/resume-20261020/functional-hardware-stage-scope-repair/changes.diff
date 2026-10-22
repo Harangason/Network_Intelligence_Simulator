@@ -1,0 +1,207 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -155,6 +155,8 @@
+             properties = variant['properties']
+             properties['kind'] = {'type': 'string', 'enum': [kind]}
+             properties['source_fact_ids']['items']['enum'] = fact_ids
++            if derivation_fact_ids is not None:
++                properties['source_fact_ids']['maxItems'] = len(fact_ids)
+             if inventory_target:
+                 properties['source_fact_ids'].update(minItems=1, maxItems=1)
+                 if inventory_target.get('names'):
+@@ -183,6 +185,8 @@
+         binding_properties = {key: deepcopy(definition['properties'][key])
+                               for key in ('source_fact_ids', 'rationale', 'field_references')}
+         binding_properties['source_fact_ids']['items']['enum'] = sorted(available)
++        if derivation_fact_ids is not None and available:
++            binding_properties['source_fact_ids']['maxItems'] = len(available)
+         if inventory_target:
+             binding_properties['source_fact_ids'].update(minItems=1, maxItems=1)
+         binding_properties['device_id'] = {'type': 'string', 'minLength': 1}
+@@ -844,7 +848,7 @@
+                               + ('Jeder inventory_choices-Eintrag beginnt mit choice_kind: EXISTING für eine vorhandene ID-Bindung, NEW_<Geräteart> für wirklich neue Hardware (z.B. NEW_SENSOR passend zu kind=SENSOR). Bei EXISTING danach ausschließlich device_id, source_fact_ids, rationale und field_references auswählen; niemals id/name/kind eines alten Geräts neu schreiben. NIS erhält sämtliche unveränderlichen Gerätedaten und ergänzt nur die Quellen-/Typ-/Referenzbindung. Bei NEW_<Geräteart> danach die vollständigen neuen Gerätedaten liefern, niemals eine vorhandene ID. choice_kind wird nur intern geprüft und nicht als Modellfeld gespeichert. Die gemeinsame Stufengrenze gilt für alle Einträge zusammen. ' if inventory_stage else '')
+                               + ('Nur ein echtes Gerät oder eine vorhandene Gerätebindung für den angeforderten Quellenbefund/das Typmitglied liefern, keine zweite Platzhalterzeile. source_fact_ids enthält ausschließlich diese eine FactID; source_member_bindings neuer Geräte ausschließlich das angeforderte wörtliche Mitglied. Bei vorhandenen Geräten setzt NIS die angeforderte Typbindung selbst. Funktional zusätzlich notwendige Hardware wird danach in einem eigenen Schritt geplant. ' if inventory_target else '')
+                               + ('inventory_complete bewertet nur diesen deklarierten Quellenbereich. Bei vollständiger Abdeckung true; wenn er bereits abgedeckt ist, ist ein leeres Delta mit true zulässig. False verlangt eine echte weitere Instanz/Bindung dieses Bereichs. ' if inventory_target else '')
+-                              + ('Prüfe jetzt die physische Hardware für sämtliche Funktionen/Anforderungen des Profils. Sensoren und Aktoren sind echte Teilnehmer, keine bloßen Werte im Controller. Vorhandene Geräte wiederverwenden oder fehlende Messquellen, Verarbeitung, Verbraucher und Aktoren ergänzen; unabhängige Messgrößen und Stellwirkungen berücksichtigen. Ports/Messgrößen/Befehle/Funktionen/Kommunikation folgen erst danach und erzeugen KEINE Geräte mehr. Notwendige Peripherie niemals in spätere Schritte verschieben. source_fact_ids enthält nur passende angeforderte FUNCTION-/REQUIREMENT-FactIDs, keine neuen Bindungen an Quelleninventar; alte Bindungen wiederverwendeter IDs bleiben serverseitig erhalten. Keine Originalmenge erhöhen oder Hardwarebelege/Defaults erfinden. Höchstens zwei echte Ergänzungen, niemals Duplikat-Platzhalter. inventory_complete erst true, wenn vorhandene plus ergänzte Hardware den Funktionsbedarf abdeckt; ohne Ergänzungsbedarf inventory_choices=[] und true. False verlangt neue Geräte/Quellenbindungen. Unklare Fachentscheidungen konkret unresolved nennen. ' if derivation_fact_ids is not None else '')
++                              + ('Prüfe jetzt die physische Hardware für die ausdrücklich angeforderten FUNCTION-/REQUIREMENT-FactIDs. Vollständige Quelle und sämtliche Nachbarfunktionen bleiben Konsistenzkontext; weitere Quellenbefunde werden in eigenen Hardwarestufen bearbeitet. Sensoren und Aktoren sind echte Teilnehmer, keine bloßen Werte im Controller. Vorhandene Geräte wiederverwenden oder fehlende Messquellen, Verarbeitung, Verbraucher und Aktoren ergänzen; unabhängige Messgrößen und Stellwirkungen berücksichtigen. Ports/Messgrößen/Befehle/Funktionen/Kommunikation folgen erst nach ALLEN Hardwarestufen und erzeugen KEINE Geräte mehr. Notwendige Peripherie dieses Quellenbereichs niemals in spätere IO-Schritte verschieben. source_fact_ids enthält nur passende angeforderte FUNCTION-/REQUIREMENT-FactIDs, jede höchstens einmal; keine neuen Bindungen an Quelleninventar. Alte Bindungen wiederverwendeter IDs bleiben serverseitig erhalten. Keine Originalmenge erhöhen oder Hardwarebelege/Defaults erfinden. Höchstens zwei echte Ergänzungen, niemals Duplikat-Platzhalter. inventory_complete bewertet ausschließlich den Bedarf der angeforderten FactIDs und wird erst true, wenn vorhandene plus ergänzte Hardware diesen vollständig abdeckt; ohne Ergänzungsbedarf inventory_choices=[] und true. False verlangt neue Geräte/Quellenbindungen. Unklare Fachentscheidungen konkret unresolved nennen. ' if derivation_fact_ids is not None else '')
+                               + ('Genau die angeforderten Port-IDs liefern. id, device_id, technology, role und network_scope unverändert übernehmen; nur parameters und ports-spezifische Begründung/Referenzbelege auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
+                               + ('Genau die angeforderten Funktions-FactIDs abdecken; Abhängigkeiten nur mit diesen Senderfunktionen liefern. Andere ursprüngliche Funktions-FactIDs dürfen bewusste Empfänger oder COMPOSITE-Bestandteile sein. ' if function_ids else ''))}
+                 messages = [{'role': 'system', 'content': system}, {'role': 'user', 'content': json.dumps(prompt, ensure_ascii=False)}]
+@@ -855,6 +859,8 @@
+                         metadata.update(inventory_target=deepcopy(inventory_target), draft_inventory_by_kind={
+                             kind: sum(row['kind'] == kind for row in current['devices'])
+                             for kind in ('CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR', 'PHYSICAL_CONTEXT')})
++                        if derivation_fact_ids is not None:
++                            metadata['derivation_fact_ids'] = list(derivation_fact_ids)
+                     progress({'type': 'PROGRESS', 'text': f'Lokaler Qwen plant Referenzprofil {profile_index} von {len(groups)}: {stage}.',
+                               'status': 'RUNNING', 'metadata': metadata})
+                 payload = {'model': self.model, 'messages': messages,
+@@ -991,12 +997,16 @@
+                 derivation_ids = [key for key, fact in prepared['facts'].items()
+                     if fact['kind'] in {'FUNCTION', 'REQUIREMENT'}
+                     and tuple(document_system_scope(fact.get('source_context', []))) == profile]
+-                if derivation_ids:
++                # Bound the hardware decision, not its complete source context.
++                # Every original fact is visited before any IO is planned;
++                # completion closes only this scope, never the remaining worklist.
++                for start in range(0, len(derivation_ids), 4):
++                    selected_derivations = derivation_ids[start:start + 4]
+                     while True:
+                         additions = await infer('Funktionsbedingte physische Hardware', {'devices'}, feedback=feedback,
+-                            derivation_fact_ids=derivation_ids)
++                            derivation_fact_ids=selected_derivations)
+                         current['devices'] = _reference_merge_inventory_devices(current['devices'], additions['devices'],
+-                            {'derivation_fact_ids': derivation_ids, 'minimum_rows': 0}, prepared['facts'])
++                            {'derivation_fact_ids': selected_derivations, 'minimum_rows': 0}, prepared['facts'])
+                         current['unresolved'].extend(additions['unresolved'])
+                         if additions['inventory_complete']:
+                             break
+--- before/backend/tests/test_reference_reasoner.py
++++ after/backend/tests/test_reference_reasoner.py
+@@ -962,3 +962,146 @@
+         Draft202012Validator(schema).validate(value)
+     with pytest.raises(ValueError, match='passende NEW_'):
+         _reference_expand_inventory_choices(known, [row])
++
++
++def wide_derivation_request(functions=5, requirements=6):
++    """Authored unit source, never an amended original or product project."""
++    import hashlib
++    request = fixture_request(references=[reference()])
++    source, envelope = request['prompt'].split('\n- Dokument-Geräte: ')
++    envelope = json.loads(envelope)
++    extras = [
++        {'name': f'Zusatzfunktion {number}', 'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None,
++         'source_quote': f'Funktion: Zusatzfunktion {number}', 'source_context': []}
++        for number in range(functions)]
++    extras += [
++        {'name': f'REQ-EXTRA-{number}', 'kind': 'REQUIREMENT', 'role': 'OTHER', 'quantity': None,
++         'source_quote': f'REQ-EXTRA-{number}: Das System MUSS Zustand {number} beobachten.', 'source_context': []}
++        for number in range(requirements)]
++    source += '\n' + '\n'.join(row['source_quote'] for row in extras)
++    envelope.update(source_text=source, source_sha256=hashlib.sha256(source.encode()).hexdigest(),
++                    source_chars=len(source))
++    envelope['facts'].extend(extras)
++    request['prompt'] = source + '\n- Dokument-Geräte: ' + json.dumps(envelope, ensure_ascii=False)
++    return request
++
++
++def wide_derivation_design(prepared):
++    value = complete_design(prepared)
++    represented = {row['source_fact_id'] for row in value['functions']}
++    value['functions'].extend(
++        {'source_fact_id': key, 'realization': 'ATOMIC', 'executor_device_ids': ['C'],
++         'rationale': 'Mocked-wire unit function, not original model evidence'}
++        for key, fact in prepared['facts'].items() if fact['kind'] == 'FUNCTION' and key not in represented)
++    return value
++
++
++@pytest.mark.parametrize(('functions', 'requirements'), [(0, 1), (5, 6), (9, 8)])
++def test_derived_hardware_scopes_cover_every_fact_with_full_source_context(monkeypatch, functions, requirements):
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch,
++        request=wide_derivation_request(functions, requirements), design_factory=wide_derivation_design)
++    result = run_reference(reasoner, prepared)
++    expected = [key for key, fact in prepared['facts'].items() if fact['kind'] in {'FUNCTION', 'REQUIREMENT'}]
++    stages = [row for row in observed if row['derivation_fact_ids_for_this_stage'] is not None]
++    visited = [key for row in stages for key in row['derivation_fact_ids_for_this_stage']]
++    assert visited == expected and len(visited) == len(set(visited))
++    assert all(1 <= len(row['derivation_fact_ids_for_this_stage']) <= 4 for row in stages)
++    assert all(row['original_source'] == prepared['source_evidence']['source_text']
++               and row['reference_sources'] == prepared['reference_sources']
++               and set(row['original_facts']) == set(prepared['facts']) for row in stages)
++    first_io = next(index for index, row in enumerate(observed) if row['device_ids_for_this_stage'])
++    assert all(observed.index(row) < first_io for row in stages)
++    assert set(result['coverage']['function_fact_ids']) | set(result['coverage']['requirement_fact_ids']) == set(expected)
++    assert result['proposal']['unresolved'] == [] and result['canonical_writes'] is False
++
++
++def test_derived_hardware_late_scopes_can_extend_existing_identity_bindings(monkeypatch):
++    def reuse(candidate, content, payload, prepared):
++        controller = next(row for row in content['current_candidate']['devices'] if row['kind'] == 'CONTROLLER')
++        candidate['devices'] = [{**deepcopy(controller),
++            'source_fact_ids': content['derivation_fact_ids_for_this_stage']}]
++        candidate['inventory_complete'] = True
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch,
++        request=wide_derivation_request(), design_factory=wide_derivation_design, derivation_mutator=reuse)
++    result = run_reference(reasoner, prepared)
++    stages = [row for row in observed if row['derivation_fact_ids_for_this_stage'] is not None]
++    assert len(stages) > 1
++    source_controller = next(key for key, fact in prepared['facts'].items() if fact['kind'] == 'INSTANCE')
++    controllers = [row for row in result['proposal']['devices'] if source_controller in row['source_fact_ids']]
++    assert len(controllers) == 1 and controllers[0]['quantity'] == 1
++    expected = {key for key, fact in prepared['facts'].items() if fact['kind'] in {'FUNCTION', 'REQUIREMENT'}}
++    assert set(controllers[0]['source_fact_ids']) == expected | {source_controller}
++    assert len(result['proposal']['devices']) == 3
++
++
++def test_repeated_early_hardware_additions_do_not_skip_remaining_fact_scopes(monkeypatch):
++    def additional_sensors(prepared):
++        design = wide_derivation_design(prepared)
++        fact = next(key for key, row in prepared['facts'].items() if row['name'] == 'Regelung')
++        for number in (2, 3, 4):
++            device = 'S' + str(number)
++            design['devices'].append({**deepcopy(design['devices'][1]), 'id': device,
++                'name': 'Unit derived sensor ' + str(number), 'source_fact_ids': [fact]})
++            design['ports'].append({**deepcopy(design['ports'][1]), 'id': 'P' + device, 'device_id': device})
++            design['measurements'].append({**deepcopy(design['measurements'][0]), 'device_id': device})
++            design['communication'].append({**deepcopy(design['communication'][0]), 'id': 'derived-' + device,
++                'signal_name': 'derived-' + device, 'producer_device_id': device, 'source_port_id': 'P' + device})
++        return design
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch,
++        request=wide_derivation_request(), design_factory=additional_sensors)
++    result = run_reference(reasoner, prepared)
++    stages = [row for row in observed if row['derivation_fact_ids_for_this_stage'] is not None]
++    scopes = [tuple(row['derivation_fact_ids_for_this_stage']) for row in stages]
++    assert scopes[0] == scopes[1] and len(set(scopes)) > 1
++    assert all(scope != scopes[0] for scope in scopes[2:])
++    assert {key for scope in scopes for key in scope} == {
++        key for key, fact in prepared['facts'].items() if fact['kind'] in {'FUNCTION', 'REQUIREMENT'}}
++    assert len(result['proposal']['measurements']) == 4
++    assert result['proposal']['unresolved'] == []
++
++
++@pytest.mark.parametrize('failure', ['no_progress', 'timeout'])
++def test_derived_hardware_late_scope_failure_prevents_all_io_and_partial_result(monkeypatch, failure):
++    scopes = []
++    def fail_later(candidate, content, payload, prepared):
++        scope = tuple(content['derivation_fact_ids_for_this_stage'])
++        if not scopes or scopes[-1] != scope:
++            scopes.append(scope)
++        if len(scopes) > 1:
++            if failure == 'timeout':
++                raise httpx.ReadTimeout('Mocked late hardware stage timeout')
++            candidate.update(devices=[], inventory_complete=False)
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch,
++        request=wide_derivation_request(), design_factory=wide_derivation_design, derivation_mutator=fail_later)
++    expected = 'Funktionsbedingte physische Hardware.*Zeitlimit' if failure == 'timeout' else 'keine fehlende ursprüngliche Geräteabdeckung'
++    with pytest.raises(ValueError, match=expected):
++        run_reference(reasoner, prepared)
++    assert len(scopes) == 2
++    assert not any(row['device_ids_for_this_stage'] or row['port_ids_for_this_stage'] for row in observed)
++
++
++@pytest.mark.parametrize('kind', ['NEW_SENSOR', 'EXISTING'])
++def test_derived_hardware_decoder_bounds_source_selection_and_rejects_foreign_scope(kind):
++    from jsonschema import Draft202012Validator, ValidationError
++    prepared = intake.prepare_reference_design(wide_derivation_request())
++    known, _ = _reference_declared_instances(prepared, prepared['facts'])
++    eligible = [key for key, fact in prepared['facts'].items() if fact['kind'] in {'FUNCTION', 'REQUIREMENT'}]
++    selected = eligible[:4]
++    schema = _reference_schema_for_stage(prepared, {'devices'}, derivation_fact_ids=selected, existing_devices=known)
++    if kind == 'EXISTING':
++        row = {'choice_kind': kind, 'device_id': known[0]['id'], 'source_fact_ids': selected,
++               'rationale': 'Mocked source binding', 'field_references': {}}
++    else:
++        row = {**deepcopy(known[0]), 'choice_kind': kind, 'id': 'unit-scoped-sensor', 'name': 'Unit scoped sensor',
++               'kind': 'SENSOR', 'owner_device_id': known[0]['id'], 'source_fact_ids': selected}
++    value = {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'inventory_complete': True, 'inventory_choices': [row]}
++    validator = Draft202012Validator(schema)
++    validator.validate(value)
++    overlong = deepcopy(value)
++    overlong['inventory_choices'][0]['source_fact_ids'] += [selected[0]]
++    with pytest.raises(ValidationError):
++        validator.validate(overlong)
++    foreign = deepcopy(value)
++    foreign['inventory_choices'][0]['source_fact_ids'][-1] = eligible[4]
++    with pytest.raises(ValidationError):
++        validator.validate(foreign)

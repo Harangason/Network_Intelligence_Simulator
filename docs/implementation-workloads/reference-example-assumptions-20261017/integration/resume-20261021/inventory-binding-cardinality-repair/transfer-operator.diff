@@ -1,0 +1,47 @@
+--- before
++++ after
+@@ -16,7 +16,9 @@
+ 
+ parser = argparse.ArgumentParser(description=__doc__)
+ parser.add_argument('--receipt', type=Path, required=True)
+-parser.add_argument('--context-repair-dir', type=Path)
++repair = parser.add_mutually_exclusive_group()
++repair.add_argument('--context-repair-dir', type=Path)
++repair.add_argument('--inventory-cardinality-repair-dir', type=Path)
+ parser.add_argument('--destination-prefix', default='native-waitress-lifecycle')
+ args = parser.parse_args()
+ OUT = Path(__file__).resolve().parent
+@@ -25,9 +27,10 @@
+ D = 'C:/Users/marti/AppData/Local/Programs/DockerDesktop/resources/bin/docker.exe'
+ receipt = json.loads(args.receipt.read_text(encoding='utf-8'))
+ assert re.fullmatch('[a-z0-9-]+', args.destination_prefix)
+-evidence_dir = args.context_repair_dir.resolve() if args.context_repair_dir else OUT
++repair_dir = args.context_repair_dir or args.inventory_cardinality_repair_dir
++evidence_dir = repair_dir.resolve() if repair_dir else OUT
+ assert evidence_dir.is_relative_to(BASE.resolve())
+-identity = json.loads((evidence_dir / ('current-input-identity.json' if args.context_repair_dir else 'waitress-candidate-input-identity.json')).read_text(encoding='utf-8'))
++identity = json.loads((evidence_dir / ('current-input-identity.json' if repair_dir else 'waitress-candidate-input-identity.json')).read_text(encoding='utf-8'))
+ assert receipt['status'] == 'PREPARED' and not receipt.get('development_only')
+ assert receipt['initial_source_sha256'] == identity['source_sha256']
+ assert receipt['initial_commit_id'] == identity['commit_id']
+@@ -81,6 +84,20 @@
+         assert name in {'backend/nis/agent/orchestration/local_reasoner.py', 'backend/tests/test_reference_reasoner.py'}
+         assert sha((ROOT / name).read_bytes()) == digest
+         frozen[name] = digest
++if args.inventory_cardinality_repair_dir:
++    proof = json.loads((evidence_dir / 'source-scope-proof.json').read_text())
++    assert proof['continuation_and_whole_fact_worklist_AST_unchanged']
++    assert proof['model_context_output_timeout_and_provider_AST_unchanged']
++    assert proof['runtime_merge_and_public_validators_unchanged']
++    previous_context = OUT.parent / 'reference-context-serialization-repair'
++    for name in ('backend/nis/agent/orchestration/local_reasoner.py', 'backend/tests/test_reference_reasoner.py'):
++        assert (evidence_dir / 'before' / name).read_bytes() == (previous_context / 'after' / name).read_bytes()
++    freeze = json.loads((evidence_dir / 'candidate-prepare-freeze.json').read_text())
++    assert freeze['identity'] == identity and freeze['targeted_cases_in_two_disjoint_runs'] == 258
++    for name, digest in freeze['frozen_affected_files'].items():
++        assert name in {'backend/nis/agent/orchestration/local_reasoner.py', 'backend/tests/test_reference_reasoner.py'}
++        assert sha((ROOT / name).read_bytes()) == digest
++        frozen[name] = digest
+ assert all(sha((ROOT / name).read_bytes()) == digest for name, digest in frozen.items())
+ 
+ 

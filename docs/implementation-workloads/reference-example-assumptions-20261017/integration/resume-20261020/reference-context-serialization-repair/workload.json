@@ -1,0 +1,362 @@
+{
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "kind": "repair",
+  "modify_code": true,
+  "allow_repair": true,
+  "status": "REPAIRING_NATIVE_INVENTORY_BINDING",
+  "requested_change": "Correct reference prompt serialization accounting without truncating source, reference, current candidates or retry history, and without increasing context/output/time limits.",
+  "owned_files": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_reasoner.py"
+  ],
+  "revision_before": {
+    "backend/nis/agent/orchestration/local_reasoner.py": "89d70b9d2abbf5c8da3cd3b8895b9b426f1d0b52622dd43d97482504fcf42a6b",
+    "backend/tests/test_reference_reasoner.py": "3aadc1b4a6984c714375af97779b5523d54b87bfa5a32ee5bf6c14352804944f"
+  },
+  "files_inspected": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_reasoner.py",
+    "docs/WIZARD_EXECUTION_CONTRACT.md",
+    "docs/WIZARD_RELEASE_GATE.md"
+  ],
+  "campaign_id": "nis-ea-independent-20260924-run1",
+  "campaign_project": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "repair": {
+    "finding_ids": [
+      "REFERENCE_CONTEXT_COUNTS_JSON_TRANSPORT_ESCAPING"
+    ],
+    "owner": "PROJECT_PRODUCT",
+    "first_failing_layer": "Reference planner context sizing before provider POST",
+    "root_cause": "The sizing function JSON-serializes already serialized text message content again and counts wire escaping and container syntax as model text bytes. Prompt JSON also uses unnecessary structural separator whitespace. This can reject complete text that fits the same conservative UTF-8 byte bound. Actual terminal native event proves context rejection; exact failed native payload is not retained, so its numerical decomposition is not claimed.",
+    "reproduction": "Pure text-message counterexample plus captured initial unchanged vehicle prompt; no real inference or model mutation.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\native-failure.json",
+        "sha256": "ff376b44d189b7586173bee2c152e93b637a2c4edb026b04ffc2e4b5a4ab2381"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\serialization-reproduction.json",
+        "sha256": "17791e24897dcf50cd694cb1970e287ddadd06650d53c72798f207d15e986add"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\red.xml",
+        "sha256": "851977941f89720865c6bf5ee4e6713e34bbe1733e72175c972287beb3eae564"
+      }
+    ],
+    "affected_files": [
+      "backend/nis/agent/orchestration/local_reasoner.py",
+      "backend/tests/test_reference_reasoner.py"
+    ],
+    "affected_services": [
+      "LocalEngineeringReasoner.plan_reference_design",
+      "_reference_context_window"
+    ],
+    "required_fix": "Size actual complete text content plus existing framing/output reserves and serialize structured prompt losslessly without optional whitespace. Keep all data, retries and configured maximum; reject oversize real content.",
+    "acceptance_criteria": [
+      "Exact original/reference/current candidate values and retry history retained.",
+      "UTF-8 byte bound including existing output8192/framing2048 and cap131072 preserved.",
+      "Actual oversize content still rejected before provider request.",
+      "No change to public schema, model, provider, budgets, gate or canonical write."
+    ],
+    "targeted_tests": [
+      "Escaping-heavy text fits only when actual text bytes fit.",
+      "Multibyte, newlines, backslashes, JSON strings and retry growth preserve full source and reject oversize.",
+      "Complete mocked wire regression including full original context at all stages."
+    ],
+    "regression_scope": "Reference private serialization/accounting only; parent both original saved models/simulations and complete release still mandatory.",
+    "weaken_assertions_to_pass": false
+  },
+  "required_outcomes": [
+    "lossless_context_accounting",
+    "source_and_retry_preservation",
+    "strict_real_content_cap",
+    "native_two_originals_and_delivery"
+  ],
+  "validation_requirements": [
+    "targeted_regressions",
+    "isolated_reference_regressions",
+    "actual_native_originals",
+    "full_gate_and_delivery"
+  ],
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\before\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "89d70b9d2abbf5c8da3cd3b8895b9b426f1d0b52622dd43d97482504fcf42a6b"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\before\\backend\\tests\\test_reference_reasoner.py",
+      "sha256": "dafb3ab575a997636b58d7493d2172ff74d9c7cc79f13f51c21ec891e40d271c"
+    }
+  ],
+  "files_changed": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_reasoner.py"
+  ],
+  "tests": [
+    {
+      "at_utc": "2026-10-20T16:55:03.514718+00:00",
+      "status": "PASSED_TARGETED_ISOLATED_REFERENCE_REGRESSIONS_ONLY",
+      "session": 15384,
+      "exit_code": 0,
+      "actual_processes_ended": true,
+      "cases": 253,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "by_class": {
+        "tests.test_reference_reasoner": 98,
+        "tests.test_reference_design": 143,
+        "tests.test_reference_design_integration": 10,
+        "tests.test_reference_model_persistence": 2
+      },
+      "duration_seconds": 990.72,
+      "warning": "Existing EngineeringModelDelta.validate shadows Contract attribute; no test failure.",
+      "xml": {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\reference-regressions.xml",
+        "sha256": "2ca1a9b5ca6969236d1a4e40a7e2c44b7305f868159974d44820ff16afe533d3"
+      },
+      "source_sha256": "39f99d271bba1a4580fb0410f731b3cfd7f0bc26f57edba95c1dc55172bae699",
+      "head": "70f0c160bc4f08bd23437f6b3c175523d1e5859c",
+      "affected_source_and_tests_unchanged_during_run": true,
+      "source_freeze_evidence": {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\source-scope-proof.json",
+        "sha256": "7a7554e01b61b9310810c6f90d768654aeb019994f2c94578f8fc2b7f8baa039"
+      },
+      "no_actual_qwen_calls": true,
+      "canonical_original_models_or_simulations_proved": false,
+      "full_release_pass": false,
+      "productive_delivery": false
+    }
+  ],
+  "remaining_findings": [
+    "Vehicle native full reference89974 running; no full canonical model or simulation yet.",
+    "Robot full original model and ALL simulation remain required.",
+    "Both actual original acceptances and full exact-image release/productive verification remain pending."
+  ],
+  "delivery": {
+    "decision": "YES",
+    "authorization": "Standing AGENTS.md authorization and repeated explicit user instruction",
+    "target": "Canonical NetworkIS production stack"
+  },
+  "parent_outcomes_preserved": 15,
+  "parent_validations_preserved": 15,
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\after\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "fba210763aefe590547cc3b5037ac85d5daa8bf58667f6eb400db2e1c66fb959"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\after\\backend\\tests\\test_reference_reasoner.py",
+      "sha256": "282c6c8bb1895c8d04d5671826ab598aed0c87d72ab4dfa74081cebddc791af1"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\local_reasoner.py.diff",
+      "sha256": "acbcfaf0fe37f824b202d4ddf4852cde2f98ea489fee7b19d8a748f08ec2df80"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\test_reference_reasoner.py.diff",
+      "sha256": "fab31e82bc1f96a61ea9f9027445d17238aaead55924891976df6ff07ada6713"
+    }
+  ],
+  "validation": {
+    "source_scope_proof": {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\source-scope-proof.json",
+      "sha256": "7a7554e01b61b9310810c6f90d768654aeb019994f2c94578f8fc2b7f8baa039"
+    },
+    "post_failure_canonical_review": {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\post-failure-canonical-review.json",
+      "sha256": "3e1c022c4416437d9f7c0bdaccfa2cbeeca1ef153f901bbe213e6201ff446a62"
+    },
+    "current_source_identity": {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\current-input-identity.json",
+      "sha256": "71ed85a206acd407a2039c1ab1c62642fa0eb7e0aeb5bcb8ab792c8651077848"
+    }
+  },
+  "inference_owner": "NIS",
+  "inference_return_utc": "2026-10-20T16:35:43Z",
+  "new_candidate_required": false,
+  "old_a65_image_has_prior_source": true,
+  "checkpoint": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\checkpoint-awaiting-tests-and-storage-approval.json",
+  "outcomes": {
+    "lossless_context_accounting": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\reference-regressions-result.json",
+          "sha256": "9de325c9d94e9dad1e368a8985ff0e078c76f28f27abe56960b7965559a7907a"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\reference-regressions.xml",
+          "sha256": "2ca1a9b5ca6969236d1a4e40a7e2c44b7305f868159974d44820ff16afe533d3"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\source-scope-proof.json",
+          "sha256": "7a7554e01b61b9310810c6f90d768654aeb019994f2c94578f8fc2b7f8baa039"
+        }
+      ]
+    },
+    "source_and_retry_preservation": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\reference-regressions-result.json",
+          "sha256": "9de325c9d94e9dad1e368a8985ff0e078c76f28f27abe56960b7965559a7907a"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\reference-regressions.xml",
+          "sha256": "2ca1a9b5ca6969236d1a4e40a7e2c44b7305f868159974d44820ff16afe533d3"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\source-scope-proof.json",
+          "sha256": "7a7554e01b61b9310810c6f90d768654aeb019994f2c94578f8fc2b7f8baa039"
+        }
+      ]
+    },
+    "strict_real_content_cap": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\reference-regressions-result.json",
+          "sha256": "9de325c9d94e9dad1e368a8985ff0e078c76f28f27abe56960b7965559a7907a"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\reference-regressions.xml",
+          "sha256": "2ca1a9b5ca6969236d1a4e40a7e2c44b7305f868159974d44820ff16afe533d3"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\source-scope-proof.json",
+          "sha256": "7a7554e01b61b9310810c6f90d768654aeb019994f2c94578f8fc2b7f8baa039"
+        }
+      ]
+    },
+    "native_two_originals_and_delivery": {
+      "status": "PENDING",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\native-failure.json",
+          "sha256": "ff376b44d189b7586173bee2c152e93b637a2c4edb026b04ffc2e4b5a4ab2381"
+        }
+      ]
+    }
+  },
+  "validations": {
+    "targeted_regressions": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\reference-regressions-result.json",
+          "sha256": "9de325c9d94e9dad1e368a8985ff0e078c76f28f27abe56960b7965559a7907a"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\reference-regressions.xml",
+          "sha256": "2ca1a9b5ca6969236d1a4e40a7e2c44b7305f868159974d44820ff16afe533d3"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\source-scope-proof.json",
+          "sha256": "7a7554e01b61b9310810c6f90d768654aeb019994f2c94578f8fc2b7f8baa039"
+        }
+      ]
+    },
+    "isolated_reference_regressions": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\reference-regressions-result.json",
+          "sha256": "9de325c9d94e9dad1e368a8985ff0e078c76f28f27abe56960b7965559a7907a"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\reference-regressions.xml",
+          "sha256": "2ca1a9b5ca6969236d1a4e40a7e2c44b7305f868159974d44820ff16afe533d3"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\source-scope-proof.json",
+          "sha256": "7a7554e01b61b9310810c6f90d768654aeb019994f2c94578f8fc2b7f8baa039"
+        }
+      ]
+    },
+    "actual_native_originals": {
+      "status": "PENDING",
+      "evidence": []
+    },
+    "full_gate_and_delivery": {
+      "status": "PENDING",
+      "evidence": []
+    }
+  },
+  "test_process_active": false,
+  "test_monitor_status": "DELETED_AFTER_COMPLETED253_CASES",
+  "completion_status": "LOCAL_TARGETED_PASS_WAITING_EXACT_STORAGE_AUTHORIZATION_NOT_DELIVERED",
+  "automation_deletion_reason": "Test-only heartbeat completed; explicit human removal reply remains pending and will resume the ordinary chat.",
+  "exact_image_removal_completed": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\archive-review-55794a287afa\\authorized-removal.json",
+  "storage_reply_pending": false,
+  "active_native_session": null,
+  "current_native_state": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-resumed-20261021-vehicle\\state.json",
+  "current_candidate": {
+    "at_utc": "2026-10-20T17:53:36.412968+00:00",
+    "candidate_status": "PREPARED_ONLY",
+    "image_tag": "networkis:candidate-6d6fe881f4bd",
+    "image_id": "sha256:db0b949a1bb0926e8c6c95bd0a6a7484f6b1f65c8a009d9352c7f2184b70ce1f",
+    "source_sha256": "39f99d271bba1a4580fb0410f731b3cfd7f0bc26f57edba95c1dc55172bae699",
+    "base_url": "http://127.0.0.1:49495",
+    "receipt": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\joint-context-text-originals-39f99d271bba-after-storage\\6d6fe881f4bd\\receipt.json",
+    "records": [
+      {
+        "case": "vehicle",
+        "project_id": "20261018160006106-ee6625c9",
+        "state": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-context-text-vehicle\\state.json",
+        "http_records": 8,
+        "old36f_actual_qwen_intake_origin_retained": true,
+        "no_fresh_intake_claim": true,
+        "source_only_no_generated_models": true
+      },
+      {
+        "case": "robot",
+        "project_id": "20261018160157264-5f0fa2a4",
+        "state": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-context-text-robot\\state.json",
+        "http_records": 8,
+        "old36f_actual_qwen_intake_origin_retained": true,
+        "no_fresh_intake_claim": true,
+        "source_only_no_generated_models": true
+      }
+    ],
+    "full_release_pass": false,
+    "productive_delivery": false
+  },
+  "current_checkpoint": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\checkpoint-current-native-run.json",
+  "native_disconnect_current_image": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\native-current-image-disconnect-checks.json",
+    "sha256": "db077bffb8e9c6d4723c901e831ed6db3dbb1905d2f7efaadc3b7a4577bcca49"
+  },
+  "continuation_watch": {
+    "id": "nis-nach-fahrzeugpr-fung-fortsetzen",
+    "status": "ACTIVE_FOR_TOMORROW_ONLY",
+    "rrule": "FREQ=DAILY;BYHOUR=9;BYMINUTE=0;BYSECOND=0",
+    "resume_europe_berlin": "2026-10-21T09:00:00+02:00",
+    "pause_before_actual_work": true
+  },
+  "continuation_automation_status": "ACTIVE_CURRENT_NATIVE_REQUEST_ONLY",
+  "native_inference_active": false,
+  "current_candidate_matches_working_source": true,
+  "latest_human_finish_policy": {
+    "at_utc": "2026-10-20T18:02:11.364709+00:00",
+    "source": "Direct human message in this chat",
+    "request": "Nach vollständigen Abschluss der Arbeitne, den Kandidaten veröffentlichen und die Arbeit für heute beenden",
+    "interpretation": "Conditional stop after fully completed authorized original acceptance, complete matching release gate, exact tested-image deployment, production verification and secured evidence; keep current native request running until normal terminal.",
+    "publication_authorized": true,
+    "immediate_stop_requested": false,
+    "after_verified_delivery": "Save final evidence and completion audit, give concise actual completion report, end/delete this task continuation automations, no new work today.",
+    "no_shutdown_or_chat_archival_requested": true
+  },
+  "pause_checkpoint": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\pause-20261020\\pause.json",
+    "sha256": "4664901e8e228de8a72740f62f72abd5adf8b812a0da90290496793509bc97eb"
+  },
+  "resume_instructions": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\reference-context-serialization-repair\\pause-20261020\\RESUME-20261021.md",
+  "resume_europe_berlin": "2026-10-21T09:00:00+02:00",
+  "latest_user_stop_supersedes_publish_today": true,
+  "resume_checkpoint": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261021\\checkpoint.json",
+  "resume_human_request_utc": "2026-10-21T05:24:51.018812+00:00",
+  "current_repair": "docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261021\\inventory-binding-cardinality-repair\\workload.json"
+}

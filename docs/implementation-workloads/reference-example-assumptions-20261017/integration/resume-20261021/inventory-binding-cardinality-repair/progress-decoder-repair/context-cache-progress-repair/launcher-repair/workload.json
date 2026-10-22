@@ -1,0 +1,120 @@
+{
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "kind": "repair",
+  "modify_code": true,
+  "allow_repair": true,
+  "campaign_id": "nis-ea-independent-20260924-run1",
+  "status": "TARGETED_VALIDATION_PASSED_DELIVERY_PENDING",
+  "requested_change": "Launcher health/startup must not submit unsolicited inference or replace a live shared provider after a failed metadata probe.",
+  "revision_before": {
+    "scripts/dev/launch-networkis.py": "8ef93fdcb3a9ad44d54828fddb943a09655436a656f1eda1a282a1124cebe6ba",
+    "scripts/dev/start-networkis.ps1": "541e044951138c057d21819cf1c87c53c1ff89c86bec0c7cf2282058a1b5c844",
+    "backend/tests/test_server_startup.py": "44d4721ac18f6b35ca64f6547c82c5c84e44fbdcde8accd54f2c09e2a232e771"
+  },
+  "unresolved_decisions": [],
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261021\\inventory-binding-cardinality-repair\\progress-decoder-repair\\context-cache-progress-repair\\launcher-repair\\before-launch-networkis.py",
+      "sha256": "8ef93fdcb3a9ad44d54828fddb943a09655436a656f1eda1a282a1124cebe6ba"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261021\\inventory-binding-cardinality-repair\\progress-decoder-repair\\context-cache-progress-repair\\launcher-repair\\before-start-networkis.ps1",
+      "sha256": "541e044951138c057d21819cf1c87c53c1ff89c86bec0c7cf2282058a1b5c844"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261021\\inventory-binding-cardinality-repair\\progress-decoder-repair\\context-cache-progress-repair\\launcher-repair\\before-test_server_startup.py",
+      "sha256": "dafaaff525f62f3a1d65f00c178bcd9508902e25f3bdaad0b1d725550f2a865d"
+    }
+  ],
+  "required_outcomes": [
+    "metadata_only_startup_and_recovery",
+    "preserved_provider_ownership"
+  ],
+  "validation_requirements": [
+    "isolated_startup_regressions",
+    "powershell_syntax"
+  ],
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "first_failing_layer": "Launcher dependency recovery and prewarm",
+    "root_cause": "An unavailable tags response triggers optional fast-model generation; provider schedules Llama between native Qwen calls and discards its recurrent cache. The same loop can terminate its live owned provider after one failed probe.",
+    "reproduction": "Two actual main-provider cache evictions correlate exactly with candidate then production launcher recovery logs; current native call was not interrupted.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261021\\inventory-binding-cardinality-repair\\progress-decoder-repair\\context-cache-progress-repair\\native-14388-second-reload\\finding.json",
+        "sha256": "39b6fffa18c48ad48d96a3e3680374ecd3f2b281c40edff084b5293c9f85dd7b"
+      }
+    ],
+    "affected_files": [
+      "scripts/dev/launch-networkis.py",
+      "scripts/dev/start-networkis.ps1",
+      "backend/tests/test_server_startup.py"
+    ],
+    "acceptance_criteria": [
+      "Startup and repeated recovery send metadata GETs only; no model-generation request",
+      "A running owned process is retained across transient metadata failure",
+      "An external reachable provider is never replaced by a local serve process",
+      "Backend/frontend lifecycle checks and strict local model installation validation remain"
+    ],
+    "targeted_tests": [
+      "run_web start/recovery integration with fake external and owned live providers across strict/optional modes",
+      "reachable metadata-unavailable provider refuses duplicate serve",
+      "actual stopped owned process can recover normally",
+      "PowerShell launcher absence of generation POST and parser acceptance"
+    ],
+    "weaken_assertions_to_pass": false
+  },
+  "constraints": [
+    "Old74486 is already canceled by explicit human authorization. New14388 executes immutable image503ecdf/source69; no live source/image/provider/candidate changes.",
+    "This checkout repair is independent of the ongoing immutable native worker; no extra model requests, builds, releases or provider restart.",
+    "All15/15 original/model/simulation/full-gate/delivery obligations retained."
+  ],
+  "delivery": {
+    "decision": "YES",
+    "authorization": "Standing AGENTS.md production delivery authorization",
+    "target": "Canonical NetworkIS exact tested image after both full originals and full release gate"
+  },
+  "red_fixture_note": "First RED harness lacked process.returncode, retained red.xml. Corrected harness now yields5 actual behavioral failures, red-fixture-corrected.xml; no product changes yet.",
+  "files_changed": [
+    "scripts/dev/launch-networkis.py",
+    "scripts/dev/start-networkis.ps1",
+    "backend/tests/test_server_startup.py"
+  ],
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261021\\inventory-binding-cardinality-repair\\progress-decoder-repair\\context-cache-progress-repair\\launcher-repair\\after\\scripts\\dev\\launch-networkis.py",
+      "sha256": "16b7420128a100f4a4446bc6394552c3578347bcb0ae2088b820e124799e3224"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261021\\inventory-binding-cardinality-repair\\progress-decoder-repair\\context-cache-progress-repair\\launcher-repair\\after\\scripts\\dev\\start-networkis.ps1",
+      "sha256": "d0552ef4bcd4a463fc2fead4c429fc60675d7c42162f058e593ae73ced79857d"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261021\\inventory-binding-cardinality-repair\\progress-decoder-repair\\context-cache-progress-repair\\launcher-repair\\after\\backend\\tests\\test_server_startup.py",
+      "sha256": "341573bef134d07901ed31b9ba3d61243584967ab250dc9106b3e06a905403ea"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261021\\inventory-binding-cardinality-repair\\progress-decoder-repair\\context-cache-progress-repair\\launcher-repair\\applied.diff",
+      "sha256": "7793a9460420af432db8f2aa0e9c8bc43752c8ec596e4d689bce0252e18d7f41"
+    }
+  ],
+  "tests": {
+    "red": {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261021\\inventory-binding-cardinality-repair\\progress-decoder-repair\\context-cache-progress-repair\\launcher-repair\\red-fixture-corrected.xml",
+      "sha256": "6fc5e9866b97da35a94868edc26f29c7a7218485a80a17bab8592f02032b5e38"
+    },
+    "startup53": {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261021\\inventory-binding-cardinality-repair\\progress-decoder-repair\\context-cache-progress-repair\\launcher-repair\\final-green.xml",
+      "sha256": "4e11f14c1c526cdea5ba1541fa68c6e75bc06a4cbe70fcd5b0e2c3e783f665b0"
+    },
+    "final_strengthened_powershell3": {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261021\\inventory-binding-cardinality-repair\\progress-decoder-repair\\context-cache-progress-repair\\launcher-repair\\powershell-final.xml",
+      "sha256": "7187d51523933c32a1637be8a6349b12464965e9ace8cbf5f2ca193522832368"
+    }
+  },
+  "remaining_findings": [
+    "Both complete native original acceptances, full final-image release gate and productive delivery remain mandatory."
+  ]
+}

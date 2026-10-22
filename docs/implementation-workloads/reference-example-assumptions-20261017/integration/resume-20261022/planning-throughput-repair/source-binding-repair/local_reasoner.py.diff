@@ -1,0 +1,225 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -7,6 +7,30 @@
+ from urllib.parse import urlparse
+ from uuid import uuid4
+ import httpx
++
++_REFERENCE_HARDWARE_FACT_BATCH = 16
++
++
++def _reference_profile_sources(source, profiles):
++    """Keep every source interval in its nearest reviewed system or shared ancestor."""
++    from backend.nis.agent.orchestration.project_intake import document_source_contexts, document_system_scope
++    profiles = list(profiles)
++    sections = {profile: [] for profile in profiles}
++    offsets, contexts = document_source_contexts(source)
++    for start, end, context in zip(offsets, [*offsets[1:], len(source)], contexts):
++        scope = tuple(document_system_scope(context))
++        owners = [profile for profile in profiles if scope[:len(profile)] == profile]
++        if owners:
++            # A real nested system owns its descendants; an unknown section
++            # under that system is context, never an omitted source fragment.
++            targets = [max(owners, key=len)]
++        else:
++            targets = [profile for profile in profiles if profile[:len(scope)] == scope]
++        if not targets and end > start:
++            raise ValueError('Ursprünglicher Quellenabschnitt ohne eindeutigen Profilbezug: ' + repr(context))
++        for profile in targets:
++            sections[profile].append(source[start:end])
++    return {profile: ''.join(parts) for profile, parts in sections.items()}
+ 
+ 
+ def _no_think_messages(messages):
+@@ -250,23 +274,45 @@
+             existing_choices = [row for row in choices
+                                 if row['properties']['choice_kind']['enum'] == ['EXISTING']]
+             if existing_choices:
+-                # Bind known identities together; a NEW participant remains a
+-                # separate one-identity decision with all original gates.
++                # Native grammars do not enforce object-property counts.
++                # One required ID key per node, only later identities in the
++                # following node, and a finite depth encode both constraints.
+                 bound = min(8, len(existing_choices))
+-                schema['properties']['inventory_choices']['maxItems'] = bound
+-                schema['properties']['inventory_choices']['uniqueItems'] = True
++                def binding_node(start, remaining):
++                    name = f'NativeReferenceBinding_{start}_{remaining}'
++                    reference = {'$ref': '#/$defs/' + name}
++                    if name in schema['$defs']:
++                        return reference
++                    alternatives = []
++                    schema['$defs'][name] = {'anyOf': alternatives}
++                    for index in range(start, len(existing_choices)):
++                        row = existing_choices[index]
++                        identity = row['properties']['device_id']['enum'][0]
++                        properties = {key: deepcopy(value) for key, value in row['properties'].items()
++                                      if key not in {'choice_kind', 'device_id'}}
++                        properties['following'] = {'type': 'null'}
++                        if remaining > 1 and index + 1 < len(existing_choices):
++                            properties['following'] = {'anyOf': [{'type': 'null'}, binding_node(index + 1, remaining - 1)]}
++                        alternatives.append({'type': 'object', 'properties': {identity: {
++                            'type': 'object', 'properties': properties,
++                            'required': list(properties), 'additionalProperties': False}},
++                            'required': [identity], 'additionalProperties': False})
++                    return reference
++                keyed = binding_node(0, bound)
++                batch = {'type': 'object', 'properties': {
++                    'choice_kind': {'type': 'string', 'enum': ['EXISTING_BATCH']}, 'bindings': keyed},
++                    'required': ['choice_kind', 'bindings'], 'additionalProperties': False}
++                new_choices = [row for row in choices if row not in existing_choices]
++                schema['properties']['inventory_choices']['items'] = {'anyOf': [*new_choices, batch]}
+                 schema['anyOf'] = []
+                 for terminal in (True, False):
+-                    for existing in (False, True):
+-                        alternative = deepcopy(complete)
+-                        alternative['properties']['inventory_complete'] = {'type': 'boolean', 'enum': [terminal]}
+-                        array = alternative['properties']['inventory_choices']
+-                        array['minItems'] = 0 if terminal else 1
+-                        array['maxItems'] = bound if existing else 1
+-                        array['uniqueItems'] = True
+-                        array['items'] = {'anyOf': existing_choices if existing else [
+-                            row for row in choices if row not in existing_choices]}
+-                        schema['anyOf'].append(alternative)
++                    alternative = deepcopy(complete)
++                    alternative['properties']['inventory_complete'] = {'type': 'boolean', 'enum': [terminal]}
++                    array = alternative['properties']['inventory_choices']
++                    array['minItems'] = 0 if terminal else 1
++                    array['maxItems'] = 1
++                    array['items'] = {'anyOf': [*new_choices, batch]}
++                    schema['anyOf'].append(alternative)
+     return schema
+ 
+ 
+@@ -312,6 +358,28 @@
+         raise ValueError('Inventarstufe benötigt eindeutige Geräte innerhalb ihrer Grenze; leer ist nur ein bereits abgedeckter Bereich zulässig. Auswahl über inventory_choices liefern.')
+     if any(not isinstance(row, dict) for row in choices):
+         raise ValueError('Inventarauswahl benötigt neue Geräteobjekte oder vorhandene ID-Bindungen.')
++    if any(row.get('choice_kind') == 'EXISTING_BATCH' for row in choices):
++        if (inventory_target or len(choices) != 1 or set(choices[0]) != {'choice_kind', 'bindings'}
++                or not isinstance(choices[0]['bindings'], dict)):
++            raise ValueError('Inventarbindungen benötigen höchstens acht eindeutige bestehende IDs in einer getrennten Auswahl.')
++        node, selected, previous = choices[0]['bindings'], [], -1
++        positions = {row['id']: index for index, row in enumerate(devices)}
++        while node is not None:
++            if not isinstance(node, dict) or len(node) != 1 or len(selected) >= 8:
++                raise ValueError('Inventarbindungen benötigen genau eine vorhandene ID je Knoten und höchstens acht Knoten.')
++            identity, value = next(iter(node.items()))
++            if identity not in positions:
++                raise ValueError(f'Unbekannte Teilnehmer-ID {identity!r} in Inventarbindung.')
++            if positions[identity] <= previous:
++                raise ValueError('Mehrfache oder rückwärts gewählte Inventarbindung; jede vorhandene ID einmal in Bestandsreihenfolge auswählen.')
++            if not isinstance(value, dict) or set(value) != {'source_fact_ids', 'rationale', 'field_references', 'following'}:
++                raise ValueError('Inventarbindung erlaubt nur Quellenbelege, Referenzmetadaten und den folgenden Auswahlknoten.')
++            selected.append({'choice_kind': 'EXISTING', 'device_id': identity,
++                             **{key: field for key, field in value.items() if key != 'following'}})
++            previous, node = positions[identity], value['following']
++        if not selected:
++            raise ValueError('Eine Inventarbindung benötigt mindestens eine vorhandene ID.')
++        choices = selected
+     from copy import deepcopy
+     from typing import get_args
+     from backend.nis.agent.orchestration.project_intake import ReferenceDevice
+@@ -986,9 +1054,7 @@
+                 groups.setdefault(tuple(document_system_scope(fact.get('source_context', []))), {})[fact_id] = fact
+         if not groups:
+             raise ValueError('Keine quellengebundenen Geräte oder Funktionen für einen Referenzentwurf vorhanden.')
+-        offsets, contexts = document_source_contexts(source)
+-        intervals = [(tuple(document_system_scope(context)), source[start:end])
+-                     for start, end, context in zip(offsets, [*offsets[1:], len(source)], contexts)]
++        profile_sources = _reference_profile_sources(source, groups)
+         system = (
+             'Du bist der lokale NIS-Referenzplaner für ausdrücklich gewählte Beispielprojekte. '
+             'Gleich lokalisierte Funktionspartner werden durch functional_dependencies verbunden; keine physische Schleife erfinden. '
+@@ -1064,8 +1130,7 @@
+         normalization_events = []
+         declared_inventory_events = []
+         for profile_index, (profile, profile_facts) in enumerate(groups.items(), start=1):
+-            sections = [text for scope, text in intervals if scope == profile or scope not in groups and profile[:len(scope)] == scope]
+-            profile_text = ''.join(sections)
++            profile_text = profile_sources[profile]
+             if not profile_text:
+                 raise ValueError('Der vollständige ursprüngliche Profilabschnitt konnte nicht gebunden werden.')
+             visible_facts = {key: {name: fact.get(name) for name in ('name', 'kind', 'role', 'quantity', 'source_context')}
+@@ -1121,15 +1186,31 @@
+                               'Jede Auswahl begründen; echte offene Auslegung explizit unresolved halten. '
+                               + ('Zunächst ausschließlich konkrete Portabsicht planen: parameters bleibt {}. Die folgende eigene Parameterstufe legt jeden Anschluss aus; diese Zwischenstufe ist keine vollständige Prüfung. ' if port_intent else '')
+                               + ('Ausschließlich IO für alle angeforderten vorhandenen Teilnehmer-IDs liefern; keine anderen Geräte, Anschlüsse, Messgrößen oder Befehle überschreiben. Teilnehmer und ihre IO getrennt erhalten. Alle Nachbarteilnehmer bleiben als Planungskontext sichtbar. ' if device_ids else '')
+-                              + ('Jeder inventory_choices-Eintrag beginnt mit choice_kind: EXISTING für eine vorhandene ID-Bindung, NEW_<Geräteart> für wirklich neue Hardware (z.B. NEW_SENSOR passend zu kind=SENSOR). Bei EXISTING danach ausschließlich device_id, source_fact_ids, rationale und field_references auswählen; niemals id/name/kind eines alten Geräts neu schreiben. NIS erhält sämtliche unveränderlichen Gerätedaten und ergänzt nur die Quellen-/Typ-/Referenzbindung. Bei NEW_<Geräteart> danach die vollständigen neuen Gerätedaten liefern, niemals eine vorhandene ID. choice_kind wird nur intern geprüft und nicht als Modellfeld gespeichert. Die gemeinsame Stufengrenze gilt für alle Einträge zusammen. ' if inventory_stage else '')
++                              + ('Jeder inventory_choices-Eintrag beginnt mit choice_kind: EXISTING für eine vorhandene ID-Bindung, NEW_<Geräteart> für wirklich neue Hardware (z.B. NEW_SENSOR passend zu kind=SENSOR). Bei EXISTING danach ausschließlich device_id, source_fact_ids, rationale und field_references auswählen; niemals id/name/kind eines alten Geräts neu schreiben. NIS erhält sämtliche unveränderlichen Gerätedaten und ergänzt nur die Quellen-/Typ-/Referenzbindung. Bei NEW_<Geräteart> danach die vollständigen neuen Gerätedaten liefern, niemals eine vorhandene ID. choice_kind wird nur intern geprüft und nicht als Modellfeld gespeichert. Die gemeinsame Stufengrenze gilt für alle Einträge zusammen. ' if inventory_stage and derivation_fact_ids is None else '')
+                               + ('Nur ein echtes Gerät oder eine vorhandene Gerätebindung für den angeforderten Quellenbefund/das Typmitglied liefern, keine zweite Platzhalterzeile. source_fact_ids enthält ausschließlich diese eine FactID; source_member_bindings neuer Geräte ausschließlich das angeforderte wörtliche Mitglied. Bei vorhandenen Geräten setzt NIS die angeforderte Typbindung selbst. Funktional zusätzlich notwendige Hardware wird danach in einem eigenen Schritt geplant. ' if inventory_target else '')
+                               + ('inventory_complete bewertet nur diesen deklarierten Quellenbereich. Bei vollständiger Abdeckung true; wenn er bereits abgedeckt ist, ist ein leeres Delta mit true zulässig. False verlangt eine echte weitere Instanz/Bindung dieses Bereichs. ' if inventory_target else '')
+-                              + ('Prüfe jetzt die physische Hardware für die ausdrücklich angeforderten FUNCTION-/REQUIREMENT-FactIDs. Vollständige Quelle und sämtliche Nachbarfunktionen bleiben Konsistenzkontext; weitere Quellenbefunde werden in eigenen Hardwarestufen bearbeitet. Sensoren und Aktoren sind echte Teilnehmer, keine bloßen Werte im Controller. Vorhandene Geräte wiederverwenden oder fehlende Messquellen, Verarbeitung, Verbraucher und Aktoren ergänzen; unabhängige Messgrößen und Stellwirkungen berücksichtigen. Ports/Messgrößen/Befehle/Funktionen/Kommunikation folgen erst nach ALLEN Hardwarestufen und erzeugen KEINE Geräte mehr. Notwendige Peripherie dieses Quellenbereichs niemals in spätere IO-Schritte verschieben. source_fact_ids enthält nur passende angeforderte FUNCTION-/REQUIREMENT-FactIDs, jede höchstens einmal; keine neuen Bindungen an Quelleninventar. Alte Bindungen wiederverwendeter IDs bleiben serverseitig erhalten. Keine Originalmenge erhöhen oder Hardwarebelege/Defaults erfinden. Pro Antwort entweder höchstens ein wirklich neues Gerät ODER bis zu acht verschiedene EXISTING-ID-Bindungen gemeinsam; niemals neue Hardware mit Bindungen mischen. Mehrere passende Quellenbelege desselben Teilnehmers gemeinsam angeben. Nur tatsächlich benötigte Teilnehmer binden, nicht sämtliche Geräte mit sämtlichen Funktionen verbinden. Weiteren Hardwarebedarf mit inventory_complete=false für die normale nächste Antwort offenhalten; die Gesamtzahl notwendiger Geräte ist dadurch nicht begrenzt. inventory_complete bewertet ausschließlich den Bedarf der angeforderten FactIDs und wird erst true, wenn vorhandene plus ergänzte Hardware diesen vollständig abdeckt; ohne Ergänzungsbedarf inventory_choices=[] und true. False verlangt neue Geräte/Quellenbindungen. Unklare Fachentscheidungen konkret unresolved nennen. ' if derivation_fact_ids is not None else '')
++                              + ('Prüfe jetzt die physische Hardware für die ausdrücklich angeforderten FUNCTION-/REQUIREMENT-FactIDs. Vollständige Quelle und sämtliche Nachbarfunktionen bleiben Konsistenzkontext; weitere Quellenbefunde werden in eigenen Hardwarestufen bearbeitet. Sensoren und Aktoren sind echte Teilnehmer, keine bloßen Werte im Controller. Vorhandene Geräte wiederverwenden oder fehlende Messquellen, Verarbeitung, Verbraucher und Aktoren ergänzen; unabhängige Messgrößen und Stellwirkungen berücksichtigen. Ports/Messgrößen/Befehle/Funktionen/Kommunikation folgen erst nach ALLEN Hardwarestufen und erzeugen KEINE Geräte mehr. Notwendige Peripherie dieses Quellenbereichs niemals in spätere IO-Schritte verschieben. source_fact_ids enthält nur passende angeforderte FUNCTION-/REQUIREMENT-FactIDs, jede höchstens einmal; keine neuen Bindungen an Quelleninventar. Alte Bindungen wiederverwendeter IDs bleiben serverseitig erhalten. Keine Originalmenge erhöhen oder Hardwarebelege/Defaults erfinden. Pro Antwort entweder höchstens ein wirklich neues Gerät ODER eine einzige EXISTING_BATCH-Auswahl. Deren bindings ist ein Knoten mit genau einer vorhandenen ID als Schlüssel. Sein Wert enthält source_fact_ids, rationale, field_references und following. following ist null oder der nächste solche Ein-ID-Knoten. Höchstens acht Knoten, jede ID nur einmal und in der Reihenfolge von existing_inventory_for_this_stage auswählen. Nach dem achten Knoten ist following zwingend null. Mehrere Quellenbelege derselben ID in derselben source_fact_ids-Liste bündeln; keine separaten EXISTING-Zeilen liefern. Niemals neue Hardware mit Bindungen mischen. Die Begründung jeweils in einem kurzen fachlichen Satz ohne Wiederholung des Auftrags formulieren. Mehrere passende Quellenbelege desselben Teilnehmers gemeinsam angeben. Nur tatsächlich benötigte Teilnehmer binden, nicht sämtliche Geräte mit sämtlichen Funktionen verbinden. Weiteren Hardwarebedarf mit inventory_complete=false für die normale nächste Antwort offenhalten; die Gesamtzahl notwendiger Geräte ist dadurch nicht begrenzt. inventory_complete bewertet ausschließlich den Bedarf der angeforderten FactIDs und wird erst true, wenn vorhandene plus ergänzte Hardware diesen vollständig abdeckt; ohne Ergänzungsbedarf inventory_choices=[] und true. False verlangt neue Geräte/Quellenbindungen. Unklare Fachentscheidungen konkret unresolved nennen. ' if derivation_fact_ids is not None else '')
+                               + ('Genau die angeforderten Port-IDs liefern. id, device_id, technology, role und network_scope unverändert übernehmen; nur parameters und ports-spezifische Begründung/Referenzbelege auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
+                               + ('Genau die angeforderten Funktions-FactIDs abdecken; Abhängigkeiten nur mit diesen Senderfunktionen liefern. Andere ursprüngliche Funktions-FactIDs dürfen bewusste Empfänger oder COMPOSITE-Bestandteile sein. ' if function_ids else ''))}
+                 messages, full_messages, context_rebased = _reference_context_messages(
+                     reference_messages, reference_prompt, prompt, system, self.context_tokens, anchor=reference_anchor)
+                 progress_details = {}
++                def report_validation(error=None):
++                    status = 'REJECTED' if error is not None else 'VALIDATED'
++                    calls[-1]['validation_status'] = status
++                    if error is not None:
++                        calls[-1]['validation_error'] = str(error)
++                    progress = sink.get()
++                    if progress:
++                        validated = sum(row.get('validation_status') == 'VALIDATED' for row in calls)
++                        rejected = sum(row.get('validation_status') == 'REJECTED' for row in calls)
++                        detail = 'Antwort abgelehnt: ' + str(error) if error is not None else 'Stufenantwort intern validiert'
++                        progress({'type': 'PROGRESS', 'status': 'RUNNING',
++                            'text': f'Lokaler Qwen · {stage}: {detail}. {validated} intern validierte und {rejected} abgelehnte Antworten; kein freigegebenes Modell.',
++                            'metadata': {**deepcopy(progress_details), 'source': 'document_reference_validation',
++                                'completed_calls': len(calls), 'validated_calls': validated, 'rejected_calls': rejected,
++                                'validation_status': status, 'validation_error': str(error) if error is not None else None,
++                                'canonical_writes': False}})
+                 def report_progress(attempt):
+                     progress = sink.get()
+                     if progress:
+@@ -1147,8 +1228,8 @@
+                             fact_ids = [key for key, fact in prepared['facts'].items()
+                                 if fact['kind'] in {'FUNCTION', 'REQUIREMENT'}
+                                 and tuple(document_system_scope(fact.get('source_context', []))) == profile]
+-                            scope_index = fact_ids.index(derivation_fact_ids[0]) // 4 + 1
+-                            scope_count = (len(fact_ids) + 3) // 4
++                            scope_index = fact_ids.index(derivation_fact_ids[0]) // _REFERENCE_HARDWARE_FACT_BATCH + 1
++                            scope_count = (len(fact_ids) + _REFERENCE_HARDWARE_FACT_BATCH - 1) // _REFERENCE_HARDWARE_FACT_BATCH
+                             metadata.update(scope_index=scope_index, scope_count=scope_count)
+                             scope_text = f'; Quellenbereich {scope_index} von {scope_count}'
+                         attempt_text = 'Planung' if attempt == 1 else f'Korrekturversuch {attempt}'
+@@ -1268,16 +1349,18 @@
+                             # Actual first request/reply, never a fabricated ACK
+                             # or inventory accepted from a previous whole run.
+                             reference_anchor = (deepcopy(reference_messages), deepcopy(prompt))
++                        report_validation()
+                         return result
+                     except (ValueError, TypeError, KeyError) as error:
++                        report_validation(error)
++                        logging.getLogger(__name__).warning(
++                            'Native reference validation failed: %s',
++                            json.dumps({'stage': stage, 'profile': list(profile), 'attempt': attempt + 1,
++                                        'inventory_target': inventory_target,
++                                        'derivation_fact_ids': derivation_fact_ids,
++                                        'error': str(error), 'response': raw,
++                                        'response_sha256': calls[-1]['response_sha256']}, ensure_ascii=False))
+                         if attempt:
+-                            logging.getLogger(__name__).warning(
+-                                'Native reference validation failed: %s',
+-                                json.dumps({'stage': stage, 'profile': list(profile),
+-                                            'inventory_target': inventory_target,
+-                                            'derivation_fact_ids': derivation_fact_ids,
+-                                            'error': str(error), 'response': raw,
+-                                            'response_sha256': calls[-1]['response_sha256']}, ensure_ascii=False))
+                             raise ValueError(f'Kein gültiger strukturierter Referenzvorschlag: {error}') from error
+                         payload['messages'] = [*messages, {'role': 'assistant', 'content': native_content},
+                                                {'role': 'user', 'content': f'Validierungsfehler: {error}. Vollständigen JSON-Entwurf dieser Stufe korrigieren, keine Quellen ändern.'}]
+@@ -1336,8 +1419,8 @@
+                 # Bound the hardware decision, not its complete source context.
+                 # Every original fact is visited before any IO is planned;
+                 # completion closes only this scope, never the remaining worklist.
+-                for start in range(0, len(derivation_ids), 4):
+-                    selected_derivations = derivation_ids[start:start + 4]
++                for start in range(0, len(derivation_ids), _REFERENCE_HARDWARE_FACT_BATCH):
++                    selected_derivations = derivation_ids[start:start + _REFERENCE_HARDWARE_FACT_BATCH]
+                     while True:
+                         additions = await infer('Funktionsbedingte physische Hardware', {'devices'}, feedback=feedback,
+                             derivation_fact_ids=selected_derivations)

@@ -1,0 +1,438 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="4" time="7.412" timestamp="2026-10-18T14:19:52.526487+02:00" hostname="Haranga"><testcase classname="tests.test_qwen_document_intake" name="test_normative_groups_never_inherit_a_neighboring_subchapter_context[False]" time="0.024"><failure message="AssertionError: assert {'source_ref': 'R0002.G', 'text': '7.1 Machinery standards\r\nEN 60204 Machinery safety\r\n\r\n7.2 Update standards\r\...nISO 21434 Cybersecurity', 'policy': {'kind': 'REQUIREMENT', 'role': 'OTHER', 'quantity': None}, 'required': True, ...} is not {'source_ref': 'R0002.G', 'text': '7.1 Machinery standards\r\nEN 60204 Machinery safety\r\n\r\n7.2 Update standards\r\...nISO 21434 Cybersecurity', 'policy': {'kind': 'REQUIREMENT', 'role': 'OTHER', 'quantity': None}, 'required': True, ...}">markdown = False
+
+    @pytest.mark.parametrize('markdown', [False, True])
+    def test_normative_groups_never_inherit_a_neighboring_subchapter_context(markdown):
+        from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+        heading = lambda level, text: ('#' * level + ' ' if markdown else '') + text + '\r\n'
+        source = (heading(1, 'Example facility') if markdown else '') + heading(2, '7. Regulatory Requirements')
+        source += heading(3, '7.1 Machinery standards') + 'EN 60204 Machinery safety\r\n\r\n'
+        source += heading(3, '7.2 Update standards') + 'ISO 24089 Software updates\r\n\r\nISO 21434 Cybersecurity\r\n'
+        units = document_component_sources(document_source_references(source))
+        machinery = next(unit for unit in units if 'EN 60204 Machinery safety' in unit['text'])
+        updates = next(unit for unit in units if 'ISO 24089 Software updates' in unit['text'])
+&gt;       assert machinery is not updates
+E       AssertionError: assert {'source_ref': 'R0002.G', 'text': '7.1 Machinery standards\r\nEN 60204 Machinery safety\r\n\r\n7.2 Update standards\r\...nISO 21434 Cybersecurity', 'policy': {'kind': 'REQUIREMENT', 'role': 'OTHER', 'quantity': None}, 'required': True, ...} is not {'source_ref': 'R0002.G', 'text': '7.1 Machinery standards\r\nEN 60204 Machinery safety\r\n\r\n7.2 Update standards\r\...nISO 21434 Cybersecurity', 'policy': {'kind': 'REQUIREMENT', 'role': 'OTHER', 'quantity': None}, 'required': True, ...}
+
+backend\tests\test_qwen_document_intake.py:1539: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_normative_groups_never_inherit_a_neighboring_subchapter_context[True]" time="0.003" /><testcase classname="tests.test_qwen_document_intake" name="test_normative_window_results_compose_without_reassigning_subchapter_provenance[7.2 Update standards]" time="4.398"><failure message="ValueError: Wesentliche getrennte Quellenangabe fehlt: 7.2 Update standards Wesentliche getrennte Quellenangabe fehlt: ISO 24089 Software updates Wesentliche getrennte Quellenangabe fehlt: ISO 21434 Cybersecurity">boundary = '7.2 Update standards'
+
+    @pytest.mark.parametrize('boundary', ['7.2 Update standards', 'ISO 24089 Software updates'])
+    def test_normative_window_results_compose_without_reassigning_subchapter_provenance(boundary):
+        from copy import deepcopy
+        from backend.nis.agent.orchestration.project_intake import (
+            document_component_sources, document_source_references, resolve_document_references,
+            compose_document_proposal,
+        )
+        source = ('7. Regulatory Requirements\r\n7.1 Machinery standards\r\n'
+                  'EN 60204 Machinery safety\r\n\r\n7.2 Update standards\r\n'
+                  'ISO 24089 Software updates\r\n\r\nISO 21434 Cybersecurity\r\n')
+        cut = source.index(boundary)
+        parts = []
+        for start, stop in [(0, cut), (cut, len(source))]:
+            text, prefix = source[start:stop], source[:start]
+            rows = document_source_references(text)
+            units = document_component_sources(rows, scope_prefix=prefix)
+            facts = resolve_document_references({'components': [
+                {'source_ref': unit['source_ref'], **unit['policy']} for unit in units if unit['required']
+            ], 'technologies': []}, rows, scope_prefix=prefix)['components']
+            part = {'summary': 'Literal standards in their original subchapters.', 'components': facts,
+                    'technologies': [], 'proposed_task': 'Review the complete requirements without claiming qualification.',
+                    'assumptions': [], 'open_questions': []}
+            parts.append(validate_document_interpretation(part, text, scope_prefix=prefix))
+        proposal = compose_document_proposal(parts)
+&gt;       accepted = validate_document_interpretation(proposal, source, aggregate=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_qwen_document_intake.py:1570: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+value = {'summary': 'Die vollständige Quelle wurde in 2 lokalen Qwen-Abschnitten ausgewertet: 0 belegte Geräteinstanzen, 0 unq...en erst nach Prüfung dieses Vorschlags bestätigen; keine Mengen, Topologien oder technischen Parameter ergänzen.', ...}
+source = '7. Regulatory Requirements\r\n7.1 Machinery standards\r\nEN 60204 Machinery safety\r\n\r\n7.2 Update standards\r\nISO 24089 Software updates\r\n\r\nISO 21434 Cybersecurity\r\n'
+context_aliases = set(), scope_prefix = '', aggregate = True
+
+    def validate_document_interpretation(value, source: str, *, context_aliases=None, scope_prefix='', aggregate=False):
+        """Reject invented source claims before displaying a local-model proposal."""
+        model = DocumentProposalInterpretation if aggregate else DocumentInterpretation
+        result = model.model_validate(value)
+        from backend.nis.agent.tools.inventory_quantities import quantities
+        from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
+        count_keys = {'SENSOR': 'sensors', 'ACTUATOR': 'actuators', 'CONTROLLER': 'ecus', 'GATEWAY': 'gateways'}
+        punctuation = str.maketrans({char: '-' for char in '\u2010\u2011\u2012\u2013\u2014\u2212'})
+        def normalized_label(text):
+            return text.translate(punctuation).casefold()
+        profiles = DEFAULT_TECHNOLOGY_REGISTRY.profiles()
+        if context_aliases is None:
+            context_aliases = document_device_aliases(source)
+        def transport_citation(item):
+            identity = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(normalized_label(item.name))
+            target = [p for p in profiles if p['id'] == identity]
+            return bool(document_transport_candidates(item.source_quote, profiles, context_aliases=context_aliases, candidates=target))
+        eligible_source = document_technology_source(source, scope_prefix=scope_prefix)
+        semantic_errors = []
+        for technology in result.technologies:
+            if technology.source_quote not in eligible_source:
+                semantic_errors.append(f'{technology.name}: Test-/Indexzitat belegt keine Projektschnittstelle.')
+        citation_errors = []
+        quote_suggestions = {}
+        source_punctuation = source.translate(punctuation)
+        for item in [*result.components, *result.technologies]:
+            if item.source_quote not in source:
+                citation_errors.append(item.name)
+                # Suggest the original text only for a unique, character-preserving
+                # punctuation match. The changed quote is still rejected.
+                candidate = item.source_quote.translate(punctuation)
+                position = source_punctuation.find(candidate)
+                if position &gt;= 0 and source_punctuation.find(candidate, position + 1) &lt; 0:
+                    quote_suggestions[item.source_quote] = source[position:position + len(candidate)]
+            cited = normalized_label(item.name) in normalized_label(item.source_quote)
+            if isinstance(item, DocumentTechnology) and item.kind == 'TRANSPORT':
+                try:
+                    DEFAULT_TECHNOLOGY_REGISTRY.profile(normalized_label(item.name))
+                except KeyError:
+                    pass  # The collected unsupported-transport finding below owns this case.
+                else:
+                    cited = transport_citation(item)
+            if not cited:
+                semantic_errors.append(f'{item.name}: Die benannte Aussage ist im Quellenzitat nicht belegt.')
+        if citation_errors:
+            semantic_errors.append('Quellenzitat ist nicht im vollständigen Dokument enthalten: ' + ', '.join(dict.fromkeys(citation_errors)))
+            if quote_suggestions:
+                semantic_errors.append('Wortgetreue Originalzitate verwenden: ' + repr(list(quote_suggestions.values())))
+        # Citation grouping may differ at a window boundary. Bind the context to
+        # original character positions rather than to a particular grouping.
+        from bisect import bisect_right
+        context_offsets, context_values = document_source_contexts(scope_prefix + source)
+        context_cache = {}
+        for component in result.components:
+            if component.source_quote not in context_cache:
+                contexts = []
+                position = source.find(component.source_quote)
+                while position &gt;= 0:
+                    contexts.append(context_values[bisect_right(context_offsets, len(scope_prefix) + position) - 1])
+                    position = source.find(component.source_quote, position + 1)
+                context_cache[component.source_quote] = contexts
+            contexts = context_cache[component.source_quote]
+            unique_contexts = {tuple(context) for context in contexts}
+            if not component.source_context and len(unique_contexts) == 1:
+                component.source_context = list(next(iter(unique_contexts)))
+            elif 'source_context' not in component.model_fields_set and len(unique_contexts) &gt; 1:
+                semantic_errors.append(f'{component.name}: Abschnittskontext fehlt bei mehrdeutiger Quellenangabe.')
+            if component.source_context and component.source_context not in contexts:
+                semantic_errors.append(f'{component.name}: unbelegter Abschnittskontext.')
+            if any(contexts) and component.source_context not in contexts:
+                semantic_errors.append(f'{component.name}: Abschnittskontext fehlt oder ist veraltet.')
+            if component.kind in {'INSTANCE', 'CATEGORY'} and component.source_quote not in eligible_source:
+                semantic_errors.append(f'{component.name}: Test-/Indexzitat belegt keine installierte Hardware.')
+            policy = document_component_policy(component.source_quote)
+            if policy is None and component.kind in {'INSTANCE', 'CATEGORY'} and component.role != 'OTHER':
+                semantic_errors.append(f'{component.name}: unbelegte Geräterolle; OTHER und explizite Klärung erforderlich.')
+            if component.kind == 'INSTANCE' and policy is None:
+                semantic_errors.append(f'{component.name}: keine belegte individuelle Geräteidentität oder Stückzahl; keine INSTANCE bilden.')
+            if policy and component.kind in {'INSTANCE', 'CATEGORY'}:
+                if policy['kind'] in {'FUNCTION', 'REQUIREMENT'}:
+                    semantic_errors.append(f'{component.name}: logische Verarbeitung/Anforderung ist keine Hardware.')
+                elif component.role != policy['role']:
+                    semantic_errors.append(f'{component.name}: role {policy["role"]} erforderlich.')
+                elif component.kind == 'INSTANCE' and policy['kind'] == 'CATEGORY':
+                    semantic_errors.append(f'{component.name}: Geräteart, Alternative oder Mengenbereich bestätigt keine individuelle Instanz; CATEGORY und quantity null erforderlich.')
+            logical = re.match(r'\s*(?:Funktion|Function)\s*:', component.source_quote, re.I) or re.search(r'\b[\w-]*(?:fusion|regelung|planung|kontrolle)\b', normalized_label(component.name))
+            if component.kind == 'CATEGORY' and component.role == 'OTHER' and logical:
+                semantic_errors.append(f'{component.name}: CATEGORY bezeichnet eine Gerätekategorie mit Geräterolle, keine logische Funktion. Funktionen als FUNCTION/OTHER einordnen; keine Hardware aus Funktionslisten ableiten.')
+            if component.kind in {'FUNCTION', 'REQUIREMENT'} and component.role != 'OTHER':
+                semantic_errors.append(f'{component.name}: Funktionen und Anforderungen benötigen role OTHER; sie bestätigen keine Geräterolle.')
+            if component.kind != 'INSTANCE' and component.quantity is not None:
+                raise ValueError('Kategorien, Funktionen und Anforderungen bestätigen keine Gerätestückzahl.')
+            if component.kind == 'INSTANCE' and re.search(r'^\s*REQ\b|\b(?:muss|müssen|must|shall)\b', component.source_quote, re.I):
+                raise ValueError('Ein Anforderungssatz bestätigt keine konkrete Geräteinstanz.')
+            if component.quantity and component.quantity &gt; 1:
+                key = count_keys.get(component.role)
+                if not key or quantities(component.source_quote).get(key, 0) != component.quantity:
+                    raise ValueError(f'{component.name}: Die Stückzahl ist nicht ausdrücklich belegt.')
+        unknown_transports = []
+        for technology in result.technologies:
+            if technology.kind != 'TRANSPORT':
+                continue
+            if any(DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(normalized_label(match[1])) == DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(normalized_label(technology.name))
+                   for match in re.finditer(r'\b' + _DOCUMENT_CONTROLLER_LABEL + r'\s*\(([^)]+)\)', technology.source_quote, re.I)):
+                raise ValueError('Ein Controller-Kürzel ist kein physischer Anschluss.')
+            try:
+                DEFAULT_TECHNOLOGY_REGISTRY.profile(DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(normalized_label(technology.name)))
+            except KeyError:
+                unknown_transports.append(technology.name)
+        if unknown_transports:
+            semantic_errors.append('Nicht eindeutig registrierte Transportnamen müssen UNRESOLVED bleiben: '
+                                   + ', '.join(unknown_transports) + '. Keine unbelegte Variante ergänzen.')
+        missing_transports = [profile['id'] for profile in document_transport_candidates(source, profiles, context_aliases=context_aliases, scope_prefix=scope_prefix)
+                              if not any(item.kind == 'TRANSPORT' and DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(normalized_label(item.name)) == profile['id']
+                                         for item in result.technologies)]
+        if missing_transports:
+            semantic_errors.append('Alle eindeutig belegten registrierten Transportvarianten erfassen, ohne Duplikate als Ersatz: '
+                                   + ', '.join(missing_transports))
+        for qualified in document_qualified_transports(eligible_source, profiles):
+            if not any(item.kind == 'UNRESOLVED' and item.name.casefold() == qualified.casefold() for item in result.technologies):
+                semantic_errors.append('Qualifizierte oder nur ähnliche Technologie als UNRESOLVED erhalten: ' + qualified)
+        for name in document_declared_unknown_transports(document_source_references(source), profiles, scope_prefix=scope_prefix):
+            if not any(item.kind == 'UNRESOLVED' and item.name.casefold() == name.casefold() for item in result.technologies):
+                semantic_errors.append('Explizit genannte unbekannte Schnittstelle als UNRESOLVED erhalten: ' + name)
+        combined_source = re.sub(r'\b(?:Controller|Computer|ECU)\s*\([^)]+\)', lambda match: ' ' * len(match.group()), eligible_source)
+        for match in re.finditer(r'(?=\b([\w\u2010\u2011\u2012\u2013\u2014\u2212-]+)\s*[/|]\s*([\w\u2010\u2011\u2012\u2013\u2014\u2212-]+)\b)', combined_source):
+            try:
+                members = {DEFAULT_TECHNOLOGY_REGISTRY.profile(normalized_label(part))['id'] for part in match.groups()}
+            except KeyError:
+                continue
+            if len(members) &gt; 1 and not all(any(item.kind == 'TRANSPORT' and DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(normalized_label(item.name)) == member
+                                               for item in result.technologies) for member in members):
+                semantic_errors.append('Getrennte registrierte Transportvarianten benötigen eigene TRANSPORT-Einträge: '
+                                       + ', '.join(sorted(members)) + '. Keine Variante auf ihre Basis reduzieren; kein gemeinsamer Transportname.')
+        missing_aliases = []
+        for match in re.finditer(r'\b' + _DOCUMENT_CONTROLLER_LABEL + r'\s*\(([A-Z][A-Z0-9_-]{1,15})\)', eligible_source, re.I):
+            if not any(item.kind == 'DEVICE_ALIAS' and item.name == match[1]
+                       and match.group() in item.source_quote for item in result.technologies):
+                missing_aliases.append(match[1])
+        if missing_aliases:
+            semantic_errors.append('Alle Gerätekürzel brauchen DEVICE_ALIAS mit vollständigem Controller-/Computerzitat: ' + ', '.join(missing_aliases))
+        original_rows = document_source_references(source)
+        original_text = {row['source_ref']: row['text'].strip() for row in original_rows}
+        for unit in document_component_sources(original_rows, scope_prefix=scope_prefix):
+            if unit['required']:
+                pieces = [original_text[ref] for ref in unit.get('source_rows', [])] or [unit['text']]
+                for piece in pieces:
+                    if not any(piece in item.source_quote and item.source_context == unit['source_context'] and (not unit.get('source_quote') or item.name == unit['text'][:120]) and (not unit['policy'] or (item.kind == unit['policy']['kind'] and item.role == unit['policy']['role'] and item.quantity == unit['policy']['quantity'])) for item in result.components):
+                        semantic_errors.append('Wesentliche getrennte Quellenangabe fehlt: ' + piece[:150])
+            if unit['policy']:
+                for item in result.components:
+                    if item.source_context == unit['source_context'] and item.source_quote == unit.get('source_quote', unit['text']) and (item.kind != unit['policy']['kind'] or item.role != unit['policy']['role'] or item.quantity != unit['policy']['quantity']):
+                        semantic_errors.append('Quellenangabe benötigt die belegte Einordnung ' + str(unit['policy']) + ': ' + unit['text'][:100])
+        for line in eligible_source.splitlines():
+            if document_device_aliases(line) and not re.search(r'^\s*REQ\b|\b(?:muss|müssen|must|shall)\b', line, re.I):
+                if not any(item.kind == 'INSTANCE' and item.role in {'CONTROLLER', 'GATEWAY'} and line.strip() in item.source_quote
+                           for item in result.components):
+                    semantic_errors.append('Konkret benannten Controller aus seiner eigenen Deklaration als INSTANCE erfassen: ' + line.strip())
+        for component in result.components:
+            if component.kind in {'INSTANCE', 'CATEGORY'} and re.search(r'\bcontroller\b', normalized_label(component.name)) and component.role not in {'CONTROLLER', 'GATEWAY'}:
+                semantic_errors.append(f'{component.name}: ausdrücklich als Controller benannt; role CONTROLLER erforderlich.')
+        for line in eligible_source.splitlines():
+            group = re.match(r'^\s*(?:[-*]\s*)?(Sensorik|Aktorik|Sensor\s+types|Sensortypen|Actuator\s+types|Aktortypen)\s*[:(]', line, re.I)
+            if not group:
+                continue
+            role = 'SENSOR' if group[1].lower().startswith('sensor') else 'ACTUATOR'
+            count_key = 'sensors' if role == 'SENSOR' else 'actuators'
+            if quantities(line).get(count_key, 0):
+                continue
+            if not any(item.kind == 'CATEGORY' and item.role == role and line.strip() in item.source_quote for item in result.components):
+                semantic_errors.append(f'{group[1]}: unquantifizierte Typenliste braucht CATEGORY, role {role}, quantity null und das vollständige Listen-Zitat; als eine Gruppe zusammenfassen.')
+        if semantic_errors:
+&gt;           raise ValueError(' '.join(semantic_errors))
+E           ValueError: Wesentliche getrennte Quellenangabe fehlt: 7.2 Update standards Wesentliche getrennte Quellenangabe fehlt: ISO 24089 Software updates Wesentliche getrennte Quellenangabe fehlt: ISO 21434 Cybersecurity
+
+backend\nis\agent\orchestration\project_intake.py:1066: ValueError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_normative_window_results_compose_without_reassigning_subchapter_provenance[ISO 24089 Software updates]" time="1.639"><failure message="ValueError: Wesentliche getrennte Quellenangabe fehlt: ISO 24089 Software updates Wesentliche getrennte Quellenangabe fehlt: ISO 21434 Cybersecurity">boundary = 'ISO 24089 Software updates'
+
+    @pytest.mark.parametrize('boundary', ['7.2 Update standards', 'ISO 24089 Software updates'])
+    def test_normative_window_results_compose_without_reassigning_subchapter_provenance(boundary):
+        from copy import deepcopy
+        from backend.nis.agent.orchestration.project_intake import (
+            document_component_sources, document_source_references, resolve_document_references,
+            compose_document_proposal,
+        )
+        source = ('7. Regulatory Requirements\r\n7.1 Machinery standards\r\n'
+                  'EN 60204 Machinery safety\r\n\r\n7.2 Update standards\r\n'
+                  'ISO 24089 Software updates\r\n\r\nISO 21434 Cybersecurity\r\n')
+        cut = source.index(boundary)
+        parts = []
+        for start, stop in [(0, cut), (cut, len(source))]:
+            text, prefix = source[start:stop], source[:start]
+            rows = document_source_references(text)
+            units = document_component_sources(rows, scope_prefix=prefix)
+            facts = resolve_document_references({'components': [
+                {'source_ref': unit['source_ref'], **unit['policy']} for unit in units if unit['required']
+            ], 'technologies': []}, rows, scope_prefix=prefix)['components']
+            part = {'summary': 'Literal standards in their original subchapters.', 'components': facts,
+                    'technologies': [], 'proposed_task': 'Review the complete requirements without claiming qualification.',
+                    'assumptions': [], 'open_questions': []}
+            parts.append(validate_document_interpretation(part, text, scope_prefix=prefix))
+        proposal = compose_document_proposal(parts)
+&gt;       accepted = validate_document_interpretation(proposal, source, aggregate=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_qwen_document_intake.py:1570: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+value = {'summary': 'Die vollständige Quelle wurde in 2 lokalen Qwen-Abschnitten ausgewertet: 0 belegte Geräteinstanzen, 0 unq...en erst nach Prüfung dieses Vorschlags bestätigen; keine Mengen, Topologien oder technischen Parameter ergänzen.', ...}
+source = '7. Regulatory Requirements\r\n7.1 Machinery standards\r\nEN 60204 Machinery safety\r\n\r\n7.2 Update standards\r\nISO 24089 Software updates\r\n\r\nISO 21434 Cybersecurity\r\n'
+context_aliases = set(), scope_prefix = '', aggregate = True
+
+    def validate_document_interpretation(value, source: str, *, context_aliases=None, scope_prefix='', aggregate=False):
+        """Reject invented source claims before displaying a local-model proposal."""
+        model = DocumentProposalInterpretation if aggregate else DocumentInterpretation
+        result = model.model_validate(value)
+        from backend.nis.agent.tools.inventory_quantities import quantities
+        from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
+        count_keys = {'SENSOR': 'sensors', 'ACTUATOR': 'actuators', 'CONTROLLER': 'ecus', 'GATEWAY': 'gateways'}
+        punctuation = str.maketrans({char: '-' for char in '\u2010\u2011\u2012\u2013\u2014\u2212'})
+        def normalized_label(text):
+            return text.translate(punctuation).casefold()
+        profiles = DEFAULT_TECHNOLOGY_REGISTRY.profiles()
+        if context_aliases is None:
+            context_aliases = document_device_aliases(source)
+        def transport_citation(item):
+            identity = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(normalized_label(item.name))
+            target = [p for p in profiles if p['id'] == identity]
+            return bool(document_transport_candidates(item.source_quote, profiles, context_aliases=context_aliases, candidates=target))
+        eligible_source = document_technology_source(source, scope_prefix=scope_prefix)
+        semantic_errors = []
+        for technology in result.technologies:
+            if technology.source_quote not in eligible_source:
+                semantic_errors.append(f'{technology.name}: Test-/Indexzitat belegt keine Projektschnittstelle.')
+        citation_errors = []
+        quote_suggestions = {}
+        source_punctuation = source.translate(punctuation)
+        for item in [*result.components, *result.technologies]:
+            if item.source_quote not in source:
+                citation_errors.append(item.name)
+                # Suggest the original text only for a unique, character-preserving
+                # punctuation match. The changed quote is still rejected.
+                candidate = item.source_quote.translate(punctuation)
+                position = source_punctuation.find(candidate)
+                if position &gt;= 0 and source_punctuation.find(candidate, position + 1) &lt; 0:
+                    quote_suggestions[item.source_quote] = source[position:position + len(candidate)]
+            cited = normalized_label(item.name) in normalized_label(item.source_quote)
+            if isinstance(item, DocumentTechnology) and item.kind == 'TRANSPORT':
+                try:
+                    DEFAULT_TECHNOLOGY_REGISTRY.profile(normalized_label(item.name))
+                except KeyError:
+                    pass  # The collected unsupported-transport finding below owns this case.
+                else:
+                    cited = transport_citation(item)
+            if not cited:
+                semantic_errors.append(f'{item.name}: Die benannte Aussage ist im Quellenzitat nicht belegt.')
+        if citation_errors:
+            semantic_errors.append('Quellenzitat ist nicht im vollständigen Dokument enthalten: ' + ', '.join(dict.fromkeys(citation_errors)))
+            if quote_suggestions:
+                semantic_errors.append('Wortgetreue Originalzitate verwenden: ' + repr(list(quote_suggestions.values())))
+        # Citation grouping may differ at a window boundary. Bind the context to
+        # original character positions rather than to a particular grouping.
+        from bisect import bisect_right
+        context_offsets, context_values = document_source_contexts(scope_prefix + source)
+        context_cache = {}
+        for component in result.components:
+            if component.source_quote not in context_cache:
+                contexts = []
+                position = source.find(component.source_quote)
+                while position &gt;= 0:
+                    contexts.append(context_values[bisect_right(context_offsets, len(scope_prefix) + position) - 1])
+                    position = source.find(component.source_quote, position + 1)
+                context_cache[component.source_quote] = contexts
+            contexts = context_cache[component.source_quote]
+            unique_contexts = {tuple(context) for context in contexts}
+            if not component.source_context and len(unique_contexts) == 1:
+                component.source_context = list(next(iter(unique_contexts)))
+            elif 'source_context' not in component.model_fields_set and len(unique_contexts) &gt; 1:
+                semantic_errors.append(f'{component.name}: Abschnittskontext fehlt bei mehrdeutiger Quellenangabe.')
+            if component.source_context and component.source_context not in contexts:
+                semantic_errors.append(f'{component.name}: unbelegter Abschnittskontext.')
+            if any(contexts) and component.source_context not in contexts:
+                semantic_errors.append(f'{component.name}: Abschnittskontext fehlt oder ist veraltet.')
+            if component.kind in {'INSTANCE', 'CATEGORY'} and component.source_quote not in eligible_source:
+                semantic_errors.append(f'{component.name}: Test-/Indexzitat belegt keine installierte Hardware.')
+            policy = document_component_policy(component.source_quote)
+            if policy is None and component.kind in {'INSTANCE', 'CATEGORY'} and component.role != 'OTHER':
+                semantic_errors.append(f'{component.name}: unbelegte Geräterolle; OTHER und explizite Klärung erforderlich.')
+            if component.kind == 'INSTANCE' and policy is None:
+                semantic_errors.append(f'{component.name}: keine belegte individuelle Geräteidentität oder Stückzahl; keine INSTANCE bilden.')
+            if policy and component.kind in {'INSTANCE', 'CATEGORY'}:
+                if policy['kind'] in {'FUNCTION', 'REQUIREMENT'}:
+                    semantic_errors.append(f'{component.name}: logische Verarbeitung/Anforderung ist keine Hardware.')
+                elif component.role != policy['role']:
+                    semantic_errors.append(f'{component.name}: role {policy["role"]} erforderlich.')
+                elif component.kind == 'INSTANCE' and policy['kind'] == 'CATEGORY':
+                    semantic_errors.append(f'{component.name}: Geräteart, Alternative oder Mengenbereich bestätigt keine individuelle Instanz; CATEGORY und quantity null erforderlich.')
+            logical = re.match(r'\s*(?:Funktion|Function)\s*:', component.source_quote, re.I) or re.search(r'\b[\w-]*(?:fusion|regelung|planung|kontrolle)\b', normalized_label(component.name))
+            if component.kind == 'CATEGORY' and component.role == 'OTHER' and logical:
+                semantic_errors.append(f'{component.name}: CATEGORY bezeichnet eine Gerätekategorie mit Geräterolle, keine logische Funktion. Funktionen als FUNCTION/OTHER einordnen; keine Hardware aus Funktionslisten ableiten.')
+            if component.kind in {'FUNCTION', 'REQUIREMENT'} and component.role != 'OTHER':
+                semantic_errors.append(f'{component.name}: Funktionen und Anforderungen benötigen role OTHER; sie bestätigen keine Geräterolle.')
+            if component.kind != 'INSTANCE' and component.quantity is not None:
+                raise ValueError('Kategorien, Funktionen und Anforderungen bestätigen keine Gerätestückzahl.')
+            if component.kind == 'INSTANCE' and re.search(r'^\s*REQ\b|\b(?:muss|müssen|must|shall)\b', component.source_quote, re.I):
+                raise ValueError('Ein Anforderungssatz bestätigt keine konkrete Geräteinstanz.')
+            if component.quantity and component.quantity &gt; 1:
+                key = count_keys.get(component.role)
+                if not key or quantities(component.source_quote).get(key, 0) != component.quantity:
+                    raise ValueError(f'{component.name}: Die Stückzahl ist nicht ausdrücklich belegt.')
+        unknown_transports = []
+        for technology in result.technologies:
+            if technology.kind != 'TRANSPORT':
+                continue
+            if any(DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(normalized_label(match[1])) == DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(normalized_label(technology.name))
+                   for match in re.finditer(r'\b' + _DOCUMENT_CONTROLLER_LABEL + r'\s*\(([^)]+)\)', technology.source_quote, re.I)):
+                raise ValueError('Ein Controller-Kürzel ist kein physischer Anschluss.')
+            try:
+                DEFAULT_TECHNOLOGY_REGISTRY.profile(DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(normalized_label(technology.name)))
+            except KeyError:
+                unknown_transports.append(technology.name)
+        if unknown_transports:
+            semantic_errors.append('Nicht eindeutig registrierte Transportnamen müssen UNRESOLVED bleiben: '
+                                   + ', '.join(unknown_transports) + '. Keine unbelegte Variante ergänzen.')
+        missing_transports = [profile['id'] for profile in document_transport_candidates(source, profiles, context_aliases=context_aliases, scope_prefix=scope_prefix)
+                              if not any(item.kind == 'TRANSPORT' and DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(normalized_label(item.name)) == profile['id']
+                                         for item in result.technologies)]
+        if missing_transports:
+            semantic_errors.append('Alle eindeutig belegten registrierten Transportvarianten erfassen, ohne Duplikate als Ersatz: '
+                                   + ', '.join(missing_transports))
+        for qualified in document_qualified_transports(eligible_source, profiles):
+            if not any(item.kind == 'UNRESOLVED' and item.name.casefold() == qualified.casefold() for item in result.technologies):
+                semantic_errors.append('Qualifizierte oder nur ähnliche Technologie als UNRESOLVED erhalten: ' + qualified)
+        for name in document_declared_unknown_transports(document_source_references(source), profiles, scope_prefix=scope_prefix):
+            if not any(item.kind == 'UNRESOLVED' and item.name.casefold() == name.casefold() for item in result.technologies):
+                semantic_errors.append('Explizit genannte unbekannte Schnittstelle als UNRESOLVED erhalten: ' + name)
+        combined_source = re.sub(r'\b(?:Controller|Computer|ECU)\s*\([^)]+\)', lambda match: ' ' * len(match.group()), eligible_source)
+        for match in re.finditer(r'(?=\b([\w\u2010\u2011\u2012\u2013\u2014\u2212-]+)\s*[/|]\s*([\w\u2010\u2011\u2012\u2013\u2014\u2212-]+)\b)', combined_source):
+            try:
+                members = {DEFAULT_TECHNOLOGY_REGISTRY.profile(normalized_label(part))['id'] for part in match.groups()}
+            except KeyError:
+                continue
+            if len(members) &gt; 1 and not all(any(item.kind == 'TRANSPORT' and DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(normalized_label(item.name)) == member
+                                               for item in result.technologies) for member in members):
+                semantic_errors.append('Getrennte registrierte Transportvarianten benötigen eigene TRANSPORT-Einträge: '
+                                       + ', '.join(sorted(members)) + '. Keine Variante auf ihre Basis reduzieren; kein gemeinsamer Transportname.')
+        missing_aliases = []
+        for match in re.finditer(r'\b' + _DOCUMENT_CONTROLLER_LABEL + r'\s*\(([A-Z][A-Z0-9_-]{1,15})\)', eligible_source, re.I):
+            if not any(item.kind == 'DEVICE_ALIAS' and item.name == match[1]
+                       and match.group() in item.source_quote for item in result.technologies):
+                missing_aliases.append(match[1])
+        if missing_aliases:
+            semantic_errors.append('Alle Gerätekürzel brauchen DEVICE_ALIAS mit vollständigem Controller-/Computerzitat: ' + ', '.join(missing_aliases))
+        original_rows = document_source_references(source)
+        original_text = {row['source_ref']: row['text'].strip() for row in original_rows}
+        for unit in document_component_sources(original_rows, scope_prefix=scope_prefix):
+            if unit['required']:
+                pieces = [original_text[ref] for ref in unit.get('source_rows', [])] or [unit['text']]
+                for piece in pieces:
+                    if not any(piece in item.source_quote and item.source_context == unit['source_context'] and (not unit.get('source_quote') or item.name == unit['text'][:120]) and (not unit['policy'] or (item.kind == unit['policy']['kind'] and item.role == unit['policy']['role'] and item.quantity == unit['policy']['quantity'])) for item in result.components):
+                        semantic_errors.append('Wesentliche getrennte Quellenangabe fehlt: ' + piece[:150])
+            if unit['policy']:
+                for item in result.components:
+                    if item.source_context == unit['source_context'] and item.source_quote == unit.get('source_quote', unit['text']) and (item.kind != unit['policy']['kind'] or item.role != unit['policy']['role'] or item.quantity != unit['policy']['quantity']):
+                        semantic_errors.append('Quellenangabe benötigt die belegte Einordnung ' + str(unit['policy']) + ': ' + unit['text'][:100])
+        for line in eligible_source.splitlines():
+            if document_device_aliases(line) and not re.search(r'^\s*REQ\b|\b(?:muss|müssen|must|shall)\b', line, re.I):
+                if not any(item.kind == 'INSTANCE' and item.role in {'CONTROLLER', 'GATEWAY'} and line.strip() in item.source_quote
+                           for item in result.components):
+                    semantic_errors.append('Konkret benannten Controller aus seiner eigenen Deklaration als INSTANCE erfassen: ' + line.strip())
+        for component in result.components:
+            if component.kind in {'INSTANCE', 'CATEGORY'} and re.search(r'\bcontroller\b', normalized_label(component.name)) and component.role not in {'CONTROLLER', 'GATEWAY'}:
+                semantic_errors.append(f'{component.name}: ausdrücklich als Controller benannt; role CONTROLLER erforderlich.')
+        for line in eligible_source.splitlines():
+            group = re.match(r'^\s*(?:[-*]\s*)?(Sensorik|Aktorik|Sensor\s+types|Sensortypen|Actuator\s+types|Aktortypen)\s*[:(]', line, re.I)
+            if not group:
+                continue
+            role = 'SENSOR' if group[1].lower().startswith('sensor') else 'ACTUATOR'
+            count_key = 'sensors' if role == 'SENSOR' else 'actuators'
+            if quantities(line).get(count_key, 0):
+                continue
+            if not any(item.kind == 'CATEGORY' and item.role == role and line.strip() in item.source_quote for item in result.components):
+                semantic_errors.append(f'{group[1]}: unquantifizierte Typenliste braucht CATEGORY, role {role}, quantity null und das vollständige Listen-Zitat; als eine Gruppe zusammenfassen.')
+        if semantic_errors:
+&gt;           raise ValueError(' '.join(semantic_errors))
+E           ValueError: Wesentliche getrennte Quellenangabe fehlt: ISO 24089 Software updates Wesentliche getrennte Quellenangabe fehlt: ISO 21434 Cybersecurity
+
+backend\nis\agent\orchestration\project_intake.py:1066: ValueError</failure></testcase></testsuite></testsuites>

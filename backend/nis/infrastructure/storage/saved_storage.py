@@ -4,6 +4,7 @@ import json
 import os
 import re
 import tempfile
+import time
 from datetime import datetime, timezone
 from uuid import uuid4
 from backend.nis.infrastructure.paths import PROJECT_ROOT
@@ -47,7 +48,18 @@ def _replace_bytes(target: Path, content: bytes) -> None:
             handle.write(content)
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(temporary, target)
+        # Windows readers/scanners can briefly hold a file without delete sharing.
+        # Keep the fsynced temporary file and atomic replacement; never publish
+        # partial content or hide a permanent permissions/storage failure.
+        delays = (0.025, 0.05, 0.1, 0.2, 0.4, 0.8)
+        for attempt in range(len(delays) + 1):
+            try:
+                os.replace(temporary, target)
+                break
+            except PermissionError as error:
+                if getattr(error, 'winerror', None) not in {5, 32, 33} or attempt == len(delays):
+                    raise
+                time.sleep(delays[attempt])
     finally:
         if temporary:
             temporary.unlink(missing_ok=True)

@@ -928,6 +928,15 @@ export function EngineeringWorkbench() {
     setRefreshKey((key) => key + 1);
   }
 
+  function finishObjectEdit(objectId: string) {
+    setDeepLinkTarget(target => target?.id === objectId ? {...target, edit: false} : target);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("object") === objectId && params.has("edit")) {
+      params.delete("edit");
+      window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+    }
+  }
+
   function navigateToObject(targetResource: EngineeringResource, targetId: string) {
     const params = new URLSearchParams(window.location.search);
     params.set("resource", targetResource);
@@ -1194,6 +1203,7 @@ export function EngineeringWorkbench() {
                             relations={relations}
                             schema={schema}
                             initialEdit={deepLinkTarget?.id === item.id && deepLinkTarget.edit}
+                            onEditClosed={() => finishObjectEdit(item.id)}
                             onChanged={refresh}
                             onDeleted={() => {
                               setSelectedId(null);
@@ -2515,6 +2525,7 @@ function DetailPanel({
   resource,
   relations,
   schema,
+  onEditClosed,
   onChanged,
   onDeleted,
   onNavigate,
@@ -2527,6 +2538,7 @@ function DetailPanel({
   resource: EngineeringResource;
   relations: EngineeringRelation[];
   schema: EngineeringSchema | null;
+  onEditClosed: () => void;
   onChanged: () => void;
   onDeleted: () => void;
   onNavigate: (targetResource: EngineeringResource, targetId: string) => void;
@@ -2540,6 +2552,11 @@ function DetailPanel({
     setShowEdit(initialEdit);
     setNotice("");
   }, [initialEdit, item.id]);
+
+  function closeEdit() {
+    setShowEdit(false);
+    onEditClosed();
+  }
 
   async function setLifecycle(next: string) {
     setBusy(true);
@@ -2607,7 +2624,7 @@ function DetailPanel({
               <h2>{item.name}</h2>
             </div>
             <div className="eng-detail-actions">
-              <button className="button secondary tiny" onClick={() => setShowEdit((value) => !value)} type="button">
+              <button className="button secondary tiny" onClick={() => showEdit ? closeEdit() : setShowEdit(true)} type="button">
                 {showEdit ? "Abbrechen" : "Bearbeiten"}
               </button>
               <button className="button secondary tiny" disabled={busy || item.lifecycle_state !== "draft"} onClick={remove} type="button">
@@ -2623,7 +2640,7 @@ function DetailPanel({
               resource={resource}
               schema={schema}
               onSaved={() => {
-                setShowEdit(false);
+                closeEdit();
                 onChanged();
               }}
             />

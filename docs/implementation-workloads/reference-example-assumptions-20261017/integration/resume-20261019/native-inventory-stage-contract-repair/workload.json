@@ -1,0 +1,157 @@
+{
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "kind": "repair",
+  "modify_code": true,
+  "allow_repair": true,
+  "status": "DIAGNOSING_NATIVE_VALIDATION_FAILURE",
+  "owner_thread_id": "01a11f88-d6c9-7b63-bec3-26450a86e52c",
+  "requested_change": "Make native inventory responses scoped deltas, enforce existing device semantics before accumulating each batch, and obtain native corrective feedback instead of accepting invalid prefixes. Preserve complete final source/review/release gates.",
+  "owned_files": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/nis/agent/orchestration/project_intake.py",
+    "backend/tests/test_reference_reasoner.py",
+    "backend/tests/test_reference_design.py"
+  ],
+  "files_inspected": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/nis/agent/orchestration/project_intake.py",
+    "backend/tests/test_reference_reasoner.py",
+    "backend/tests/test_reference_design.py",
+    "backend/nis/engineering/communication/device_communication.py",
+    "docs/WIZARD_EXECUTION_CONTRACT.md",
+    "docs/WIZARD_RELEASE_GATE.md",
+    "docs/COMMUNICATION_DESIGN_CONTRACT.md"
+  ],
+  "revision_before": {
+    "backend/nis/agent/orchestration/local_reasoner.py": "c05331f47ea1974bb51e4ca9ece5c9aa8c02523789c8ebc858e8c07ed04943d8",
+    "backend/nis/agent/orchestration/project_intake.py": "4afba3ba381f68d5f7e8eec46f7613837f14661b667ac57acad4acfcf353d28c",
+    "backend/tests/test_reference_reasoner.py": "300a1c081c801eec92ea32fc1f6005f826a4c21de9b77a16b8aa6229f03e4bab",
+    "backend/tests/test_reference_design.py": "b8e394503ca89eb6700df0ccea8463604fb5dbd5a95e3f0ea1d212e68ac78a65"
+  },
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\native-inventory-stage-contract-repair\\before\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "c05331f47ea1974bb51e4ca9ece5c9aa8c02523789c8ebc858e8c07ed04943d8"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\native-inventory-stage-contract-repair\\before\\backend\\nis\\agent\\orchestration\\project_intake.py",
+      "sha256": "4afba3ba381f68d5f7e8eec46f7613837f14661b667ac57acad4acfcf353d28c"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\native-inventory-stage-contract-repair\\before\\backend\\tests\\test_reference_reasoner.py",
+      "sha256": "300a1c081c801eec92ea32fc1f6005f826a4c21de9b77a16b8aa6229f03e4bab"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\native-inventory-stage-contract-repair\\before\\backend\\tests\\test_reference_design.py",
+      "sha256": "b8e394503ca89eb6700df0ccea8463604fb5dbd5a95e3f0ea1d212e68ac78a65"
+    }
+  ],
+  "repair": {
+    "finding_ids": [
+      "NATIVE_INVENTORY_DELTA_SCOPE_AND_DEVICE_SEMANTICS_UNENFORCED"
+    ],
+    "owner": "PROJECT_PRODUCT",
+    "first_failing_layer": "LocalEngineeringReasoner.infer / staged native inventory contract",
+    "root_cause": "The prompt requests complete replacement of fields while devices are accumulated as bounded deltas. Scope permits unrelated declared inventory and preserves invalid earlier rows until the final inventory check. Actual diagnostic call1 returns self-owned PDC with a source-member binding on INSTANCE; call2 adds declared CDC despite PDC target; call3 repeats the same two rows with inventory_complete=false. The existing no-progress guard correctly blocks. Whole-profile semantic validation is too late to correct the first invalid batch.",
+    "reproduction": "Normal API d0/image28e4 source unchanged vehicle fails trace87fcb4da-5796-401b-9779-c1f757847405; readonly diagnostic same product method captures three unmodified Qwen HTTP200 stop responses439/850/850 tokens. All byte hashes verified; canonical tables empty before/after. Diagnostic is not a normal workflow/E2E PASS.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\inventory-closure-progress-repair\\native-diagnostic\\verified-capture-summary.json",
+        "sha256": "3e2f3d0882e6b964d79db3a9f7620d9b63c30e818ac204cd9457246d0f71dd0a"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\inventory-closure-progress-repair\\native-diagnostic\\chat-01-request.json",
+        "sha256": "79151f6e99f82c4bb89250424a3a62e9c600553a13bb8e9e23cf469d0486e14e"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\inventory-closure-progress-repair\\native-diagnostic\\chat-01-response.json",
+        "sha256": "34ff7e12a4ef9fee8238892e72a4bbe57fdf88ec09cde058d8c6903be3a32636"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\inventory-closure-progress-repair\\native-diagnostic\\chat-02-request.json",
+        "sha256": "28557d08883af6b2a57324078eb869b2f045e6546dca5f44e19c3fef76c2873c"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\inventory-closure-progress-repair\\native-diagnostic\\chat-02-response.json",
+        "sha256": "464c4f6f47e971fe93238ae93316ea49994dbe44f92a4ef674ae543ec7b0b873"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\inventory-closure-progress-repair\\native-diagnostic\\chat-03-response.json",
+        "sha256": "4672a2b8fd27aaf937cc9efd7f7cbb3c3dc2e3d3553799dcb3ad3a8b679e1b08"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\inventory-closure-progress-repair\\native-diagnostic\\after-canonical.json",
+        "sha256": "817930258c055ff600fb4670267821dbb9caf60760251072ac2dd4b9bda6aca9"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-closure-vehicle\\plan-reference\\response.json",
+        "sha256": "810f746c961d63b53a8435c7708a35627bb604e43c8580844eb73ea11bfd746d"
+      }
+    ],
+    "affected_files": [
+      "backend/nis/agent/orchestration/local_reasoner.py",
+      "backend/nis/agent/orchestration/project_intake.py",
+      "backend/tests/test_reference_reasoner.py",
+      "backend/tests/test_reference_design.py"
+    ],
+    "affected_services": [
+      "private native inventory decoder",
+      "native inventory scope/merge",
+      "authoritative inventory validation"
+    ],
+    "required_fix": "Use explicit per-target delta/closure instruction, forbid new bindings to other inventory facts while preserving prior bindings and FUNCTION/REQUIREMENT-based derived hardware. Project legal role-specific device shapes in the private decoder from existing validation semantics. Reuse shared validator per batch in an internal partial checkpoint that permits only pending lower coverage/counts, never overshoot/identity/role/owner violations. Full public/profile/final checks remain exact. Feed semantic/no-progress errors into native retry; never flip native completion or edit model rows.",
+    "acceptance_criteria": [
+      "Actual invalid controller self-owner/member tags and off-target inventory are rejected before another stage, with native corrective feedback.",
+      "Partial internal validation reports pending lower quantities and missing coverage without review/approval; actual upper violations and wrong identities remain errors.",
+      "Private decoder and semantic guard preserve legal existing bindings, source roles/scopes, derived hardware and larger-category continuation.",
+      "No public partial bypass, no changed source documents, no model correction, no deadlines/model/provider/registry/gate relaxation."
+    ],
+    "targeted_tests": [
+      "backend/tests/test_reference_reasoner.py",
+      "backend/tests/test_reference_design.py"
+    ],
+    "weaken_assertions_to_pass": false
+  },
+  "implementation_plan": [
+    "Clarify per-target incremental inventory contract and native completion meaning.",
+    "Constrain native decoder to legal role shapes, selected/preserved inventory facts and derived FUNCTION/REQUIREMENT sources.",
+    "Invoke shared device/inventory semantics before accepting each native batch; keep pending lower counts internal and final validation unchanged.",
+    "Add counterexamples for observed invalid output, wrong inventory scope, no-progress retry and partial count/approval boundaries. Run isolated regressions and native compiler proof, freeze normal candidate, rerun both originals normally then complete gate/exact delivery."
+  ],
+  "constraints": [
+    "Diagnostic session75984 exited0 and provider idle before source edits",
+    "Other chats remain archived; no parallel agent/model/release runs",
+    "Never use diagnostic responses as accepted model or original E2E proof"
+  ],
+  "required_outcomes": [
+    "scoped_semantically_checked_native_inventory",
+    "both_originals_and_exact_productive_delivery"
+  ],
+  "validation_requirements": [
+    "isolated_affected_regressions",
+    "native_compiler_schema_checks",
+    "actual_native_two_originals",
+    "full_release_gate",
+    "production_identity_health_function"
+  ],
+  "unresolved_decisions": [],
+  "at_utc": "2026-10-19T10:55:21.485939+00:00",
+  "targeted_validation": "docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261019\\native-inventory-stage-contract-repair\\validation-summary.json",
+  "frozen_identity": {
+    "commit_id": "70f0c160bc4f08bd23437f6b3c175523d1e5859c",
+    "source_sha256": "f61041581f9c5c04a0d1fc8d1d5cfea058da362342ae649cea71d2a268451e53",
+    "verification_sha256": "082bd670f671fa491d355a1214eace650e7d264612aeb3e633bf0dee5362dcb3"
+  },
+  "active_prepare_session": null,
+  "active_native_session": null,
+  "active_affected_test_session": null,
+  "latest_status": "F610_NORMAL_NATIVE_FAILED_MISSING_TARGET_BINDING",
+  "candidate_receipt": "backend\\test-output\\release-gates\\joint-scoped-inventory-originals-f61041581f9c\\0c41d693e97f\\receipt.json",
+  "candidate_image_id": "sha256:1f1803fda7a28c8bf423dade536ebb974ba6aa3d489d0f30ab6c5bc3ae4b94cf",
+  "active_vehicle_state": "docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-scoped-vehicle\\state.json",
+  "active_robot_state": "docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-scoped-robot\\state.json",
+  "updated_at_utc": "2026-10-19T12:18:37.598998+00:00",
+  "active_diagnostic_session": 78243,
+  "active_stage": "READ_ONLY_NATIVE_SCOPED_DIAGNOSTIC",
+  "completion_status": "216 affected unit/integration cases passed and normal candidate0c41 is PREPARED, but actual vehicle API reference planning failed after valid prefixes: missing selected inventory coverage, trace0d297834-e8e5-4aee-b05f-3a362d3db46b. Complete GET capture verifies canonical model/jobs empty. Read-only two-exchange diagnostic session78243 now captures unmodified f610 product responses. No normal native/release parallel run and no app source changes. Both originals/models/simulations/full gate/exact production still pending."
+}

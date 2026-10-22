@@ -1,0 +1,73 @@
+
+import socket,struct,time,json,hashlib,re,sys,datetime
+source_ip=sys.argv[1]
+expected='86865975c689643d9b07ea73e21d68fa6f4a3a8770402ffb537dba2d7ecdf4d7'
+destination=socket.gethostbyname('host.docker.internal')
+sock=socket.socket(socket.AF_PACKET,socket.SOCK_RAW,socket.htons(3));sock.bind(('eth0',0));sock.settimeout(1)
+print(json.dumps({'status':'PASSIVE_READ_LISTENING','source_ip':source_ip,'destination':destination,'port':11434,'namespace':'only_this_isolated_candidate','no_packets_sent':True}),flush=True)
+flows={};observed=0;deadline=time.monotonic()+1800;limit=8*1024*1024
+try:
+ while time.monotonic()<deadline:
+  try:frame,address=sock.recvfrom(1024*1024)
+  except socket.timeout:continue
+  if len(frame)<54 or frame[12:14]!=b'\x08\x00':continue
+  ip=frame[14:];ihl=(ip[0]&15)*4
+  if len(ip)<ihl+20 or ip[9]!=6 or socket.inet_ntoa(ip[12:16])!=source_ip or socket.inet_ntoa(ip[16:20])!=destination:continue
+  total=struct.unpack('!H',ip[2:4])[0]
+  if total and total<=len(ip):ip=ip[:total]
+  tcp=ip[ihl:]
+  sport,dport,seq=struct.unpack('!HHI',tcp[:8]);offset=(tcp[12]>>4)*4
+  if dport!=11434 or len(tcp)<=offset:continue
+  data=tcp[offset:];key=sport
+  if data.startswith(b'POST /api/chat '):flows[key]={'next':seq,'pieces':{},'body':bytearray(),'length':None}
+  if key not in flows:continue
+  flow=flows[key];flow['pieces'][seq]=data
+  for start in sorted(list(flow['pieces'])):
+   part=flow['pieces'][start]
+   if start>flow['next']:break
+   del flow['pieces'][start]
+   consumed=flow['next']-start
+   if consumed<len(part):flow['body'].extend(part[consumed:]);flow['next']+=len(part)-consumed
+  content=flow['body']
+  if len(content)>limit:del flows[key];print(json.dumps({'status':'CAPTURE_LIMIT_REACHED','no_provider_effect':True}),flush=True);continue
+  header_end=content.find(b'\r\n\r\n')
+  if header_end<0:continue
+  match=re.search(br'(?im)^content-length:\s*(\d+)\s*$',bytes(content[:header_end]))
+  if not match:del flows[key];continue
+  size=int(match.group(1));end=header_end+4+size
+  if end>limit:del flows[key];continue
+  if len(content)<end:continue
+  body=bytes(content[header_end+4:end]);del flows[key]
+  try:payload=json.loads(body)
+  except (ValueError,UnicodeError):continue
+  observed+=1
+  if payload.get('model')!='qwen3.8:27b':continue
+  hashes=[]
+  def visit(value):
+   if isinstance(value,dict):
+    for name,item in value.items():
+     if name=='original_source' and isinstance(item,str):hashes.append(hashlib.sha256(item.encode()).hexdigest())
+     visit(item)
+   elif isinstance(value,list):
+    for item in value:visit(item)
+  for message in payload.get('messages',[]):
+   try:visit(json.loads(message.get('content') or ''))
+   except (ValueError,TypeError):pass
+  if expected not in hashes:
+   print(json.dumps({'status':'SOURCE_HASH_NOT_MATCHED_METADATA_ONLY','observed':observed,'no_payload_saved':True}),flush=True)
+   if observed>=6:break
+   continue
+  pairs=[];messages=payload.get('messages',[])
+  for index,message in enumerate(messages):
+   text=message.get('content') or ''
+   if message.get('role')=='user' and isinstance(text,str) and text.startswith('Validierungsfehler:'):
+    previous=messages[index-1] if index else {}
+    raw=previous.get('content') if previous.get('role')=='assistant' else None
+    pairs.append({'validation_message':text,'invalid_assistant_response':raw,'invalid_response_sha256':hashlib.sha256(raw.strip().encode()).hexdigest() if isinstance(raw,str) else None})
+  if pairs:
+   print(json.dumps({'status':'CAPTURED_ACTUAL_OWN_VALIDATION_FEEDBACK','at_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'original_sha256':expected,'source_ip':source_ip,'destination':destination,'destination_port':11434,'raw_body_sha256':hashlib.sha256(body).hexdigest(),'request_sha256':hashlib.sha256(json.dumps(payload,ensure_ascii=False,sort_keys=True).encode()).hexdigest(),'feedback_pairs':pairs,'actual_request_payload':payload,'no_packets_sent':True,'no_settings_or_processes_changed':True},ensure_ascii=False),flush=True)
+   break
+  print(json.dumps({'status':'OWN_REQUEST_WITHOUT_RETRY_FEEDBACK','observed':observed,'model':payload.get('model'),'original_sha256':expected}),flush=True)
+  if observed>=6:break
+ else:print(json.dumps({'status':'READ_TIMEOUT_NO_MATCHING_FEEDBACK','native_request_untouched':True}),flush=True)
+finally:sock.close()

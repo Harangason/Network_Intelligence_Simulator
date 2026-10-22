@@ -78,6 +78,20 @@ A restart of the existing image does not count as deployment of a tested change.
 Required release gates must still pass; this rule does not authorize bypassing
 checks or deploying an untested build.
 
+## Avoid repeated candidate builds and retained test stacks
+
+Bundle application repairs and complete relevant local checks before preparing
+another image. Reuse an existing non-development image for the exact application
+source and Git revision, including PREPARED candidates; changed tests or host
+release orchestration alone require retesting rather than rebuilding the app.
+Use the canonical release/preparation scripts: their checkout-wide OS lock and
+single retained diagnostic-stack bound must not be bypassed with manual builds,
+new output directories or copied scripts. Resume the retained stack or archive
+and retire its exact resources before replacing it. Preserve original receipts,
+logs, recoverable data, production and required rollback images. No bulk prune,
+forced removal or invented FAIL/delivered-equivalence evidence. Image deletion
+still requires the applicable retention audit or explicit scoped authorization.
+
 ## Scoped direct delivery for simulation and results UI work
 
 On 2026-10-12 the user explicitly instructed that these simulation UI,

@@ -1,0 +1,53 @@
+--- before/backend/tests/test_reference_reasoner.py
++++ after/backend/tests/test_reference_reasoner.py
+@@ -248,8 +248,12 @@
+     assert {key for row in function_stages for key in row['function_fact_ids_for_this_stage']} == expected
+     assert all(len(row['function_fact_ids_for_this_stage']) <= 4 for row in function_stages)
+     for payload in payloads:
+-        required = len(json.dumps(payload['messages'], ensure_ascii=False).encode()) + 8192 + 2048
++        # Budget the complete text received after HTTP JSON decoding. Wire
++        # escaping is not part of the provider's chat-template input.
++        required = sum(len(message['content'].encode()) for message in payload['messages']) + 8192 + 2048
+         assert required <= payload['options']['num_ctx'] <= 131072
++        content = payload['messages'][1]['content']
++        assert content == json.dumps(json.loads(content), ensure_ascii=False, separators=(',', ':'))
+ 
+ 
+ def test_stage_decoder_narrows_outputs_but_does_not_modify_public_schema(monkeypatch):
+@@ -391,6 +395,36 @@
+     with pytest.raises(ValueError, match='keine Quelle gekürzt'):
+         _reference_context_window(messages, 131072)
+     assert messages[0] == before[0]
++
++
++def test_context_counts_model_text_not_escaped_http_json():
++    # The provider decodes its HTTP JSON before tokenizing the message text.
++    # Nested JSON and quoted source text must not be charged for escaping twice.
++    source = '"\\\n ä漢🚗' * 6000
++    messages = [{'role': 'user', 'content': json.dumps({'source': source}, ensure_ascii=False)}]
++    before = deepcopy(messages)
++    actual = len(messages[0]['content'].encode('utf-8')) + 8192 + 2048
++    wire = len(json.dumps(messages, ensure_ascii=False).encode('utf-8')) + 8192 + 2048
++    assert actual < 131072 < wire
++    window = _reference_context_window(messages, 131072)
++    assert actual <= window <= 131072
++    assert messages == before and json.loads(messages[0]['content'])['source'] == source
++
++
++@pytest.mark.parametrize('text', ['x', 'ä', '漢', '🚗', '"\\\n'])
++def test_context_reserves_full_utf8_text_output_and_framing(text):
++    # One byte below the true configured input limit succeeds. One byte above
++    # fails even if this is a validation retry rather than the first request.
++    maximum = 32768
++    prefix = text * 100
++    content = prefix + 'x' * (maximum - 8192 - 2048 - len(prefix.encode('utf-8')) - 1)
++    messages = [{'role': 'system', 'content': ''}, {'role': 'user', 'content': content}]
++    before = deepcopy(messages)
++    assert _reference_context_window(messages, maximum) == maximum
++    messages.append({'role': 'assistant', 'content': 'xx'})
++    with pytest.raises(ValueError, match='keine Quelle gekürzt'):
++        _reference_context_window(messages, maximum)
++    assert messages[:2] == before
+ 
+ 
+ @pytest.mark.parametrize('role', ['SENSOR', 'ACTUATOR'])

@@ -1,3 +1,5 @@
+import technologyProjection from '../../communication/lib/technology-projection.json' with { type: 'json' };
+import { documentDeviceQuestions, documentParticipantName, documentFactIdentity, documentSystemScope, readReviewedDocumentEquipment } from './document-clarification.ts';
 import { industryTemplateLabel, industryTemplateProfile } from "./industry-templates/index.ts";
 import { conciseGeneratedName } from "../../engineering/lib/engineering-names.ts";
 import { automotiveFunctionOutputs } from "./industry-templates/automotive-functions.ts";
@@ -5,6 +7,7 @@ import { SENSOR_MEASUREMENTS, sensorMeasurementSelections } from './sensor-measu
 import inventoryVocabulary from './inventory-vocabulary.json' with { type: 'json' };
 
 export function addAutomotiveFunctionOutputs(chains: ExtractedEngineeringChain[], domain: string, includeFunctionalDependencies = true): ExtractedEngineeringChain[] {
+  if (chains.some(isReferenceDesignChain)) return chains;
   if (domain !== "automotive") return chains;
   const result = [...chains];
   const usedIds = new Set(chains.map(chain => Number(chain.message_id_hex)));
@@ -44,6 +47,7 @@ export function applyIndustryGenerationPath(
   domain: string,
   prompt = '',
 ): ExtractedEngineeringChain[] {
+  if (chains.some(isReferenceDesignChain)) return chains;
   if (domain === 'automotive') return addAutomotiveFunctionOutputs(chains, domain, !/per Wizard-Uebernehmen bestaetigt/.test(prompt) || /"functional_routes"\s*:\s*\[\s*\{/.test(prompt));
   const path = INDUSTRY_GENERATION_PATHS[domain];
   return path ? path(chains, domain) : chains;
@@ -76,8 +80,8 @@ export type ExtractedEngineeringChain = {
   signal_display_name: string;
   start_bit: number;
   length_bits: number;
-  byte_order: "little_endian";
-  data_type: "signed" | "unsigned";
+  byte_order: "little_endian" | "big_endian";
+  data_type: "signed" | "unsigned" | "float" | "double" | "float32" | "float64";
   factor: number;
   offset_value: number;
   unit?: string;
@@ -103,6 +107,7 @@ export type ExtractedEngineeringSpecification = {
   networkArchitecture: NetworkArchitectureMode;
   targetCounts: EngineeringTargetCounts;
   unresolvedInventoryGroups: string[];
+  reference_design?: Record<string, unknown>;
 };
 
 export type EngineeringDomainEvidence = {
@@ -193,6 +198,7 @@ function companionSignal(
  * placeholder signal. Message packing assigns the final offsets and DLC.
  */
 export function expandEngineeringSignalModel(chains: ExtractedEngineeringChain[], preserveHistoricalLimit = false) {
+  if (chains.some(isReferenceDesignChain)) return chains;
   return chains.flatMap((chain) => {
     if (!requiresCompleteSignalModel(chain) || chain.configuration?.functional_output_template) return [chain];
     const candidates = [
@@ -315,7 +321,7 @@ function generatedSignalBitLength(input: {
   maxValue?: number;
   factor?: number;
   offsetValue?: number;
-  dataType?: "signed" | "unsigned";
+  dataType?: ExtractedEngineeringChain["data_type"];
 }) {
   const min = typeof input.minValue === "number" && Number.isFinite(input.minValue) ? input.minValue : 0;
   const max = typeof input.maxValue === "number" && Number.isFinite(input.maxValue) ? input.maxValue : 255;
@@ -412,6 +418,7 @@ export function packEngineeringChains(
   targetLoadPercent = DEFAULT_INTERFACE_TARGET_LOAD_PERCENT,
   prompt = '',
 ) {
+  if (chains.some(isReferenceDesignChain)) return chains;
   const packed = chains.map((chain) => ({ ...chain, function_name: conciseGeneratedName('Function', chain.function_name) }));
   const grouped = new Map<string, ExtractedEngineeringChain[]>();
   const graphRaw = prompt.match(/^- Systemcluster-Graph:\s*(\[[^\r\n]*\])\s*$/m)?.[1];
@@ -536,10 +543,10 @@ type SignalArchitectureInput = {
   hardwareName: string;
   interfaceType: string;
   cycleMs: number;
-  dataType: "signed" | "unsigned";
+  dataType: ExtractedEngineeringChain["data_type"];
   lengthBits: number;
   startBit: number;
-  byteOrder: "little_endian";
+  byteOrder: ExtractedEngineeringChain["byte_order"];
   factor: number;
   offset: number;
   unit?: string;
@@ -1509,7 +1516,8 @@ function declaredHardwareNames(line: string): Array<{ name: string; declaredType
 
 function requirementOnlyLine(line: string) {
   const explicitDeclaration = /^\s*(?:[-*]\s*)?(?:Sensor|Aktor|Aktuator|Actuator|ECU|Controller|Gateway|PLC|SPS)\s*:/iu.test(line);
-  return /^\s*REQ\b/iu.test(line) || (!explicitDeclaration && /\b(?:muss|müssen|must|shall)\b/iu.test(line));
+  return /^\s*(?:[-*]\s*)?(?:\*\*)?(?:REQ|TC)(?:\b|_)/iu.test(line)
+    || (!explicitDeclaration && /\b(?:muss|müssen|must|shall)\b/iu.test(line));
 }
 
 function groupedHardwareNames(lines: string[]): HardwareOccurrence[] {
@@ -1571,6 +1579,39 @@ function explicitFunctionalOwner(name: string, controllers: string[], text: stri
     const owner = escape(controller);
     return new RegExp(`\\b${endpoint}\\s+(?:wird|werden)\\s+(?:von(?:\\s+(?:der|dem))?|vom)\\s+${owner}\\s+(?:ausgewertet|überwacht|ueberwacht|gesteuert|geregelt)\\b`, 'iu').test(text)
       || new RegExp(`\\b${owner}\\s+(?:steuert|regelt|überwacht|ueberwacht|wertet)\\s+${endpoint}\\b`, 'iu').test(text);
+  });
+  return owners.length === 1 ? owners[0] : undefined;
+}
+
+/** Responsibilities belong to their declared controller section, regardless
+ * of industry or controller name. Interfaces and requirements are separate. */
+function sourceScopedDuties(lines: string[], originalLines: string[]) {
+  let active = false;
+  const duties: Array<{ name: string; source_quote: string }> = [];
+  const sourceKey = (line: string) => line.trim().replace(/[\u2010\u2011\u2212]/g, '-').replace(/\u00ad/g, '');
+  for (const line of lines) {
+    const text = line.trim();
+    if (/^(?:Aufgaben|Tasks|Responsibilities|Funktionen|Functions)\s*:\s*$/iu.test(text)) { active = true; continue; }
+    if (/^(?:Schnittstellen|Interfaces|Anschlüsse|Anforderungen|Requirements|Plattform|Platform)\s*:\s*$/iu.test(text)) { active = false; continue; }
+    const explicit = text.match(/^(?:Funktion|Function)\s*:\s*(.+)$/iu);
+    if (!text || (!active && !explicit)) continue;
+    const name = (explicit?.[1] ?? text).replace(/^[-*]\s+/, '');
+    const original = originalLines.filter(candidate => sourceKey(candidate) === sourceKey(line));
+    if (name && name.length <= 120 && original.length) duties.push({ name, source_quote: original[0].trim() });
+  }
+  return duties;
+}
+
+function sourceScopedOwner(name: string, deviceType: string,
+  duties: Map<string, Array<{ name: string; source_quote: string }>>) {
+  const stem = normalized(normalizeHardwareName(name)).replace(/\d+$/, '').replace(/s$/, '');
+  const measurement = deviceType === 'SensorController' ? SENSOR_MEASUREMENTS.find(item => item.match.test(name)) : undefined;
+  const owners = [...duties].flatMap(([owner, functions]) => {
+    const matches = functions.filter(item => {
+      const words = normalized(item.name).split(/[^\p{L}\d]+/u);
+      return (stem.length >= 3 && words.some(word => word.startsWith(stem))) || measurement?.match.test(item.name);
+    });
+    return matches.length ? [{ owner, evidence: matches.map(item => item.source_quote) }] : [];
   });
   return owners.length === 1 ? owners[0] : undefined;
 }
@@ -1684,7 +1725,7 @@ function deviceType(name: string) {
 }
 
 function protocolFrom(text: string, fallback = 'CAN') {
-  const key = normalized(text);
+  const key = normalized(withoutDeviceAliases(text));
   if (/\blin\b/.test(key)) return "LIN";
   if (key.includes("can fd") || key.includes("canfd")) return "CAN_FD";
   if (key.includes("canopen")) return "CANopen";
@@ -1718,9 +1759,13 @@ function withoutPlanningLimits(text: string) {
 
 /** Explicitly declared device abbreviations are not transport tokens. */
 function withoutDeviceAliases(text: string) {
+  // Mask identifiers before transport scanning for both original document
+  // punctuation and already normalized wizard text.
+  text = text.replace(/[\u2010\u2011\u2012\u2013\u2014\u2212]/g, '-');
   const aliases = [...text.matchAll(/^\s*(?:#{1,6}\s*)?(?:\d+(?:\.\d+)*[.)]?\s+)?[^\r\n()]+\b(?:Controller|Computer|ECU|Gateway|Sensor)\s*\(([A-Z][A-Z\d_-]{1,15})\)\s*$/gm)]
     .map(match => match[1]);
   for (const alias of aliases) {
+    text = text.replace(new RegExp('\\bREQ[-_]' + alias + '[-_]\\d+\\b', 'g'), 'requirement_reference');
     text = text.replace(new RegExp('\\b' + alias + '\\b(?=\\)\\s*$|[-_]\\d+\\s*:|\\s+(?:MUSS|MÜSSEN|must|shall)\\b|\\s*\\()', 'gm'), 'device_reference');
   }
   return text;
@@ -2044,7 +2089,7 @@ export function engineeringGenerationMode(text: string): 'REAL_PROJECT' | 'EXAMP
   return /\b(?:Musterprojekt|Beispielprojekt|example project|sample project|Skalierungsziel)\b/i.test(withoutNegatedExamples) ? 'EXAMPLE_PROJECT' : 'REAL_PROJECT';
 }
 
-function explicitDeviceConnections(text: string): Record<string, string> {
+export function explicitDeviceConnections(text: string): Record<string, string> {
   const raw = text.match(/^- Geräteanschlüsse:\s*(\{[^\r\n]*\})\s*$/m)?.[1];
   if (!raw) return {};
   let values: Record<string, string>;
@@ -2057,7 +2102,7 @@ function explicitDeviceConnections(text: string): Record<string, string> {
   }));
 }
 
-function explicitDeviceOwners(text: string): Record<string, string> {
+export function explicitDeviceOwners(text: string): Record<string, string> {
   const raw = text.match(/^- Gerätezuordnungen:\s*(\{[^\r\n]*\})\s*$/m)?.[1];
   if (!raw) return {};
   let values: Record<string, string>;
@@ -2076,6 +2121,11 @@ export function extractEngineeringSpecification(
   domainOverride?: string,
   completenessFirst = false,
 ): ExtractedEngineeringSpecification {
+  const reference = readDocumentReferenceDesign(text);
+  if (reference) return extractReferenceDesignSpecification(text, reference, overrides, domainOverride);
+  const documentEquipment = readReviewedDocumentEquipment(text);
+  text = text.replace(/^- Dokument-Geräte:[^\r\n]*$/gm, '');
+  const originalLines = text.split(/\r?\n/);
   text = withoutPlanningLimits(text).replace(/[\u2010\u2011\u2212]/g, '-').replace(/\u00ad/g, '');
   const explicitMode = text.match(/^- Generierungsmodus:\s*(REAL_PROJECT|EXAMPLE_PROJECT)\s*$/mi)?.[1]?.toUpperCase();
   const legacyConfirmed = !explicitMode && /per Wizard-Uebernehmen bestaetigt/.test(text);
@@ -2083,11 +2133,24 @@ export function extractEngineeringSpecification(
   const measurements = sensorMeasurementSelections(text);
   // Structured review selections are metadata, not natural-language hardware
   // inventory. Their JSON numbers and role names must not create extra nodes.
-  const lines = specificationBody(text).replace(/^- (?:Sensor-Messgrößen|Aktor-Befehle|Geräteanschlüsse|Gerätezuordnungen|Geräte-Spezifikationen):[^\r\n]*$/gm, '').split(/\r?\n/);
+  const lines = specificationBody(text).replace(/^- (?:Sensor-Messgrößen|Aktor-Befehle|Geräteanschlüsse|Gerätezuordnungen|Geräte-Spezifikationen|Dokument-Geräte):[^\r\n]*$/gm, '').split(/\r?\n/);
+  // Reuse the document chapter/system contract for the raw preview as well.
+  // A physical-device heading is not a new independent system profile.
+  const headingStack: { level: number; label: string }[] = [];
+  const sourceScopes = lines.map(line => {
+    const heading = line.match(/^\s*(#{1,6})\s+(.+?)\s*$/);
+    if (heading) {
+      const level = heading[1].length;
+      while (headingStack.length && headingStack.at(-1)!.level >= level) headingStack.pop();
+      headingStack.push({ level, label: heading[2].replace(/\s+#+\s*$/, '') });
+    }
+    return documentSystemScope(headingStack.map(item => item.label))
+      .filter(label => !hardwareName(headingLabel(label)));
+  });
   const confirmedCounts = { ...confirmedHardwareCounts(text), ...overrides };
   const grouped = groupedHardwareNames(lines);
   const groupedLineIndexes = new Set(grouped.map((item) => item.index));
-  const occurrences = [...lines.flatMap((line, index): HardwareOccurrence[] => {
+  const occurrences = documentEquipment?.facts ? [] : [...lines.flatMap((line, index): HardwareOccurrence[] => {
     if (requirementOnlyLine(line)) return [];
     // Type overviews do not name installed instances or confirm one of each.
     if (/^\s*(?:Sensorik|Aktorik|Sensor\s+types|Sensortypen|Actuator\s+types|Aktortypen)\s*[:(]/iu.test(line)) return [];
@@ -2098,7 +2161,9 @@ export function extractEngineeringSpecification(
     const candidates = [...names.map(name => ({ index, name })), ...declaredHardwareNames(line).map(item => ({ index, ...item })), ...singularControllers.map(item => ({ index, ...item }))];
     return [...new Map(candidates.map(item => [normalized(normalizeHardwareName(item.name)), item])).values()];
   }), ...grouped].sort((left, right) => left.index - right.index);
-  const contexts = new Map<string, { name: string; lines: string[]; declaredType?: string; declaredInterface?: string }>();
+  const occurrenceScopes = new Set(occurrences.map(item => JSON.stringify(sourceScopes[item.index])));
+  const scopedPortfolio = occurrenceScopes.size > 1;
+  const contexts = new Map<string, { name: string; lines: string[]; declaredType?: string; declaredInterface?: string; sourceContext?: string[]; documentEvidence?: Record<string, unknown> }>();
   occurrences.forEach((occurrence, occurrenceIndex) => {
     const nextIndex = occurrences[occurrenceIndex + 1]?.index ?? lines.length;
     const sectionBoundary = lines.findIndex((line, index) => index > occurrence.index && index < nextIndex
@@ -2107,14 +2172,62 @@ export function extractEngineeringSpecification(
         || (/^\s*(?:#{1,6}\s+)?[^-*].*:\s*$/.test(line)
           && !/^\s*(?:Aufgaben|Tasks|Schnittstellen|Interfaces|Anforderungen|Requirements|Plattform|Platform)\s*:/i.test(line))));
     const inlineList = /\([^)]*,[^)]*\)/.test(lines[occurrence.index]);
-    const contextEnd = inlineList ? occurrence.index + 1 : sectionBoundary >= 0 ? sectionBoundary : nextIndex;
-    const key = normalized(normalizeHardwareName(occurrence.name));
-    const existing = contexts.get(key) ?? { name: occurrence.name, lines: [] };
+    const scope = sourceScopes[occurrence.index];
+    const profileBoundary = lines.findIndex((_, index) => index > occurrence.index
+      && JSON.stringify(sourceScopes[index]) !== JSON.stringify(scope));
+    const contextEnd = Math.min(inlineList ? occurrence.index + 1 : sectionBoundary >= 0 ? sectionBoundary : nextIndex,
+      profileBoundary < 0 ? lines.length : profileBoundary);
+    const baseName = normalizeHardwareName(occurrence.name);
+    const key = scopedPortfolio ? JSON.stringify([scope, normalized(baseName)]) : normalized(baseName);
+    const sameCaptionInOtherRoot = occurrences.some(peer => peer !== occurrence
+      && sourceScopes[peer.index].at(-1) === scope.at(-1)
+      && JSON.stringify(sourceScopes[peer.index]) !== JSON.stringify(scope));
+    const caption = sameCaptionInOtherRoot ? scope.join('/') : scope.at(-1);
+    const name = scopedPortfolio && caption ? `${baseName} [${caption}]` : occurrence.name;
+    const existing = contexts.get(key) ?? { name, lines: [], declaredType: deviceType(occurrence.name),
+      ...(scope.length ? { sourceContext: scope } : {}) };
     if (occurrence.declaredType) existing.declaredType = occurrence.declaredType;
     if (occurrence.declaredInterface) existing.declaredInterface = occurrence.declaredInterface;
     existing.lines.push(...lines.slice(occurrence.index, Math.max(occurrence.index + 1, contextEnd)));
     contexts.set(key, existing);
   });
+
+  // One shared inventory path: native source facts and reviewed quantity
+  // answers feed the same contexts, ownership and connection gates as text.
+  const reviewedParticipants = [...(documentEquipment?.devices ?? []), ...(documentEquipment?.answers ?? [])];
+  const reviewedSourceLines = (item: { source_quote: string; source_context?: string[] }, fallbackName: string) => {
+    const matches = lines.map((line, index) => ({ line, index })).filter(({ line }) =>
+      /^(?:\s*#{1,6}\s+|\s*\d+(?:\.\d+)*[.)]?\s+)/.test(line)
+      && line.trim().replace(/^#{1,6}\s+/, '') === item.source_quote.trim().replace(/^#{1,6}\s+/, ''));
+    if (matches.length !== 1) return [fallbackName];
+    const start = matches[0].index;
+    const heading = lines[start].trim();
+    const markdownLevel = heading.match(/^(#{1,6})\s+/)?.[1].length;
+    const number = heading.match(/^(\d+(?:\.\d+)*)[.)]?\s+/)?.[1];
+    const boundary = lines.findIndex((line, index) => {
+      if (index <= start) return false;
+      const next = line.trim();
+      const nextLevel = next.match(/^(#{1,6})\s+/)?.[1].length;
+      const nextNumber = next.match(/^(\d+(?:\.\d+)*)[.)]?\s+/)?.[1];
+      return Boolean(markdownLevel && nextLevel && nextLevel <= markdownLevel)
+        || Boolean(number && nextNumber && !nextNumber.startsWith(number + '.'));
+    });
+    return lines.slice(start, boundary >= 0 ? boundary : lines.length);
+  };
+  const documentIdentityPeers = [...(documentEquipment?.devices ?? []), ...(documentEquipment?.questions ?? [])];
+  for (const item of reviewedParticipants) {
+    const baseName = documentParticipantName(item, 'name' in item ? item.name : item.label, documentIdentityPeers).replace(/\s*\([A-Z][A-Z0-9_-]{1,15}\)\s*$/, '');
+    for (let index = 0; index < item.quantity; index += 1) {
+      const name = item.quantity === 1 ? baseName : `${baseName}${index + 1}`;
+      const key = normalized(normalizeHardwareName(name));
+      const existing = contexts.get(key);
+      contexts.set(key, { name, lines: existing?.lines ?? reviewedSourceLines(item, name),
+        documentEvidence: { source_sha256: documentEquipment?.source_sha256 ?? null, source_quote: item.source_quote,
+          evidence: 'name' in item ? 'reviewed_native_document_fact' : 'explicit_user_clarification', minimum: item.minimum,
+          quantity: item.quantity, device_role: item.role, source_context: item.source_context ?? [] },
+        declaredType: ({ CONTROLLER: 'ECU', GATEWAY: 'Gateway', SENSOR: 'SensorController', ACTUATOR: 'ActuatorController' })[item.role] });
+    }
+  }
 
   // Explicit choices can resolve count-only Sensor1… slots without inventing a function.
   for (const name of Object.keys(measurements)) {
@@ -2150,6 +2263,8 @@ export function extractEngineeringSpecification(
   }
   const declaredControllers = [...contexts.values()].filter(entry =>
     isEngineeringControllerDevice(entry.declaredType ?? deviceType(entry.name))).map(entry => normalizeHardwareName(entry.name));
+  const scopedDuties = new Map([...contexts.values()].filter(entry => isEngineeringControllerDevice(entry.declaredType ?? deviceType(entry.name)))
+    .map(entry => [normalizeHardwareName(entry.name), sourceScopedDuties(entry.lines, originalLines)]));
   const recognizedChains = [...contexts.values()].map((entry, index): ExtractedEngineeringChain => {
     const hardwareName = normalizeHardwareName(entry.name);
     const context = [deviceSpecifications[hardwareName], ...entry.lines.map((line) => cleanLabel(line))].filter(Boolean).join("; ");
@@ -2157,8 +2272,11 @@ export function extractEngineeringSpecification(
     const selectedOwner = deviceOwners[hardwareName.toLocaleLowerCase('de')];
     const confirmedOwner = selectedOwner && declaredControllers.some(owner => normalized(owner) === normalized(selectedOwner))
       ? declaredControllers.find(owner => normalized(owner) === normalized(selectedOwner)) : undefined;
-    const functionalOwner = ['SensorController', 'ActuatorController'].includes(declaredType)
+    const textualOwner = ['SensorController', 'ActuatorController'].includes(declaredType)
       ? confirmedOwner ?? explicitFunctionalOwner(entry.name, declaredControllers, lines.join('\n')) : undefined;
+    const scopedOwner = !textualOwner && ['SensorController', 'ActuatorController'].includes(declaredType)
+      ? sourceScopedOwner(entry.name, declaredType, scopedDuties) : undefined;
+    const functionalOwner = textualOwner ?? scopedOwner?.owner;
     const countedTemperature = hardwareName.match(/^Temperatursensor(\d+)$/);
     const explicitMeasurementId = Object.entries(measurements)
       .find(([name]) => normalized(normalizeHardwareName(name)) === normalized(hardwareName))?.[1];
@@ -2188,17 +2306,20 @@ export function extractEngineeringSpecification(
     const maxValue = range.max ?? (objectDetectionSignal ? 1 : defaults.max);
     const hardwareId = identifier(hardwareName);
     const explicitConnection = deviceConnections[hardwareName.toLocaleLowerCase('de')];
-    const mayUseProjectInterface = isEngineeringControllerDevice(declaredType)
+    const mayUseProjectInterface = !entry.documentEvidence && !scopedPortfolio && (isEngineeringControllerDevice(declaredType)
       || declaredType === "Gateway"
       || (safetyParticipant && Boolean(safetyProfile) && communicationSystems.length === 1)
       || exampleRequested
-      || (legacyConfirmed && communicationSystems.length === 1);
+      || (legacyConfirmed && communicationSystems.length === 1));
     const documentController = /\b(?:Controller|Computer|ECU)\s*\([A-Z][A-Z\d_-]{1,15}\)/.test(entry.lines[0] ?? '')
       && isEngineeringControllerDevice(declaredType);
-    const contextualSystems = extractCommunicationSystems(context).filter(system => !['SOME_IP', 'DDS', 'MQTT', 'OPCUA'].includes(system));
+    // Keep declaration boundaries: flattening the ADC controller declaration
+    // into prose makes its abbreviation look like an analog ADC connection.
+    const connectionContext = [deviceSpecifications[hardwareName], ...entry.lines].filter(Boolean).join('\n');
+    const contextualSystems = extractCommunicationSystems(connectionContext).filter(system => !['SOME_IP', 'DDS', 'MQTT', 'OPCUA'].includes(system));
     const ambiguousDocumentConnection = documentController && contextualSystems.length > 1;
     const contextualInterfaceType = entry.declaredInterface ?? (ambiguousDocumentConnection ? 'Other'
-      : protocolFrom(context, mayUseProjectInterface ? interfaceType : "Other"));
+      : protocolFrom(connectionContext, mayUseProjectInterface ? interfaceType : "Other"));
     const chainInterfaceType = explicitConnection || (contextualInterfaceType === "CAN" && /kamera|camera|radar|lidar|umfeld|objekt/i.test(`${hardwareName} ${context}`)
       ? "Ethernet"
       : contextualInterfaceType);
@@ -2268,13 +2389,18 @@ export function extractEngineeringSpecification(
             semantic: { semantic_type: 'BOOLEAN', meaning: 'Sicherer Stopp angefordert' },
             data: { enum_values: { RUN: 0, SAFE_STOP: 1 }, default_value: 'RUN' } },
         } : {}),
+        ...(entry.documentEvidence ? { document_equipment_evidence: entry.documentEvidence } : {}),
+        ...(entry.sourceContext ? { source_context: entry.sourceContext, source_context_status: 'unreviewed_raw_preview' } : {}),
         ...(explicitConnection ? { connection_source: 'explicit_device_connection' } : {}),
-        ...(functionalOwner ? { functional_owner: functionalOwner, functional_owner_source: 'explicit_user_statement' } : {}) },
+        ...(scopedDuties.get(hardwareName)?.length ? { source_scoped_functions: scopedDuties.get(hardwareName) } : {}),
+        ...(functionalOwner ? { functional_owner: functionalOwner,
+          functional_owner_source: textualOwner ? 'explicit_user_statement' : 'source_scoped_function',
+          ...(scopedOwner ? { functional_owner_evidence: scopedOwner.evidence } : {}) } : {}) },
       domain,
     };
   });
 
-  const requestedTargets = extractEngineeringTargetCounts(text);
+  const requestedTargets = documentEquipment?.facts ? { ...chainCounts(recognizedChains), explicit: true } : extractEngineeringTargetCounts(text);
   const expanded = expandArchitectureChains(
     recognizedChains,
     requestedTargets,
@@ -2297,12 +2423,20 @@ export function extractEngineeringSpecification(
     communicationSystemCounts,
     networkArchitecture,
     targetCounts: expanded.targets,
-    unresolvedInventoryGroups: lines.flatMap(line => {
-      const group = line.match(/^\s*(Sensorik|Aktorik|Sensor\s+types|Sensortypen|Actuator\s+types|Aktortypen)\s*[:(]\s*(.+?)\)?\s*$/iu);
-      if (!group) return [];
-      const sensorGroup = /^(?:Sensorik|Sensor\s+types|Sensortypen)$/iu.test(group[1]);
-      if ((sensorGroup ? expanded.targets.sensors : expanded.targets.actuators) > 0) return [];
-      return [`${sensorGroup ? 'Sensorik' : 'Aktorik'} (${group[2]}): Stückzahlen und konkrete Teilnehmer fehlen. Bitte ${sensorGroup ? 'Sensoren' : 'Aktoren'} in der Projektbeschreibung ergänzen und ${sensorGroup ? 'Messgrößen' : 'Stellbefehle'}, Anschlüsse sowie Zuordnungen prüfen.`];
+    unresolvedInventoryGroups: [...new Map([
+      ...(documentEquipment?.facts ? [] : documentDeviceQuestions(lines.join('\n'))),
+      ...(documentEquipment?.questions ?? []),
+    ].map(question => [question.id, question])).values()].flatMap(question => {
+      if (documentEquipment?.excluded_questions?.includes(question.id)) return [];
+      const answer = documentEquipment?.answers.find(item => item.id === question.id);
+      if (answer && (!answer.coverage_confirmed || answer.covered_by?.every(reference =>
+        documentEquipment?.devices.some(item => item.name === reference)
+        || documentEquipment?.answers.some(item => item.id === reference && item.quantity > 0)))) return [];
+      if (question.role === 'OTHER') return [`Gerätegruppe (${question.label}): Geräteart und Stückzahl fehlen. Bitte die Dokument-Rückfrage beantworten.`];
+      const type = question.role === 'SENSOR' ? 'SensorController' : question.role === 'ACTUATOR' ? 'ActuatorController' : question.role === 'GATEWAY' ? 'Gateway' : 'ECU';
+      const label = normalized(question.label);
+      if (expanded.chains.some(chain => chain.device_type === type && normalized(chain.hardware_name).includes(label))) return [];
+      return [`${question.role === 'SENSOR' ? 'Sensorik' : question.role === 'ACTUATOR' ? 'Aktorik' : 'Gerätegruppe'} (${question.label}): Stückzahl und konkrete Teilnehmer fehlen. Bitte die gezielte Dokument-Rückfrage beantworten; Anschlüsse und Funktionszuordnungen bleiben getrennt zu prüfen.`];
     }),
   };
 }
@@ -2333,6 +2467,7 @@ type ConfirmedClusterGraph = Array<{
 
 /** The reviewed graph owns device identities; catalog expansion must not replace them. */
 export function reconcileConfirmedGraphDevices(spec: ExtractedEngineeringSpecification, prompt: string) {
+  if (spec.reference_design) return spec.chains;
   const raw = prompt.match(/^- Systemcluster-Graph:\s*(\[[^\r\n]*\])\s*$/m)?.[1];
   if (!raw) return spec.chains;
   const graph = JSON.parse(raw) as ConfirmedClusterGraph;
@@ -2451,6 +2586,7 @@ function confirmedBusTechnology(network: string) {
 }
 
 export function applyConfirmedClusterGraph(chains: ExtractedEngineeringChain[], prompt: string) {
+  if (chains.some(isReferenceDesignChain)) return chains;
   const raw = prompt.match(/^- Systemcluster-Graph:\s*(\[[^\r\n]*\])\s*$/m)?.[1];
   if (!raw) return chains;
   let graph: ConfirmedClusterGraph;
@@ -2532,4 +2668,256 @@ export function isStructuredEngineeringSpecification(text: string) {
   const extracted = extractEngineeringSpecification(text);
   const parameterEvidence = /(messbereich|auflösung|aufloesung|schrittweite|sollwert|grenzwert|kommunikationsprotokoll|funktions.parameter)/i.test(text);
   return extracted.chains.length >= 2 || (extracted.chains.length === 1 && parameterEvidence);
+}
+
+
+type ReferenceWire = {
+  length_bits: number; data_type: ExtractedEngineeringChain['data_type']; unit: string; factor: number;
+  offset_value?: number; min_value?: number | null; max_value?: number | null;
+  byte_order?: ExtractedEngineeringChain['byte_order']; semantic: Record<string, unknown>; data: Record<string, unknown>;
+};
+type ReferenceParticipant = {
+  id: string; name: string; kind: 'CONTROLLER' | 'GATEWAY' | 'SENSOR' | 'ACTUATOR' | 'PHYSICAL_CONTEXT';
+  quantity: number; source_fact_ids: string[]; owner_device_id?: string | null; purpose?: string | null;
+  rationale: string; context_kind?: string | null; contained_device_ids?: string[];
+};
+type ReferencePhysicalPort = {
+  id: string; device_id: string; technology: string; network_scope: string;
+  role: 'LOCAL' | 'BACKBONE'; parameters: Record<string, unknown>; rationale: string;
+};
+type ReferenceRelease = {
+  id: string; producer_device_id: string; consumer_device_ids: string[];
+  source_port_id: string; consumer_port_ids: string[]; scope: 'LOCAL_IO' | 'DEVICE_IO' | 'FUNCTION_OUTPUT';
+  role?: 'MEASUREMENT' | 'COMMAND' | 'FEEDBACK' | 'STATUS' | 'FUNCTION_OUTPUT' | null;
+  producer_fact_id?: string | null; consumer_fact_ids?: string[]; signal_name: string; encoding: ReferenceWire;
+  transmission_mode: 'CYCLIC' | 'EVENT' | 'ON_REQUEST' | 'MIXED'; cycle_ms?: number | null;
+  min_interval_ms?: number | null; trigger?: string | null; trigger_description?: string | null;
+  release_times_ms?: number[] | null; request_source?: string | null; request_communication_id?: string | null;
+  response_processing_ms?: number | null; request_times_ms?: number[] | null; rationale: string;
+};
+type ReferencePlan = {
+  devices: ReferenceParticipant[]; ports: ReferencePhysicalPort[]; communication: ReferenceRelease[];
+  functions: Array<{ source_fact_id: string; realization: 'ATOMIC' | 'COMPOSITE'; executor_device_ids: string[]; realized_by_fact_ids: string[] }>;
+  measurements: Array<{ device_id: string; measurement_id: string }>;
+  commands: Array<{ device_id: string; definition: ReferenceWire }>;
+  functional_dependencies?: Array<Record<string, unknown>>;
+  unresolved: Array<{ code: string; target_ref: string; message: string }>;
+};
+export type AcceptedDocumentReferenceDesign = {
+  schema_version: 1; design_id: string; revision: number; request_sha256: string; source_sha256: string;
+  status: 'ACCEPTED'; proposal: ReferencePlan; fact_id_map: Record<string, string>;
+  decision_evidence: Array<Record<string, unknown>>; protected_fields: Record<string, Record<string, unknown>>;
+};
+
+/** This selects review data only. The server checks its stored design/revision. */
+export function readDocumentReferenceDesign(text: string): AcceptedDocumentReferenceDesign | undefined {
+  const marker = [...text.matchAll(/^- Dokument-Referenzentwurf:\s*([^\r\n]+)$/gm)].at(-1);
+  if (!marker) return;
+  const value = JSON.parse(marker[1]) as AcceptedDocumentReferenceDesign;
+  if (!value || value.schema_version !== 1 || value.status !== 'ACCEPTED'
+      || typeof value.design_id !== 'string' || !value.design_id.trim()
+      || !Number.isSafeInteger(value.revision) || value.revision < 1
+      || !/^[a-f0-9]{64}$/.test(value.request_sha256) || !/^[a-f0-9]{64}$/.test(value.source_sha256)
+      || !value.proposal || !Array.isArray(value.proposal.devices) || !Array.isArray(value.proposal.ports)
+      || !Array.isArray(value.proposal.communication) || !Array.isArray(value.proposal.functions)
+      || !Array.isArray(value.proposal.measurements) || !Array.isArray(value.proposal.commands)
+      || !Array.isArray(value.proposal.unresolved) || !value.fact_id_map) {
+    throw new Error('Der Referenzentwurf benötigt eine aktuelle, ausdrücklich übernommene Revision.');
+  }
+  const source = readReviewedDocumentEquipment(text);
+  if (!source?.facts || source.source_sha256 !== value.source_sha256)
+    throw new Error('Der Referenzentwurf gehört nicht zur unveränderten vollständigen Dokumentquelle.');
+  const original = new Set(source.facts.map(fact => documentFactIdentity(fact)));
+  const identities = Object.values(value.fact_id_map);
+  if (identities.length !== original.size || new Set(identities).size !== identities.length
+      || identities.some(identity => !original.has(identity))
+      || Object.keys(value.fact_id_map).some(id => !/^F[a-f0-9]{12}$/.test(id)))
+    throw new Error('Die ursprünglichen Quellenbefunde des Referenzentwurfs sind unvollständig oder verändert.');
+  return value;
+}
+
+export function isReferenceDesignChain(chain: ExtractedEngineeringChain) {
+  return typeof chain.configuration?.reference_design_id === 'string';
+}
+
+/** Compile an already reviewed NIS plan through the existing chain contract. */
+function extractReferenceDesignSpecification(
+  text: string, selection: AcceptedDocumentReferenceDesign,
+  overrides: Partial<EngineeringHardwareCounts>, domainOverride?: string,
+): ExtractedEngineeringSpecification {
+  const originalText = text.replace(/^- Dokument-Referenzentwurf:[^\r\n]*\r?\n?/gm, '');
+  const base = extractEngineeringSpecification(originalText, overrides, domainOverride);
+  const plan = structuredClone(selection.proposal);
+  const unique = <T extends { id: string }>(items: T[], label: string) => {
+    const values = new Map(items.map(item => [item.id, item]));
+    if (values.size !== items.length) throw new Error(`${label}: doppelte Referenzidentität.`);
+    return values;
+  };
+  const devices = unique(plan.devices, 'Teilnehmer');
+  const ports = unique(plan.ports, 'Anschlüsse');
+  unique(plan.communication, 'Kommunikation');
+  const functions = new Map(plan.functions.map(item => [item.source_fact_id, item]));
+  const source = readReviewedDocumentEquipment(text)!;
+  const sourceFacts = new Map(source.facts!.map(fact => [documentFactIdentity(fact), fact]));
+  const fact = (id: string) => {
+    const found = sourceFacts.get(selection.fact_id_map[id]);
+    if (!found) throw new Error(`Unbekannter ursprünglicher Quellenbefund ${id}.`);
+    return found;
+  };
+  const names = new Set<string>();
+  for (const device of devices.values()) {
+    const identity = normalizeHardwareName(device.name).toLocaleLowerCase('de');
+    if (!device.name.trim() || names.has(identity)) throw new Error('Referenzteilnehmer benötigen eindeutige technische Namen.');
+    names.add(identity);
+    if (device.kind !== 'PHYSICAL_CONTEXT' && device.quantity !== 1)
+      throw new Error(`${device.name}: Der NIS-Referenzplan muss elektronisch adressierte Teilnehmer einzeln mit eindeutigen IDs ausweisen. Eine Gruppenmenge bestätigt keine Port- oder Ausführerzuordnung.`);
+    device.source_fact_ids.forEach(fact);
+  }
+  const electronic = (id: string) => {
+    const device = devices.get(id);
+    if (!device || device.kind === 'PHYSICAL_CONTEXT') throw new Error('Ein physischer Anschluss benötigt einen elektronischen Referenzteilnehmer.');
+    return device;
+  };
+  const wireType = (device: ReferenceParticipant) => {
+    if (device.kind === 'GATEWAY') return 'Gateway';
+    if (device.kind === 'SENSOR') return 'SensorController';
+    if (device.kind === 'ACTUATOR') return 'ActuatorController';
+    const previous = base.chains.find(chain => normalizeHardwareName(chain.hardware_name).toLocaleLowerCase('de')
+      === normalizeHardwareName(device.name).toLocaleLowerCase('de') && isEngineeringControllerDevice(chain.device_type));
+    return previous?.device_type ?? controllerDeviceTypeForModel(base.modelType || base.domain);
+  };
+  const projection = new Map(technologyProjection.technologies.map(item => [item.id, item]));
+  for (const port of ports.values()) {
+    electronic(port.device_id);
+    if (!projection.has(port.technology)) throw new Error(`Nicht registrierte Referenztechnologie ${port.technology}.`);
+  }
+  const measurements = new Map(plan.measurements.map(item => [item.device_id, item.measurement_id]));
+  const commands = new Map(plan.commands.map(item => [item.device_id, item.definition]));
+  const inherited = (field: string, device: ReferenceParticipant) => {
+    const identity = normalizeHardwareName(device.name).toLocaleLowerCase('de');
+    return Object.entries(selection.protected_fields[field] ?? {}).find(([name]) =>
+      normalizeHardwareName(name).toLocaleLowerCase('de') === identity)?.[1];
+  };
+  const contextFor = (device: ReferenceParticipant) => device.source_fact_ids.map(id => fact(id).source_context ?? []);
+  const configuration = (device: ReferenceParticipant, port?: ReferencePhysicalPort) => {
+    const inheritedOwner = inherited('owners', device);
+    const owner = device.owner_device_id ? electronic(device.owner_device_id)
+      : typeof inheritedOwner === 'string' ? [...devices.values()].find(item =>
+        normalizeHardwareName(item.name).toLocaleLowerCase('de') === normalizeHardwareName(inheritedOwner).toLocaleLowerCase('de')) : undefined;
+    const measurement = measurements.get(device.id) ?? inherited('measurements', device);
+    const command = commands.get(device.id) ?? inherited('commands', device);
+    return {
+      reference_design_id: selection.design_id, reference_design_revision: selection.revision,
+      reference_request_sha256: selection.request_sha256, reference_source_sha256: selection.source_sha256,
+      reference_device_id: device.id, reference_source_fact_ids: [...device.source_fact_ids],
+      reference_source_contexts: contextFor(device), reference_device: structuredClone(device),
+      reference_port_id: port?.id ?? null, reference_port: port ? structuredClone(port) : null,
+      design_evidence: 'REFERENCE_ASSUMPTION', processing_evidence: 'NONE', timing_evidence: 'NONE',
+      ...(owner ? { functional_owner: owner.name, functional_owner_source: device.owner_device_id ? 'reference_assumption' : 'explicit_user_statement' } : {}),
+      ...(measurement ? { sensor_measurement: measurement, measurement_source: measurements.has(device.id) ? 'reference_assumption' : 'explicit_user_statement' } : {}),
+      ...(command && typeof command === 'object' ? { actuator_command_template: commands.has(device.id)
+        ? { ...structuredClone(command), source: 'wizard-reference-design-v1', design_evidence: 'REFERENCE_ASSUMPTION' }
+        : structuredClone(command) } : {}),
+    };
+  };
+  const receiveOnly = (device: ReferenceParticipant, port?: ReferencePhysicalPort): ExtractedEngineeringChain => ({
+    hardware_name: device.name, hardware_description: device.purpose ?? device.rationale, device_type: wireType(device),
+    function_name: '', function_description: '', interface_name: port ? `${device.name}_${port.id}` : '',
+    interface_type: port?.technology ?? 'Other', transport_network_ref: port?.network_scope,
+    message_name: '', message_id_hex: '0x0', direction: 'tx', cycle_ms: 0, dlc: 0,
+    signal_name: '', signal_display_name: '', start_bit: 0, length_bits: 0, byte_order: 'little_endian',
+    data_type: 'unsigned', factor: 1, offset_value: 0, domain: base.domain,
+    configuration: { ...configuration(device, port), reference_receive_only: true,
+      reference_no_port: !port, reference_communication_id: null },
+    quality: { validation_status: 'REFERENCE_REVIEW_REQUIRED', hardware_evidence: false },
+  });
+  const chains: ExtractedEngineeringChain[] = [];
+  const transmittedPorts = new Set<string>();
+  const releaseContract = (row: ReferenceRelease): Record<string, unknown> => {
+    const result: Record<string, unknown> = { mode: row.transmission_mode };
+    const fields = { cycle_ms: 'period_ms', min_interval_ms: 'minimum_interval_ms', trigger: 'trigger',
+      trigger_description: 'trigger_description', release_times_ms: 'release_times_ms', request_source: 'request_source',
+      response_processing_ms: 'response_processing_ms', request_times_ms: 'request_times_ms' } as const;
+    for (const [from, to] of Object.entries(fields)) {
+      const value = row[from as keyof typeof fields];
+      if (value != null) result[to] = structuredClone(value);
+    }
+    if (row.request_communication_id) result.reference_request_communication_id = row.request_communication_id;
+    return result;
+  };
+  for (const [index, row] of plan.communication.entries()) {
+    const producer = electronic(row.producer_device_id);
+    const port = ports.get(row.source_port_id);
+    if (!port || port.device_id !== producer.id) throw new Error(`${row.id}: eindeutiger Senderanschluss fehlt.`);
+    if (row.consumer_port_ids.length !== row.consumer_device_ids.length) throw new Error(`${row.id}: Empfängeranschlüsse sind unvollständig.`);
+    const consumers = row.consumer_device_ids.map((id, i) => {
+      const device = electronic(id), endpoint = ports.get(row.consumer_port_ids[i]);
+      if (!endpoint || endpoint.device_id !== id || id === producer.id) throw new Error(`${row.id}: tatsächlicher Empfängeranschluss fehlt oder verweist auf Selbsttransport.`);
+      return device;
+    });
+    if (!consumers.length) throw new Error(`${row.id}: bewusste Empfänger fehlen.`);
+    const sourceFunction = row.producer_fact_id ? functions.get(row.producer_fact_id) : undefined;
+    if (row.producer_fact_id && (!sourceFunction || sourceFunction.realization !== 'ATOMIC'
+        || !sourceFunction.executor_device_ids.includes(producer.id)))
+      throw new Error(`${row.id}: Senderfunktion muss eine konkrete atomare Realisierung auf dem Sender sein.`);
+    const wire = row.encoding;
+    const rawBytes = Math.ceil(wire.length_bits / 8);
+    const technology = projection.get(port.technology)!;
+    if (technology.max_payload_bytes != null && rawBytes > technology.max_payload_bytes)
+      throw new Error(`${row.id}: Nutzlast überschreitet das registrierte Technologieprofil.`);
+    // Existing CAN-FD padding classes are shared with ordinary frame packing.
+    const payload = port.technology === 'can_fd' ? validPayloadBytes('canfd', rawBytes) : rawBytes;
+    if (!payload || payload < rawBytes) throw new Error(`${row.id}: Nutzlast benötigt eine explizite Segmentierungsplanung.`);
+    const functionName = row.producer_fact_id ? `${producer.name}_${fact(row.producer_fact_id).name}` : `${producer.name}_${row.signal_name}`;
+    const role = row.role ?? (producer.kind === 'SENSOR' ? 'MEASUREMENT' : producer.kind === 'ACTUATOR' ? 'FEEDBACK'
+      : consumers.every(device => device.kind === 'ACTUATOR') ? 'COMMAND' : 'FUNCTION_OUTPUT');
+    const numeric = wire.semantic.semantic_type === 'NUMERIC';
+    chains.push({
+      ...receiveOnly(producer, port),
+      function_name: conciseGeneratedName('Function', functionName), function_description: row.rationale,
+      message_name: `${producer.name}_${row.id}`, message_id_hex: `0x${(0x180 + index).toString(16).toUpperCase()}`,
+      signal_name: conciseGeneratedName('Signal', `${producer.name}_${row.id}_${row.signal_name}`), signal_display_name: row.signal_name,
+      cycle_ms: row.cycle_ms ?? row.min_interval_ms ?? 0, dlc: payload, length_bits: wire.length_bits,
+      byte_order: wire.byte_order ?? 'little_endian', data_type: wire.data_type, factor: wire.factor,
+      offset_value: wire.offset_value ?? 0, unit: wire.unit,
+      ...(wire.min_value != null ? { min_value: wire.min_value } : {}),
+      ...(wire.max_value != null ? { max_value: wire.max_value } : {}),
+      semantic: structuredClone(wire.semantic), data: structuredClone(wire.data),
+      configuration: { ...configuration(producer, port), reference_receive_only: false,
+        reference_communication_id: row.id, reference_function_fact_id: row.producer_fact_id ?? null,
+        reference_communication: structuredClone(row), transmission: releaseContract(row),
+        raw_datatype: wire.data_type, bit_length: wire.length_bits, signed: wire.data_type === 'signed',
+        factor: wire.factor, offset: wire.offset_value ?? 0, endianness: wire.byte_order ?? 'little_endian', start_bit: 0,
+        encoding_type: numeric ? 'linear' : wire.semantic.semantic_type === 'BYTE_ARRAY' ? 'raw' : 'coded',
+        ...(wire.data.structured_payload ? { structured_payload: structuredClone(wire.data.structured_payload) } : {}),
+        communication_contract: { scope: row.scope, role, design_evidence: 'REFERENCE_ASSUMPTION' },
+      },
+      communication: { producer: producer.name, consumers: consumers.map(device => device.name),
+        transmission_mode: row.transmission_mode, ...(row.cycle_ms != null ? { cycle_time_ms: row.cycle_ms } : {}) },
+      quality: { semantic_complete: true, value_domain_complete: true, encoding_complete: true,
+        validation_status: 'REFERENCE_REVIEW_REQUIRED', hardware_evidence: false },
+    });
+    transmittedPorts.add(port.id);
+  }
+  for (const device of devices.values()) {
+    if (device.kind === 'PHYSICAL_CONTEXT') continue;
+    const physicalPorts = [...ports.values()].filter(port => port.device_id === device.id);
+    if (!physicalPorts.length) chains.push(receiveOnly(device));
+    else for (const port of physicalPorts) if (!transmittedPorts.has(port.id)) chains.push(receiveOnly(device, port));
+  }
+  const counts = { ecus: 0, gateways: 0, sensors: 0, actuators: 0, explicit: true };
+  for (const device of devices.values()) {
+    if (device.kind === 'CONTROLLER') counts.ecus++;
+    else if (device.kind === 'GATEWAY') counts.gateways++;
+    else if (device.kind === 'SENSOR') counts.sensors++;
+    else if (device.kind === 'ACTUATOR') counts.actuators++;
+  }
+  const networks = new Map<string, Set<string>>();
+  for (const port of ports.values()) networks.set(port.technology, new Set([...(networks.get(port.technology) ?? []), port.network_scope]));
+  return { ...base, chains, interfaceType: plan.ports[0]?.technology ?? 'Other',
+    communicationSystems: [...networks.keys()], communicationSystemCounts: Object.fromEntries([...networks].map(([id, values]) => [id, values.size])),
+    targetCounts: counts, unresolvedInventoryGroups: plan.unresolved.map(item => item.message),
+    reference_design: { ...structuredClone(selection), original_facts: structuredClone(source.facts),
+      processing_evidence: 'NONE', timing_evidence: 'NONE' },
+  };
 }

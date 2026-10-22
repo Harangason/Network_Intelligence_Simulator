@@ -1,0 +1,1098 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -335,6 +335,63 @@
+                     array['maxItems'] = 1
+                     array['items'] = {'anyOf': [*new_choices, batch]}
+                     schema['anyOf'].append(alternative)
++    # Project the existing stamp fields to literal decoder keys. Native
++    # providers need not support propertyNames; final public stamps still
++    # validate every source/field binding independently.
++    field_groups = {
++        'devices': ('quantity', 'device_type', 'function_hosts'),
++        'ReferenceDevice': ('quantity', 'device_type', 'function_hosts'),
++        'inventory_choices': ('quantity', 'device_type', 'function_hosts'),
++        'functions': ('function_hosts',), 'ReferenceFunction': ('function_hosts',),
++        'functions_by_fact': ('function_hosts',),
++        'ports': ('ports',), 'ReferencePort': ('ports',), 'port_parameters': ('ports',),
++        'measurements': ('measurements',), 'ReferenceMeasurement': ('measurements',),
++        'commands': ('commands',), 'ReferenceCommand': ('commands',),
++        'communication': ('communication',), 'ReferenceCommunication': ('communication',),
++        'functional_dependencies': ('communication',),
++        'ReferenceFunctionalDependency': ('communication',),
++    }
++
++    def bound_choices(value, fields=()):
++        if not isinstance(value, dict):
++            return
++        fields = field_groups.get(value.get('title'), fields)
++        properties = value.get('properties', {})
++        if 'rationale' in properties:
++            # A concise private subset, not a change to the public 2000 bound
++            # or the configured 8192 output-token limit. Findings stay intact.
++            properties['rationale']['maxLength'] = 240
++        if 'field_references' in properties and fields:
++            if properties.get('owner_device_id', {}).get('type') == 'null':
++                fields = tuple(field for field in fields if field != 'function_hosts')
++            references = {}
++            for field in fields:
++                identities = [key for key, source in prepared['reference_sources'].items()
++                              if field in source['allowed_fields']]
++                references[field] = {'type': 'array', 'items': {'type': 'string'}}
++                if identities:
++                    references[field]['items']['enum'] = identities
++                else:
++                    references[field]['maxItems'] = 0
++            properties['field_references'] = {
++                'type': 'object', 'properties': references, 'additionalProperties': False}
++        for keyword in ('properties', 'patternProperties', '$defs', 'definitions', 'dependentSchemas'):
++            for name, child in value.get(keyword, {}).items():
++                hint = (field_groups['devices'] if name.startswith('NativeReferenceBinding_')
++                        else field_groups.get(name, fields))
++                bound_choices(child, hint)
++        for keyword in ('items', 'additionalProperties', 'unevaluatedProperties', 'contains',
++                        'propertyNames', 'if', 'then', 'else', 'not', 'additionalItems', 'unevaluatedItems'):
++            child = value.get(keyword)
++            if isinstance(child, dict):
++                bound_choices(child, fields)
++        for keyword in ('allOf', 'anyOf', 'oneOf', 'prefixItems', 'items'):
++            children = value.get(keyword)
++            if isinstance(children, list):
++                for child in children:
++                    bound_choices(child, fields)
++
++    bound_choices(schema)
+     return schema
+ 
+ 
+@@ -692,7 +749,7 @@
+     return {**final, 'message': {**(final.get('message') or {}), 'content': ''.join(chunks)}}
+ 
+ 
+-def _reference_context_messages(history, previous, current, system, maximum, *, anchor=None):
++def _reference_context_messages(history, previous, current, system, maximum, *, anchor=None, anchors=()):
+     """Append exact native replies; rebase only to a complete current snapshot."""
+     from copy import deepcopy
+     import json
+@@ -719,8 +776,14 @@
+         'Vorschläge sind durch diesen vollständigen aktuellen Neustand ersetzt.')
+     full = [{'role': 'system', 'content': system + protocol},
+             {'role': 'user', 'content': json.dumps(_reference_context_snapshot(current), ensure_ascii=False, separators=(',', ':'))}]
+-    if anchor is not None:
+-        anchor_messages, anchor_context = anchor
++    # An older complete native anchor may fit when the latest anchor plus
++    # its exact reply does not. Retain its cacheable prefix before rebasing
++    # to a fresh snapshot; every alternative passes the same byte guard.
++    anchored_size = None
++    for candidate_anchor in (anchor, *reversed(anchors)):
++        if candidate_anchor is None:
++            continue
++        anchor_messages, anchor_context = candidate_anchor
+         if not anchor_messages or anchor_messages[0] != full[0]:
+             raise ValueError('Der native Kontextanker gehört nicht zu diesem Planungsprotokoll.')
+         anchored = [*deepcopy(anchor_messages), {'role': 'user', 'content': json.dumps(
+@@ -731,7 +794,9 @@
+         except ValueError:
+             pass  # Complete fresh snapshot still has to pass the same guard.
+         else:
+-            full = anchored
++            size = sum(len(row['content'].encode('utf8')) for row in anchored)
++            if anchored_size is None or size < anchored_size:
++                full, anchored_size = anchored, size
+     if history and previous is not None:
+         appended = [*history, {'role': 'user', 'content': json.dumps(
+             _reference_context_snapshot({'nis_context_patch': _reference_context_patch(previous, current)}),
+@@ -741,6 +806,12 @@
+         except ValueError:
+             pass  # The full snapshot below must still pass the unchanged guard.
+         else:
++            if anchored_size is not None and anchored_size < sum(
++                    len(row['content'].encode('utf8')) for row in appended):
++                # Accepted intermediate replies are already represented in
++                # the exact current patch. Avoid replaying their duplicates
++                # merely because the larger history still fits the window.
++                return full, full, True
+             return appended, full, False
+     _reference_context_window(full, maximum)
+     return full, full, bool(history)
+@@ -1196,7 +1267,7 @@
+                              for key, fact in facts.items()
+                              if key in profile_facts or fact['kind'] == 'REQUIREMENT' and tuple(document_system_scope(fact.get('source_context', []))) in {profile, ()}}
+             current = {field: [] for field in fields}
+-            reference_messages, reference_prompt, reference_anchor = [], None, None
++            reference_messages, reference_prompt, reference_anchor, reference_anchors = [], None, None, []
+             content = {'original_source': profile_text, 'original_facts': visible_facts,
+                        'source_profile': list(profile), 'reserved_project_device_names': [row['name'] for row in combined['devices']], 'reference_sources': prepared['reference_sources'],
+                        'registered_catalogs': catalog,
+@@ -1209,7 +1280,7 @@
+                     raise ValueError('Ungültige Teilnehmerbindung: ' + json.dumps(blocking, ensure_ascii=False))
+ 
+             async def infer(stage, allowed, producer_ids=(), feedback=None, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None):
+-                nonlocal reference_messages, reference_prompt, reference_anchor
++                nonlocal reference_messages, reference_prompt, reference_anchor, reference_anchors
+                 inventory_stage = inventory_target is not None or derivation_fact_ids is not None
+                 if device_ids:
+                     kinds = {'ports': {'CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR'},
+@@ -1242,7 +1313,9 @@
+                           'instruction': ('Nur die genannten Outputfelder füllen; alle anderen Modellarrays leer. Echte offene Entscheidungen dürfen immer in unresolved stehen. '
+                               + ('Inventarstufen liefern inventory_choices und inventory_complete; devices und alle anderen Modelllisten bleiben leer, echte Rückfragen bleiben in unresolved zulässig. inventory_choices enthält gemeinsam neue Geräte ODER Bindungen an vorhandene Geräte. existing_inventory_for_this_stage zeigt den tatsächlichen aktuellen Bestand einschließlich vorhandener Sensoren und Aktoren. Diese bleiben auch bei anderen Quellenbefunden physisch vorhanden; niemals unter NEW erneut definieren. Bereits vollständig gebundene Teilnehmer nicht wiederholen. Die Hardwareentscheidung knapp begründen; anstehende eigene Planungsschritte gehören zu inventory_complete=false, nicht als vermeintliche Fachentscheidung in unresolved. ' if inventory_stage else '')
+                               + 'Nur den ausdrücklich ausgewählten Stufenbereich vollständig liefern; vorhandene eindeutige IDs erhalten. '
+-                              'Jede Auswahl begründen; echte offene Auslegung explizit unresolved halten. '
++                              'Jede Auswahl in rationale mit einem kurzen fachlichen Satz und höchstens 240 Zeichen begründen; '
++                              'Quellenbindungen und technische Entscheidungen vollständig in ihren eigenen Feldern erhalten. '
++                              'Echte offene Auslegung explizit unresolved halten. '
+                               + ('Zunächst ausschließlich konkrete Portabsicht planen: parameters bleibt {}. Die folgende eigene Parameterstufe legt jeden Anschluss aus; diese Zwischenstufe ist keine vollständige Prüfung. ' if port_intent else '')
+                               + ('Ausschließlich IO für alle angeforderten vorhandenen Teilnehmer-IDs liefern; keine anderen Geräte, Anschlüsse, Messgrößen oder Befehle überschreiben. Teilnehmer und ihre IO getrennt erhalten. Alle Nachbarteilnehmer bleiben als Planungskontext sichtbar. ' if device_ids else '')
+                               + ('Jeder inventory_choices-Eintrag beginnt mit choice_kind: EXISTING für eine vorhandene ID-Bindung, NEW_<Geräteart> für wirklich neue Hardware (z.B. NEW_SENSOR passend zu kind=SENSOR). Bei EXISTING danach ausschließlich device_id, source_fact_ids, rationale und field_references auswählen; niemals id/name/kind eines alten Geräts neu schreiben. NIS erhält sämtliche unveränderlichen Gerätedaten und ergänzt nur die Quellen-/Typ-/Referenzbindung. Bei NEW_<Geräteart> danach die vollständigen neuen Gerätedaten liefern, niemals eine vorhandene ID. choice_kind wird nur intern geprüft und nicht als Modellfeld gespeichert. Die gemeinsame Stufengrenze gilt für alle Einträge zusammen. ' if inventory_stage and derivation_fact_ids is None else '')
+@@ -1252,7 +1325,8 @@
+                               + ('port_parameters ist ein Objekt mit genau jedem angeforderten Port-ID-Schlüssel einmal. Pro Schlüssel ausschließlich parameters, eine kurze rationale und field_references ausgeben; ports bleibt []. NIS übernimmt id, device_id, technology, role und network_scope exakt aus der bereits geplanten Portabsicht. Keine andere Technologie für einen Schlüssel auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
+                               + ('functions_by_fact ist ein Objekt mit genau jedem angeforderten Funktions-FactID-Schlüssel einmal. Seine Werte enthalten die vollständige Funktionsentscheidung außer source_fact_id; diese Identität bindet NIS unverändert. functions bleibt []. Abhängigkeiten nur mit diesen Senderfunktionen liefern. Andere ursprüngliche Funktions-FactIDs dürfen bewusste Empfänger oder COMPOSITE-Bestandteile sein. ' if function_ids else ''))}
+                 messages, full_messages, context_rebased = _reference_context_messages(
+-                    reference_messages, reference_prompt, prompt, system, self.context_tokens, anchor=reference_anchor)
++                    reference_messages, reference_prompt, prompt, system, self.context_tokens,
++                    anchor=reference_anchor, anchors=reference_anchors[:-1])
+                 progress_details = {}
+                 selection_metadata = {}
+                 device_names = {row['id']: row['name'] for row in current['devices']}
+@@ -1267,8 +1341,11 @@
+                         'selected_device_ids' if device_ids else 'selected_producer_device_ids': list(identities),
+                         'selection_labels': [device_names[key] for key in identities]}
+                 elif function_ids:
++                    all_function_ids = [key for key, fact in profile_facts.items() if fact['kind'] == 'FUNCTION']
+                     selection_metadata = {'selected_function_fact_ids': list(function_ids),
+-                        'selection_labels': [prepared['facts'][key]['name'] for key in function_ids]}
++                        'selection_labels': [prepared['facts'][key]['name'] for key in function_ids],
++                        'scope_index': all_function_ids.index(function_ids[0]) // 4 + 1,
++                        'scope_count': (len(all_function_ids) + 3) // 4}
+                 selection_text = ('; Auswahl: ' + '; '.join(selection_metadata['selection_labels'])
+                                   if selection_metadata else '')
+                 def report_validation(error=None):
+@@ -1300,6 +1377,9 @@
+                             if derivation_fact_ids is not None:
+                                 metadata['derivation_fact_ids'] = list(derivation_fact_ids)
+                         scope_text = ''
++                        if function_ids:
++                            scope_text = (f'; Funktionsgruppe {selection_metadata["scope_index"]} '
++                                          f'von {selection_metadata["scope_count"]}')
+                         if derivation_fact_ids:
+                             fact_ids = [key for key, fact in prepared['facts'].items()
+                                 if fact['kind'] in {'FUNCTION', 'REQUIREMENT'}
+@@ -1437,6 +1517,11 @@
+                             # Actual first request/reply, never a fabricated ACK
+                             # or inventory accepted from a previous whole run.
+                             reference_anchor = (deepcopy(reference_messages), deepcopy(prompt))
++                            reference_anchors.append(reference_anchor)
++                            if len(reference_anchors) > 8:
++                                # Keep the first original prefix and the seven
++                                # most recent complete native snapshot anchors.
++                                del reference_anchors[1]
+                         report_validation()
+                         return result
+                     except (ValueError, TypeError, KeyError) as error:
+@@ -1454,8 +1539,8 @@
+                                                {'role': 'user', 'content': f'Validierungsfehler: {error}. Vollständigen JSON-Entwurf dieser Stufe korrigieren, keine Quellen ändern.'}]
+                 raise AssertionError('Reference inference did not return')
+             async def plan_profile(feedback=None):
+-                nonlocal reference_messages, reference_prompt, reference_anchor
+-                reference_messages, reference_prompt, reference_anchor = [], None, None
++                nonlocal reference_messages, reference_prompt, reference_anchor, reference_anchors
++                reference_messages, reference_prompt, reference_anchor, reference_anchors = [], None, None, []
+                 # Intermediate results remain internal native choices. No
+                 # incomplete profile can reach draft review or canonical apply.
+                 current['unresolved'] = []
+--- /dev/null
++++ after/backend/tests/test_reference_cache_output.py
+@@ -0,0 +1,220 @@
++"""Independent context/output counterexamples, never original acceptance evidence."""
++from copy import deepcopy
++import inspect
++import hashlib
++import json
++
++import pytest
++from jsonschema import Draft202012Validator, ValidationError
++
++from backend.nis.agent.orchestration import local_reasoner as reasoner
++from backend.nis.agent.orchestration import project_intake as intake
++from backend.tests.test_reference_design import fixture_request, reference
++
++
++def anchor_fixture():
++    early = {'original_source': 'Original\r\nµ 🦾 /~' + 's' * 30000,
++             'current_candidate': {'devices': []}, 'typed': [False, 0, None]}
++    messages, _, _ = reasoner._reference_context_messages([], None, early, 'system', 131072)
++    older = ([*messages, {'role': 'assistant', 'content': ' {"unit_actual_reply":true}\n'}], early)
++    latest = deepcopy(early)
++    latest['current_candidate']['notes'] = 'l' * 65000
++    messages, _, _ = reasoner._reference_context_messages([], None, latest, 'system', 131072)
++    # Authored whitespace models the exact native text that must be retained.
++    newer = ([*messages, {'role': 'assistant', 'content': ' ' * 35000 + '{"unit_actual_reply":true}\n'}], latest)
++    current = deepcopy(latest)
++    current['planning_stage'] = 'Following complete decision'
++    return older, newer, current
++
++
++def with_older_anchor(history, previous, current, newest, older):
++    kwargs = {'anchor': newest}
++    # Exercise the old implementation too: its sole anchor loses this prefix.
++    if 'anchors' in inspect.signature(reasoner._reference_context_messages).parameters:
++        kwargs['anchors'] = (older,)
++    return reasoner._reference_context_messages(history, previous, current, 'system', 131072, **kwargs)
++
++
++def test_fitting_older_native_anchor_precedes_full_snapshot_fallback():
++    from backend.tests.test_reference_reasoner import effective_reference_context
++    older, newer, current = anchor_fixture()
++    original = deepcopy((older, newer, current))
++    history = [*newer[0], {'role': 'user', 'content': 'x' * 125000}]
++    messages, fallback, rebased = with_older_anchor(history, newer[1], current, newer, older)
++    assert rebased and messages == fallback
++    assert messages[:len(older[0])] == older[0], 'A fitting complete native prefix was discarded'
++    assert effective_reference_context(messages) == current
++    assert reasoner._reference_context_window(messages, 131072) == 131072
++    assert (older, newer, current) == original
++
++
++def test_no_fitting_anchor_uses_complete_snapshot_without_dropping_source():
++    from backend.tests.test_reference_reasoner import effective_reference_context
++    older, newer, current = anchor_fixture()
++    oversized = ([*older[0], {'role': 'user', 'content': 'x' * 125000}], older[1])
++    messages, _, rebased = with_older_anchor(newer[0], newer[1], current, newer, oversized)
++    assert rebased and len(messages) == 2
++    assert effective_reference_context(messages) == current
++
++
++def test_no_anchor_can_make_oversized_complete_source_acceptable():
++    older, newer, current = anchor_fixture()
++    current['original_source'] += 'm' * 131072
++    with pytest.raises(ValueError, match='keine Quelle gekürzt'):
++        with_older_anchor(newer[0], newer[1], current, newer, older)
++
++
++def test_compact_complete_anchor_avoids_duplicate_history_even_when_both_fit():
++    from backend.tests.test_reference_reasoner import effective_reference_context
++    context = {'original_source': 'Complete unchanged original\r\nµ 🦾' + 's' * 30000,
++               'current_candidate': {'notes': ''}, 'typed': [False, 0, None]}
++    first, _, _ = reasoner._reference_context_messages([], None, context, 'system', 131072)
++    anchor_messages = [*first, {'role': 'assistant', 'content': ' {"unit_actual_reply":true}\n'}]
++    previous = deepcopy(context)
++    previous['current_candidate']['notes'] = 'x' * 10000
++    before, _, _ = reasoner._reference_context_messages(
++        anchor_messages, context, previous, 'system', 131072, anchor=(anchor_messages, context))
++    history = [*before, {'role': 'assistant', 'content': ' ' * 8000 + '{"unit_actual_reply":true}\n'}]
++    unchanged_history = deepcopy(history)
++    current = deepcopy(previous)
++    current['planning_stage'] = 'Next bounded source decision'
++    messages, _, rebased = reasoner._reference_context_messages(
++        history, previous, current, 'system', 131072, anchor=(anchor_messages, context))
++    assert reasoner._reference_context_window(history, 131072) == 131072
++    assert rebased, 'A fitting but unnecessarily duplicated reply history was replayed'
++    assert sum(len(row['content'].encode('utf8')) for row in messages) < sum(
++        len(row['content'].encode('utf8')) for row in history)
++    assert messages[:len(anchor_messages)] == anchor_messages
++    assert effective_reference_context(messages) == current
++    assert history == unchanged_history
++
++
++def measurement_case(fields=('measurements',)):
++    prepared = intake.prepare_reference_design(fixture_request(references=[reference(fields)]))
++    schema = reasoner._reference_schema_for_stage(prepared, {'measurements'}, device_ids=('sensor',))
++    body = intake.ReferenceDesignProposal().model_dump(mode='json')
++    body['measurements'] = [{'device_id': 'sensor', 'measurement_id': 'temperature',
++                             'rationale': 'Registered measurement for the original source.',
++                             'field_references': {}}]
++    return prepared, schema, body
++
++
++def decoder_without_property_names(value):
++    """Independent counterpart of the observed unsupported-key native reply."""
++    if isinstance(value, dict):
++        return {key: decoder_without_property_names(item) for key, item in value.items()
++                if key != 'propertyNames'}
++    if isinstance(value, list):
++        return [decoder_without_property_names(item) for item in value]
++    return value
++
++
++def test_literal_field_keys_exclude_actual_factid_key_without_property_names():
++    prepared, schema, body = measurement_case()
++    fact = next(iter(prepared['facts']))
++    body['measurements'][0]['field_references'] = {fact: ['R1']}
++    with pytest.raises(ValidationError):
++        Draft202012Validator(decoder_without_property_names(schema)).validate(body)
++
++
++@pytest.mark.parametrize('references', [{'measurements': ['unknown']}, {'commands': ['R1']}])
++def test_decoder_excludes_unknown_or_field_disallowed_reference(references):
++    _, schema, body = measurement_case()
++    body['measurements'][0]['field_references'] = references
++    with pytest.raises(ValidationError):
++        Draft202012Validator(schema).validate(body)
++
++
++def test_allowed_reference_pair_and_empty_map_survive_private_projection():
++    prepared, schema, body = measurement_case()
++    Draft202012Validator(schema).validate(body)
++    body['measurements'][0]['field_references'] = {'measurements': ['R1']}
++    Draft202012Validator(schema).validate(body)
++    references = schema['$defs']['ReferenceMeasurement']['properties']['field_references']
++    assert references['additionalProperties'] is False
++    assert references['properties']['measurements']['items']['enum'] == ['R1']
++    assert prepared['reference_sources']['R1']['allowed_fields'] == ['measurements']
++
++
++def test_private_rationale_rejects_observed_verbose_size_public_schema_unchanged():
++    prepared, schema, body = measurement_case()
++    public = deepcopy(intake.reference_design_schema(prepared))
++    body['measurements'][0]['rationale'] = 'a' * 641
++    intake.ReferenceDesignProposal.model_validate(body)
++    with pytest.raises(ValidationError):
++        Draft202012Validator(schema).validate(body)
++    assert intake.reference_design_schema(prepared) == public
++    assert public['$defs']['ReferenceMeasurement']['properties']['rationale']['maxLength'] == 2000
++
++
++def test_concise_private_rationale_preserves_complete_public_choice():
++    _, schema, body = measurement_case()
++    body['measurements'][0]['rationale'] = 'a' * 240
++    Draft202012Validator(schema).validate(body)
++    validated = intake.ReferenceDesignProposal.model_validate(body).model_dump(mode='json')
++    assert validated['measurements'] == body['measurements']
++
++
++@pytest.mark.parametrize('additional_functions', [0, 6])
++def test_function_progress_reports_actual_group_and_all_original_ids(monkeypatch, additional_functions):
++    from backend.nis.engineering.goal_execution.progress import sink
++    from backend.tests.test_reference_reasoner import complete_design, reasoner_with_transport, run_reference
++    request = fixture_request()
++    source, raw = request['prompt'].split('\n- Dokument-Geräte: ')
++    envelope = json.loads(raw)
++    for index in range(additional_functions):
++        name = f'Zusatzfunktion {index}'
++        quote = 'Funktion: ' + name
++        source += '\n' + quote
++        envelope['facts'].append({'name': name, 'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None,
++                                  'source_quote': quote, 'source_context': []})
++    envelope.update(source_text=source, source_chars=len(source),
++                    source_sha256=hashlib.sha256(source.encode()).hexdigest())
++    request['prompt'] = source + '\n- Dokument-Geräte: ' + json.dumps(envelope, ensure_ascii=False)
++    def design(prepared):
++        value = complete_design(prepared)
++        value['functions'] = [{'source_fact_id': key, 'realization': 'ATOMIC', 'executor_device_ids': ['C'],
++                               'rationale': 'Independent authored function fixture'}
++                              for key, fact in prepared['facts'].items() if fact['kind'] == 'FUNCTION']
++        return value
++    instance, prepared, _ = reasoner_with_transport(monkeypatch, request=request, design_factory=design)
++    events = []
++    token = sink.set(events.append)
++    try:
++        result = run_reference(instance, prepared)
++    finally:
++        sink.reset(token)
++    functions = [event for event in events if event.get('metadata', {}).get('source') == 'document_reference_design'
++                 and event['metadata'].get('selected_function_fact_ids')]
++    expected = {key for key, fact in prepared['facts'].items() if fact['kind'] == 'FUNCTION'}
++    assert functions
++    assert {key for event in functions for key in event['metadata']['selected_function_fact_ids']} == expected
++    count = 1 if additional_functions == 0 else 3
++    assert [event['metadata'].get('scope_index') for event in functions] == list(range(1, count + 1))
++    for index, event in enumerate(functions, 1):
++        assert event['metadata'].get('scope_count') == count
++        assert f'Funktionsgruppe {index} von {count}' in event['text']
++        assert event['metadata']['canonical_writes'] is False
++    assert result['canonical_writes'] is False
++
++
++def test_planner_retains_bounded_original_and_recent_actual_native_anchors(monkeypatch):
++    from backend.tests.test_reference_reasoner import reasoner_with_transport, run_reference
++    actual_builder = reasoner._reference_context_messages
++    observed = []
++    def fresh(history, previous, current, system, maximum, *, anchor=None, anchors=()):
++        observed.append(deepcopy((anchor, anchors)))
++        if history:
++            messages, full, _ = actual_builder([], None, current, system, maximum)
++            return messages, full, True
++        return actual_builder(history, previous, current, system, maximum, anchor=anchor, anchors=anchors)
++    monkeypatch.setattr(reasoner, '_reference_context_messages', fresh)
++    instance, prepared, _ = reasoner_with_transport(monkeypatch, wire_padding=True)
++    result = run_reference(instance, prepared)
++    first_native_anchor = observed[1][0]
++    assert len(observed) > 8
++    assert observed[3][1][0] == first_native_anchor
++    assert observed[-1][1][0] == first_native_anchor
++    assert all(len(older) <= 7 for _, older in observed)
++    assert first_native_anchor[0][-1]['content'].startswith(' \n')
++    assert result['canonical_writes'] is False
+--- before/backend/tests/test_reference_planning_throughput.py
++++ after/backend/tests/test_reference_planning_throughput.py
+@@ -256,18 +256,18 @@
+ def test_complete_snapshot_fallback_refreshes_actual_validated_native_anchor(monkeypatch):
+     from backend.tests.test_reference_reasoner import reasoner_with_transport, run_reference
+     actual_builder = reasoner._reference_context_messages
+-    anchors, captured = [], []
+-    def once_fresh(history, previous, current, system, maximum, *, anchor=None):
+-        anchors.append(deepcopy(anchor))
+-        if len(anchors) == 2:
++    observed_anchors, captured = [], []
++    def once_fresh(history, previous, current, system, maximum, *, anchor=None, anchors=()):
++        observed_anchors.append(deepcopy(anchor))
++        if len(observed_anchors) == 2:
+             messages, full, _ = actual_builder([], None, current, system, maximum)
+             return messages, full, True
+-        return actual_builder(history, previous, current, system, maximum, anchor=anchor)
++        return actual_builder(history, previous, current, system, maximum, anchor=anchor, anchors=anchors)
+     monkeypatch.setattr(reasoner, '_reference_context_messages', once_fresh)
+     instance, prepared, observed = reasoner_with_transport(monkeypatch, capture=captured, wire_padding=True)
+     result = run_reference(instance, prepared)
+-    assert anchors[2][1] == observed[1]
+-    assert anchors[2][0][:-1] == captured[1]['messages']
+-    assert anchors[2][0][-1]['role'] == 'assistant'
+-    assert anchors[2][0][-1]['content'].startswith(' \n') and anchors[2][0][-1]['content'].endswith('\n ')
++    assert observed_anchors[2][1] == observed[1]
++    assert observed_anchors[2][0][:-1] == captured[1]['messages']
++    assert observed_anchors[2][0][-1]['role'] == 'assistant'
++    assert observed_anchors[2][0][-1]['content'].startswith(' \n') and observed_anchors[2][0][-1]['content'].endswith('\n ')
+     assert result['proposal']['unresolved'] == [] and result['canonical_writes'] is False
+--- before/backend/tests/test_reference_selected_identity.py
++++ after/backend/tests/test_reference_selected_identity.py
+@@ -6,7 +6,7 @@
+ 
+ from backend.nis.agent.orchestration import local_reasoner as reasoner
+ from backend.nis.agent.orchestration import project_intake as intake
+-from backend.tests.test_reference_design import fixture_request, fixture_design
++from backend.tests.test_reference_design import fixture_request, fixture_design, reference
+ 
+ 
+ def selected_ports():
+@@ -129,7 +129,9 @@
+ 
+ 
+ def test_required_port_keys_reject_missing_foreign_and_immutable_wire_values():
+-    prepared = intake.prepare_reference_design(fixture_request())
++    source = reference(('ports',))
++    source['id'] = 'R-after'
++    prepared = intake.prepare_reference_design(fixture_request(references=[source]))
+     ports = selected_ports()
+     identities = tuple(row['id'] for row in ports)
+     schema = reasoner._reference_schema_for_stage(prepared, {'ports'}, port_ids=identities)
+--- before/backend/tests/test_reference_reasoner.py
++++ after/backend/tests/test_reference_reasoner.py
+@@ -1113,8 +1113,13 @@
+     reasoner, prepared, observed = reasoner_with_transport(monkeypatch, capture=captured)
+     result = run_reference(reasoner, prepared)
+     assert len(captured) > 3
+-    for previous, current in zip(captured, captured[1:]):
+-        assert current['messages'][:len(previous['messages'])] == previous['messages']
++    # Intermediate replay can be replaced by an exact complete current patch.
++    # Preserve the original actual native request/reply cache prefix instead
++    # of requiring ever-growing duplicate accepted replies in every request.
++    native_prefix = captured[1]['messages'][:len(captured[0]['messages']) + 1]
++    assert native_prefix[-1]['role'] == 'assistant'
++    for current in captured[1:]:
++        assert current['messages'][:len(native_prefix)] == native_prefix
+         assert current['messages'][-2]['role'] == 'assistant'
+         from backend.tests.test_reference_planning_throughput import unpack_context_message
+         assert 'nis_context_patch' in unpack_context_message(json.loads(current['messages'][-1]['content']))
+--- /dev/null
++++ after/docs/implementation-workloads/reference-example-assumptions-20261017/integration/resume-20261022/planning-throughput-repair/source-binding-repair/port-identity-repair/cache-output-repair/native_cache_output_control.py
+@@ -0,0 +1,298 @@
++"""Actual local synthetic grammar/cache controls; never write a NIS project."""
++import argparse
++import ast
++import asyncio
++from copy import deepcopy
++from datetime import datetime, timezone
++import hashlib
++import json
++import os
++from pathlib import Path
++import re
++import subprocess
++import sys
++import time
++from urllib.parse import urlsplit
++from urllib.request import Request, urlopen
++
++ROOT = Path.cwd()
++sys.path.insert(0, str(ROOT))
++from backend.nis.agent.orchestration import local_reasoner as reasoner
++from backend.nis.agent.orchestration import project_intake as intake
++from backend.tests.test_reference_design import fixture_request, fixture_design, reference, wire
++from backend.tests.test_reference_planning_throughput import existing_batch_fixture
++from backend.tests.test_reference_selected_identity import selected_ports
++from backend.tests.test_reference_reasoner import effective_reference_context
++from jsonschema import Draft202012Validator
++
++HERE = Path(__file__).resolve().parent
++COMMON = HERE.parent / 'native_selected_control.py'
++COMMON_SHA = hashlib.sha256(COMMON.read_bytes()).hexdigest()
++OPERATOR_SHA = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
++# Reuse the unchanged audited HTTP/worker/JSON/evidence helpers. Do not import
++# the old executable's argparse/main or modify its frozen proof source.
++tree = ast.parse(COMMON.read_text(encoding='utf8'))
++helpers = [node for node in tree.body if isinstance(node, ast.FunctionDef)
++           and node.name in {'save', 'get', 'workers', 'unique_object'}]
++assert len(helpers) == 4
++exec(compile(ast.Module(body=helpers, type_ignores=[]), str(COMMON), 'exec'), globals())
++
++parser = argparse.ArgumentParser(description=__doc__)
++parser.add_argument('--wait-for-guard', action='store_true')
++parser.add_argument('--expected-module-sha256', required=True)
++parser.add_argument('--output-dir', type=Path, default=HERE / 'native-controls')
++args = parser.parse_args()
++OUT = args.output_dir.resolve()
++assert OUT.parent == HERE and re.fullmatch(r'native-controls(?:-[1-9][0-9]*)?', OUT.name)
++OUT.mkdir(exist_ok=True)
++assert {path.name for path in OUT.iterdir()} <= {'prewarm-mitigation'}, 'Existing native evidence or unknown run; do not overwrite or duplicate.'
++CONTROL_ROOT = OUT
++MODULE = ROOT / 'backend/nis/agent/orchestration/local_reasoner.py'
++assert hashlib.sha256(MODULE.read_bytes()).hexdigest() == args.expected_module_sha256
++binding_command = ("@(Get-CimInstance Win32_Process -Filter 'ProcessId=" + str(os.getpid()) +
++    "' | Select-Object ProcessId,@{n='CreatedUtc';e={$_.CreationDate.ToUniversalTime().ToString('o')}},CommandLine) | ConvertTo-Json -Compress")
++processes = json.loads(subprocess.check_output(['powershell', '-NoProfile', '-Command', binding_command], text=True))
++processes = [processes] if isinstance(processes, dict) else processes
++assert len(processes) == 1 and processes[0]['ProcessId'] == os.getpid()
++save('process-binding-request.json', {'at_utc': datetime.now(timezone.utc).isoformat(),
++    'processes': processes, 'module_sha256': args.expected_module_sha256,
++    'operator_sha256': OPERATOR_SHA, 'canonical_writes': False})
++if args.wait_for_guard:
++    print(json.dumps({'status': 'WAITING_FOR_REVIEWED_GUARD', 'pid': os.getpid()}), flush=True)
++    until = time.monotonic() + 120
++    while not (OUT / 'prewarm-mitigation/guard-armed.json').exists():
++        if time.monotonic() > until:
++            raise TimeoutError('No reviewed operational guard armed; no inference started.')
++        time.sleep(0.5)
++
++
++def unchanged():
++    assert hashlib.sha256(MODULE.read_bytes()).hexdigest() == args.expected_module_sha256
++    assert hashlib.sha256(COMMON.read_bytes()).hexdigest() == COMMON_SHA
++    assert hashlib.sha256(Path(__file__).read_bytes()).hexdigest() == OPERATOR_SHA
++
++
++async def receive(instance, messages, schema, name):
++    unchanged()
++    payload = {'model': instance.model, 'messages': messages, 'format': schema,
++        'think': False, 'stream': True, 'keep_alive': instance.keep_alive,
++        'options': {'temperature': 0, 'num_predict': 8192,
++                    'num_ctx': reasoner._reference_context_window(messages, instance.context_tokens)}}
++    save(name + '-request.json', payload)
++    def progress(event):
++        with (OUT / (name + '-events.ndjson')).open('a', encoding='utf8') as stream:
++            stream.write(json.dumps({'at_utc': datetime.now(timezone.utc).isoformat(), **event}) + '\n')
++        if event['request_state'] == 'RECEIVING_OUTPUT' and not (OUT / (name + '-worker.json')).exists():
++            save(name + '-worker.json', workers())
++    body = await reasoner._reference_stream_response(instance.client, instance.chat_url, payload, progress)
++    save(name + '-response.json', body)
++    assert body.get('done') is True and body.get('done_reason') != 'length'
++    decoded = json.loads(body['message']['content'].strip(), object_pairs_hook=unique_object)
++    Draft202012Validator(schema).validate(decoded)
++    save(name + '-after-worker.json', workers())
++    unchanged()
++    return body, decoded
++
++
++async def cache_control(instance):
++    system = 'Synthetic NIS cache control. Read the complete context; return only its marker. /no_think'
++    early = {'original_source': ''.join(f'Quellzeile {index}: Messpunkt unverändert.\n' for index in range(750)),
++             'current_candidate': {'notes': ''}, 'marker': 'CACHE_CONTROL', 'typed': [False, 0, None, 'µ 🦾']}
++    newer = deepcopy(early)
++    newer['current_candidate']['notes'] = 'L' * 65000
++    current = deepcopy(early)
++    current['current_candidate']['notes'] = 'X' * 70000
++    schema = {'type': 'object', 'properties': {'marker': {'type': 'string', 'enum': ['CACHE_CONTROL']}},
++              'required': ['marker'], 'additionalProperties': False}
++    early_messages, _, _ = reasoner._reference_context_messages([], None, early, system, 131072)
++    first, _ = await receive(instance, early_messages, schema, 'first')
++    early_history = [*deepcopy(early_messages), {'role': 'assistant', 'content': first['message']['content']}]
++    newer_messages, _, _ = reasoner._reference_context_messages([], None, newer, system, 131072)
++    second, _ = await receive(instance, newer_messages, schema, 'second')
++    newer_history = [*deepcopy(newer_messages), {'role': 'assistant', 'content': second['message']['content']}]
++    messages, fallback, rebased = reasoner._reference_context_messages(
++        newer_history, newer, current, system, 131072,
++        anchor=(newer_history, newer), anchors=[(early_history, early)])
++    assert rebased and messages == fallback and messages[:len(early_history)] == early_history
++    assert effective_reference_context(messages) == current
++    save('lossless-context-review.json', {'complete_current': current,
++        'early_actual_prefix_preserved': True, 'whole_source_exact': True, 'rebased': rebased,
++        'input_utf8_bytes': sum(len(row['content'].encode('utf8')) for row in messages)})
++    third, _ = await receive(instance, messages, schema, 'third')
++    observed = OUT / 'third-worker.json'
++    value = json.loads(observed.read_text(encoding='utf8')) if observed.exists() else workers()
++    cached = [slot.get('n_prompt_tokens_cache', 0) for row in value for slot in row['slots']]
++    assert cached and max(cached) > 0, 'Actual third native request did not reuse any prefix state.'
++    third_cached = max(cached)
++    history = [*messages, {'role': 'assistant', 'content': third['message']['content']}]
++    assert reasoner._reference_context_window(history, 131072) == 131072
++    following = deepcopy(current)
++    following['planning_stage'] = 'Following synthetic decision'
++    compact, _, rebased = reasoner._reference_context_messages(
++        history, current, following, system, 131072,
++        anchor=(newer_history, newer), anchors=[(early_history, early)])
++    assert rebased and compact[:len(early_history)] == early_history
++    assert effective_reference_context(compact) == following
++    appended = [*history, {'role': 'user', 'content': json.dumps({'nis_context_patch': [
++        {'op': 'add', 'path': '/planning_stage', 'value': following['planning_stage']}]},
++        ensure_ascii=False, separators=(',', ':'))}]
++    assert effective_reference_context(appended) == following
++    assert reasoner._reference_context_window(appended, 131072) == 131072
++    assert sum(len(row['content'].encode('utf8')) for row in compact) < sum(
++        len(row['content'].encode('utf8')) for row in appended)
++    await receive(instance, compact, schema, 'fourth')
++    observed = OUT / 'fourth-worker.json'
++    value = json.loads(observed.read_text(encoding='utf8')) if observed.exists() else workers()
++    fourth_cached = max(slot.get('n_prompt_tokens_cache', 0) for row in value for slot in row['slots'])
++    assert fourth_cached >= third_cached > 0
++    return 4, {'actual_third_cached_tokens': third_cached, 'actual_fourth_cached_tokens': fourth_cached,
++        'fitting_history_replaced_by_smaller_complete_context': True,
++        'limits': 'Synthetic cache-hit and exact older-prefix proof, not a benchmark of every fallback or original acceptance.'}
++
++
++async def choices_control(instance, case):
++    fields = ('ports', 'measurements', 'commands', 'communication', 'function_hosts')
++    prepared = intake.prepare_reference_design(fixture_request(references=[reference(fields)]))
++    public_fields = intake.ReferenceDesignProposal().model_dump(mode='json')
++    expected = None
++    if case == 'ports':
++        ports = selected_ports()
++        ports[0].update(technology='ethernet', role='BACKBONE', network_scope='unit-backbone')
++        ports[1].update(technology='can_fd')
++        identities = tuple(row['id'] for row in ports)
++        schema = reasoner._reference_schema_for_stage(prepared, {'ports'}, port_ids=identities)
++        save('production-schema.json', schema)
++        schema = deepcopy(schema)
++        for definition in schema['properties']['port_parameters']['properties'].values():
++            references = definition['properties']['field_references']
++            references['required'] = ['ports']
++            references['properties']['ports'].update(minItems=1, maxItems=1)
++        expected = {row['id']: {'parameters': {'bitrate_bps': 1000000000 if index == 0 else 500000},
++                    'field_references': {'ports': ['R1']}} for index, row in enumerate(ports)}
++        request = {'port_parameters': expected, 'prior_ports': ports}
++    elif case == 'functions':
++        rows = fixture_design(prepared)['functions']
++        identities = tuple(row['source_fact_id'] for row in rows)
++        schema = reasoner._reference_schema_for_stage(prepared, {'functions', 'functional_dependencies'}, function_ids=identities)
++        save('production-schema.json', schema)
++        schema = deepcopy(schema)
++        schema['properties']['functional_dependencies'].update(minItems=1, maxItems=1)
++        public_fields.pop('functional_dependencies')
++        expected = {row['source_fact_id']: {key: val for key, val in row.items() if key != 'source_fact_id'} for row in rows}
++        request = {'functions_by_fact': expected, 'functional_dependencies': [{'id': 'unit-dependency',
++            'producer_fact_id': identities[0], 'consumer_fact_ids': [identities[1]], 'executor_device_id': 'C',
++            'signal_name': 'unit_function_output', 'encoding': wire(), 'rationale': 'Unit boolean dependency',
++            'field_references': {'communication': ['R1']}}]}
++    elif case == 'inventory-batch':
++        prepared, known, fact, bindings, schema, _ = existing_batch_fixture()
++        save('production-schema.json', schema)
++        schema = deepcopy(schema)
++        schema['anyOf'] = [choice for choice in schema['anyOf']
++                           if choice['properties']['inventory_complete'].get('enum') == [False]]
++        assert schema['anyOf']
++        request = {'expected_bindings': bindings[:8], 'existing_inventory': known,
++                   'inventory_complete': False, 'instruction': 'One EXISTING_BATCH ordered chain with exactly these first8 bindings, following=null after eighth.'}
++    else:
++        schema = reasoner._reference_schema_for_stage(prepared, {'measurements'}, device_ids=('unit-sensor',))
++        # Hold the requested unit record/reference presence constant, so the
++        # native counter cannot evade the production field rules via [].
++        save('production-schema.json', schema)
++        schema = deepcopy(schema)
++        schema['properties']['measurements'].update(minItems=1, maxItems=1)
++        schema['$defs']['ReferenceMeasurement'].setdefault('required', []).append('field_references')
++        references = schema['$defs']['ReferenceMeasurement']['properties']['field_references']
++        references['required'] = ['measurements']
++        references['properties']['measurements'].update(minItems=1, maxItems=1)
++        public_fields.pop('measurements')
++        request = {'measurements': [{'device_id': 'unit-sensor', 'measurement_id': 'temperature',
++            'field_references': {'measurements': ['R1']}}],
++            'counter_request': ('Try a source FactID as field key and an unknown reference ID.' if case == 'measurement-counter'
++                                else 'Try a700-character rationale. The actual tested decoder schema takes precedence.')}
++    instructions = ('Native-schema JSON only. Synthetic private decoder control, not a real model or hardware evidence. '
++        'Use the supplied actual decision data; every rationale is one brief sentence, within the schema. '
++        'The decoder schema takes precedence over counter_request; preserve the valid requested source-reference pair. '
++        'All unrequested public model arrays and unresolved remain empty. '
++        'For keyed private fields keep public ports/functions empty. For inventory use devices=[], one inventory_choices batch. /no_think')
++    save('synthetic-input.json', request)
++    body, value = await receive(instance, [{'role': 'system', 'content': instructions},
++        {'role': 'user', 'content': json.dumps({'requested': request, 'empty_public_fields': public_fields}, ensure_ascii=False)}], schema, 'actual')
++    decoded = deepcopy(value)
++    if case == 'ports':
++        chosen = decoded.pop('port_parameters')
++        decoded['ports'] = reasoner._reference_expand_selected_ports(ports, chosen, identities)
++        merged = reasoner._reference_merge_port_parameters(ports, decoded['ports'], identities)
++        assert all(row['parameters'] == expected[row['id']]['parameters'] for row in merged)
++        assert all(row['field_references'] == {'ports': ['R1']} for row in merged)
++    elif case == 'functions':
++        decoded['functions'] = reasoner._reference_expand_selected_functions(decoded.pop('functions_by_fact'), identities)
++        assert {row['source_fact_id'] for row in decoded['functions']} == set(identities)
++        assert len(decoded['functional_dependencies']) == 1
++    elif case == 'inventory-batch':
++        assert decoded.pop('inventory_complete') is False
++        decoded['devices'] = reasoner._reference_expand_inventory_choices(known, decoded.pop('inventory_choices'))
++        assert [row['id'] for row in decoded['devices']] == [row['id'] for row in known[:8]]
++        assert all(fact in row['source_fact_ids'] for row in decoded['devices'])
++    else:
++        assert len(decoded['measurements']) == 1
++        row = decoded['measurements'][0]
++        assert row['device_id'] == 'unit-sensor' and row['measurement_id'] == 'temperature'
++        assert row['field_references'] == {'measurements': ['R1']}
++    public = intake.ReferenceDesignProposal.model_validate(decoded).model_dump(mode='json')
++    if (OUT / 'production-schema.json').exists():
++        production_schema = json.loads((OUT / 'production-schema.json').read_text(encoding='utf8'))
++        Draft202012Validator(production_schema).validate(value)
++    rationales = [len(row['rationale']) for field in public for row in public[field] if isinstance(row, dict) and 'rationale' in row]
++    assert rationales and max(rationales) <= 240
++    return 1, {'rationale_characters': rationales, 'native_timing': {key: body.get(key) for key in
++        ('load_duration', 'prompt_eval_count', 'prompt_eval_duration', 'eval_count', 'eval_duration', 'total_duration')}}
++
++
++async def main():
++    global OUT
++    results = []
++    for case in ('measurement-counter', 'rationale-counter', 'ports', 'functions', 'inventory-batch', 'cache-anchors'):
++        OUT = CONTROL_ROOT / case
++        OUT.mkdir(exist_ok=False)
++        unchanged()
++        before = workers()
++        assert all(not slot['is_processing'] for row in before for slot in row['slots'])
++        details = get('http://127.0.0.1:11434/api/show', data={'model': 'qwen3.8:27b'})
++        assert str(details['details']['family']).startswith('qwen') and not details.get('remote_host')
++        occupancy = {}
++        for project in ('20261021094952722-147a3d72', '20261020103707202-0fda8601'):
++            draft = get('http://127.0.0.1:13500/api/engineering/agent/project-draft', project=project)
++            conversation = get('http://127.0.0.1:13500/api/engineering/agent/conversation', project=project)
++            assert draft.get('data') is None
++            assert not any((conversation.get('data') or {}).get(key) for key in ('active_workload', 'active_proposal'))
++            occupancy[project] = {'draft': draft, 'conversation': conversation}
++        save('preflight.json', {'at_utc': datetime.now(timezone.utc).isoformat(), 'workers': before,
++            'product_point_observations': occupancy, 'provider_ps': get('http://127.0.0.1:11434/api/ps'),
++            'common_helper_source': {'path': str(COMMON), 'sha256': COMMON_SHA}})
++        instance = reasoner.LocalEngineeringReasoner()
++        assert instance.model == 'qwen3.8:27b' and instance.context_tokens == 131072 and instance.client.timeout.read == 1200
++        endpoint = urlsplit(instance.chat_url)
++        assert endpoint.hostname in {'127.0.0.1', 'localhost'} and endpoint.port == 11434
++        print(json.dumps({'case': case, 'status': 'STARTING', 'canonical_writes': False}), flush=True)
++        try:
++            count, detail = (await cache_control(instance) if case == 'cache-anchors'
++                             else await choices_control(instance, case))
++            result = {'case': case, 'status': 'PASS', 'at_utc': datetime.now(timezone.utc).isoformat(),
++                'actual_native_responses': count, 'local_reasoner_sha256': args.expected_module_sha256,
++                'canonical_writes': False, 'complete_original_acceptance': False, 'full_release_pass': False,
++                'productive_delivery': False, **detail}
++            save('result.json', result)
++            results.append(result)
++            print(json.dumps(result), flush=True)
++        except BaseException as error:
++            save('failure.json', {'at_utc': datetime.now(timezone.utc).isoformat(), 'case': case,
++                                  'error': repr(error), 'original_acceptance': False})
++            raise
++        finally:
++            await instance.client.aclose()
++    OUT = CONTROL_ROOT
++    save('result.json', {'status': 'PASS', 'cases': results,
++        'actual_native_responses': sum(row['actual_native_responses'] for row in results),
++        'complete_original_acceptance': False, 'full_release_pass': False, 'productive_delivery': False})
++
++
++asyncio.run(main())
+--- /dev/null
++++ after/docs/implementation-workloads/reference-example-assumptions-20261017/integration/resume-20261022/planning-throughput-repair/source-binding-repair/port-identity-repair/cache-output-repair/verify_scope.py
+@@ -0,0 +1,131 @@
++"""Read-only comparison of the cache/output repair with its receipted baseline."""
++import ast
++from copy import deepcopy
++from datetime import datetime, timezone
++import difflib
++import hashlib
++import importlib.util
++import json
++from pathlib import Path
++from unittest.mock import patch
++
++ROOT = Path.cwd()
++OUT = Path(__file__).resolve().parent
++SOURCE = 'backend/nis/agent/orchestration/local_reasoner.py'
++dump = lambda node: ast.dump(node, include_attributes=False)
++definitions = lambda tree: {node.name: node for node in tree.body if hasattr(node, 'name')}
++trees = [ast.parse(path.read_text(encoding='utf8')) for path in (OUT / 'before' / SOURCE, ROOT / SOURCE)]
++left, right = [definitions(tree) for tree in trees]
++assert set(left) == set(right)
++changed = {name for name in left if dump(left[name]) != dump(right[name])}
++assert changed == {'_reference_schema_for_stage', '_reference_context_messages', 'LocalEngineeringReasoner'}
++methods = [definitions(side['LocalEngineeringReasoner']) for side in (left, right)]
++assert set(methods[0]) == set(methods[1])
++assert {name for name in methods[0] if dump(methods[0][name]) != dump(methods[1][name])} == {'plan_reference_design'}
++
++
++def normalize_plan(method):
++    method = deepcopy(method)
++    infer = next(node for node in ast.walk(method) if isinstance(node, ast.AsyncFunctionDef) and node.name == 'infer')
++    prompt = next(node for node in infer.body if isinstance(node, ast.Assign)
++                  and any(isinstance(target, ast.Name) and target.id == 'prompt' for target in node.targets))
++    index = next(i for i, key in enumerate(prompt.value.keys) if isinstance(key, ast.Constant) and key.value == 'instruction')
++    prompt.value.values[index] = ast.Constant('REVIEWED_CONCISE_PRIVATE_OUTPUT_INSTRUCTION')
++    start = next(i for i, node in enumerate(infer.body) if isinstance(node, ast.Assign)
++                 and any(isinstance(target, ast.Name) and target.id == 'progress_details' for target in node.targets))
++    end = next(i for i, node in enumerate(infer.body) if isinstance(node, ast.FunctionDef) and node.name == 'report_validation')
++    assert all(isinstance(node, (ast.Assign, ast.If)) for node in infer.body[start + 1:end])
++    del infer.body[start + 1:end]
++    report = next(node for node in ast.walk(infer) if isinstance(node, ast.FunctionDef) and node.name == 'report_progress')
++    class ReadOnlyFunctionLabel(ast.NodeTransformer):
++        def visit_If(self, node):
++            if isinstance(node.test, ast.Name) and node.test.id == 'function_ids':
++                assert len(node.body) == 1 and isinstance(node.body[0], ast.Assign)
++                assert dump(node.body[0].targets[0]) == dump(ast.Name(id='scope_text', ctx=ast.Store()))
++                assert not node.orelse
++                return None
++            return self.generic_visit(node)
++    ReadOnlyFunctionLabel().visit(report)
++
++    class ReviewedPrivateChanges(ast.NodeTransformer):
++        def visit_Assign(self, node):
++            if len(node.targets) == 1 and isinstance(node.targets[0], ast.Tuple):
++                target = node.targets[0]
++                indices = [i for i, value in enumerate(target.elts)
++                           if isinstance(value, ast.Name) and value.id == 'reference_anchors']
++                if indices:
++                    assert isinstance(node.value, ast.Tuple) and len(node.value.elts) == len(target.elts)
++                    for i in reversed(indices):
++                        assert isinstance(node.value.elts[i], ast.List) and not node.value.elts[i].elts
++                        del target.elts[i]
++                        del node.value.elts[i]
++            return self.generic_visit(node)
++
++        def visit_Nonlocal(self, node):
++            node.names = [name for name in node.names if name != 'reference_anchors']
++            return node
++
++        def visit_Expr(self, node):
++            if (isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Attribute)
++                    and isinstance(node.value.func.value, ast.Name) and node.value.func.value.id == 'reference_anchors'):
++                assert node.value.func.attr == 'append' and len(node.value.args) == 1
++                assert isinstance(node.value.args[0], ast.Name) and node.value.args[0].id == 'reference_anchor'
++                return None
++            return self.generic_visit(node)
++
++        def visit_If(self, node):
++            expected = ast.parse('if len(reference_anchors) > 8:\n    del reference_anchors[1]').body[0]
++            if dump(node) == dump(expected):
++                return None
++            return self.generic_visit(node)
++
++        def visit_Call(self, node):
++            if isinstance(node.func, ast.Name) and node.func.id == '_reference_context_messages':
++                node.keywords = [item for item in node.keywords if item.arg != 'anchors']
++            return self.generic_visit(node)
++
++    return ReviewedPrivateChanges().visit(method)
++
++
++old_plan, new_plan = [normalize_plan(side['plan_reference_design']) for side in methods]
++if dump(old_plan) != dump(new_plan):
++    (OUT / 'scope-normalization-diagnostic.diff').write_text('\n'.join(difflib.unified_diff(
++        ast.unparse(old_plan).splitlines(), ast.unparse(new_plan).splitlines())), encoding='utf8')
++    raise AssertionError('An unreviewed pipeline delta remains; inspect diagnostic, never suppress it.')
++for name in ('_reference_context_window', '_reference_context_snapshot', '_reference_context_patch',
++             '_reference_stream_response', '_reference_merge_inventory_devices',
++             '_reference_merge_port_parameters', '_reference_expand_selected_ports', '_reference_expand_selected_functions'):
++    assert dump(left[name]) == dump(right[name]), name
++module_normalized = [deepcopy(tree) for tree in trees]
++for tree in module_normalized:
++    tree.body = [node for node in tree.body if getattr(node, 'name', None) not in changed]
++assert dump(module_normalized[0]) == dump(module_normalized[1])
++
++spec = importlib.util.spec_from_file_location('cache_output_manifest', ROOT / 'scripts/build/write-build-info.py')
++manifest = importlib.util.module_from_spec(spec)
++spec.loader.exec_module(manifest)
++original_read = Path.read_bytes
++def before_read(path):
++    return original_read(OUT / 'before' / SOURCE) if path.resolve() == (ROOT / SOURCE).resolve() else original_read(path)
++with patch.object(Path, 'read_bytes', before_read):
++    before = manifest.build_manifest(ROOT)
++assert before['source_sha256'] == 'ce5ebb53538d9fe38b7536066bea2a8143eaa6f4106cf72159518927e35ecf37'
++after = manifest.build_manifest(ROOT)
++assert after['commit_id'] == before['commit_id'] == '70f0c160bc4f08bd23437f6b3c175523d1e5859c'
++previous = json.loads((OUT.parent.parent / 'projection-sync-repair/actual-host-source-files.json').read_text(encoding='utf8'))['files']
++previous[SOURCE] = hashlib.sha256((OUT / 'before' / SOURCE).read_bytes().replace(b'\r\n', b'\n')).hexdigest()
++assert hashlib.sha256(json.dumps(previous, sort_keys=True, separators=(',', ':')).encode()).hexdigest() == before['source_sha256']
++current = {name: hashlib.sha256((ROOT / name).read_bytes().replace(b'\r\n', b'\n')).hexdigest() for name in previous}
++assert len(current) == after['source_file_count']
++assert hashlib.sha256(json.dumps(current, sort_keys=True, separators=(',', ':')).encode()).hexdigest() == after['source_sha256']
++assert {name for name in current if current[name] != previous[name]} == {SOURCE}
++proof = {'at_utc': datetime.now(timezone.utc).isoformat(), 'canonical_before': before, 'canonical_after': after,
++         'application_delta': [SOURCE], 'application_file_count': len(current), 'changed_definitions': sorted(changed),
++         'all_other_module_and_class_definitions_AST_exact': True,
++         'whole_plan_pipeline_AST_exact_except_reviewed_private_anchor_bookkeeping_instruction_and_progress': True,
++         'public_model_merge_source_identity_and_continuation_guards_AST_exact': True,
++         'model_provider_maximum_output_timeout_and_byte_guard_AST_exact': True,
++         'no_original_acceptance_full_gate_or_delivery_claim': True}
++(OUT / 'source-scope-proof.json').write_text(json.dumps(proof, ensure_ascii=False, indent=2) + '\n', encoding='utf8')
++(OUT / 'actual-host-source-files.json').write_text(json.dumps({'files': current}, sort_keys=True, indent=2) + '\n', encoding='utf8')
++print(json.dumps(proof, ensure_ascii=False))
+--- before/docs/implementation-workloads/reference-example-assumptions-20261017/integration/resume-20261020/document-stream-lifecycle-repair/transfer_waitress_source_only_projects.py
++++ after/docs/implementation-workloads/reference-example-assumptions-20261017/integration/resume-20261020/document-stream-lifecycle-repair/transfer_waitress_source_only_projects.py
+@@ -26,9 +26,12 @@
+ repair.add_argument('--throughput-repair-dir', type=Path)
+ repair.add_argument('--source-binding-repair-dir', type=Path)
+ repair.add_argument('--selected-identity-repair-dir', type=Path)
++repair.add_argument('--cache-output-repair-dir', type=Path)
+ parser.add_argument('--destination-prefix', default='native-waitress-lifecycle')
+ args = parser.parse_args()
+-selected_identity_dir = args.selected_identity_repair_dir.resolve() if args.selected_identity_repair_dir else None
++cache_output_dir = args.cache_output_repair_dir.resolve() if args.cache_output_repair_dir else None
++selected_identity_dir = (cache_output_dir.parent if cache_output_dir else
++                         args.selected_identity_repair_dir.resolve() if args.selected_identity_repair_dir else None)
+ source_binding_dir = (selected_identity_dir.parent if selected_identity_dir else
+                       args.source_binding_repair_dir.resolve() if args.source_binding_repair_dir else None)
+ if source_binding_dir:
+@@ -43,13 +46,15 @@
+ assert re.fullmatch('[a-z0-9-]+', args.destination_prefix)
+ repair_dir = source_binding_dir or args.context_repair_dir or args.inventory_cardinality_repair_dir or args.inventory_progress_repair_dir or args.context_cache_progress_repair_dir or args.launcher_repair_dir or args.fresh_id_repair_dir or args.throughput_repair_dir
+ evidence_dir = repair_dir.resolve() if repair_dir else OUT
+-transfer_evidence_dir = selected_identity_dir or evidence_dir
++transfer_evidence_dir = cache_output_dir or selected_identity_dir or evidence_dir
+ historical_dir = args.throughput_repair_dir.resolve() if source_binding_dir else evidence_dir
+ assert evidence_dir.is_relative_to(BASE.resolve())
+ assert transfer_evidence_dir.is_relative_to(BASE.resolve())
+ fresh_id_dir = (BASE / 'resume-20261021/inventory-binding-cardinality-repair/progress-decoder-repair/context-cache-progress-repair/launcher-repair/fresh-id-decoder-repair') if args.throughput_repair_dir else evidence_dir
+ identity = json.loads((transfer_evidence_dir / ('current-input-identity.json' if repair_dir else 'waitress-candidate-input-identity.json')).read_text(encoding='utf-8'))
+ source_binding_identity = json.loads((evidence_dir / 'current-input-identity.json').read_text()) if selected_identity_dir else identity
++selected_identity = (json.loads((selected_identity_dir / 'current-input-identity.json').read_text())
++                     if selected_identity_dir else identity)
+ assert receipt['status'] == 'PREPARED' and not receipt.get('development_only')
+ assert receipt['initial_source_sha256'] == identity['source_sha256']
+ assert receipt['initial_commit_id'] == identity['commit_id']
+@@ -69,12 +74,22 @@
+         return (fresh_id_dir / ('before-' + Path(name).name)).read_bytes()
+     if args.throughput_repair_dir and (historical_dir / 'before' / name).is_file():
+         return (historical_dir / 'before' / name).read_bytes()
++    if cache_output_dir and (cache_output_dir / 'before' / name).is_file():
++        return (cache_output_dir / 'before' / name).read_bytes()
+     return (ROOT / name).read_bytes()
+ 
+ 
+ def source_binding_baseline_bytes(name):
+     if selected_identity_dir and (selected_identity_dir / 'before' / name).is_file():
+         return (selected_identity_dir / 'before' / name).read_bytes()
++    if cache_output_dir and (cache_output_dir / 'before' / name).is_file():
++        return (cache_output_dir / 'before' / name).read_bytes()
++    return (ROOT / name).read_bytes()
++
++
++def selected_identity_baseline_bytes(name):
++    if cache_output_dir and (cache_output_dir / 'before' / name).is_file():
++        return (cache_output_dir / 'before' / name).read_bytes()
+     return (ROOT / name).read_bytes()
+ 
+ 
+@@ -255,7 +270,7 @@
+     assert native['actual_worker_continuity_all3'] and native['all_sources_copies_and_expected_values_exact']
+     for name, digest in freeze['frozen_affected_files'].items():
+         baseline = evidence_dir / 'before' / name if source_binding_dir else ROOT / name
+-        assert sha((baseline if baseline.exists() else ROOT / name).read_bytes()) == digest
++        assert sha(baseline.read_bytes() if baseline.exists() else selected_identity_baseline_bytes(name)) == digest
+         frozen[name] = digest
+ if source_binding_dir:
+     proof = json.loads((evidence_dir / 'source-scope-proof.json').read_text())
+@@ -305,7 +320,7 @@
+ if selected_identity_dir:
+     proof = json.loads((selected_identity_dir / 'source-scope-proof.json').read_text())
+     assert proof['canonical_before']['source_sha256'] == source_binding_identity['source_sha256']
+-    assert proof['canonical_after']['source_sha256'] == identity['source_sha256']
++    assert proof['canonical_after']['source_sha256'] == selected_identity['source_sha256']
+     assert proof['application_delta'] == ['backend/nis/agent/orchestration/local_reasoner.py']
+     for key in ('all_other_module_and_class_definitions_AST_exact',
+                 'entire_reference_pipeline_AST_exact_except_private_selected_output_expansion_instruction_and_progress',
+@@ -315,7 +330,7 @@
+     for name in ('backend/nis/agent/orchestration/local_reasoner.py', 'backend/tests/test_reference_reasoner.py'):
+         assert (selected_identity_dir / 'before' / name).read_bytes() == (evidence_dir / 'after' / name).read_bytes()
+     freeze = json.loads((selected_identity_dir / 'candidate-prepare-freeze.json').read_text())
+-    assert {key: freeze[key] for key in identity} == identity
++    assert {key: freeze[key] for key in selected_identity} == selected_identity
+     assert freeze['complete_regression_cases'] == 616 and freeze['complete_regressions_passed'] is True
+     for saved in freeze['validation_evidence']:
+         assert sha(Path(saved['path']).read_bytes()) == saved['sha256']
+@@ -323,7 +338,7 @@
+     assert controls['status'] == 'PASS' and controls['actual_native_responses'] == 4
+     assert {row['case'] for row in controls['results']} == {
+         'ports-positive', 'ports-counter', 'functions-positive', 'functions-counter'}
+-    current_module_hash = sha((ROOT / 'backend/nis/agent/orchestration/local_reasoner.py').read_bytes())
++    current_module_hash = sha(selected_identity_baseline_bytes('backend/nis/agent/orchestration/local_reasoner.py'))
+     assert controls['local_reasoner_sha256'] == current_module_hash
+     for row in controls['results']:
+         for key in ('result', 'request', 'response'):
+@@ -335,6 +350,36 @@
+     for name, digest in freeze['frozen_affected_files'].items():
+         assert name in {'backend/nis/agent/orchestration/local_reasoner.py', 'backend/tests/test_reference_reasoner.py',
+                         'backend/tests/test_reference_selected_identity.py'}
++        assert sha(selected_identity_baseline_bytes(name)) == digest
++        frozen[name] = digest
++if cache_output_dir:
++    proof = json.loads((cache_output_dir / 'source-scope-proof.json').read_text())
++    assert proof['canonical_before']['source_sha256'] == selected_identity['source_sha256']
++    assert proof['canonical_after']['source_sha256'] == identity['source_sha256']
++    assert proof['application_delta'] == ['backend/nis/agent/orchestration/local_reasoner.py']
++    for key in ('all_other_module_and_class_definitions_AST_exact',
++                'whole_plan_pipeline_AST_exact_except_reviewed_private_anchor_bookkeeping_instruction_and_progress',
++                'public_model_merge_source_identity_and_continuation_guards_AST_exact',
++                'model_provider_maximum_output_timeout_and_byte_guard_AST_exact'):
++        assert proof[key] is True
++    for name in ('backend/nis/agent/orchestration/local_reasoner.py', 'backend/tests/test_reference_reasoner.py',
++                 'backend/tests/test_reference_selected_identity.py'):
++        assert sha((cache_output_dir / 'before' / name).read_bytes()) == json.loads(
++            (selected_identity_dir / 'candidate-prepare-freeze.json').read_text())['frozen_affected_files'][name]
++    freeze = json.loads((cache_output_dir / 'candidate-prepare-freeze.json').read_text())
++    assert {key: freeze[key] for key in identity} == identity
++    assert freeze['complete_regression_cases'] == 629 and freeze['complete_regressions_passed'] is True
++    for saved in freeze['validation_evidence']:
++        assert sha(Path(saved['path']).read_bytes()) == saved['sha256']
++    controls = json.loads((cache_output_dir / 'native-controls-3/result.json').read_text())
++    assert controls['status'] == 'PASS' and len(controls['cases']) == 6
++    assert sum(row['actual_native_responses'] for row in controls['cases']) == 9
++    module_hash = sha((ROOT / 'backend/nis/agent/orchestration/local_reasoner.py').read_bytes())
++    assert all(row['status'] == 'PASS' and row['local_reasoner_sha256'] == module_hash
++               and row['canonical_writes'] is False and row['complete_original_acceptance'] is False
++               for row in controls['cases'])
++    assert json.loads((cache_output_dir / 'candidate-prepare-result.json').read_text())['exit_code'] == 0
++    for name, digest in freeze['frozen_affected_files'].items():
+         assert sha((ROOT / name).read_bytes()) == digest
+         frozen[name] = digest
+ assert all(sha((ROOT / name).read_bytes()) == digest for name, digest in frozen.items())
+--- before/backend/tests/test_reference_design.py
++++ after/backend/tests/test_reference_design.py
+@@ -984,8 +984,24 @@
+         asyncio.run(run())
+     assert len(requests) == 2
+     expected = intake.reference_model_output_schema(prepared)
+-    # The participant phase preserves the public decoder's constraints while
+-    # forbidding arrays that belong to later native planning phases.
++    # Private output is a strict concise, field-bound subset. Public response
++    # validation still rejects2001 characters above; no public bound changes.
++    assert prepared['reference_sources'] == {}
++    fields_by_definition = {
++        'ReferenceDevice': ('quantity', 'device_type', 'function_hosts'),
++        'ReferenceFunction': ('function_hosts',), 'ReferencePort': ('ports',),
++        'ReferenceMeasurement': ('measurements',), 'ReferenceCommand': ('commands',),
++        'ReferenceCommunication': ('communication',),
++        'ReferenceFunctionalDependency': ('communication',),
++    }
++    for name, fields in fields_by_definition.items():
++        properties = expected['$defs'][name]['properties']
++        properties['rationale']['maxLength'] = 240
++        properties['field_references'] = {
++            'type': 'object', 'additionalProperties': False,
++            'properties': {field: {'type': 'array', 'items': {'type': 'string'}, 'maxItems': 0}
++                           for field in fields}}
++    # Later native planning arrays remain forbidden at this participant stage.
+     for field in ('functions', 'ports', 'measurements', 'commands', 'communication', 'functional_dependencies'):
+         expected['properties'][field]['maxItems'] = 0
+     expected['properties']['devices'].update(minItems=0, maxItems=0)
+@@ -1001,6 +1017,10 @@
+         assert sensor['properties']['source_member_bindings'] == {
+             'type': 'object', 'properties': {}, 'additionalProperties': False}
+         assert sensor['properties']['quantity'] == {'type': 'integer', 'enum': [1]}
++        assert sensor['properties']['field_references'] == {
++            'type': 'object', 'additionalProperties': False,
++            'properties': {field: {'type': 'array', 'items': {'type': 'string'}, 'maxItems': 0}
++                           for field in ('quantity', 'device_type', 'function_hosts')}}
+         assert all(row['properties']['rationale'] == expected['$defs']['ReferenceDevice']['properties']['rationale']
+                    for row in variants)
+         selected_sensor = deepcopy(sensor)

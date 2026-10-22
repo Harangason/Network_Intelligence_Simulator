@@ -1,0 +1,75 @@
+--- before/backend/nis/agent/orchestration/project_intake.py
++++ after/backend/nis/agent/orchestration/project_intake.py
+@@ -552,7 +552,12 @@
+     for unit in result:
+         groupable = unit['policy'] and unit['source_ref'] in raw and (unit['policy']['kind'] == 'REQUIREMENT' or (unit['policy']['kind'] == 'FUNCTION' and unit['function_scope'] and (unit['function_heading'] or (pending and pending[0]['function_heading']))))
+         if groupable:
+-            if pending and (order[unit['source_ref']] != order[pending[-1]['source_ref']] + 1 or unit['policy']['kind'] != pending[-1]['policy']['kind'] or unit['function_heading']):
++            # A citation group has one literal source context. Crossing a
++            # chapter would make full-document and windowed provenance differ.
++            if pending and (order[unit['source_ref']] != order[pending[-1]['source_ref']] + 1
++                            or unit['policy']['kind'] != pending[-1]['policy']['kind']
++                            or unit['source_context'] != pending[-1]['source_context']
++                            or unit['function_heading']):
+                 flush()
+             proposed = ''.join(raw[u['source_ref']] for u in [*pending, unit]).strip()
+             if len(proposed) > 1000:
+--- before/backend/tests/test_qwen_document_intake.py
++++ after/backend/tests/test_qwen_document_intake.py
+@@ -1524,3 +1524,56 @@
+     invented['components'][0].update(kind='INSTANCE', quantity=1)
+     with pytest.raises(ValueError):
+         validate_document_interpretation(invented, source)
++
++
++@pytest.mark.parametrize('markdown', [False, True])
++def test_normative_groups_never_inherit_a_neighboring_subchapter_context(markdown):
++    from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
++    heading = lambda level, text: ('#' * level + ' ' if markdown else '') + text + '\r\n'
++    source = (heading(1, 'Example facility') if markdown else '') + heading(2, '7. Regulatory Requirements')
++    source += heading(3, '7.1 Machinery standards') + 'EN 60204 Machinery safety\r\n\r\n'
++    source += heading(3, '7.2 Update standards') + 'ISO 24089 Software updates\r\n\r\nISO 21434 Cybersecurity\r\n'
++    units = document_component_sources(document_source_references(source))
++    machinery = next(unit for unit in units if 'EN 60204 Machinery safety' in unit['text'])
++    updates = next(unit for unit in units if 'ISO 24089 Software updates' in unit['text'])
++    assert machinery is not updates
++    assert machinery['source_context'][-1] == '7.1 Machinery standards'
++    assert updates['source_context'][-1] == '7.2 Update standards'
++    assert 'ISO 24089' not in machinery['text'] and 'EN 60204' not in updates['text']
++    assert machinery['required'] and updates['required']
++
++
++@pytest.mark.parametrize('boundary', ['7.2 Update standards', 'ISO 24089 Software updates'])
++def test_normative_window_results_compose_without_reassigning_subchapter_provenance(boundary):
++    from copy import deepcopy
++    from backend.nis.agent.orchestration.project_intake import (
++        document_component_sources, document_source_references, resolve_document_references,
++        compose_document_proposal,
++    )
++    source = ('7. Regulatory Requirements\r\n7.1 Machinery standards\r\n'
++              'EN 60204 Machinery safety\r\n\r\n7.2 Update standards\r\n'
++              'ISO 24089 Software updates\r\n\r\nISO 21434 Cybersecurity\r\n')
++    cut = source.index(boundary)
++    parts = []
++    for start, stop in [(0, cut), (cut, len(source))]:
++        text, prefix = source[start:stop], source[:start]
++        rows = document_source_references(text)
++        units = document_component_sources(rows, scope_prefix=prefix)
++        facts = resolve_document_references({'components': [
++            {'source_ref': unit['source_ref'], **unit['policy']} for unit in units if unit['required']
++        ], 'technologies': []}, rows, scope_prefix=prefix)['components']
++        part = {'summary': 'Literal standards in their original subchapters.', 'components': facts,
++                'technologies': [], 'proposed_task': 'Review the complete requirements without claiming qualification.',
++                'assumptions': [], 'open_questions': []}
++        parts.append(validate_document_interpretation(part, text, scope_prefix=prefix))
++    proposal = compose_document_proposal(parts)
++    accepted = validate_document_interpretation(proposal, source, aggregate=True)
++    updates = next(fact for fact in accepted['components'] if 'ISO 24089' in fact['source_quote'])
++    assert updates['source_context'][-1] == '7.2 Update standards'
++    assert all(line in '\n'.join(fact['source_quote'] for fact in accepted['components']) for line in [
++        'EN 60204 Machinery safety', 'ISO 24089 Software updates', 'ISO 21434 Cybersecurity'])
++    wrong_context = deepcopy(proposal)
++    next(fact for fact in wrong_context['components'] if 'ISO 24089' in fact['source_quote'])['source_context'] = [
++        '7. Regulatory Requirements', '7.1 Machinery standards']
++    with pytest.raises(ValueError, match='Abschnittskontext|Quellenangabe fehlt'):
++        validate_document_interpretation(wrong_context, source, aggregate=True)

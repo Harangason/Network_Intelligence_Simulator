@@ -1,0 +1,196 @@
+--- before/backend/tests/test_reference_reasoner.py
++++ after/backend/tests/test_reference_reasoner.py
+@@ -15,6 +15,42 @@
+     _reference_expand_inventory_choices,
+ )
+ from backend.tests.test_reference_design import fixture_request, fixture_design, wire, reference
++
++
++def native_existing_bindings(rows):
++    """Private keyed wire; never deduplicate an invalid authored identity list."""
++    assert len({row['device_id'] for row in rows}) == len(rows)
++    following = None
++    for row in reversed(rows):
++        following = {row['device_id']: {
++            **{key: value for key, value in row.items() if key not in {'choice_kind', 'device_id'}},
++            'following': following}}
++    return {'choice_kind': 'EXISTING_BATCH', 'bindings': following}
++
++
++def native_binding_records(choice):
++    """Independent reader for authored private ordered binding nodes."""
++    node, rows = choice['bindings'], []
++    while node is not None:
++        assert isinstance(node, dict) and len(node) == 1
++        identity, fields = next(iter(node.items()))
++        rows.append({'device_id': identity, **{key: value for key, value in fields.items() if key != 'following'}})
++        node = fields['following']
++    return rows
++
++
++def native_binding_schemas(schema):
++    """Inspect every explicit identity key in the private finite node grammar."""
++    records = {}
++    for name, definition in schema['$defs'].items():
++        if not name.startswith('NativeReferenceBinding_'):
++            continue
++        for node in definition['anyOf']:
++            assert node['additionalProperties'] is False
++            assert len(node['properties']) == 1 and node['required'] == list(node['properties'])
++            identity, record = next(iter(node['properties'].items()))
++            records.setdefault(identity, []).append(record)
++    return records
+ 
+ 
+ def effective_reference_context(messages):
+@@ -200,6 +236,12 @@
+             candidate['inventory_choices'] = [
+                 *[{'choice_kind': 'NEW_' + row['kind'], **row} for row in candidate['devices']],
+                 *[{'choice_kind': 'EXISTING', **row} for row in candidate.pop('inventory_bindings')]]
++            existing = [row for row in candidate['inventory_choices'] if row['choice_kind'] == 'EXISTING']
++            if (content['derivation_fact_ids_for_this_stage'] is not None and existing
++                    and len({row['device_id'] for row in existing}) == len(existing)):
++                candidate['inventory_choices'] = [
++                    *[row for row in candidate['inventory_choices'] if row['choice_kind'] != 'EXISTING'],
++                    native_existing_bindings(existing)]
+             candidate['devices'] = []
+         native_content = (' \n' if wire_padding else '') + json.dumps(candidate) + ('\n ' if wire_padding else '')
+         return httpx.Response(200, json={'message': {'content': native_content}, 'done': True, 'done_reason': 'length' if truncate else 'stop',
+@@ -784,10 +826,10 @@
+     fact = next(key for key, row in prepared['facts'].items() if row['kind'] == 'FUNCTION')
+     schema = _reference_schema_for_stage(prepared, {'devices'}, derivation_fact_ids=[fact], existing_devices=devices)
+     alternatives = schema['properties']['inventory_choices']['items']['anyOf']
+-    choice = next(row for row in alternatives if 'device_id' in row.get('properties', {}))
++    choice = next(row for row in alternatives if row['properties']['choice_kind']['enum'] == ['EXISTING_BATCH'])
+     assert choice['additionalProperties'] is False
+-    assert set(choice['properties']) == {'choice_kind', 'device_id', 'source_fact_ids', 'rationale', 'field_references'}
+-    assert choice['properties']['choice_kind']['enum'] == ['EXISTING']
++    assert set(choice['properties']) == {'choice_kind', 'bindings'}
++    assert choice['properties']['choice_kind']['enum'] == ['EXISTING_BATCH']
+     assert choice['required'][0] == 'choice_kind'
+     for candidate in (row for row in alternatives if row is not choice):
+         kind = candidate['properties']['kind']['enum'][0]
+@@ -796,8 +838,14 @@
+         assert candidate['properties']['choice_kind']['enum'] == ['NEW_' + kind]
+         assert {key: value for key, value in candidate['properties'].items() if key != 'choice_kind'} == original['properties']
+         assert candidate['required'] == ['choice_kind', *original['required']]
+-    assert choice['properties']['device_id']['enum'] == [row['id'] for row in devices]
+-    assert choice['properties']['source_fact_ids']['items']['enum'] == [fact]
++    bindings = native_binding_schemas(schema)
++    assert set(bindings) == {row['id'] for row in devices}
++    for variants in bindings.values():
++        for row in variants:
++            assert row['additionalProperties'] is False
++            assert set(row['properties']) == {'source_fact_ids', 'rationale', 'field_references', 'following'}
++            assert row['properties']['source_fact_ids']['items']['enum'] == [fact]
++            assert set(row['required']) == set(row['properties'])
+     assert set(choice['required']) == set(choice['properties'])
+     assert 'inventory_choices' in schema['required']
+     assert 'inventory_choices' not in intake.reference_model_output_schema(prepared)['properties']
+@@ -923,9 +971,11 @@
+     native = next(row for row in captured if 'inventory_choices' in row['format']['properties']
+                   and effective_reference_context(row['messages'])['derivation_fact_ids_for_this_stage'] is not None)
+     variants = native['format']['properties']['inventory_choices']['items']['anyOf']
+-    binding = next(row for row in variants if 'device_id' in row.get('properties', {}))
+-    assert set(binding['properties']) == {
+-        'choice_kind', 'device_id', 'source_fact_ids', 'rationale', 'field_references'}
++    binding = next(row for row in variants if row['properties']['choice_kind']['enum'] == ['EXISTING_BATCH'])
++    assert set(binding['properties']) == {'choice_kind', 'bindings'}
++    assert old['id'] in native_binding_schemas(native['format'])
++    assert set(native_binding_schemas(native['format'])[old['id']][0]['properties']) == {
++        'source_fact_ids', 'rationale', 'field_references', 'following'}
+     assert all('choice_kind' not in row for row in result['proposal']['devices'])
+     assert result['proposal']['unresolved'] == [] and result['canonical_writes'] is False
+ 
+@@ -1159,7 +1209,7 @@
+         _reference_expand_inventory_choices(known, [row])
+ 
+ 
+-def wide_derivation_request(functions=5, requirements=6):
++def wide_derivation_request(functions=7, requirements=6):
+     """Authored unit source, never an amended original or product project."""
+     import hashlib
+     request = fixture_request(references=[reference()])
+@@ -1200,7 +1250,8 @@
+     stages = [row for row in observed if row['derivation_fact_ids_for_this_stage'] is not None]
+     visited = [key for row in stages for key in row['derivation_fact_ids_for_this_stage']]
+     assert visited == expected and len(visited) == len(set(visited))
+-    assert all(1 <= len(row['derivation_fact_ids_for_this_stage']) <= 4 for row in stages)
++    assert all(1 <= len(row['derivation_fact_ids_for_this_stage']) <= 16 for row in stages)
++    assert [row['derivation_fact_ids_for_this_stage'] for row in stages] == [expected[start:start + 16] for start in range(0, len(expected), 16)]
+     assert all(row['original_source'] == prepared['source_evidence']['source_text']
+                and row['reference_sources'] == prepared['reference_sources']
+                and set(row['original_facts']) == set(prepared['facts']) for row in stages)
+@@ -1290,15 +1341,23 @@
+         row = {**deepcopy(known[0]), 'choice_kind': kind,
+                'id': offered_new_inventory_id(schema, kind), 'name': 'Unit scoped sensor',
+                'kind': 'SENSOR', 'owner_device_id': known[0]['id'], 'source_fact_ids': selected}
++    if kind == 'EXISTING':
++        row = native_existing_bindings([row])
+     value = {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'inventory_complete': True, 'inventory_choices': [row]}
+     validator = Draft202012Validator(schema)
+     validator.validate(value)
+     overlong = deepcopy(value)
+-    overlong['inventory_choices'][0]['source_fact_ids'] += [selected[0]]
++    overlong_row = overlong['inventory_choices'][0]
++    if kind == 'EXISTING':
++        overlong_row = overlong_row['bindings'][known[0]['id']]
++    overlong_row['source_fact_ids'] += [selected[0]]
+     with pytest.raises(ValidationError):
+         validator.validate(overlong)
+     foreign = deepcopy(value)
+-    foreign['inventory_choices'][0]['source_fact_ids'][-1] = eligible[4]
++    foreign_row = foreign['inventory_choices'][0]
++    if kind == 'EXISTING':
++        foreign_row = foreign_row['bindings'][known[0]['id']]
++    foreign_row['source_fact_ids'][-1] = eligible[4]
+     with pytest.raises(ValidationError):
+         validator.validate(foreign)
+ 
+@@ -1322,11 +1381,11 @@
+                   'owner_device_id': known[0]['id'], 'source_fact_ids': [fact]}
+     base = {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'inventory_complete': False}
+     validator = Draft202012Validator(schema)
+-    validator.validate({**base, 'inventory_choices': [first]})
+-    validator.validate({**base, 'inventory_choices': [second]})
++    validator.validate({**base, 'inventory_choices': [native_existing_bindings([first])]})
++    validator.validate({**base, 'inventory_choices': [native_existing_bindings([second]) if second['choice_kind'] == 'EXISTING' else second]})
+     validator.validate({**base, 'inventory_complete': True, 'inventory_choices': []})
+     if pair == 'distinct_existing':
+-        validator.validate({**base, 'inventory_choices': [first, second]})
++        validator.validate({**base, 'inventory_choices': [native_existing_bindings([first, second])]})
+         before = deepcopy(known)
+         expanded = _reference_expand_inventory_choices(known, [first, second])
+         assert [row['id'] for row in expanded] == [row['id'] for row in known]
+@@ -1370,7 +1429,7 @@
+     choice = {'choice_kind': 'EXISTING', 'device_id': known[0]['id'],
+               'source_fact_ids': [fact], 'rationale': 'Repeated existing binding', 'field_references': {}}
+     value = {**intake.ReferenceDesignProposal().model_dump(mode='json'),
+-             'inventory_complete': False, 'inventory_choices': [] if mode == 'empty' else [choice]}
++             'inventory_complete': False, 'inventory_choices': [] if mode == 'empty' else [native_existing_bindings([choice])]}
+     with pytest.raises(ValidationError):
+         Draft202012Validator(schema).validate(value)
+     Draft202012Validator(schema).validate({**value, 'inventory_complete': True, 'inventory_choices': []})
+@@ -1389,9 +1448,9 @@
+     base = {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'inventory_complete': False}
+     choice = {'choice_kind': 'EXISTING', 'device_id': known[0]['id'],
+               'source_fact_ids': [facts[1]], 'rationale': 'Additional source binding', 'field_references': {}}
+-    validator.validate({**base, 'inventory_choices': [choice]})
++    validator.validate({**base, 'inventory_choices': [native_existing_bindings([choice])]})
+     with pytest.raises(ValidationError):
+-        validator.validate({**base, 'inventory_choices': [{**choice, 'source_fact_ids': [facts[0]]}]})
++        validator.validate({**base, 'inventory_choices': [native_existing_bindings([{**choice, 'source_fact_ids': [facts[0]]}])]})
+     expanded = _reference_expand_inventory_choices(known, [choice])
+     delta = _reference_scoped_inventory_delta(known, expanded, derivation_fact_ids=facts)
+     assert set(delta[0]['source_fact_ids']) == set(known[0]['source_fact_ids']) | {facts[1]}
+@@ -1404,7 +1463,9 @@
+     reasoner, prepared, observed = reasoner_with_transport(monkeypatch, derivation_mutator=no_progress)
+     with pytest.raises(ValueError, match='keine fehlende ursprüngliche Geräteabdeckung'):
+         run_reference(reasoner, prepared)
+-    records = [row for row in caplog.records if row.msg == 'Native reference validation failed: %s']
++    all_records = [row for row in caplog.records if row.msg == 'Native reference validation failed: %s']
++    assert [json.loads(row.args[0])['attempt'] for row in all_records] == [1, 2]
++    records = [row for row in all_records if json.loads(row.args[0])['attempt'] == 2]
+     assert len(records) == 1
+     diagnostic = json.loads(records[0].args[0])
+     assert diagnostic['stage'] == 'Funktionsbedingte physische Hardware'

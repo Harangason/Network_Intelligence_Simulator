@@ -1,0 +1,238 @@
+{
+  "goal_id": "document-network-error-20261020",
+  "goal_type": "IMPLEMENTATION",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "kind": "repair",
+  "status": "VALIDATING",
+  "modify_code": true,
+  "allow_repair": true,
+  "requested_change": "Handle marked document network failure clearly, preserve complete attached source and fields, explicitly abort failed owned requests, permit only deliberate retry; no manual model corrections.",
+  "project_scope": "Engineering Wizard document/reference transport and presentation only.",
+  "constraints": [
+    "No automatic retry/native inference or success on partial result",
+    "No model/context/timeout/body/source budget changes",
+    "Production delivery remains exact tested full-gate image, merged with existing parent"
+  ],
+  "required_outcomes": [
+    "actionable_document_transport_failure",
+    "complete_source_and_fields_preserved",
+    "failed_request_stopped_and_deliberate_retry",
+    "validation_findings_preserved"
+  ],
+  "validation_requirements": [
+    "frontend_transport_regressions",
+    "typecheck",
+    "isolated_browser_fault_contract"
+  ],
+  "revision_before": {
+    "frontend/src/features/agent/lib/engineering-agent.ts": "5b9104b8a8f1aca2490a28f8b1e78c7124656f6ee71886c84101e5003530f48f",
+    "frontend/src/features/agent/ui/agent-chat-core.tsx": "60d5fbdace5b0e6b695f189d7fe44458ed9eeae7db2e108131a228858cf1650f",
+    "frontend/src/features/agent/lib/document-intake-response.test.mjs": "8fac3a61e75c2c921310c9e17e0f5dcf35a3c108abf2f60117f155c34d7f5a9b",
+    "frontend/e2e/document-intake.spec.ts": "fc07a5ee8df437dd11b647c5de445d3b2d32b048198be41be3fbb29f33a940ed"
+  },
+  "files_changed": [
+    "frontend/src/features/agent/lib/engineering-agent.ts",
+    "frontend/src/features/agent/ui/agent-chat-core.tsx",
+    "frontend/src/features/agent/lib/document-intake-response.test.mjs",
+    "frontend/e2e/document-intake.spec.ts"
+  ],
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\before\\frontend\\src\\features\\agent\\lib\\engineering-agent.ts",
+      "sha256": "5b9104b8a8f1aca2490a28f8b1e78c7124656f6ee71886c84101e5003530f48f"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\before\\frontend\\src\\features\\agent\\ui\\agent-chat-core.tsx",
+      "sha256": "60d5fbdace5b0e6b695f189d7fe44458ed9eeae7db2e108131a228858cf1650f"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\before\\frontend\\src\\features\\agent\\lib\\document-intake-response.test.mjs",
+      "sha256": "71b33e3010f4729e1da37856a1c28510f16c734f016b369db733b2ab8c43db20"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\before\\frontend\\e2e\\document-intake.spec.ts",
+      "sha256": "4b3d38d28de78e2e39b2a9e9bc96b44da10289070941146bae33bf1a5dd9260b"
+    }
+  ],
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "finding_ids": [
+      "DOCUMENT_NETWORK_ERROR_SHOWN_RAW"
+    ],
+    "first_failing_layer": "Wizard transport-error presentation and explicit failure cleanup, not an inferred original network cause.",
+    "root_cause": "Raw transport exception is shown without incomplete-result status or explicit recovery action. Existing request controller is not explicitly aborted in failure catch.",
+    "reproduction": "Existing stream reader propagates network TypeError; both Wizard catches display error.message verbatim. Marked production UI shows the same string. Add deterministic network-fault case with complete419634-character attachment, preserving exact submitted source across retry.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\finding.json",
+        "sha256": "2a6d58ca4dcc423a857ff33474d9945251d53332db7e923306b62fc25978707d"
+      }
+    ],
+    "affected_files": [
+      "frontend/src/features/agent/lib/engineering-agent.ts",
+      "frontend/src/features/agent/ui/agent-chat-core.tsx",
+      "frontend/src/features/agent/lib/document-intake-response.test.mjs",
+      "frontend/e2e/document-intake.spec.ts"
+    ],
+    "affected_services": [
+      "Wizard document/reference fetch",
+      "Existing document transport module"
+    ],
+    "required_fix": "Central transport-error message in existing module; explicitly abort owned failed request, retain source/form and display explicit retry action. Preserve detailed validation errors and original transport exception in reader.",
+    "acceptance_criteria": [
+      "No raw network error alert",
+      "No full-result success after interrupted stream",
+      "Attachment/source/name/notes survive and deliberate retry sends identical source",
+      "Explicit cancellation and validation errors retain their meaning"
+    ],
+    "targeted_tests": [
+      "Existing reader regression suite plus error formatting",
+      "Existing document-intake Playwright contract extended with connection-reset attachment test"
+    ],
+    "regression_scope": "Frontend error handling only; no backend generator or test-gate edits.",
+    "weaken_assertions_to_pass": false
+  },
+  "remaining_findings": [
+    "Historical exact network-disconnect trigger unknown",
+    "Parent original models/simulations/full release still open; storage approval now resolved and candidate prepared"
+  ],
+  "unresolved_decisions": [],
+  "parent_workload": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\workload.json",
+  "delivery": {
+    "decision": "YES",
+    "authorization": "User requests NIS defect repair; standing exact-image deployment rule.",
+    "target": "Canonical production NetworkIS",
+    "tested_version": null,
+    "running_version": "sha256:3792d2e086e43af616d9fb63fd371c352fe101db5136b84f381cd9999363785b",
+    "checks": {
+      "release": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "deployment": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "health": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "functional": {
+        "status": "PENDING",
+        "evidence": []
+      }
+    }
+  },
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\after\\frontend\\src\\features\\agent\\lib\\engineering-agent.ts",
+      "sha256": "ebbb2360c7219ff62417f95923fae5e1dba7b187cce4d938d13d57e7979bf25f"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\after\\frontend\\src\\features\\agent\\ui\\agent-chat-core.tsx",
+      "sha256": "2d0103971d46c1a1e6fb00512b35b3b289380a8fac588161d0972e3dc2144ff6"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\after\\frontend\\src\\features\\agent\\lib\\document-intake-response.test.mjs",
+      "sha256": "c5b031bd3e5666fe2fabfca61e18ebc3465a12850ab724582f43718bffbb5f06"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\after\\frontend\\e2e\\document-intake.spec.ts",
+      "sha256": "1c28840aab48b1b18d21199402ddd2a1499c5a050a82253831e9bb76e68687bf"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\owned-changes.diff",
+      "sha256": "8f8141fff31d3e295f60ffb1e6c26ae5b50ecb337d108deb4df8308dd42adff6"
+    }
+  ],
+  "before_snapshot_note": "Original revision_before entries retained as recorded; actual before bytes and hashes in before[] are authoritative for scoped diff. No reconstructed pre-apply PASS claimed.",
+  "outcomes": {
+    "actionable_document_transport_failure": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\browser-final.json",
+          "sha256": "cb3efeb4e034beb3d7cdfeee4a0047bc7c05c079a245edc0bae9e6f2ed0a8948"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\frontend-final-18.tap",
+          "sha256": "6eb060bf73c898ac66663d8ac59aa6fae0402a3c8cd211a1985b6b1c93429b8f"
+        }
+      ]
+    },
+    "complete_source_and_fields_preserved": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\browser-final.json",
+          "sha256": "cb3efeb4e034beb3d7cdfeee4a0047bc7c05c079a245edc0bae9e6f2ed0a8948"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\frontend-final-18.tap",
+          "sha256": "6eb060bf73c898ac66663d8ac59aa6fae0402a3c8cd211a1985b6b1c93429b8f"
+        }
+      ]
+    },
+    "failed_request_stopped_and_deliberate_retry": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\browser-final.json",
+          "sha256": "cb3efeb4e034beb3d7cdfeee4a0047bc7c05c079a245edc0bae9e6f2ed0a8948"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\frontend-final-18.tap",
+          "sha256": "6eb060bf73c898ac66663d8ac59aa6fae0402a3c8cd211a1985b6b1c93429b8f"
+        }
+      ]
+    },
+    "validation_findings_preserved": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\browser-final.json",
+          "sha256": "cb3efeb4e034beb3d7cdfeee4a0047bc7c05c079a245edc0bae9e6f2ed0a8948"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\frontend-final-18.tap",
+          "sha256": "6eb060bf73c898ac66663d8ac59aa6fae0402a3c8cd211a1985b6b1c93429b8f"
+        }
+      ]
+    }
+  },
+  "validations": {
+    "frontend_transport_regressions": {
+      "status": "PASSED",
+      "cases": 18,
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\frontend-final-18.tap",
+          "sha256": "6eb060bf73c898ac66663d8ac59aa6fae0402a3c8cd211a1985b6b1c93429b8f"
+        }
+      ]
+    },
+    "typecheck": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\typecheck-result.json",
+          "sha256": "cf8345f3efe026107034965e10209625321562dbf8f46197ce2b2a11ff4b979e"
+        }
+      ]
+    },
+    "isolated_browser_fault_contract": {
+      "status": "PASSED",
+      "cases": 4,
+      "image_id": "sha256:8826cf8dcbb36a99a0c8a0204435ae5347dda72c79af48b6fb471b9dba625b36",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\current-image-browser.json",
+          "sha256": "562ee1b868c7f2c65fc3bbe92f1b80abc015eb9ee92f35ea94333f23203f4138"
+        }
+      ]
+    }
+  },
+  "validation_scope": "Existing4 deterministic document/transport browser contracts also PASS on exact normal image8826/source863f. Original local Next16.2.11 run remains historical. Interrupted/fixture responses are not native extraction/model/simulation/full gate PASS. Actual document/reference native disconnect checks are separate in sibling workload."
+}

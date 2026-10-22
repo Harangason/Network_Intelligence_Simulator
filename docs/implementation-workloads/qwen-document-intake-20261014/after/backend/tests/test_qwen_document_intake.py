@@ -117,6 +117,67 @@ def test_utf8_segments_cover_original_source_without_loss_or_overlap():
     assert all(len(part['text'].encode()) <= 250 for part in parts)
 
 
+def test_late_controller_evidence_replaces_early_missing_context_prose_in_global_task():
+    """Exercise the complete multi-window path with deliberately stale prose."""
+    observed = []
+    async def run():
+        reasoner = LocalEngineeringReasoner()
+        await reasoner.client.aclose()
+        def transport(request):
+            if request.url.path == '/api/show':
+                return httpx.Response(200, json={'details': {'family': 'qwen35'}, 'model_info': {'general.parameter_count': 27000000000}})
+            payload = json.loads(request.content)
+            observed.append(payload)
+            text = ''.join(json.loads(payload['messages'][1]['content'])['source_lines'].values())
+            value = interpretation() if 'ADAS Domain Controller' in text else {
+                **interpretation(), 'components': [], 'technologies': [], 'open_questions': [],
+            }
+            value.update(proposed_task='Keine konkreten Geräte vorhanden.',
+                         assumptions=['R0001: Es sind keine Controller benannt.'],
+                         open_questions=['Welche Controller werden später benannt?'])
+            return httpx.Response(200, json={'message': {'content': json.dumps(model_wire_response(value, payload))}})
+        reasoner.client = httpx.AsyncClient(transport=httpx.MockTransport(transport))
+        try:
+            result = await reasoner.interpret_document('A' * 6500 + '\n' + SOURCE, 'late-controller.txt')
+            final = result['interpretation']
+            assert result['source_complete'] is True
+            assert any(item['kind'] == 'INSTANCE' and 'ADAS Domain Controller' in item['name'] for item in final['components'])
+            assert '1 konkret benannten Geräte' in final['proposed_task']
+            assert 'Keine konkreten Geräte' not in final['proposed_task']
+            assert final['assumptions'] == []
+            assert len(final['open_questions']) == 1
+            assert 'Sensorik (Radar, Kamera)' in final['open_questions'][0]
+            assert 'Welche Controller' not in final['open_questions'][0]
+            assert 'R0001' not in json.dumps(final, ensure_ascii=False)
+        finally:
+            await reasoner.client.aclose()
+    asyncio.run(run())
+    assert len(observed) > 1
+
+
+def test_global_review_preserves_unknown_interfaces_and_robot_device_categories():
+    from backend.nis.agent.orchestration.project_intake import compose_document_proposal
+    late = interpretation()
+    late['components'] = [
+        {'name': 'Robot Controller (RC)', 'kind': 'INSTANCE', 'role': 'CONTROLLER', 'quantity': 1,
+         'source_quote': 'Robot Controller (RC)'},
+        {'name': 'Greifer (elektrisch, pneumatisch)', 'kind': 'CATEGORY', 'role': 'ACTUATOR', 'quantity': None,
+         'source_quote': 'Greifer (elektrisch, pneumatisch)'},
+        {'name': 'Greifen', 'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None, 'source_quote': 'Greifen'},
+    ]
+    late['technologies'] = [{'name': 'XYZ-Link', 'kind': 'UNRESOLVED', 'source_quote': 'XYZ-Link'}]
+    early = {**interpretation(), 'components': [], 'technologies': [],
+             'proposed_task': 'Keine Geräte vorhanden.', 'open_questions': ['Welche Controller gibt es?']}
+    result = compose_document_proposal([early, late])
+    assert result['components'] == late['components']
+    assert result['technologies'] == late['technologies']
+    assert any('Greifer (elektrisch, pneumatisch)' in question for question in result['open_questions'])
+    assert any('XYZ-Link' in question for question in result['open_questions'])
+    assert 'logischen Funktionen' in result['proposed_task']
+    assert 'Keine Geräte' not in result['proposed_task']
+    assert result['assumptions'] == []
+
+
 def test_full_vehicle_fixture_fits_reference_context_without_truncation():
     from pathlib import Path
     source = (Path(__file__).resolve().parents[2] / 'frontend/e2e/fixtures/document-intake-vehicle.txt').read_bytes().decode('utf-8')

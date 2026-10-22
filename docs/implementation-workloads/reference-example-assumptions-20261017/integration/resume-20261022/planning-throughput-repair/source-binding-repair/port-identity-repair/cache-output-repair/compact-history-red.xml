@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="1.058" timestamp="2026-10-22T20:33:50.566036+02:00" hostname="Haranga"><testcase classname="tests.test_reference_cache_output" name="test_compact_complete_anchor_avoids_duplicate_history_even_when_both_fit" time="0.018"><failure message="AssertionError: A fitting but unnecessarily duplicated reply history was replayed&#10;assert False">def test_compact_complete_anchor_avoids_duplicate_history_even_when_both_fit():
+        from backend.tests.test_reference_reasoner import effective_reference_context
+        context = {'original_source': 'Complete unchanged original\r\nµ 🦾' + 's' * 30000,
+                   'current_candidate': {'notes': ''}, 'typed': [False, 0, None]}
+        first, _, _ = reasoner._reference_context_messages([], None, context, 'system', 131072)
+        anchor_messages = [*first, {'role': 'assistant', 'content': ' {"unit_actual_reply":true}\n'}]
+        previous = deepcopy(context)
+        previous['current_candidate']['notes'] = 'x' * 10000
+        before, _, _ = reasoner._reference_context_messages(
+            anchor_messages, context, previous, 'system', 131072, anchor=(anchor_messages, context))
+        history = [*before, {'role': 'assistant', 'content': ' ' * 8000 + '{"unit_actual_reply":true}\n'}]
+        unchanged_history = deepcopy(history)
+        current = deepcopy(previous)
+        current['planning_stage'] = 'Next bounded source decision'
+        messages, _, rebased = reasoner._reference_context_messages(
+            history, previous, current, 'system', 131072, anchor=(anchor_messages, context))
+        assert reasoner._reference_context_window(history, 131072) == 131072
+&gt;       assert rebased, 'A fitting but unnecessarily duplicated reply history was replayed'
+E       AssertionError: A fitting but unnecessarily duplicated reply history was replayed
+E       assert False
+
+backend\tests\test_reference_cache_output.py:84: AssertionError</failure></testcase></testsuite></testsuites>

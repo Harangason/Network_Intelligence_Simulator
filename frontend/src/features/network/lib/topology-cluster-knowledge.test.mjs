@@ -82,3 +82,10 @@ test('complete radar processing and torque coordination compounds retain their a
   assert.equal(topologyClusterForText('Unbekannt ECU', 'automotive').key, 'control');
   assert.notEqual(topologyClusterForText('Radarverarbeitung ECU', 'rail').key, 'driver_assistance');
 });
+
+test('wheel speed vocabulary belongs to chassis only in its industry profile', () => {
+  for (const name of ['Raddrehzahl', 'WheelSpeed', 'Wheel Speed']) {
+    assert.equal(topologyClusterForText(name, 'automotive').key, 'chassis');
+    assert.notEqual(topologyClusterForText(name, 'building_automation').key, 'chassis');
+  }
+});

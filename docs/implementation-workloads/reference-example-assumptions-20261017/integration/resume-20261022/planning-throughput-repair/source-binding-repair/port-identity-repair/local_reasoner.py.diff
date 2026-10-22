@@ -1,0 +1,175 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -150,6 +150,7 @@
+ 
+ def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None, existing_devices=()):
+     """Narrow the native decoder, without changing public proposal validation."""
++    from copy import deepcopy
+     from backend.nis.agent.orchestration.project_intake import reference_model_output_schema
+     schema = reference_model_output_schema(prepared)
+     for field, definition in schema['properties'].items():
+@@ -159,6 +160,28 @@
+     def item(field):
+         definition = schema['properties'][field]['items']
+         return schema['$defs'][definition['$ref'].rsplit('/', 1)[-1]]
++
++    def keyed_selection(field, private_field, identity_field, identities, mutable=None):
++        if not identities or len(identities) != len(set(identities)):
++            raise ValueError('Die private Auswahl benötigt eindeutige bestehende Identitäten.')
++        value = deepcopy(item(field))
++        value['properties'] = {key: definition for key, definition in value['properties'].items()
++                               if key != identity_field and (mutable is None or key in mutable)}
++        value['required'] = (list(mutable) if mutable is not None else
++                             [key for key in value.get('required', []) if key in value['properties']])
++        value['additionalProperties'] = False
++        if field == 'ports':
++            references = value['properties']['field_references']
++            value['properties']['field_references'] = {'type': 'object',
++                'properties': {'ports': deepcopy(references['additionalProperties'])},
++                'additionalProperties': False}
++        # Required literal keys encode exact membership without relying on
++        # object-count keywords or whole-record array uniqueness.
++        schema['properties'][private_field] = {'type': 'object',
++            'properties': {identity: deepcopy(value) for identity in identities},
++            'required': list(identities), 'additionalProperties': False}
++        schema.setdefault('required', []).append(private_field)
++        schema['properties'][field].update(minItems=0, maxItems=0)
+ 
+     if port_intent:
+         item('ports')['properties']['parameters'] = {
+@@ -167,11 +190,10 @@
+         for field in allowed & {'ports', 'measurements', 'commands'}:
+             item(field)['properties']['device_id']['enum'] = list(device_ids)
+     if port_ids:
+-        schema['properties']['ports'].update(minItems=len(port_ids), maxItems=len(port_ids))
+-        item('ports')['properties']['id']['enum'] = list(port_ids)
++        keyed_selection('ports', 'port_parameters', 'id', port_ids,
++                        ('parameters', 'rationale', 'field_references'))
+     if function_ids:
+-        schema['properties']['functions'].update(minItems=len(function_ids), maxItems=len(function_ids))
+-        item('functions')['properties']['source_fact_id']['enum'] = list(function_ids)
++        keyed_selection('functions', 'functions_by_fact', 'source_fact_id', function_ids)
+         item('functional_dependencies')['properties']['producer_fact_id']['enum'] = list(function_ids)
+     if inventory_target or derivation_fact_ids is not None:
+         from copy import deepcopy
+@@ -722,6 +744,43 @@
+             return appended, full, False
+     _reference_context_window(full, maximum)
+     return full, full, bool(history)
++
++
++def _reference_expand_selected_ports(ports, values, selected):
++    """Expand model parameter decisions onto unchanged ordinary NIS port intent."""
++    from copy import deepcopy
++    by_id = {row['id']: row for row in ports}
++    if (len(by_id) != len(ports) or len(set(selected)) != len(selected)
++            or not set(selected) <= set(by_id) or not isinstance(values, dict)
++            or set(values) != set(selected)):
++        raise ValueError('Portauslegung muss genau die angeforderten eindeutigen Port-IDs liefern; '
++                         'keine fehlenden, doppelten oder fremden Anschlüsse.')
++    result = []
++    for identity in selected:
++        value = values[identity]
++        if not isinstance(value, dict) or set(value) != {'parameters', 'rationale', 'field_references'}:
++            raise ValueError('Die Parameterstufe darf Portidentität, Teilnehmer, Technologie, Rolle '
++                             'oder Netzzuordnung nicht ändern. Nur Anschlussparameter liefern.')
++        result.append({**deepcopy(by_id[identity]), **deepcopy(value)})
++    return result
++
++
++def _reference_expand_selected_functions(values, selected):
++    """Bind every selected original function fact exactly once; infer no function data."""
++    from copy import deepcopy
++    from backend.nis.agent.orchestration.project_intake import ReferenceFunction
++    if (len(set(selected)) != len(selected) or not isinstance(values, dict)
++            or set(values) != set(selected)):
++        raise ValueError('Die Funktionsstufe muss genau ihre ursprünglichen Funktions-FactIDs abdecken; '
++                         'keine fehlenden, doppelten oder fremden Quellenidentitäten.')
++    mutable = set(ReferenceFunction.model_fields) - {'source_fact_id'}
++    result = []
++    for identity in selected:
++        value = values[identity]
++        if not isinstance(value, dict) or set(value) - mutable:
++            raise ValueError('Die Funktionsstufe darf ihre ursprüngliche Quellenidentität nicht überschreiben.')
++        result.append({'source_fact_id': identity, **deepcopy(value)})
++    return result
+ 
+ 
+ def _reference_merge_port_parameters(ports, proposed, selected):
+@@ -1190,11 +1249,28 @@
+                               + ('Nur ein echtes Gerät oder eine vorhandene Gerätebindung für den angeforderten Quellenbefund/das Typmitglied liefern, keine zweite Platzhalterzeile. source_fact_ids enthält ausschließlich diese eine FactID; source_member_bindings neuer Geräte ausschließlich das angeforderte wörtliche Mitglied. Bei vorhandenen Geräten setzt NIS die angeforderte Typbindung selbst. Funktional zusätzlich notwendige Hardware wird danach in einem eigenen Schritt geplant. ' if inventory_target else '')
+                               + ('inventory_complete bewertet nur diesen deklarierten Quellenbereich. Bei vollständiger Abdeckung true; wenn er bereits abgedeckt ist, ist ein leeres Delta mit true zulässig. False verlangt eine echte weitere Instanz/Bindung dieses Bereichs. ' if inventory_target else '')
+                               + ('Prüfe jetzt die physische Hardware für die ausdrücklich angeforderten FUNCTION-/REQUIREMENT-FactIDs. Vollständige Quelle und sämtliche Nachbarfunktionen bleiben Konsistenzkontext; weitere Quellenbefunde werden in eigenen Hardwarestufen bearbeitet. Sensoren und Aktoren sind echte Teilnehmer, keine bloßen Werte im Controller. Vorhandene Geräte wiederverwenden oder fehlende Messquellen, Verarbeitung, Verbraucher und Aktoren ergänzen; unabhängige Messgrößen und Stellwirkungen berücksichtigen. Ports/Messgrößen/Befehle/Funktionen/Kommunikation folgen erst nach ALLEN Hardwarestufen und erzeugen KEINE Geräte mehr. Notwendige Peripherie dieses Quellenbereichs niemals in spätere IO-Schritte verschieben. source_fact_ids enthält nur passende angeforderte FUNCTION-/REQUIREMENT-FactIDs, jede höchstens einmal; keine neuen Bindungen an Quelleninventar. Alte Bindungen wiederverwendeter IDs bleiben serverseitig erhalten. Keine Originalmenge erhöhen oder Hardwarebelege/Defaults erfinden. Pro Antwort entweder höchstens ein wirklich neues Gerät ODER eine einzige EXISTING_BATCH-Auswahl. Deren bindings ist ein Knoten mit genau einer vorhandenen ID als Schlüssel. Sein Wert enthält source_fact_ids, rationale, field_references und following. following ist null oder der nächste solche Ein-ID-Knoten. Höchstens acht Knoten, jede ID nur einmal und in der Reihenfolge von existing_inventory_for_this_stage auswählen. Nach dem achten Knoten ist following zwingend null. Mehrere Quellenbelege derselben ID in derselben source_fact_ids-Liste bündeln; keine separaten EXISTING-Zeilen liefern. Niemals neue Hardware mit Bindungen mischen. Die Begründung jeweils in einem kurzen fachlichen Satz ohne Wiederholung des Auftrags formulieren. Mehrere passende Quellenbelege desselben Teilnehmers gemeinsam angeben. Nur tatsächlich benötigte Teilnehmer binden, nicht sämtliche Geräte mit sämtlichen Funktionen verbinden. Weiteren Hardwarebedarf mit inventory_complete=false für die normale nächste Antwort offenhalten; die Gesamtzahl notwendiger Geräte ist dadurch nicht begrenzt. inventory_complete bewertet ausschließlich den Bedarf der angeforderten FactIDs und wird erst true, wenn vorhandene plus ergänzte Hardware diesen vollständig abdeckt; ohne Ergänzungsbedarf inventory_choices=[] und true. False verlangt neue Geräte/Quellenbindungen. Unklare Fachentscheidungen konkret unresolved nennen. ' if derivation_fact_ids is not None else '')
+-                              + ('Genau die angeforderten Port-IDs liefern. id, device_id, technology, role und network_scope unverändert übernehmen; nur parameters und ports-spezifische Begründung/Referenzbelege auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
+-                              + ('Genau die angeforderten Funktions-FactIDs abdecken; Abhängigkeiten nur mit diesen Senderfunktionen liefern. Andere ursprüngliche Funktions-FactIDs dürfen bewusste Empfänger oder COMPOSITE-Bestandteile sein. ' if function_ids else ''))}
++                              + ('port_parameters ist ein Objekt mit genau jedem angeforderten Port-ID-Schlüssel einmal. Pro Schlüssel ausschließlich parameters, eine kurze rationale und field_references ausgeben; ports bleibt []. NIS übernimmt id, device_id, technology, role und network_scope exakt aus der bereits geplanten Portabsicht. Keine andere Technologie für einen Schlüssel auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
++                              + ('functions_by_fact ist ein Objekt mit genau jedem angeforderten Funktions-FactID-Schlüssel einmal. Seine Werte enthalten die vollständige Funktionsentscheidung außer source_fact_id; diese Identität bindet NIS unverändert. functions bleibt []. Abhängigkeiten nur mit diesen Senderfunktionen liefern. Andere ursprüngliche Funktions-FactIDs dürfen bewusste Empfänger oder COMPOSITE-Bestandteile sein. ' if function_ids else ''))}
+                 messages, full_messages, context_rebased = _reference_context_messages(
+                     reference_messages, reference_prompt, prompt, system, self.context_tokens, anchor=reference_anchor)
+                 progress_details = {}
++                selection_metadata = {}
++                device_names = {row['id']: row['name'] for row in current['devices']}
++                if port_ids:
++                    by_port = {row['id']: row for row in current['ports']}
++                    selection_metadata = {'selected_port_ids': list(port_ids), 'selection_labels': [
++                        f"{device_names[by_port[key]['device_id']]} / {by_port[key]['technology']} / {by_port[key]['role']}"
++                        for key in port_ids]}
++                elif device_ids or producer_ids:
++                    identities = device_ids or producer_ids
++                    selection_metadata = {
++                        'selected_device_ids' if device_ids else 'selected_producer_device_ids': list(identities),
++                        'selection_labels': [device_names[key] for key in identities]}
++                elif function_ids:
++                    selection_metadata = {'selected_function_fact_ids': list(function_ids),
++                        'selection_labels': [prepared['facts'][key]['name'] for key in function_ids]}
++                selection_text = ('; Auswahl: ' + '; '.join(selection_metadata['selection_labels'])
++                                  if selection_metadata else '')
+                 def report_validation(error=None):
+                     status = 'REJECTED' if error is not None else 'VALIDATED'
+                     calls[-1]['validation_status'] = status
+@@ -1216,7 +1292,7 @@
+                     if progress:
+                         metadata = {'source': 'document_reference_design', 'completed_calls': len(calls), 'canonical_writes': False,
+                                     'planning_stage': stage, 'profile_index': profile_index, 'profile_count': len(groups),
+-                                    'attempt': attempt}
++                                    'attempt': attempt, **deepcopy(selection_metadata)}
+                         if inventory_stage:
+                             metadata.update(inventory_target=deepcopy(inventory_target), draft_inventory_by_kind={
+                                 kind: sum(row['kind'] == kind for row in current['devices'])
+@@ -1234,7 +1310,7 @@
+                             scope_text = f'; Quellenbereich {scope_index} von {scope_count}'
+                         attempt_text = 'Planung' if attempt == 1 else f'Korrekturversuch {attempt}'
+                         progress_details.update(metadata)
+-                        progress({'type': 'PROGRESS', 'text': f'Lokaler Qwen plant Referenzprofil {profile_index} von {len(groups)}: {stage}. {len(calls)} Modellantworten empfangen; {attempt_text}{scope_text}.',
++                        progress({'type': 'PROGRESS', 'text': f'Lokaler Qwen plant Referenzprofil {profile_index} von {len(groups)}: {stage}. {len(calls)} Modellantworten empfangen; {attempt_text}{scope_text}{selection_text}.',
+                                   'status': 'RUNNING', 'metadata': metadata})
+                 payload = {'model': self.model, 'messages': messages,
+                            'format': _reference_schema_for_stage(prepared, allowed, port_ids=port_ids,
+@@ -1263,7 +1339,7 @@
+                                       else 'Antwort wird empfangen.' if state == 'RECEIVING_OUTPUT'
+                                       else 'Warte auf lokale Providerantwort; Eingabeverarbeitung und Ausgabe noch nicht getrennt beobachtbar.')
+                             progress({'type': 'PROGRESS', 'status': 'RUNNING',
+-                                      'text': f'Lokaler Qwen · {stage}: {detail} '
++                                      'text': f'Lokaler Qwen · {stage}{selection_text}: {detail} '
+                                               f'{observation["received_characters"]} Antwortzeichen empfangen; '
+                                               f'{observation["elapsed_seconds"]:g} s für diesen Aufruf. '
+                                               f'{len(calls)} frühere Modellantworten; kein freigegebenes Modell.',
+@@ -1303,6 +1379,18 @@
+                             decoded['devices'] = _reference_expand_inventory_choices(
+                                 current['devices'], decoded.pop('inventory_choices'),
+                                 inventory_target=inventory_target)
++                        if port_ids:
++                            if decoded.get('ports', []) != []:
++                                raise ValueError('Die Parameterstufe darf Portidentität, Teilnehmer, Technologie, Rolle '
++                                                 'oder Netzzuordnung nicht ändern. Nur port_parameters liefern.')
++                            decoded['ports'] = _reference_expand_selected_ports(
++                                current['ports'], decoded.pop('port_parameters'), port_ids)
++                        if function_ids:
++                            if decoded.get('functions', []) != []:
++                                raise ValueError('Die Funktionsstufe muss genau ihre ursprünglichen Funktions-FactIDs '
++                                                 'über functions_by_fact abdecken; keine fremden Senderabhängigkeiten.')
++                            decoded['functions'] = _reference_expand_selected_functions(
++                                decoded.pop('functions_by_fact'), function_ids)
+                         result = ReferenceDesignProposal.model_validate(decoded).model_dump(mode='json')
+                         if inventory_stage and type(inventory_complete) is not bool:
+                             raise ValueError('Inventarstufe benötigt eine ausdrückliche inventory_complete-Entscheidung.')

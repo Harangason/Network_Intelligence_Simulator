@@ -1,0 +1,17 @@
+--- before/backend/tests/test_reference_planning_throughput.py
++++ after/backend/tests/test_reference_planning_throughput.py
+@@ -92,11 +92,12 @@
+ 
+ 
+ def test_native_decoder_accepts_eight_known_bindings_but_rejects_nine():
++    from backend.tests.test_reference_reasoner import native_existing_bindings
+     _, known, _, choices, schema, base = existing_batch_fixture()
+     validator = Draft202012Validator(schema)
+-    validator.validate({**base, 'inventory_choices': choices[:8]})
++    validator.validate({**base, 'inventory_choices': [native_existing_bindings(choices[:8])]})
+     with pytest.raises(ValidationError):
+-        validator.validate({**base, 'inventory_choices': choices})
++        validator.validate({**base, 'inventory_choices': [native_existing_bindings(choices)]})
+     expanded = reasoner._reference_expand_inventory_choices(known, choices[:8])
+     assert [row['id'] for row in expanded] == [row['id'] for row in known[:8]]
+     assert all(row['name'] == known[index]['name'] for index, row in enumerate(expanded))

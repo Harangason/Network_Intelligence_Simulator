@@ -1,0 +1,364 @@
+--- before/backend/nis/agent/orchestration/project_intake.py
++++ after/backend/nis/agent/orchestration/project_intake.py
+@@ -3,6 +3,10 @@
+ from typing import Literal
+ 
+ from pydantic import BaseModel, ConfigDict, Field
++
++DOCUMENT_SOURCE_MAX_CHARS = 1_000_000
++# JSON can escape one non-BMP character as two six-byte surrogate escapes.
++DOCUMENT_REQUEST_MAX_BYTES = 12 * DOCUMENT_SOURCE_MAX_CHARS + 16_384
+ 
+ _DOCUMENT_CONTROLLER_LABEL = r'(?:Controller|Computer|ECU|Steuergerät|Steuergeraet|Rechner|PLC|SPS|Gateway)'
+ _DOCUMENT_TRANSPORT_QUALIFIER = r'\s*[- ]?(?:ähnlich\w*|aehnlich\w*|like|artig\w*|optional\w*|möglich\w*|moeglich\w*)\b'
+@@ -37,9 +41,15 @@
+ 
+ class DocumentIntakeRequest(BaseModel):
+     model_config = ConfigDict(extra='forbid')
+-    source: str = Field(min_length=1, max_length=80000)
++    source: str = Field(min_length=1, max_length=DOCUMENT_SOURCE_MAX_CHARS)
+     source_name: str = Field(default='Projektbeschreibung', min_length=1, max_length=180)
+     source_request_id: str | None = Field(default=None, min_length=8, max_length=80)
++
++
++class DocumentProposalInterpretation(DocumentInterpretation):
++    """Union of validated sections; per-inference limits do not cap the union."""
++    components: list[DocumentComponent] = Field(default_factory=list)
++    technologies: list[DocumentTechnology] = Field(default_factory=list)
+ 
+ 
+ def compose_document_proposal(parts: list[dict]):
+@@ -103,6 +113,8 @@
+ 
+ def document_segments(source: str, max_bytes=6000):
+     """Cover every source character in bounded, contiguous inference windows."""
++    if max_bytes < 1:
++        raise ValueError('Das lokale Kontextfenster ist zu klein.')
+     segments = []
+     start = 0
+     while start < len(source):
+@@ -114,8 +126,6 @@
+             raise ValueError('Das lokale Kontextfenster ist zu klein.')
+         segments.append({'start': start, 'end': start + len(window), 'text': window})
+         start += len(window)
+-    if len(segments) > 8:
+-        raise ValueError('Die Quelle benötigt mehr als acht lokale Auswertungsabschnitte. Bitte aufteilen; sie wird nicht gekürzt.')
+     return segments
+ 
+ 
+@@ -637,9 +647,10 @@
+     return schema
+ 
+ 
+-def validate_document_interpretation(value, source: str, *, context_aliases=None, scope_prefix=''):
++def validate_document_interpretation(value, source: str, *, context_aliases=None, scope_prefix='', aggregate=False):
+     """Reject invented source claims before displaying a local-model proposal."""
+-    result = DocumentInterpretation.model_validate(value)
++    model = DocumentProposalInterpretation if aggregate else DocumentInterpretation
++    result = model.model_validate(value)
+     from backend.nis.agent.tools.inventory_quantities import quantities
+     from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
+     count_keys = {'SENSOR': 'sensors', 'ACTUATOR': 'actuators', 'CONTROLLER': 'ecus', 'GATEWAY': 'gateways'}
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -279,8 +279,7 @@
+             # Compact identities avoid repeating field names for every original
+             # line. Values still preserve the entire source, including CRLF.
+             return {row['source_ref']: row['text'] for row in rows}
+-        messages = [{'role': 'system', 'content': system}, {'role': 'user', 'content': json.dumps(
+-            {'source_name': source_name, 'source_lines': source_lines(document_source_references(source))}, ensure_ascii=False)}]
++        messages = [{'role': 'system', 'content': system}, {'role': 'user', 'content': ''}]
+         schema = DocumentInterpretation.model_json_schema()
+         schema['properties']['components']['maxItems'] = 24
+         schema['properties']['technologies']['maxItems'] = 16
+@@ -290,12 +289,14 @@
+             schema['properties'][field]['maxItems'] = 2
+             schema['properties'][field]['items']['maxLength'] = 200
+         context_window = min(self.context_tokens, 16384)
+-        max_bytes = 6000
+-        while True:
+-            segments = document_segments(source, max_bytes=max_bytes)
+-            budgets = []
+-            prepared = []
+-            for segment in segments:
++        # Split only the section that exceeds its context/output budget. Dense
++        # passages must not force every other section into ever smaller calls.
++        segments = []
++        prepared = []
++        for initial in document_segments(source):
++            pending = [initial]
++            while pending:
++                segment = pending.pop()
+                 rows = document_source_references(segment['text'])
+                 scope_prefix = source[:segment['start']]
+                 output_schema = document_output_schema(segment['text'], schema, context_aliases=context_aliases, scope_prefix=scope_prefix)
+@@ -307,18 +308,21 @@
+                                            **component_grounding,
+                                            **technology_grounding}, ensure_ascii=False)
+                 sample = [{'role': 'system', 'content': system}, {'role': 'user', 'content': user_content}]
+-                prepared.append({'rows': rows, 'schema': output_schema, 'content': user_content,
+-                                 'required_count': len(component_grounding['required_components']),
+-                                 'required_technologies': sum(len(values) for values in technology_grounding.values())})
+                 # The Ollama format parameter constrains output grammar; it is
+                 # not copied into messages. Bound the actual transmitted prompt.
+-                budgets.append(len(json.dumps(sample, ensure_ascii=False).encode()) + 4096)
+-            # Reserve room for one bounded validation correction as well.
+-            if max(budgets) + 1800 <= context_window and max(item['required_count'] for item in prepared) <= 24 and max(item['required_technologies'] for item in prepared) <= 16:
+-                break
+-            max_bytes -= 500
+-            if max_bytes < 500:
+-                raise ValueError('Ein vollständiger Quellenabschnitt überschreitet das lokale KI-Kontextfenster. Bitte aufteilen; er wird nicht gekürzt.')
++                budget = len(json.dumps(sample, ensure_ascii=False).encode()) + 4096 + 1800
++                if (budget <= context_window and len(component_grounding['required_components']) <= 24
++                        and sum(len(values) for values in technology_grounding.values()) <= 16):
++                    segments.append(segment)
++                    prepared.append({'rows': rows, 'schema': output_schema, 'content': user_content})
++                    continue
++                max_bytes = len(segment['text'].encode()) - 500
++                if max_bytes < 500:
++                    raise ValueError('Ein Quellenabschnitt überschreitet trotz automatischer Aufteilung das lokale KI-Kontextfenster. Die Quelle wurde nicht gekürzt.')
++                smaller = document_segments(segment['text'], max_bytes=max_bytes)
++                pending.extend({'start': segment['start'] + part['start'],
++                                'end': segment['start'] + part['end'], 'text': part['text']}
++                               for part in reversed(smaller))
+         info_response = await self.client.post(self.chat_url.removesuffix('/chat') + '/show', json={'model': self.model})
+         if info_response.is_error:
+             raise RuntimeError(f'Lokaler KI-Dienst: HTTP {info_response.status_code}. Qwen-Modell nicht verfügbar.')
+@@ -365,7 +369,7 @@
+                     if progress:
+                         progress({'type': 'PROGRESS', 'text': f'Lokaler Qwen korrigiert die Quellenprüfung von Abschnitt {index + 1}.'})
+         interpretation = compose_document_proposal(interpretations)
+-        interpretation = validate_document_interpretation(interpretation, source)
++        interpretation = validate_document_interpretation(interpretation, source, aggregate=True)
+         source_hash = hashlib.sha256(source.encode()).hexdigest()
+         return {'proposal_type': 'DOCUMENT_INTERPRETATION', 'status': 'REVIEW_REQUIRED',
+                 'interpretation': interpretation, 'source_name': source_name, 'source_sha256': source_hash,
+--- before/backend/nis/agent/tools/services.py
++++ after/backend/nis/agent/tools/services.py
+@@ -640,10 +640,10 @@
+          operation_id=(str | None, Field(default=None, min_length=8, max_length=120)),
+          revision=(int | None, Field(default=None, ge=1)))
+ from backend.nis.agent.tools import project_draft as project_draft
+-from backend.nis.agent.orchestration.project_intake import interpret_project_document
++from backend.nis.agent.orchestration.project_intake import DOCUMENT_SOURCE_MAX_CHARS, interpret_project_document
+ register('interpret_project_document', 'Vollständige Projektquelle mit lokalem Qwen als quellengebundenen Prüfvorschlag auswerten: Instanzen, Kategorien, Funktionen, Anforderungen und Controller-Kürzel unterscheiden. Keine Modelländerung oder Freigabe.',
+          P.GENERATE_PROPOSAL, interpret_project_document,
+-         source=(str, Field(min_length=1, max_length=80000)),
++         source=(str, Field(min_length=1, max_length=DOCUMENT_SOURCE_MAX_CHARS)),
+          source_name=(str, Field(default='Projektbeschreibung', min_length=1, max_length=180)),
+          source_request_id=(str | None, Field(default=None, min_length=8, max_length=80)))
+ from backend.nis.agent.tools import configuration as configuration
+--- before/backend/nis/agent/tools/api.py
++++ after/backend/nis/agent/tools/api.py
+@@ -164,14 +164,14 @@
+ @agent_api.post('/document-intake')
+ def document_intake():
+     """Local-model interpretation only; acceptance follows normal wizard review."""
+-    from backend.nis.agent.orchestration.project_intake import interpret_project_document
+-    request.max_content_length = 512 * 1024
++    from backend.nis.agent.orchestration.project_intake import DOCUMENT_REQUEST_MAX_BYTES, interpret_project_document
++    request.max_content_length = DOCUMENT_REQUEST_MAX_BYTES
+     if not _human_intent():
+         return jsonify({'error': 'Bitte die lokale Dokumentauswertung ausdrücklich starten.'}), 403
++    arguments = request.get_json(silent=True) or {}
+     if not _slots.acquire(blocking=False):
+         return jsonify({'error': 'Alle lokalen KI-Arbeitsplätze sind belegt. Bitte erneut versuchen.'}), 429
+     authority = ToolAuthority(_project(), 'local-human')
+-    arguments = request.get_json(silent=True) or {}
+     if 'application/x-ndjson' in request.headers.get('Accept', ''):
+         queue = Queue()
+         def worker():
+--- before/backend/tests/test_qwen_document_intake.py
++++ after/backend/tests/test_qwen_document_intake.py
+@@ -493,7 +493,8 @@
+     assert len(json.dumps(payload['messages'], ensure_ascii=False).encode()) + 4096 + 1800 <= payload['options']['num_ctx']
+ 
+ 
+-def test_a_failed_later_segment_cannot_return_complete_source_success():
++@pytest.mark.parametrize('failed_section', [2, 10])
++def test_a_failed_later_segment_cannot_return_complete_source_success(failed_section):
+     calls = []
+     async def run():
+         reasoner = LocalEngineeringReasoner()
+@@ -503,17 +504,17 @@
+                 return httpx.Response(200, json={'details': {'family': 'qwen35'}, 'model_info': {'general.parameter_count': 27000000000}})
+             calls.append(json.loads(request.content))
+             value = {**interpretation(), 'components': [], 'technologies': [], 'open_questions': []}
+-            if len(calls) >= 2:
++            if len(calls) >= failed_section:
+                 value['components'] = interpretation()['components']
+             return httpx.Response(200, json={'message': {'content': json.dumps(model_wire_response(value, calls[-1]))}})
+         reasoner.client = httpx.AsyncClient(transport=httpx.MockTransport(transport))
+         try:
+-            with pytest.raises(ValueError, match='Abschnitt 2'):
+-                await reasoner.interpret_document('A' * 6500, 'two-segments.txt')
++            with pytest.raises(ValueError, match=f'Abschnitt {failed_section}'):
++                await reasoner.interpret_document('Hinweis. ' * (700 * failed_section), 'late-failure.txt')
+         finally:
+             await reasoner.client.aclose()
+     asyncio.run(run())
+-    assert len(calls) == 3
++    assert len(calls) == failed_section + 1
+ 
+ 
+ def test_bounded_local_repair_uses_validation_feedback_and_original_source():
+@@ -806,16 +807,89 @@
+ def test_context_overflow_is_explicit_and_never_sends_a_truncated_document():
+     async def run():
+         reasoner = LocalEngineeringReasoner()
++        reasoner.context_tokens = 100
+         await reasoner.client.aclose()
+         def forbidden(_):
+             pytest.fail('Oversize source must not be sent or truncated.')
+         reasoner.client = httpx.AsyncClient(transport=httpx.MockTransport(forbidden))
+         try:
+             with pytest.raises(ValueError, match='nicht gekürzt'):
+-                await reasoner.interpret_document('x' * 79999, 'big.txt')
++                await reasoner.interpret_document(SOURCE, 'context-overflow.txt')
+         finally:
+             await reasoner.client.aclose()
+     asyncio.run(run())
++
++
++def test_large_document_processes_every_section_and_preserves_complete_fact_union():
++    from backend.nis.engineering.goal_execution.progress import sink
++    source = ''.join(f'Controller (U{i:03d})\r\n' + 'Hinweis ohne zusätzliche Angaben. ' * 40 + '\r\nÄußere Quelle 😀\r\n' for i in range(70))
++    observed, progress = [], []
++
++    async def run():
++        reasoner = LocalEngineeringReasoner()
++        await reasoner.client.aclose()
++
++        def transport(request):
++            if request.url.path == '/api/show':
++                return httpx.Response(200, json={'details': {'family': 'qwen35'}, 'model_info': {'general.parameter_count': 27000000000}})
++            payload = json.loads(request.content)
++            observed.append(payload)
++            lines = json.loads(payload['messages'][1]['content'])['source_lines']
++            declarations = [line.strip() for line in lines.values() if line.startswith('Controller (')]
++            value = {**interpretation(), 'components': [
++                {'name': line, 'kind': 'INSTANCE', 'role': 'CONTROLLER', 'quantity': 1, 'source_quote': line}
++                for line in declarations], 'technologies': [
++                {'name': line.split('(')[1][:-1], 'kind': 'DEVICE_ALIAS', 'source_quote': line}
++                for line in declarations], 'open_questions': []}
++            return httpx.Response(200, json={'message': {'content': json.dumps(model_wire_response(value, payload))}})
++
++        reasoner.client = httpx.AsyncClient(transport=httpx.MockTransport(transport))
++        token = sink.set(progress.append)
++        try:
++            result = await reasoner.interpret_document(source, 'large-robotics.md')
++            assert result['source_complete'] is True and result['canonical_writes'] is False
++            assert result['approval_required'] is True and result['status'] == 'REVIEW_REQUIRED'
++            assert result['source_chars'] == len(source) > 80000
++            assert result['source_sha256'] == hashlib.sha256(source.encode()).hexdigest()
++            assert len(result['segments']) == len(observed) > 8
++            assert len(result['interpretation']['components']) == 70
++            assert {t['name'] for t in result['interpretation']['technologies']} == {f'U{i:03d}' for i in range(70)}
++            assert result['segments'][0]['start'] == 0 and result['segments'][-1]['end'] == len(source)
++            for part, payload in zip(result['segments'], observed):
++                original = source[part['start']:part['end']]
++                assert part['sha256'] == hashlib.sha256(original.encode()).hexdigest()
++                assert ''.join(json.loads(payload['messages'][1]['content'])['source_lines'].values()) == original
++                assert len(json.dumps(payload['messages'], ensure_ascii=False).encode()) + 4096 + 1800 <= payload['options']['num_ctx']
++                assert payload['format']['properties']['components']['maxProperties'] == 24
++            assert all(a['end'] == b['start'] for a, b in zip(result['segments'], result['segments'][1:]))
++        finally:
++            sink.reset(token)
++            await reasoner.client.aclose()
++
++    asyncio.run(run())
++    sections = [p['metadata'] for p in progress if p.get('metadata', {}).get('source') == 'document_intake']
++    assert [p['completed'] for p in sections] == list(range(len(observed)))
++    assert all(p['total'] == len(observed) for p in sections)
++
++
++def test_aggregate_still_rejects_missing_late_evidence_and_invented_sources():
++    data = {**interpretation(), 'components': interpretation()['components'] * 16}
++    assert len(validate_document_interpretation(data, SOURCE, aggregate=True)['components']) == 64
++    with pytest.raises(ValueError, match='Quellenangabe fehlt'):
++        validate_document_interpretation(data, SOURCE + '\nFunktionen: Späte Endkontrolle.', aggregate=True)
++    data['components'].append({'name': 'Erfunden', 'source_quote': 'Erfunden', 'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None})
++    with pytest.raises(ValueError, match='Quellenzitat'):
++        validate_document_interpretation(data, SOURCE, aggregate=True)
++
++
++def test_document_source_limits_match_native_tool_and_reject_oversize_without_truncation():
++    from backend.nis.agent.orchestration.project_intake import DOCUMENT_SOURCE_MAX_CHARS, DocumentIntakeRequest
++    from backend.nis.agent.tools.services import TOOLS
++    assert DocumentIntakeRequest(source='x' * DOCUMENT_SOURCE_MAX_CHARS).source.endswith('x')
++    schema = TOOLS['interpret_project_document'].input_model.model_json_schema()
++    assert schema['properties']['source']['maxLength'] == DOCUMENT_SOURCE_MAX_CHARS
++    with pytest.raises(ValueError):
++        DocumentIntakeRequest(source='x' * (DOCUMENT_SOURCE_MAX_CHARS + 1))
+ 
+ 
+ def test_failed_local_inference_has_no_cloud_or_deterministic_success_fallback():
+@@ -860,6 +934,34 @@
+     app.register_blueprint(api.agent_api, url_prefix='/agent')
+     monkeypatch.setattr(api, 'execute', lambda *args, **kwargs: pytest.fail('No inference without human action'))
+     assert app.test_client().post('/agent/document-intake', json={'source': SOURCE}).status_code == 403
++
++
++def test_document_endpoint_accepts_large_unicode_json_and_rejects_oversize_without_leaking_slot(monkeypatch):
++    from flask import Flask
++    from threading import BoundedSemaphore
++    from backend.nis.agent.tools import api
++    from backend.nis.agent.api.tool_contract import ToolResult
++    from backend.nis.agent.orchestration.project_intake import DOCUMENT_REQUEST_MAX_BYTES
++    app = Flask(__name__)
++    app.register_blueprint(api.agent_api, url_prefix='/agent')
++    monkeypatch.setattr(api, '_slots', BoundedSemaphore(1))
++    observed = []
++    monkeypatch.setattr(api, 'execute', lambda authority, name, permission, arguments, handler:
++                        observed.append(arguments) or ToolResult(data={'source_chars': len(arguments['source'])}))
++    client = app.test_client()
++    client.set_cookie(api.COOKIE, 'review-token')
++    headers = {'X-Human-Review': 'confirmed', 'X-Review-CSRF': 'review-token', 'X-Project-ID': 'test-large-source'}
++    assert client.post('/agent/document-intake', data=' ' * (DOCUMENT_REQUEST_MAX_BYTES + 1),
++                       content_type='application/json', headers=headers).status_code == 413
++    source = '😀' * 100000
++    body = json.dumps({'source': source})
++    assert len(body) > 512 * 1024
++    response = client.post('/agent/document-intake', data=body, content_type='application/json', headers=headers)
++    assert response.status_code == 200
++    assert observed == [{'source': source}]
++    assert response.json['data']['source_chars'] == 100000
++    assert api._slots.acquire(blocking=False)
++    api._slots.release()
+ 
+ 
+ def test_document_stream_reports_progress_and_preserves_failed_tool_result(monkeypatch):
+--- before/frontend/src/features/agent/lib/chat-attachments.ts
++++ after/frontend/src/features/agent/lib/chat-attachments.ts
+@@ -1,12 +1,12 @@
+ export const MAX_CHAT_ATTACHMENTS = 4;
+ export const MAX_CHAT_FILE_BYTES = 5 * 1024 * 1024;
+ export const MAX_CHAT_DOCUMENT_CHARS = 16_000;
+-export const MAX_WIZARD_DOCUMENT_CHARS = 80_000;
++export const MAX_WIZARD_DOCUMENT_CHARS = 1_000_000;
+ 
+ /** Wizard inventory must use a complete source, never an unmarked excerpt. */
+ export function completeWizardDocumentText(text: string): string {
+-  if (text.length > MAX_WIZARD_DOCUMENT_CHARS) {
+-    throw new Error(`Die Aufgaben-Anlagen dürfen zusammen höchstens ${MAX_WIZARD_DOCUMENT_CHARS.toLocaleString('de-DE')} Zeichen enthalten. Bitte die Quelle aufteilen; sie wird nicht gekürzt.`);
++  if (Array.from(text).length > MAX_WIZARD_DOCUMENT_CHARS) {
++    throw new Error(`Die Aufgaben-Anlagen überschreiten die Uploadgrenze von ${MAX_WIZARD_DOCUMENT_CHARS.toLocaleString('de-DE')} Zeichen. Die Quelle wurde nicht gekürzt.`);
+   }
+   return text;
+ }
+--- before/frontend/src/features/agent/lib/chat-attachments.test.mjs
++++ after/frontend/src/features/agent/lib/chat-attachments.test.mjs
+@@ -9,6 +9,13 @@
+   assert.ok(completeWizardDocumentText(source).endsWith('Controller: FinalControl\n'));
+   assert.equal(completeWizardDocumentText('x'.repeat(MAX_WIZARD_DOCUMENT_CHARS)).length, MAX_WIZARD_DOCUMENT_CHARS);
+   assert.throws(() => completeWizardDocumentText('x'.repeat(MAX_WIZARD_DOCUMENT_CHARS + 1)), /nicht gekürzt/);
++});
++
++test('large wizard documents preserve late evidence beyond 80000 characters and count Unicode characters', () => {
++  const source = 'Äußere Quelle 😀\r\n' + 'x'.repeat(100_000) + '\r\nController: FinalControl\r\n';
++  assert.equal(completeWizardDocumentText(source), source);
++  assert.equal(completeWizardDocumentText('😀'.repeat(MAX_WIZARD_DOCUMENT_CHARS)), '😀'.repeat(MAX_WIZARD_DOCUMENT_CHARS));
++  assert.throws(() => completeWizardDocumentText('😀'.repeat(MAX_WIZARD_DOCUMENT_CHARS + 1)), /nicht gekürzt/);
+ });
+ 
+ const source = { name: 'spec.dbc', size: 100, format: 'DBC', text: 'SG_ Fahrersitz links', truncated: false };

@@ -1,0 +1,1208 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="5" time="7.967" timestamp="2026-10-21T19:09:46.984441+02:00" hostname="Haranga"><testcase classname="tests.test_server_startup" name="test_launcher_start_and_recovery_preserve_active_inference[False-local]" time="0.010"><failure message="AttributeError: '_RunningProcess' object has no attribute 'returncode'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000022731634640&gt;
+tmp_path = WindowsPath('C:/Users/marti/AppData/Local/Temp/nis-pytest-2rzg2f_8/test_launcher_start_and_recove0')
+mode = 'local', owns_provider = False
+
+    @pytest.mark.parametrize("mode", ["local", "hybrid-demand"])
+    @pytest.mark.parametrize("owns_provider", [False, True])
+    def test_launcher_start_and_recovery_preserve_active_inference(
+        monkeypatch, tmp_path, mode, owns_provider,
+    ) -&gt; None:
+        """A metadata outage must not enqueue a model or replace a live provider."""
+        (tmp_path / "frontend" / "node_modules").mkdir(parents=True)
+        environment = {
+            "AI_PROVIDER": mode,
+            "LOCAL_AI_BASE_URL": "http://127.0.0.1:11434/v1",
+            "LOCAL_AI_MODEL": "qwen3.8:27b",
+            "LOCAL_AI_FAST_MODEL": "llama3.1:8b",
+            "DATABASE_URL": "postgresql://unused-isolated-test",
+        }
+        provider = _RunningProcess()
+        ensured, terminated, requests = [], [], []
+        clock = [0.0]
+        checks = [0]
+    
+        def ensure(_environment, _log):
+            ensured.append(True)
+            return provider if owns_provider else None
+    
+        def models(_environment):
+            checks[0] += 1
+            # Healthy at startup, one failed watchdog probe, then healthy again.
+            return None if checks[0] == 2 else ["qwen3.8:27b", "llama3.1:8b"]
+    
+        def sleep(_seconds):
+            clock[0] += 6.0
+            if clock[0] &gt; 18.0:
+                raise KeyboardInterrupt
+    
+        def open_request(request, **_kwargs):
+            requests.append(request)
+            return _JsonResponse(b'{}')
+    
+        monkeypatch.setattr(LAUNCHER, "ROOT", tmp_path)
+        monkeypatch.setattr(LAUNCHER, "SERVICE_LOG_ROOT", tmp_path / "logs")
+        monkeypatch.setattr(LAUNCHER, "_assert_canonical_project_root", lambda: None)
+        monkeypatch.setattr(LAUNCHER, "_frontend_command", lambda *_args: ["fake-next"])
+        monkeypatch.setattr(LAUNCHER, "_ensure_port_available", lambda *_args: None)
+        monkeypatch.setattr(LAUNCHER, "_runtime_environment", lambda: environment.copy())
+        monkeypatch.setattr(LAUNCHER, "_prepare_backend_runtime_root", lambda *_args: None)
+        monkeypatch.setattr(LAUNCHER, "_prepare_frontend_dist_dir", lambda *_args: None)
+        monkeypatch.setattr(LAUNCHER, "_open_service_log", lambda *_args: StringIO())
+        monkeypatch.setattr(LAUNCHER, "_ensure_engineering_database", lambda *_args: None)
+        monkeypatch.setattr(LAUNCHER, "_ensure_local_ai", ensure)
+        monkeypatch.setattr(LAUNCHER, "_ollama_models", models)
+        monkeypatch.setattr(LAUNCHER, "_tcp_endpoint_available", lambda *_args, **_kwargs: True)
+        monkeypatch.setattr(LAUNCHER, "_wait_for_url", lambda *_args, **_kwargs: True)
+        monkeypatch.setattr(LAUNCHER.subprocess, "Popen", lambda *_args, **_kwargs: _RunningProcess())
+        monkeypatch.setattr(LAUNCHER, "_terminate_process_tree", terminated.append)
+        monkeypatch.setattr(LAUNCHER, "urlopen", open_request)
+        monkeypatch.setattr(LAUNCHER.time, "monotonic", lambda: clock[0])
+        monkeypatch.setattr(LAUNCHER.time, "sleep", sleep)
+        monkeypatch.setenv("NETWORKIS_OPEN_BROWSER", "0")
+    
+&gt;       assert LAUNCHER._run_web() == 0
+               ^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_server_startup.py:581: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def _run_web() -&gt; int:
+        _assert_canonical_project_root()
+        frontend = ROOT / "frontend"
+        if not (frontend / "node_modules").is_dir():
+            raise SystemExit(
+                "Frontend-Abhängigkeiten fehlen. Bitte zuerst im Ordner frontend `npm install` ausführen."
+            )
+        frontend_port = _port_from_environment("FRONTEND_PORT", FRONTEND_PORT)
+        frontend_command = _frontend_command(frontend, frontend_port)
+    
+        backend_host = os.environ.get("FLASK_HOST", BACKEND_HOST)
+        backend_port = _port_from_environment("FLASK_PORT", BACKEND_PORT)
+        _ensure_port_available(backend_host, backend_port, "Backend")
+        _ensure_port_available(FRONTEND_HOST, frontend_port, "Frontend")
+    
+        instance_id = uuid.uuid4().hex
+        service_environment = _runtime_environment()
+        runtime_fallback = _prepare_backend_runtime_root(service_environment, instance_id)
+        frontend_dist_dir = _prepare_frontend_dist_dir(frontend, service_environment, instance_id)
+        backend_environment = service_environment.copy()
+        backend_environment["SIMULATOR_INSTANCE_ID"] = instance_id
+    
+        try:
+            SERVICE_LOG_ROOT.mkdir(parents=True, exist_ok=True)
+        except PermissionError:
+            pass
+        backend_log = _open_service_log("backend", instance_id)
+        frontend_log = _open_service_log("frontend", instance_id)
+        ollama_log = _open_service_log("ollama", instance_id)
+    
+        backend_process: subprocess.Popen[object] | None = None
+        frontend_process: subprocess.Popen[object] | None = None
+        ollama_process: subprocess.Popen[object] | None = None
+        local_ai_ready = False
+        launcher_error = False
+        restart_counts = {"Backend": 0, "Frontend": 0}
+        restart_limit = _service_restart_limit(service_environment)
+        backend_url = f"http://{backend_host}:{backend_port}"
+        frontend_url = f"http://{FRONTEND_HOST}:{frontend_port}"
+    
+        def start_backend() -&gt; subprocess.Popen[object]:
+            return subprocess.Popen(
+                [sys.executable, "-m", "backend.nis.app"],
+                cwd=ROOT,
+                env=backend_environment,
+                stdout=backend_log,
+                stderr=subprocess.STDOUT,
+                **_popen_options(),
+            )
+    
+        def start_frontend() -&gt; subprocess.Popen[object]:
+            return subprocess.Popen(
+                frontend_command,
+                cwd=frontend,
+                env=service_environment,
+                stdout=frontend_log,
+                stderr=subprocess.STDOUT,
+                **_popen_options(),
+            )
+    
+        try:
+            _ensure_engineering_database(service_environment)
+            backend_environment["DATABASE_URL"] = service_environment["DATABASE_URL"]
+            try:
+                ollama_process = _ensure_local_ai(service_environment, ollama_log)
+            except RuntimeError as error:
+                if _local_ai_required_for_startup(service_environment):
+                    raise
+                print(
+                    f"Lokaler AI-Dienst ist beim Start noch nicht verfügbar: {error} "
+                    "Der Hybridmodus stellt ihn im Hintergrund wieder her.",
+                    file=sys.stderr,
+                )
+            if ollama_process is not None or _ollama_models(service_environment) is not None:
+                local_ai_ready = True
+                if _local_ai_required_for_startup(service_environment):
+                    if _prewarm_local_ai(service_environment):
+                        print(
+                            "Lokales Semantikmodell ist vorgewärmt "
+                            f"({service_environment.get('LOCAL_AI_FAST_MODEL', DEFAULT_LOCAL_AI_FAST_MODEL)})."
+                        )
+                    else:
+                        print("Lokales Semantikmodell konnte nicht vorgewärmt werden.", file=sys.stderr)
+                else:
+                    _prewarm_local_ai_in_background(service_environment)
+                    print("Lokales Semantikmodell wird parallel zum Anwendungsstart vorgewärmt.")
+            backend_process = start_backend()
+            if not _wait_for_url(
+                f"{backend_url}/api/health",
+                backend_process,
+                timeout_s=BACKEND_STARTUP_TIMEOUT_SECONDS,
+                expected_instance_id=instance_id,
+            ):
+                return_code = backend_process.poll()
+                raise RuntimeError(
+                    "Das Simulator-Backend wurde nicht bereit"
+                    + (f" (Exit-Code {return_code})." if return_code is not None else ".")
+                )
+            if not _wait_for_url(f"{backend_url}/api/engineering/health", backend_process):
+                raise RuntimeError(
+                    "Die Engineering-Datenbank wurde nicht bereit. Starte zuerst "
+                    "`start-engineering-db.bat` oder prüfe DATABASE_URL."
+                )
+    
+            frontend_process = start_frontend()
+            if not _wait_for_url(frontend_url, frontend_process):
+                return_code = frontend_process.poll()
+                raise RuntimeError(
+                    "Die Simulator-Oberfläche wurde nicht bereit"
+                    + (f" (Exit-Code {return_code})." if return_code is not None else ".")
+                )
+    
+            print(f"Backend: {backend_url} (exklusiv)")
+            print(f"Frontend: {frontend_url} (exklusiv)")
+            print(f"Dienstlogs: {SERVICE_LOG_ROOT}")
+            if runtime_fallback is not None:
+                print(f"Runtime-Fallback: {runtime_fallback}")
+            if frontend_dist_dir is not None:
+                print(f"Next.js Build-Ordner: frontend/{frontend_dist_dir}")
+            print("Beenden mit Strg+C")
+            if os.environ.get("NETWORKIS_OPEN_BROWSER", "1").strip().lower() not in {
+                "0",
+                "false",
+                "no",
+            }:
+                webbrowser.open(frontend_url, new=2)
+    
+            next_dependency_check = time.monotonic() + DEPENDENCY_HEALTH_INTERVAL_SECONDS
+            while True:
+                if backend_process.poll() is not None:
+                    restart_counts["Backend"] += 1
+                    if restart_counts["Backend"] &gt; restart_limit:
+                        print(
+                            f"Backend wurde nach {restart_limit} Neustarts nicht stabil "
+                            f"(letzter Exit-Code {backend_process.returncode}).",
+                            file=sys.stderr,
+                        )
+                        launcher_error = True
+                        break
+                    print(
+                        f"Backend wurde unerwartet beendet (Exit-Code {backend_process.returncode}). "
+                        f"Automatischer Neustart {restart_counts['Backend']}/{restart_limit}.",
+                        file=sys.stderr,
+                    )
+                    time.sleep(min(2 ** (restart_counts["Backend"] - 1), 5))
+                    backend_process = start_backend()
+                    if not _wait_for_url(
+                        f"{backend_url}/api/health",
+                        backend_process,
+                        timeout_s=BACKEND_STARTUP_TIMEOUT_SECONDS,
+                        expected_instance_id=instance_id,
+                    ):
+                        _terminate_process_tree(backend_process)
+                        continue
+                    print("Backend ist nach dem automatischen Neustart wieder bereit.")
+    
+                if frontend_process.poll() is not None:
+                    restart_counts["Frontend"] += 1
+                    if restart_counts["Frontend"] &gt; restart_limit:
+                        print(
+                            f"Frontend wurde nach {restart_limit} Neustarts nicht stabil "
+                            f"(letzter Exit-Code {frontend_process.returncode}).",
+                            file=sys.stderr,
+                        )
+                        launcher_error = True
+                        break
+                    print(
+                        f"Frontend wurde unerwartet beendet (Exit-Code {frontend_process.returncode}). "
+                        f"Automatischer Neustart {restart_counts['Frontend']}/{restart_limit}.",
+                        file=sys.stderr,
+                    )
+                    time.sleep(min(2 ** (restart_counts["Frontend"] - 1), 5))
+                    frontend_process = start_frontend()
+                    if not _wait_for_url(frontend_url, frontend_process):
+                        _terminate_process_tree(frontend_process)
+                        continue
+                    print("Frontend ist nach dem automatischen Neustart wieder bereit.")
+    
+                now = time.monotonic()
+                if now &gt;= next_dependency_check:
+                    next_dependency_check = now + DEPENDENCY_HEALTH_INTERVAL_SECONDS
+                    available_models = _ollama_models(service_environment)
+                    if _local_ai_enabled(service_environment) and available_models is None:
+                        local_ai_ready = False
+                        if ollama_process is not None and ollama_process.poll() is None:
+                            _terminate_process_tree(ollama_process)
+                        ollama_process = None
+                        try:
+                            ollama_process = _ensure_local_ai(service_environment, ollama_log)
+                            local_ai_ready = _prewarm_local_ai(service_environment)
+                            print("Lokaler AI-Dienst wurde automatisch wiederhergestellt.")
+                        except RuntimeError as error:
+                            print(f"Lokaler AI-Dienst bleibt nicht verfügbar: {error}", file=sys.stderr)
+                    elif _local_ai_enabled(service_environment) and not local_ai_ready:
+                        local_ai_ready = _prewarm_local_ai(service_environment)
+                        if local_ai_ready:
+                            print("Lokales Semantikmodell wurde nachträglich vorgewärmt.")
+    
+                    database_host, database_port = _database_endpoint(service_environment["DATABASE_URL"])
+                    if not _tcp_endpoint_available(database_host, database_port):
+                        try:
+                            _ensure_engineering_database(service_environment)
+                            print("Engineering-Datenbank wurde automatisch wiederhergestellt.")
+                        except RuntimeError as error:
+                            print(f"Engineering-Datenbank bleibt nicht verfügbar: {error}", file=sys.stderr)
+    
+                time.sleep(0.5)
+        except KeyboardInterrupt:
+            pass
+        except RuntimeError as error:
+            print(f"Start fehlgeschlagen: {error}", file=sys.stderr)
+            launcher_error = True
+        finally:
+            if frontend_process is not None:
+                _terminate_process_tree(frontend_process)
+            if backend_process is not None:
+                _terminate_process_tree(backend_process)
+            if ollama_process is not None:
+                _terminate_process_tree(ollama_process)
+            backend_log.close()
+            frontend_log.close()
+            ollama_log.close()
+        if launcher_error:
+            return 1
+&gt;       return backend_process.returncode or (frontend_process.returncode if frontend_process else 0) or 0
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: '_RunningProcess' object has no attribute 'returncode'
+
+scripts\dev\launch-networkis.py:1092: AttributeError</failure></testcase><testcase classname="tests.test_server_startup" name="test_launcher_start_and_recovery_preserve_active_inference[False-hybrid-demand]" time="0.007"><failure message="AttributeError: '_RunningProcess' object has no attribute 'returncode'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000022731B4F100&gt;
+tmp_path = WindowsPath('C:/Users/marti/AppData/Local/Temp/nis-pytest-2rzg2f_8/test_launcher_start_and_recove1')
+mode = 'hybrid-demand', owns_provider = False
+
+    @pytest.mark.parametrize("mode", ["local", "hybrid-demand"])
+    @pytest.mark.parametrize("owns_provider", [False, True])
+    def test_launcher_start_and_recovery_preserve_active_inference(
+        monkeypatch, tmp_path, mode, owns_provider,
+    ) -&gt; None:
+        """A metadata outage must not enqueue a model or replace a live provider."""
+        (tmp_path / "frontend" / "node_modules").mkdir(parents=True)
+        environment = {
+            "AI_PROVIDER": mode,
+            "LOCAL_AI_BASE_URL": "http://127.0.0.1:11434/v1",
+            "LOCAL_AI_MODEL": "qwen3.8:27b",
+            "LOCAL_AI_FAST_MODEL": "llama3.1:8b",
+            "DATABASE_URL": "postgresql://unused-isolated-test",
+        }
+        provider = _RunningProcess()
+        ensured, terminated, requests = [], [], []
+        clock = [0.0]
+        checks = [0]
+    
+        def ensure(_environment, _log):
+            ensured.append(True)
+            return provider if owns_provider else None
+    
+        def models(_environment):
+            checks[0] += 1
+            # Healthy at startup, one failed watchdog probe, then healthy again.
+            return None if checks[0] == 2 else ["qwen3.8:27b", "llama3.1:8b"]
+    
+        def sleep(_seconds):
+            clock[0] += 6.0
+            if clock[0] &gt; 18.0:
+                raise KeyboardInterrupt
+    
+        def open_request(request, **_kwargs):
+            requests.append(request)
+            return _JsonResponse(b'{}')
+    
+        monkeypatch.setattr(LAUNCHER, "ROOT", tmp_path)
+        monkeypatch.setattr(LAUNCHER, "SERVICE_LOG_ROOT", tmp_path / "logs")
+        monkeypatch.setattr(LAUNCHER, "_assert_canonical_project_root", lambda: None)
+        monkeypatch.setattr(LAUNCHER, "_frontend_command", lambda *_args: ["fake-next"])
+        monkeypatch.setattr(LAUNCHER, "_ensure_port_available", lambda *_args: None)
+        monkeypatch.setattr(LAUNCHER, "_runtime_environment", lambda: environment.copy())
+        monkeypatch.setattr(LAUNCHER, "_prepare_backend_runtime_root", lambda *_args: None)
+        monkeypatch.setattr(LAUNCHER, "_prepare_frontend_dist_dir", lambda *_args: None)
+        monkeypatch.setattr(LAUNCHER, "_open_service_log", lambda *_args: StringIO())
+        monkeypatch.setattr(LAUNCHER, "_ensure_engineering_database", lambda *_args: None)
+        monkeypatch.setattr(LAUNCHER, "_ensure_local_ai", ensure)
+        monkeypatch.setattr(LAUNCHER, "_ollama_models", models)
+        monkeypatch.setattr(LAUNCHER, "_tcp_endpoint_available", lambda *_args, **_kwargs: True)
+        monkeypatch.setattr(LAUNCHER, "_wait_for_url", lambda *_args, **_kwargs: True)
+        monkeypatch.setattr(LAUNCHER.subprocess, "Popen", lambda *_args, **_kwargs: _RunningProcess())
+        monkeypatch.setattr(LAUNCHER, "_terminate_process_tree", terminated.append)
+        monkeypatch.setattr(LAUNCHER, "urlopen", open_request)
+        monkeypatch.setattr(LAUNCHER.time, "monotonic", lambda: clock[0])
+        monkeypatch.setattr(LAUNCHER.time, "sleep", sleep)
+        monkeypatch.setenv("NETWORKIS_OPEN_BROWSER", "0")
+    
+&gt;       assert LAUNCHER._run_web() == 0
+               ^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_server_startup.py:581: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def _run_web() -&gt; int:
+        _assert_canonical_project_root()
+        frontend = ROOT / "frontend"
+        if not (frontend / "node_modules").is_dir():
+            raise SystemExit(
+                "Frontend-Abhängigkeiten fehlen. Bitte zuerst im Ordner frontend `npm install` ausführen."
+            )
+        frontend_port = _port_from_environment("FRONTEND_PORT", FRONTEND_PORT)
+        frontend_command = _frontend_command(frontend, frontend_port)
+    
+        backend_host = os.environ.get("FLASK_HOST", BACKEND_HOST)
+        backend_port = _port_from_environment("FLASK_PORT", BACKEND_PORT)
+        _ensure_port_available(backend_host, backend_port, "Backend")
+        _ensure_port_available(FRONTEND_HOST, frontend_port, "Frontend")
+    
+        instance_id = uuid.uuid4().hex
+        service_environment = _runtime_environment()
+        runtime_fallback = _prepare_backend_runtime_root(service_environment, instance_id)
+        frontend_dist_dir = _prepare_frontend_dist_dir(frontend, service_environment, instance_id)
+        backend_environment = service_environment.copy()
+        backend_environment["SIMULATOR_INSTANCE_ID"] = instance_id
+    
+        try:
+            SERVICE_LOG_ROOT.mkdir(parents=True, exist_ok=True)
+        except PermissionError:
+            pass
+        backend_log = _open_service_log("backend", instance_id)
+        frontend_log = _open_service_log("frontend", instance_id)
+        ollama_log = _open_service_log("ollama", instance_id)
+    
+        backend_process: subprocess.Popen[object] | None = None
+        frontend_process: subprocess.Popen[object] | None = None
+        ollama_process: subprocess.Popen[object] | None = None
+        local_ai_ready = False
+        launcher_error = False
+        restart_counts = {"Backend": 0, "Frontend": 0}
+        restart_limit = _service_restart_limit(service_environment)
+        backend_url = f"http://{backend_host}:{backend_port}"
+        frontend_url = f"http://{FRONTEND_HOST}:{frontend_port}"
+    
+        def start_backend() -&gt; subprocess.Popen[object]:
+            return subprocess.Popen(
+                [sys.executable, "-m", "backend.nis.app"],
+                cwd=ROOT,
+                env=backend_environment,
+                stdout=backend_log,
+                stderr=subprocess.STDOUT,
+                **_popen_options(),
+            )
+    
+        def start_frontend() -&gt; subprocess.Popen[object]:
+            return subprocess.Popen(
+                frontend_command,
+                cwd=frontend,
+                env=service_environment,
+                stdout=frontend_log,
+                stderr=subprocess.STDOUT,
+                **_popen_options(),
+            )
+    
+        try:
+            _ensure_engineering_database(service_environment)
+            backend_environment["DATABASE_URL"] = service_environment["DATABASE_URL"]
+            try:
+                ollama_process = _ensure_local_ai(service_environment, ollama_log)
+            except RuntimeError as error:
+                if _local_ai_required_for_startup(service_environment):
+                    raise
+                print(
+                    f"Lokaler AI-Dienst ist beim Start noch nicht verfügbar: {error} "
+                    "Der Hybridmodus stellt ihn im Hintergrund wieder her.",
+                    file=sys.stderr,
+                )
+            if ollama_process is not None or _ollama_models(service_environment) is not None:
+                local_ai_ready = True
+                if _local_ai_required_for_startup(service_environment):
+                    if _prewarm_local_ai(service_environment):
+                        print(
+                            "Lokales Semantikmodell ist vorgewärmt "
+                            f"({service_environment.get('LOCAL_AI_FAST_MODEL', DEFAULT_LOCAL_AI_FAST_MODEL)})."
+                        )
+                    else:
+                        print("Lokales Semantikmodell konnte nicht vorgewärmt werden.", file=sys.stderr)
+                else:
+                    _prewarm_local_ai_in_background(service_environment)
+                    print("Lokales Semantikmodell wird parallel zum Anwendungsstart vorgewärmt.")
+            backend_process = start_backend()
+            if not _wait_for_url(
+                f"{backend_url}/api/health",
+                backend_process,
+                timeout_s=BACKEND_STARTUP_TIMEOUT_SECONDS,
+                expected_instance_id=instance_id,
+            ):
+                return_code = backend_process.poll()
+                raise RuntimeError(
+                    "Das Simulator-Backend wurde nicht bereit"
+                    + (f" (Exit-Code {return_code})." if return_code is not None else ".")
+                )
+            if not _wait_for_url(f"{backend_url}/api/engineering/health", backend_process):
+                raise RuntimeError(
+                    "Die Engineering-Datenbank wurde nicht bereit. Starte zuerst "
+                    "`start-engineering-db.bat` oder prüfe DATABASE_URL."
+                )
+    
+            frontend_process = start_frontend()
+            if not _wait_for_url(frontend_url, frontend_process):
+                return_code = frontend_process.poll()
+                raise RuntimeError(
+                    "Die Simulator-Oberfläche wurde nicht bereit"
+                    + (f" (Exit-Code {return_code})." if return_code is not None else ".")
+                )
+    
+            print(f"Backend: {backend_url} (exklusiv)")
+            print(f"Frontend: {frontend_url} (exklusiv)")
+            print(f"Dienstlogs: {SERVICE_LOG_ROOT}")
+            if runtime_fallback is not None:
+                print(f"Runtime-Fallback: {runtime_fallback}")
+            if frontend_dist_dir is not None:
+                print(f"Next.js Build-Ordner: frontend/{frontend_dist_dir}")
+            print("Beenden mit Strg+C")
+            if os.environ.get("NETWORKIS_OPEN_BROWSER", "1").strip().lower() not in {
+                "0",
+                "false",
+                "no",
+            }:
+                webbrowser.open(frontend_url, new=2)
+    
+            next_dependency_check = time.monotonic() + DEPENDENCY_HEALTH_INTERVAL_SECONDS
+            while True:
+                if backend_process.poll() is not None:
+                    restart_counts["Backend"] += 1
+                    if restart_counts["Backend"] &gt; restart_limit:
+                        print(
+                            f"Backend wurde nach {restart_limit} Neustarts nicht stabil "
+                            f"(letzter Exit-Code {backend_process.returncode}).",
+                            file=sys.stderr,
+                        )
+                        launcher_error = True
+                        break
+                    print(
+                        f"Backend wurde unerwartet beendet (Exit-Code {backend_process.returncode}). "
+                        f"Automatischer Neustart {restart_counts['Backend']}/{restart_limit}.",
+                        file=sys.stderr,
+                    )
+                    time.sleep(min(2 ** (restart_counts["Backend"] - 1), 5))
+                    backend_process = start_backend()
+                    if not _wait_for_url(
+                        f"{backend_url}/api/health",
+                        backend_process,
+                        timeout_s=BACKEND_STARTUP_TIMEOUT_SECONDS,
+                        expected_instance_id=instance_id,
+                    ):
+                        _terminate_process_tree(backend_process)
+                        continue
+                    print("Backend ist nach dem automatischen Neustart wieder bereit.")
+    
+                if frontend_process.poll() is not None:
+                    restart_counts["Frontend"] += 1
+                    if restart_counts["Frontend"] &gt; restart_limit:
+                        print(
+                            f"Frontend wurde nach {restart_limit} Neustarts nicht stabil "
+                            f"(letzter Exit-Code {frontend_process.returncode}).",
+                            file=sys.stderr,
+                        )
+                        launcher_error = True
+                        break
+                    print(
+                        f"Frontend wurde unerwartet beendet (Exit-Code {frontend_process.returncode}). "
+                        f"Automatischer Neustart {restart_counts['Frontend']}/{restart_limit}.",
+                        file=sys.stderr,
+                    )
+                    time.sleep(min(2 ** (restart_counts["Frontend"] - 1), 5))
+                    frontend_process = start_frontend()
+                    if not _wait_for_url(frontend_url, frontend_process):
+                        _terminate_process_tree(frontend_process)
+                        continue
+                    print("Frontend ist nach dem automatischen Neustart wieder bereit.")
+    
+                now = time.monotonic()
+                if now &gt;= next_dependency_check:
+                    next_dependency_check = now + DEPENDENCY_HEALTH_INTERVAL_SECONDS
+                    available_models = _ollama_models(service_environment)
+                    if _local_ai_enabled(service_environment) and available_models is None:
+                        local_ai_ready = False
+                        if ollama_process is not None and ollama_process.poll() is None:
+                            _terminate_process_tree(ollama_process)
+                        ollama_process = None
+                        try:
+                            ollama_process = _ensure_local_ai(service_environment, ollama_log)
+                            local_ai_ready = _prewarm_local_ai(service_environment)
+                            print("Lokaler AI-Dienst wurde automatisch wiederhergestellt.")
+                        except RuntimeError as error:
+                            print(f"Lokaler AI-Dienst bleibt nicht verfügbar: {error}", file=sys.stderr)
+                    elif _local_ai_enabled(service_environment) and not local_ai_ready:
+                        local_ai_ready = _prewarm_local_ai(service_environment)
+                        if local_ai_ready:
+                            print("Lokales Semantikmodell wurde nachträglich vorgewärmt.")
+    
+                    database_host, database_port = _database_endpoint(service_environment["DATABASE_URL"])
+                    if not _tcp_endpoint_available(database_host, database_port):
+                        try:
+                            _ensure_engineering_database(service_environment)
+                            print("Engineering-Datenbank wurde automatisch wiederhergestellt.")
+                        except RuntimeError as error:
+                            print(f"Engineering-Datenbank bleibt nicht verfügbar: {error}", file=sys.stderr)
+    
+                time.sleep(0.5)
+        except KeyboardInterrupt:
+            pass
+        except RuntimeError as error:
+            print(f"Start fehlgeschlagen: {error}", file=sys.stderr)
+            launcher_error = True
+        finally:
+            if frontend_process is not None:
+                _terminate_process_tree(frontend_process)
+            if backend_process is not None:
+                _terminate_process_tree(backend_process)
+            if ollama_process is not None:
+                _terminate_process_tree(ollama_process)
+            backend_log.close()
+            frontend_log.close()
+            ollama_log.close()
+        if launcher_error:
+            return 1
+&gt;       return backend_process.returncode or (frontend_process.returncode if frontend_process else 0) or 0
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: '_RunningProcess' object has no attribute 'returncode'
+
+scripts\dev\launch-networkis.py:1092: AttributeError</failure></testcase><testcase classname="tests.test_server_startup" name="test_launcher_start_and_recovery_preserve_active_inference[True-local]" time="0.012"><failure message="AttributeError: '_RunningProcess' object has no attribute 'returncode'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x00000227315F3650&gt;
+tmp_path = WindowsPath('C:/Users/marti/AppData/Local/Temp/nis-pytest-2rzg2f_8/test_launcher_start_and_recove2')
+mode = 'local', owns_provider = True
+
+    @pytest.mark.parametrize("mode", ["local", "hybrid-demand"])
+    @pytest.mark.parametrize("owns_provider", [False, True])
+    def test_launcher_start_and_recovery_preserve_active_inference(
+        monkeypatch, tmp_path, mode, owns_provider,
+    ) -&gt; None:
+        """A metadata outage must not enqueue a model or replace a live provider."""
+        (tmp_path / "frontend" / "node_modules").mkdir(parents=True)
+        environment = {
+            "AI_PROVIDER": mode,
+            "LOCAL_AI_BASE_URL": "http://127.0.0.1:11434/v1",
+            "LOCAL_AI_MODEL": "qwen3.8:27b",
+            "LOCAL_AI_FAST_MODEL": "llama3.1:8b",
+            "DATABASE_URL": "postgresql://unused-isolated-test",
+        }
+        provider = _RunningProcess()
+        ensured, terminated, requests = [], [], []
+        clock = [0.0]
+        checks = [0]
+    
+        def ensure(_environment, _log):
+            ensured.append(True)
+            return provider if owns_provider else None
+    
+        def models(_environment):
+            checks[0] += 1
+            # Healthy at startup, one failed watchdog probe, then healthy again.
+            return None if checks[0] == 2 else ["qwen3.8:27b", "llama3.1:8b"]
+    
+        def sleep(_seconds):
+            clock[0] += 6.0
+            if clock[0] &gt; 18.0:
+                raise KeyboardInterrupt
+    
+        def open_request(request, **_kwargs):
+            requests.append(request)
+            return _JsonResponse(b'{}')
+    
+        monkeypatch.setattr(LAUNCHER, "ROOT", tmp_path)
+        monkeypatch.setattr(LAUNCHER, "SERVICE_LOG_ROOT", tmp_path / "logs")
+        monkeypatch.setattr(LAUNCHER, "_assert_canonical_project_root", lambda: None)
+        monkeypatch.setattr(LAUNCHER, "_frontend_command", lambda *_args: ["fake-next"])
+        monkeypatch.setattr(LAUNCHER, "_ensure_port_available", lambda *_args: None)
+        monkeypatch.setattr(LAUNCHER, "_runtime_environment", lambda: environment.copy())
+        monkeypatch.setattr(LAUNCHER, "_prepare_backend_runtime_root", lambda *_args: None)
+        monkeypatch.setattr(LAUNCHER, "_prepare_frontend_dist_dir", lambda *_args: None)
+        monkeypatch.setattr(LAUNCHER, "_open_service_log", lambda *_args: StringIO())
+        monkeypatch.setattr(LAUNCHER, "_ensure_engineering_database", lambda *_args: None)
+        monkeypatch.setattr(LAUNCHER, "_ensure_local_ai", ensure)
+        monkeypatch.setattr(LAUNCHER, "_ollama_models", models)
+        monkeypatch.setattr(LAUNCHER, "_tcp_endpoint_available", lambda *_args, **_kwargs: True)
+        monkeypatch.setattr(LAUNCHER, "_wait_for_url", lambda *_args, **_kwargs: True)
+        monkeypatch.setattr(LAUNCHER.subprocess, "Popen", lambda *_args, **_kwargs: _RunningProcess())
+        monkeypatch.setattr(LAUNCHER, "_terminate_process_tree", terminated.append)
+        monkeypatch.setattr(LAUNCHER, "urlopen", open_request)
+        monkeypatch.setattr(LAUNCHER.time, "monotonic", lambda: clock[0])
+        monkeypatch.setattr(LAUNCHER.time, "sleep", sleep)
+        monkeypatch.setenv("NETWORKIS_OPEN_BROWSER", "0")
+    
+&gt;       assert LAUNCHER._run_web() == 0
+               ^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_server_startup.py:581: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def _run_web() -&gt; int:
+        _assert_canonical_project_root()
+        frontend = ROOT / "frontend"
+        if not (frontend / "node_modules").is_dir():
+            raise SystemExit(
+                "Frontend-Abhängigkeiten fehlen. Bitte zuerst im Ordner frontend `npm install` ausführen."
+            )
+        frontend_port = _port_from_environment("FRONTEND_PORT", FRONTEND_PORT)
+        frontend_command = _frontend_command(frontend, frontend_port)
+    
+        backend_host = os.environ.get("FLASK_HOST", BACKEND_HOST)
+        backend_port = _port_from_environment("FLASK_PORT", BACKEND_PORT)
+        _ensure_port_available(backend_host, backend_port, "Backend")
+        _ensure_port_available(FRONTEND_HOST, frontend_port, "Frontend")
+    
+        instance_id = uuid.uuid4().hex
+        service_environment = _runtime_environment()
+        runtime_fallback = _prepare_backend_runtime_root(service_environment, instance_id)
+        frontend_dist_dir = _prepare_frontend_dist_dir(frontend, service_environment, instance_id)
+        backend_environment = service_environment.copy()
+        backend_environment["SIMULATOR_INSTANCE_ID"] = instance_id
+    
+        try:
+            SERVICE_LOG_ROOT.mkdir(parents=True, exist_ok=True)
+        except PermissionError:
+            pass
+        backend_log = _open_service_log("backend", instance_id)
+        frontend_log = _open_service_log("frontend", instance_id)
+        ollama_log = _open_service_log("ollama", instance_id)
+    
+        backend_process: subprocess.Popen[object] | None = None
+        frontend_process: subprocess.Popen[object] | None = None
+        ollama_process: subprocess.Popen[object] | None = None
+        local_ai_ready = False
+        launcher_error = False
+        restart_counts = {"Backend": 0, "Frontend": 0}
+        restart_limit = _service_restart_limit(service_environment)
+        backend_url = f"http://{backend_host}:{backend_port}"
+        frontend_url = f"http://{FRONTEND_HOST}:{frontend_port}"
+    
+        def start_backend() -&gt; subprocess.Popen[object]:
+            return subprocess.Popen(
+                [sys.executable, "-m", "backend.nis.app"],
+                cwd=ROOT,
+                env=backend_environment,
+                stdout=backend_log,
+                stderr=subprocess.STDOUT,
+                **_popen_options(),
+            )
+    
+        def start_frontend() -&gt; subprocess.Popen[object]:
+            return subprocess.Popen(
+                frontend_command,
+                cwd=frontend,
+                env=service_environment,
+                stdout=frontend_log,
+                stderr=subprocess.STDOUT,
+                **_popen_options(),
+            )
+    
+        try:
+            _ensure_engineering_database(service_environment)
+            backend_environment["DATABASE_URL"] = service_environment["DATABASE_URL"]
+            try:
+                ollama_process = _ensure_local_ai(service_environment, ollama_log)
+            except RuntimeError as error:
+                if _local_ai_required_for_startup(service_environment):
+                    raise
+                print(
+                    f"Lokaler AI-Dienst ist beim Start noch nicht verfügbar: {error} "
+                    "Der Hybridmodus stellt ihn im Hintergrund wieder her.",
+                    file=sys.stderr,
+                )
+            if ollama_process is not None or _ollama_models(service_environment) is not None:
+                local_ai_ready = True
+                if _local_ai_required_for_startup(service_environment):
+                    if _prewarm_local_ai(service_environment):
+                        print(
+                            "Lokales Semantikmodell ist vorgewärmt "
+                            f"({service_environment.get('LOCAL_AI_FAST_MODEL', DEFAULT_LOCAL_AI_FAST_MODEL)})."
+                        )
+                    else:
+                        print("Lokales Semantikmodell konnte nicht vorgewärmt werden.", file=sys.stderr)
+                else:
+                    _prewarm_local_ai_in_background(service_environment)
+                    print("Lokales Semantikmodell wird parallel zum Anwendungsstart vorgewärmt.")
+            backend_process = start_backend()
+            if not _wait_for_url(
+                f"{backend_url}/api/health",
+                backend_process,
+                timeout_s=BACKEND_STARTUP_TIMEOUT_SECONDS,
+                expected_instance_id=instance_id,
+            ):
+                return_code = backend_process.poll()
+                raise RuntimeError(
+                    "Das Simulator-Backend wurde nicht bereit"
+                    + (f" (Exit-Code {return_code})." if return_code is not None else ".")
+                )
+            if not _wait_for_url(f"{backend_url}/api/engineering/health", backend_process):
+                raise RuntimeError(
+                    "Die Engineering-Datenbank wurde nicht bereit. Starte zuerst "
+                    "`start-engineering-db.bat` oder prüfe DATABASE_URL."
+                )
+    
+            frontend_process = start_frontend()
+            if not _wait_for_url(frontend_url, frontend_process):
+                return_code = frontend_process.poll()
+                raise RuntimeError(
+                    "Die Simulator-Oberfläche wurde nicht bereit"
+                    + (f" (Exit-Code {return_code})." if return_code is not None else ".")
+                )
+    
+            print(f"Backend: {backend_url} (exklusiv)")
+            print(f"Frontend: {frontend_url} (exklusiv)")
+            print(f"Dienstlogs: {SERVICE_LOG_ROOT}")
+            if runtime_fallback is not None:
+                print(f"Runtime-Fallback: {runtime_fallback}")
+            if frontend_dist_dir is not None:
+                print(f"Next.js Build-Ordner: frontend/{frontend_dist_dir}")
+            print("Beenden mit Strg+C")
+            if os.environ.get("NETWORKIS_OPEN_BROWSER", "1").strip().lower() not in {
+                "0",
+                "false",
+                "no",
+            }:
+                webbrowser.open(frontend_url, new=2)
+    
+            next_dependency_check = time.monotonic() + DEPENDENCY_HEALTH_INTERVAL_SECONDS
+            while True:
+                if backend_process.poll() is not None:
+                    restart_counts["Backend"] += 1
+                    if restart_counts["Backend"] &gt; restart_limit:
+                        print(
+                            f"Backend wurde nach {restart_limit} Neustarts nicht stabil "
+                            f"(letzter Exit-Code {backend_process.returncode}).",
+                            file=sys.stderr,
+                        )
+                        launcher_error = True
+                        break
+                    print(
+                        f"Backend wurde unerwartet beendet (Exit-Code {backend_process.returncode}). "
+                        f"Automatischer Neustart {restart_counts['Backend']}/{restart_limit}.",
+                        file=sys.stderr,
+                    )
+                    time.sleep(min(2 ** (restart_counts["Backend"] - 1), 5))
+                    backend_process = start_backend()
+                    if not _wait_for_url(
+                        f"{backend_url}/api/health",
+                        backend_process,
+                        timeout_s=BACKEND_STARTUP_TIMEOUT_SECONDS,
+                        expected_instance_id=instance_id,
+                    ):
+                        _terminate_process_tree(backend_process)
+                        continue
+                    print("Backend ist nach dem automatischen Neustart wieder bereit.")
+    
+                if frontend_process.poll() is not None:
+                    restart_counts["Frontend"] += 1
+                    if restart_counts["Frontend"] &gt; restart_limit:
+                        print(
+                            f"Frontend wurde nach {restart_limit} Neustarts nicht stabil "
+                            f"(letzter Exit-Code {frontend_process.returncode}).",
+                            file=sys.stderr,
+                        )
+                        launcher_error = True
+                        break
+                    print(
+                        f"Frontend wurde unerwartet beendet (Exit-Code {frontend_process.returncode}). "
+                        f"Automatischer Neustart {restart_counts['Frontend']}/{restart_limit}.",
+                        file=sys.stderr,
+                    )
+                    time.sleep(min(2 ** (restart_counts["Frontend"] - 1), 5))
+                    frontend_process = start_frontend()
+                    if not _wait_for_url(frontend_url, frontend_process):
+                        _terminate_process_tree(frontend_process)
+                        continue
+                    print("Frontend ist nach dem automatischen Neustart wieder bereit.")
+    
+                now = time.monotonic()
+                if now &gt;= next_dependency_check:
+                    next_dependency_check = now + DEPENDENCY_HEALTH_INTERVAL_SECONDS
+                    available_models = _ollama_models(service_environment)
+                    if _local_ai_enabled(service_environment) and available_models is None:
+                        local_ai_ready = False
+                        if ollama_process is not None and ollama_process.poll() is None:
+                            _terminate_process_tree(ollama_process)
+                        ollama_process = None
+                        try:
+                            ollama_process = _ensure_local_ai(service_environment, ollama_log)
+                            local_ai_ready = _prewarm_local_ai(service_environment)
+                            print("Lokaler AI-Dienst wurde automatisch wiederhergestellt.")
+                        except RuntimeError as error:
+                            print(f"Lokaler AI-Dienst bleibt nicht verfügbar: {error}", file=sys.stderr)
+                    elif _local_ai_enabled(service_environment) and not local_ai_ready:
+                        local_ai_ready = _prewarm_local_ai(service_environment)
+                        if local_ai_ready:
+                            print("Lokales Semantikmodell wurde nachträglich vorgewärmt.")
+    
+                    database_host, database_port = _database_endpoint(service_environment["DATABASE_URL"])
+                    if not _tcp_endpoint_available(database_host, database_port):
+                        try:
+                            _ensure_engineering_database(service_environment)
+                            print("Engineering-Datenbank wurde automatisch wiederhergestellt.")
+                        except RuntimeError as error:
+                            print(f"Engineering-Datenbank bleibt nicht verfügbar: {error}", file=sys.stderr)
+    
+                time.sleep(0.5)
+        except KeyboardInterrupt:
+            pass
+        except RuntimeError as error:
+            print(f"Start fehlgeschlagen: {error}", file=sys.stderr)
+            launcher_error = True
+        finally:
+            if frontend_process is not None:
+                _terminate_process_tree(frontend_process)
+            if backend_process is not None:
+                _terminate_process_tree(backend_process)
+            if ollama_process is not None:
+                _terminate_process_tree(ollama_process)
+            backend_log.close()
+            frontend_log.close()
+            ollama_log.close()
+        if launcher_error:
+            return 1
+&gt;       return backend_process.returncode or (frontend_process.returncode if frontend_process else 0) or 0
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: '_RunningProcess' object has no attribute 'returncode'
+
+scripts\dev\launch-networkis.py:1092: AttributeError</failure></testcase><testcase classname="tests.test_server_startup" name="test_launcher_start_and_recovery_preserve_active_inference[True-hybrid-demand]" time="0.010"><failure message="AttributeError: '_RunningProcess' object has no attribute 'returncode'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000022731BCFBD0&gt;
+tmp_path = WindowsPath('C:/Users/marti/AppData/Local/Temp/nis-pytest-2rzg2f_8/test_launcher_start_and_recove3')
+mode = 'hybrid-demand', owns_provider = True
+
+    @pytest.mark.parametrize("mode", ["local", "hybrid-demand"])
+    @pytest.mark.parametrize("owns_provider", [False, True])
+    def test_launcher_start_and_recovery_preserve_active_inference(
+        monkeypatch, tmp_path, mode, owns_provider,
+    ) -&gt; None:
+        """A metadata outage must not enqueue a model or replace a live provider."""
+        (tmp_path / "frontend" / "node_modules").mkdir(parents=True)
+        environment = {
+            "AI_PROVIDER": mode,
+            "LOCAL_AI_BASE_URL": "http://127.0.0.1:11434/v1",
+            "LOCAL_AI_MODEL": "qwen3.8:27b",
+            "LOCAL_AI_FAST_MODEL": "llama3.1:8b",
+            "DATABASE_URL": "postgresql://unused-isolated-test",
+        }
+        provider = _RunningProcess()
+        ensured, terminated, requests = [], [], []
+        clock = [0.0]
+        checks = [0]
+    
+        def ensure(_environment, _log):
+            ensured.append(True)
+            return provider if owns_provider else None
+    
+        def models(_environment):
+            checks[0] += 1
+            # Healthy at startup, one failed watchdog probe, then healthy again.
+            return None if checks[0] == 2 else ["qwen3.8:27b", "llama3.1:8b"]
+    
+        def sleep(_seconds):
+            clock[0] += 6.0
+            if clock[0] &gt; 18.0:
+                raise KeyboardInterrupt
+    
+        def open_request(request, **_kwargs):
+            requests.append(request)
+            return _JsonResponse(b'{}')
+    
+        monkeypatch.setattr(LAUNCHER, "ROOT", tmp_path)
+        monkeypatch.setattr(LAUNCHER, "SERVICE_LOG_ROOT", tmp_path / "logs")
+        monkeypatch.setattr(LAUNCHER, "_assert_canonical_project_root", lambda: None)
+        monkeypatch.setattr(LAUNCHER, "_frontend_command", lambda *_args: ["fake-next"])
+        monkeypatch.setattr(LAUNCHER, "_ensure_port_available", lambda *_args: None)
+        monkeypatch.setattr(LAUNCHER, "_runtime_environment", lambda: environment.copy())
+        monkeypatch.setattr(LAUNCHER, "_prepare_backend_runtime_root", lambda *_args: None)
+        monkeypatch.setattr(LAUNCHER, "_prepare_frontend_dist_dir", lambda *_args: None)
+        monkeypatch.setattr(LAUNCHER, "_open_service_log", lambda *_args: StringIO())
+        monkeypatch.setattr(LAUNCHER, "_ensure_engineering_database", lambda *_args: None)
+        monkeypatch.setattr(LAUNCHER, "_ensure_local_ai", ensure)
+        monkeypatch.setattr(LAUNCHER, "_ollama_models", models)
+        monkeypatch.setattr(LAUNCHER, "_tcp_endpoint_available", lambda *_args, **_kwargs: True)
+        monkeypatch.setattr(LAUNCHER, "_wait_for_url", lambda *_args, **_kwargs: True)
+        monkeypatch.setattr(LAUNCHER.subprocess, "Popen", lambda *_args, **_kwargs: _RunningProcess())
+        monkeypatch.setattr(LAUNCHER, "_terminate_process_tree", terminated.append)
+        monkeypatch.setattr(LAUNCHER, "urlopen", open_request)
+        monkeypatch.setattr(LAUNCHER.time, "monotonic", lambda: clock[0])
+        monkeypatch.setattr(LAUNCHER.time, "sleep", sleep)
+        monkeypatch.setenv("NETWORKIS_OPEN_BROWSER", "0")
+    
+&gt;       assert LAUNCHER._run_web() == 0
+               ^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_server_startup.py:581: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def _run_web() -&gt; int:
+        _assert_canonical_project_root()
+        frontend = ROOT / "frontend"
+        if not (frontend / "node_modules").is_dir():
+            raise SystemExit(
+                "Frontend-Abhängigkeiten fehlen. Bitte zuerst im Ordner frontend `npm install` ausführen."
+            )
+        frontend_port = _port_from_environment("FRONTEND_PORT", FRONTEND_PORT)
+        frontend_command = _frontend_command(frontend, frontend_port)
+    
+        backend_host = os.environ.get("FLASK_HOST", BACKEND_HOST)
+        backend_port = _port_from_environment("FLASK_PORT", BACKEND_PORT)
+        _ensure_port_available(backend_host, backend_port, "Backend")
+        _ensure_port_available(FRONTEND_HOST, frontend_port, "Frontend")
+    
+        instance_id = uuid.uuid4().hex
+        service_environment = _runtime_environment()
+        runtime_fallback = _prepare_backend_runtime_root(service_environment, instance_id)
+        frontend_dist_dir = _prepare_frontend_dist_dir(frontend, service_environment, instance_id)
+        backend_environment = service_environment.copy()
+        backend_environment["SIMULATOR_INSTANCE_ID"] = instance_id
+    
+        try:
+            SERVICE_LOG_ROOT.mkdir(parents=True, exist_ok=True)
+        except PermissionError:
+            pass
+        backend_log = _open_service_log("backend", instance_id)
+        frontend_log = _open_service_log("frontend", instance_id)
+        ollama_log = _open_service_log("ollama", instance_id)
+    
+        backend_process: subprocess.Popen[object] | None = None
+        frontend_process: subprocess.Popen[object] | None = None
+        ollama_process: subprocess.Popen[object] | None = None
+        local_ai_ready = False
+        launcher_error = False
+        restart_counts = {"Backend": 0, "Frontend": 0}
+        restart_limit = _service_restart_limit(service_environment)
+        backend_url = f"http://{backend_host}:{backend_port}"
+        frontend_url = f"http://{FRONTEND_HOST}:{frontend_port}"
+    
+        def start_backend() -&gt; subprocess.Popen[object]:
+            return subprocess.Popen(
+                [sys.executable, "-m", "backend.nis.app"],
+                cwd=ROOT,
+                env=backend_environment,
+                stdout=backend_log,
+                stderr=subprocess.STDOUT,
+                **_popen_options(),
+            )
+    
+        def start_frontend() -&gt; subprocess.Popen[object]:
+            return subprocess.Popen(
+                frontend_command,
+                cwd=frontend,
+                env=service_environment,
+                stdout=frontend_log,
+                stderr=subprocess.STDOUT,
+                **_popen_options(),
+            )
+    
+        try:
+            _ensure_engineering_database(service_environment)
+            backend_environment["DATABASE_URL"] = service_environment["DATABASE_URL"]
+            try:
+                ollama_process = _ensure_local_ai(service_environment, ollama_log)
+            except RuntimeError as error:
+                if _local_ai_required_for_startup(service_environment):
+                    raise
+                print(
+                    f"Lokaler AI-Dienst ist beim Start noch nicht verfügbar: {error} "
+                    "Der Hybridmodus stellt ihn im Hintergrund wieder her.",
+                    file=sys.stderr,
+                )
+            if ollama_process is not None or _ollama_models(service_environment) is not None:
+                local_ai_ready = True
+                if _local_ai_required_for_startup(service_environment):
+                    if _prewarm_local_ai(service_environment):
+                        print(
+                            "Lokales Semantikmodell ist vorgewärmt "
+                            f"({service_environment.get('LOCAL_AI_FAST_MODEL', DEFAULT_LOCAL_AI_FAST_MODEL)})."
+                        )
+                    else:
+                        print("Lokales Semantikmodell konnte nicht vorgewärmt werden.", file=sys.stderr)
+                else:
+                    _prewarm_local_ai_in_background(service_environment)
+                    print("Lokales Semantikmodell wird parallel zum Anwendungsstart vorgewärmt.")
+            backend_process = start_backend()
+            if not _wait_for_url(
+                f"{backend_url}/api/health",
+                backend_process,
+                timeout_s=BACKEND_STARTUP_TIMEOUT_SECONDS,
+                expected_instance_id=instance_id,
+            ):
+                return_code = backend_process.poll()
+                raise RuntimeError(
+                    "Das Simulator-Backend wurde nicht bereit"
+                    + (f" (Exit-Code {return_code})." if return_code is not None else ".")
+                )
+            if not _wait_for_url(f"{backend_url}/api/engineering/health", backend_process):
+                raise RuntimeError(
+                    "Die Engineering-Datenbank wurde nicht bereit. Starte zuerst "
+                    "`start-engineering-db.bat` oder prüfe DATABASE_URL."
+                )
+    
+            frontend_process = start_frontend()
+            if not _wait_for_url(frontend_url, frontend_process):
+                return_code = frontend_process.poll()
+                raise RuntimeError(
+                    "Die Simulator-Oberfläche wurde nicht bereit"
+                    + (f" (Exit-Code {return_code})." if return_code is not None else ".")
+                )
+    
+            print(f"Backend: {backend_url} (exklusiv)")
+            print(f"Frontend: {frontend_url} (exklusiv)")
+            print(f"Dienstlogs: {SERVICE_LOG_ROOT}")
+            if runtime_fallback is not None:
+                print(f"Runtime-Fallback: {runtime_fallback}")
+            if frontend_dist_dir is not None:
+                print(f"Next.js Build-Ordner: frontend/{frontend_dist_dir}")
+            print("Beenden mit Strg+C")
+            if os.environ.get("NETWORKIS_OPEN_BROWSER", "1").strip().lower() not in {
+                "0",
+                "false",
+                "no",
+            }:
+                webbrowser.open(frontend_url, new=2)
+    
+            next_dependency_check = time.monotonic() + DEPENDENCY_HEALTH_INTERVAL_SECONDS
+            while True:
+                if backend_process.poll() is not None:
+                    restart_counts["Backend"] += 1
+                    if restart_counts["Backend"] &gt; restart_limit:
+                        print(
+                            f"Backend wurde nach {restart_limit} Neustarts nicht stabil "
+                            f"(letzter Exit-Code {backend_process.returncode}).",
+                            file=sys.stderr,
+                        )
+                        launcher_error = True
+                        break
+                    print(
+                        f"Backend wurde unerwartet beendet (Exit-Code {backend_process.returncode}). "
+                        f"Automatischer Neustart {restart_counts['Backend']}/{restart_limit}.",
+                        file=sys.stderr,
+                    )
+                    time.sleep(min(2 ** (restart_counts["Backend"] - 1), 5))
+                    backend_process = start_backend()
+                    if not _wait_for_url(
+                        f"{backend_url}/api/health",
+                        backend_process,
+                        timeout_s=BACKEND_STARTUP_TIMEOUT_SECONDS,
+                        expected_instance_id=instance_id,
+                    ):
+                        _terminate_process_tree(backend_process)
+                        continue
+                    print("Backend ist nach dem automatischen Neustart wieder bereit.")
+    
+                if frontend_process.poll() is not None:
+                    restart_counts["Frontend"] += 1
+                    if restart_counts["Frontend"] &gt; restart_limit:
+                        print(
+                            f"Frontend wurde nach {restart_limit} Neustarts nicht stabil "
+                            f"(letzter Exit-Code {frontend_process.returncode}).",
+                            file=sys.stderr,
+                        )
+                        launcher_error = True
+                        break
+                    print(
+                        f"Frontend wurde unerwartet beendet (Exit-Code {frontend_process.returncode}). "
+                        f"Automatischer Neustart {restart_counts['Frontend']}/{restart_limit}.",
+                        file=sys.stderr,
+                    )
+                    time.sleep(min(2 ** (restart_counts["Frontend"] - 1), 5))
+                    frontend_process = start_frontend()
+                    if not _wait_for_url(frontend_url, frontend_process):
+                        _terminate_process_tree(frontend_process)
+                        continue
+                    print("Frontend ist nach dem automatischen Neustart wieder bereit.")
+    
+                now = time.monotonic()
+                if now &gt;= next_dependency_check:
+                    next_dependency_check = now + DEPENDENCY_HEALTH_INTERVAL_SECONDS
+                    available_models = _ollama_models(service_environment)
+                    if _local_ai_enabled(service_environment) and available_models is None:
+                        local_ai_ready = False
+                        if ollama_process is not None and ollama_process.poll() is None:
+                            _terminate_process_tree(ollama_process)
+                        ollama_process = None
+                        try:
+                            ollama_process = _ensure_local_ai(service_environment, ollama_log)
+                            local_ai_ready = _prewarm_local_ai(service_environment)
+                            print("Lokaler AI-Dienst wurde automatisch wiederhergestellt.")
+                        except RuntimeError as error:
+                            print(f"Lokaler AI-Dienst bleibt nicht verfügbar: {error}", file=sys.stderr)
+                    elif _local_ai_enabled(service_environment) and not local_ai_ready:
+                        local_ai_ready = _prewarm_local_ai(service_environment)
+                        if local_ai_ready:
+                            print("Lokales Semantikmodell wurde nachträglich vorgewärmt.")
+    
+                    database_host, database_port = _database_endpoint(service_environment["DATABASE_URL"])
+                    if not _tcp_endpoint_available(database_host, database_port):
+                        try:
+                            _ensure_engineering_database(service_environment)
+                            print("Engineering-Datenbank wurde automatisch wiederhergestellt.")
+                        except RuntimeError as error:
+                            print(f"Engineering-Datenbank bleibt nicht verfügbar: {error}", file=sys.stderr)
+    
+                time.sleep(0.5)
+        except KeyboardInterrupt:
+            pass
+        except RuntimeError as error:
+            print(f"Start fehlgeschlagen: {error}", file=sys.stderr)
+            launcher_error = True
+        finally:
+            if frontend_process is not None:
+                _terminate_process_tree(frontend_process)
+            if backend_process is not None:
+                _terminate_process_tree(backend_process)
+            if ollama_process is not None:
+                _terminate_process_tree(ollama_process)
+            backend_log.close()
+            frontend_log.close()
+            ollama_log.close()
+        if launcher_error:
+            return 1
+&gt;       return backend_process.returncode or (frontend_process.returncode if frontend_process else 0) or 0
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: '_RunningProcess' object has no attribute 'returncode'
+
+scripts\dev\launch-networkis.py:1092: AttributeError</failure></testcase><testcase classname="tests.test_server_startup" name="test_metadata_unavailable_reachable_provider_is_not_replaced" time="0.002"><failure message="Failed: Duplicate serve">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x00000227308C0490&gt;
+
+    def test_metadata_unavailable_reachable_provider_is_not_replaced(monkeypatch):
+        monkeypatch.setattr(LAUNCHER, "_ollama_models", lambda _environment: None)
+        monkeypatch.setattr(LAUNCHER, "_tcp_endpoint_available", lambda *_args, **_kwargs: True)
+        monkeypatch.setattr(LAUNCHER.subprocess, "Popen", lambda *_args, **_kwargs: pytest.fail("Duplicate serve"))
+        monkeypatch.setattr(LAUNCHER, "_ollama_executable", lambda: "fake-ollama")
+        with pytest.raises(RuntimeError, match="Metadaten"):
+&gt;           LAUNCHER._ensure_local_ai({"AI_PROVIDER": "local", "LOCAL_AI_MODEL": "qwen3.8:27b"}, None)
+
+backend\tests\test_server_startup.py:594: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+scripts\dev\launch-networkis.py:698: in _ensure_local_ai
+    owned_process = subprocess.Popen(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+_args = (['fake-ollama', 'serve'],)
+_kwargs = {'cwd': WindowsPath('I:/PycharmProjects/My_first_Network_Simulator'), 'env': {'AI_PROVIDER': 'local', 'LOCAL_AI_MODEL': 'qwen3.8:27b'}, 'stdout': None, 'stderr': -2, ...}
+
+&gt;   monkeypatch.setattr(LAUNCHER.subprocess, "Popen", lambda *_args, **_kwargs: pytest.fail("Duplicate serve"))
+                                                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: Duplicate serve
+
+backend\tests\test_server_startup.py:591: Failed</failure></testcase></testsuite></testsuites>

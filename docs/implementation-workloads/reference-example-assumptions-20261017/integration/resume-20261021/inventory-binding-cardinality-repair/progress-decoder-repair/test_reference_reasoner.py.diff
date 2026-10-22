@@ -1,0 +1,83 @@
+--- before/backend/tests/test_reference_reasoner.py
++++ after/backend/tests/test_reference_reasoner.py
+@@ -756,7 +756,9 @@
+     devices = intake.ReferenceDesignProposal.model_validate(complete_design(prepared)).model_dump(mode='json')['devices']
+     sensor = next(row for row in devices if row['kind'] == 'SENSOR')
+     fact = sensor['source_fact_ids'][0]
+-    sensor['source_member_bindings'] = {fact: 'Temperatur links'}
++    # The compatible positive must add a binding, rather than repeat one.
++    sensor['source_fact_ids'] = [next(key for key, row in prepared['facts'].items() if row['kind'] == 'FUNCTION')]
++    sensor['source_member_bindings'] = {}
+     target = {'fact_id': fact, 'member': 'Temperatur links', 'names': [], 'minimum_rows': 1}
+     valid = _reference_schema_for_stage(prepared, {'devices'}, inventory_target=target, existing_devices=devices)
+     choices = valid['properties']['inventory_choices']['items']['anyOf']
+@@ -768,6 +770,8 @@
+     elif mismatch == 'name':
+         target['names'] = ['A different explicit original name']
+     else:
++        sensor['source_fact_ids'].append(fact)
++        sensor['source_member_bindings'] = {fact: 'Temperatur links'}
+         target['member'] = 'Temperatur rechts'
+     schema = _reference_schema_for_stage(prepared, {'devices'}, inventory_target=target, existing_devices=[sensor])
+     new_choice = schema['properties']['inventory_choices']['items']
+@@ -1183,3 +1187,60 @@
+     with pytest.raises(ValueError, match=expected):
+         _reference_expand_inventory_bindings(known, [], choices)
+     assert known == before
++
++
++@pytest.mark.parametrize('mode', ['empty', 'already_bound'])
++def test_native_inventory_decoder_rejects_incomplete_without_coverage_progress(mode):
++    from jsonschema import Draft202012Validator, ValidationError
++    prepared = intake.prepare_reference_design(fixture_request())
++    known, _ = _reference_declared_instances(prepared, prepared['facts'])
++    fact = next(key for key, row in prepared['facts'].items() if row['kind'] == 'FUNCTION')
++    known[0]['source_fact_ids'].append(fact)
++    schema = _reference_schema_for_stage(prepared, {'devices'},
++        derivation_fact_ids=[fact], existing_devices=known)
++    choice = {'choice_kind': 'EXISTING', 'device_id': known[0]['id'],
++              'source_fact_ids': [fact], 'rationale': 'Repeated existing binding', 'field_references': {}}
++    value = {**intake.ReferenceDesignProposal().model_dump(mode='json'),
++             'inventory_complete': False, 'inventory_choices': [] if mode == 'empty' else [choice]}
++    with pytest.raises(ValidationError):
++        Draft202012Validator(schema).validate(value)
++    Draft202012Validator(schema).validate({**value, 'inventory_complete': True, 'inventory_choices': []})
++
++
++def test_native_inventory_decoder_binds_only_missing_facts_to_each_existing_identity():
++    from jsonschema import Draft202012Validator, ValidationError
++    prepared = intake.prepare_reference_design(wide_derivation_request())
++    known, _ = _reference_declared_instances(prepared, prepared['facts'])
++    facts = [key for key, row in prepared['facts'].items() if row['kind'] == 'FUNCTION'][:2]
++    assert len(facts) == 2
++    known[0]['source_fact_ids'].append(facts[0])
++    schema = _reference_schema_for_stage(prepared, {'devices'},
++        derivation_fact_ids=facts, existing_devices=known)
++    validator = Draft202012Validator(schema)
++    base = {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'inventory_complete': False}
++    choice = {'choice_kind': 'EXISTING', 'device_id': known[0]['id'],
++              'source_fact_ids': [facts[1]], 'rationale': 'Additional source binding', 'field_references': {}}
++    validator.validate({**base, 'inventory_choices': [choice]})
++    with pytest.raises(ValidationError):
++        validator.validate({**base, 'inventory_choices': [{**choice, 'source_fact_ids': [facts[0]]}]})
++    expanded = _reference_expand_inventory_choices(known, [choice])
++    delta = _reference_scoped_inventory_delta(known, expanded, derivation_fact_ids=facts)
++    assert set(delta[0]['source_fact_ids']) == set(known[0]['source_fact_ids']) | {facts[1]}
++
++
++def test_native_inventory_terminal_failure_retains_exact_local_response_diagnostic(monkeypatch, caplog):
++    import hashlib
++    def no_progress(candidate, content, payload, prepared):
++        candidate.update(devices=[], inventory_complete=False)
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch, derivation_mutator=no_progress)
++    with pytest.raises(ValueError, match='keine fehlende ursprüngliche Geräteabdeckung'):
++        run_reference(reasoner, prepared)
++    records = [row for row in caplog.records if row.msg == 'Native reference validation failed: %s']
++    assert len(records) == 1
++    diagnostic = json.loads(records[0].args[0])
++    assert diagnostic['stage'] == 'Funktionsbedingte physische Hardware'
++    assert diagnostic['derivation_fact_ids']
++    raw = diagnostic['response']
++    assert hashlib.sha256(raw.encode()).hexdigest() == diagnostic['response_sha256']
++    assert json.loads(raw)['inventory_complete'] is False
++    assert json.loads(raw)['inventory_choices'] == []

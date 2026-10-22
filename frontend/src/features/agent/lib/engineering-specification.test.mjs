@@ -1,3 +1,4 @@
+import { documentSourceFunctionAssignments, documentEvidenceCounts, documentFactIdentity, documentDeviceQuestions, reviewDocumentEquipment, documentReviewSource, documentRequestSource, readReviewedDocumentEquipment } from './document-clarification.ts';
 import assert from "node:assert/strict";
 test('device connection selection applies only to the named device', () => {
   const task = '2 Aktoren für Ventile, 4 Sensoren für Temperaturen, und ein RaspberryPi';
@@ -282,9 +283,10 @@ test('complete requirements document recognizes named controller chapters withou
   assert.equal(result.chains.some(chain => chain.hardware_name === 'degradieren'), false);
   assert.equal(result.targetCounts.sensors, 0);
   assert.equal(result.targetCounts.actuators, 0);
-  assert.equal(result.unresolvedInventoryGroups.length, 2);
-  assert.match(result.unresolvedInventoryGroups[0], /Radar.*Kamera.*Stückzahlen/);
-  assert.match(result.unresolvedInventoryGroups[1], /Bremsaktuator.*Lenkaktuator.*Stückzahlen/);
+  assert.equal(result.unresolvedInventoryGroups.length, 9);
+  for (const member of ['Radar', 'Kamera', 'Lidar', 'Ultraschall', 'IMU', 'Raddrehzahl', 'Bremsaktuator', 'Lenkaktuator', 'Antriebsaktuator']) {
+    assert.ok(result.unresolvedInventoryGroups.some(finding => finding.includes(`(${member})`) && finding.includes('Stückzahl')));
+  }
   assert.equal(result.communicationSystems.includes('ADC'), false);
   assert.equal(result.communicationSystemCounts.ADC, undefined);
   assert.equal(result.communicationSystemCounts.LIN, 1);
@@ -1409,4 +1411,421 @@ test('functional per-target OFF partitions new outputs without changing local en
   const packed = packEngineeringChains(chains, undefined, prompt);
   assert.equal(new Set(packed.map(chain => chain.message_name)).size, 2);
   assert.ok(packed.every(chain => chain.length_bits === 8 && chain.dlc === 1));
+});
+
+
+test('document questions transfer each reviewed member, retaining partial gaps and minimum provenance', () => {
+  const source = 'Controller: PerceptionUnit\nSensorik (Kamera, IMU, Lidar)\nAktorik (Greifer, Antrieb)';
+  const questions = documentDeviceQuestions(source);
+  assert.equal(questions.length, 5);
+  const camera = questions.find(question => question.label === 'Kamera');
+  const equipment = reviewDocumentEquipment(source, null, { [camera.id]: '2' }, true);
+  const prompt = `${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`;
+  const spec = extractEngineeringSpecification(prompt);
+  assert.deepEqual(spec.chains.filter(chain => chain.device_type === 'SensorController').map(chain => chain.hardware_name), ['Kamera1', 'Kamera2']);
+  assert.equal(spec.unresolvedInventoryGroups.length, 4);
+  assert.ok(spec.unresolvedInventoryGroups.some(finding => finding.includes('IMU')));
+  assert.ok(spec.unresolvedInventoryGroups.some(finding => finding.includes('Lidar')));
+  assert.equal(readReviewedDocumentEquipment(prompt).answers[0].minimum, true);
+  assert.ok(spec.chains.filter(chain => chain.device_type === 'SensorController').every(chain => chain.configuration.document_equipment_evidence.minimum === true));
+  assert.ok(spec.chains.filter(chain => chain.device_type === 'SensorController').every(chain => chain.interface_type === 'Other'));
+  assert.equal(documentReviewSource(prompt), source);
+});
+
+test('native reviewed device facts enter the normal inventory without copying proposal prose', () => {
+  const source = 'Control Computer (CC)\nSensor types (Camera, IMU)\nFunction: Processing sensor data.';
+  const proposal = { source_sha256: 'a'.repeat(64), interpretation: { components: [
+    { name: 'Control Computer (CC)', kind: 'INSTANCE', role: 'CONTROLLER', quantity: 1, source_quote: 'Control Computer (CC)' },
+    { name: 'Processing sensor data', kind: 'FUNCTION', role: 'OTHER', quantity: null, source_quote: 'Function: Processing sensor data.' },
+  ] } };
+  const questions = documentDeviceQuestions(source, proposal);
+  const equipment = reviewDocumentEquipment(source, proposal, Object.fromEntries(questions.map(question => [question.id, '1'])), true);
+  const spec = extractEngineeringSpecification(`${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`);
+  assert.equal(new Set(spec.chains.filter(chain => isEngineeringControllerDevice(chain.device_type)).map(chain => chain.hardware_name)).size, 1);
+  assert.equal(spec.targetCounts.sensors, 2);
+  assert.equal(spec.unresolvedInventoryGroups.length, 0);
+  assert.ok(!spec.chains.some(chain => chain.hardware_name.includes('Processing')));
+});
+
+test('a different sensor never resolves a missing category and forged document citations fail', () => {
+  const source = 'Sensor: Temperature1\nSensorik (Kamera, IMU)';
+  assert.equal(extractEngineeringSpecification(source).unresolvedInventoryGroups.length, 2);
+  const equipment = reviewDocumentEquipment(source, null, {}, false);
+  equipment.answers.push({ ...equipment.questions[0], quantity: 1, minimum: false, source_quote: 'Erfundene Quelle' });
+  assert.throws(() => extractEngineeringSpecification(`${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`), /Unbelegte/);
+});
+
+test('wizard review selections never discard literal metadata-like lines from an original attachment', () => {
+  const attachment = 'Original\r\n- Geräteanschlüsse: {"Pumpe":"UART"}\r\n\r\n';
+  assert.equal(documentRequestSource('Aufgabe\n- Sensor-Messgrößen: {"S":"temperature"}', [attachment]), `Aufgabe\n${attachment}`);
+  assert.equal(documentRequestSource('Aufgabe\n- Sensor-Messgrößen: {"S":"voltage"}', [attachment]), `Aufgabe\n${attachment}`);
+});
+
+test('a reviewed overview references existing instances without duplicating controllers or masking child gaps', () => {
+  const source = 'Domain-Controller (Alpha, Beta)\nAlpha Controller (AC)\nBeta Controller (BC)\nSensorik (Kamera, IMU)';
+  const proposal = { source_sha256: 'a'.repeat(64), interpretation: { components: [
+    { name: 'Domain-Controller (Alpha, Beta)', kind: 'CATEGORY', role: 'CONTROLLER', quantity: null, source_quote: 'Domain-Controller (Alpha, Beta)' },
+    ...['Alpha Controller (AC)', 'Beta Controller (BC)'].map(name => ({ name, kind: 'INSTANCE', role: 'CONTROLLER', quantity: 1, source_quote: name })),
+  ] } };
+  const questions = documentDeviceQuestions(source, proposal);
+  const overview = questions.find(item => item.role === 'CONTROLLER');
+  assert.deepEqual(overview.covered_by, ['Alpha Controller (AC)', 'Beta Controller (BC)']);
+  const equipment = reviewDocumentEquipment(source, proposal, { [overview.id]: 'covered' }, false);
+  const spec = extractEngineeringSpecification(`${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`);
+  assert.equal(spec.targetCounts.ecus, 2);
+  assert.equal(spec.targetCounts.sensors, 0);
+  assert.equal(spec.unresolvedInventoryGroups.length, 2);
+});
+
+test('answered group members retain separate measurement meaning and literal source evidence', () => {
+  const source = 'Sensorik (Kamera, IMU, Lidar)\nAktorik (Bremsaktuator, Lenkaktuator)';
+  const equipment = reviewDocumentEquipment(source, null, Object.fromEntries(documentDeviceQuestions(source).map(item => [item.id, '1'])), true);
+  const spec = extractEngineeringSpecification(`${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`);
+  const measurements = Object.fromEntries(spec.chains.map(chain => [chain.hardware_name, chain.configuration.sensor_measurement]));
+  assert.equal(measurements.Kamera, 'image_frame');
+  assert.equal(measurements.IMU, 'inertial_vector');
+  assert.equal(measurements.Lidar, 'point_cloud');
+  assert.ok(spec.chains.every(chain => source.includes(chain.configuration.document_equipment_evidence.source_quote)));
+});
+
+test('responsibilities bind endpoints to uniquely scoped controllers across industries without first-owner fallback', () => {
+  for (const domain of ['automotive', 'building_automation', 'robotics_ros', 'custom']) {
+    const source = 'Controller: Alpha\nAufgaben:\nKamera auswerten\nSchnittstellen:\nUART\nController: Beta\nAufgaben:\nLenkung regeln\nSchnittstellen:\nCAN\nSensorik (Kamera)\nAktorik (Lenkaktuator)';
+    const equipment = reviewDocumentEquipment(source, null, Object.fromEntries(documentDeviceQuestions(source).map(item => [item.id, '1'])), true);
+    const spec = extractEngineeringSpecification(`${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`, {}, domain);
+    assert.equal(spec.chains.find(chain => chain.hardware_name === 'Kamera').configuration.functional_owner, 'Alpha');
+    assert.equal(spec.chains.find(chain => chain.hardware_name === 'Lenk').configuration.functional_owner, 'Beta');
+    assert.equal(spec.chains.find(chain => chain.hardware_name === 'Kamera').configuration.functional_owner_source, 'source_scoped_function');
+  }
+  const source = 'Controller: Alpha\nAufgaben:\nKamera auswerten\nSchnittstellen:\nUART\nController: Beta\nAufgaben:\nKamera auswerten\nSchnittstellen:\nCAN\nSensorik (Kamera)';
+  const equipment = reviewDocumentEquipment(source, null, Object.fromEntries(documentDeviceQuestions(source).map(item => [item.id, '1'])), true);
+  assert.equal(extractEngineeringSpecification(`${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`).chains.find(chain => chain.hardware_name === 'Kamera').configuration.functional_owner, undefined);
+});
+
+test('document controller aliases stay distinct from explicitly declared ADC ports in their own section', () => {
+  for (const hyphen of ['-', '\u2011', '\u2013']) {
+    const source = `ADAS Domain Controller (ADC)\nAufgaben:\nKamera auswerten\nSchnittstellen:\nEthernet\nAnforderungen:\nREQ${hyphen}ADC${hyphen}01 Der ADC MUSS Objekte erkennen.`;
+    const spec = extractEngineeringSpecification(source);
+    const controller = spec.chains.find(chain => chain.hardware_name === 'ADAS Domain');
+    assert.equal(controller.interface_type, 'Ethernet');
+    assert.ok(!extractCommunicationSystems(source).includes('ADC'));
+    assert.ok(!spec.communicationSystems.includes('ADC'));
+    const withPort = extractEngineeringSpecification(source.replace('Schnittstellen:\nEthernet', 'Schnittstellen:\nEthernet\nADC Anschluss'));
+    assert.ok(withPort.communicationSystems.includes('ADC'));
+    assert.deepEqual(withPort.chains.find(chain => chain.hardware_name === 'ADAS Domain').configuration.connection_candidates, ['Ethernet', 'ADC']);
+  }
+});
+
+
+test('reviewed typed document facts replace lexical counts and retain functions and requirements', () => {
+  const source = '# Robot\n## Architecture\nHauptrechner\nEncoder\nGelenkaktuatoren\n## Functions\nSensorfehler erkennen\n## Requirements\nREQ-ROBOT-001: The system shall monitor 6 controllers and 2 sensors.';
+  const facts = [
+    { name: 'Hauptrechner', kind: 'INSTANCE', role: 'CONTROLLER', quantity: 1, source_quote: 'Hauptrechner', source_context: ['Robot', 'Architecture'] },
+    { name: 'Encoder', kind: 'CATEGORY', role: 'SENSOR', quantity: null, source_quote: 'Encoder', source_context: ['Robot', 'Architecture'] },
+    { name: 'Gelenkaktuatoren', kind: 'CATEGORY', role: 'ACTUATOR', quantity: null, source_quote: 'Gelenkaktuatoren', source_context: ['Robot', 'Architecture'] },
+    { name: 'Sensorfehler erkennen', kind: 'FUNCTION', role: 'OTHER', quantity: null, source_quote: 'Sensorfehler erkennen', source_context: ['Robot', 'Functions'] },
+    { name: 'REQ-ROBOT-001', kind: 'REQUIREMENT', role: 'OTHER', quantity: null, source_quote: 'REQ-ROBOT-001: The system shall monitor 6 controllers and 2 sensors.', source_context: ['Robot', 'Requirements'] },
+  ];
+  const proposal = { source_sha256: 'a'.repeat(64), source_chars: source.length, interpretation: { components: facts, technologies: [] } };
+  const equipment = reviewDocumentEquipment(source, proposal, {}, false);
+  const prompt = `${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`;
+  const roundtrip = readReviewedDocumentEquipment(prompt);
+  assert.deepEqual(roundtrip.facts, facts);
+  assert.equal(roundtrip.source_text, source);
+  const spec = extractEngineeringSpecification(prompt);
+  assert.equal(spec.targetCounts.ecus, 1);
+  assert.equal(spec.targetCounts.sensors, 0);
+  assert.equal(spec.targetCounts.actuators, 0);
+  assert.deepEqual([...new Set(spec.chains.map(chain => chain.hardware_name))], ['Hauptrechner']);
+  assert.equal(spec.unresolvedInventoryGroups.length, 2);
+  assert.ok(spec.unresolvedInventoryGroups.some(finding => finding.includes('Encoder')));
+});
+
+test('equal device labels from separate profiles retain distinct clarification and inventory identities', () => {
+  const source = '# Robots\n## 054. Arm\n### Architecture\nEncoder\n## 056. Mobile\n### Architecture\nEncoder';
+  const components = [
+    { name: 'Encoder', kind: 'CATEGORY', role: 'SENSOR', quantity: null, source_quote: 'Encoder', source_context: ['Robots', '054. Arm', 'Architecture'] },
+    { name: 'Encoder', kind: 'CATEGORY', role: 'SENSOR', quantity: null, source_quote: 'Encoder', source_context: ['Robots', '056. Mobile', 'Architecture'] },
+  ];
+  const proposal = { source_sha256: 'a'.repeat(64), interpretation: { components, technologies: [] } };
+  const questions = documentDeviceQuestions(source, proposal);
+  assert.equal(questions.length, 2);
+  assert.notEqual(questions[0].id, questions[1].id);
+  const partial = reviewDocumentEquipment(source, proposal, { [questions[0].id]: '1' }, false);
+  const partialSpec = extractEngineeringSpecification(`${source}\n- Dokument-Geräte: ${JSON.stringify(partial)}`);
+  assert.deepEqual(partialSpec.chains.map(chain => chain.hardware_name), ['Encoder [054]']);
+  const equipment = reviewDocumentEquipment(source, proposal, Object.fromEntries(questions.map(question => [question.id, '1'])), false);
+  const spec = extractEngineeringSpecification(`${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`);
+  assert.equal(new Set(spec.chains.map(chain => chain.hardware_name)).size, 2);
+  assert.equal(spec.targetCounts.sensors, 2);
+  assert.equal(spec.unresolvedInventoryGroups.length, 0);
+});
+
+test('raw portfolio preview retains profile identity and never borrows another profile transport', () => {
+  const source = '# Road systems\n## 001. Passenger car\n### Architecture\nCabin-Gateway\nLIN\n'
+    + '## 021. Ambulance\n### Architecture\nMedizingeräte-Gateway\n'
+    + '## 022. Service vehicle\n### Architecture\nCabin-Gateway\nEthernet\n';
+  const spec = extractEngineeringSpecification(source);
+  const medical = spec.chains.find(chain => chain.hardware_name.includes('Medizingeräte'));
+  assert.ok(medical);
+  assert.match(medical.hardware_name, /021/);
+  assert.equal(medical.device_type, 'Gateway');
+  assert.equal(medical.interface_type, 'Other');
+  assert.deepEqual(medical.configuration.source_context, ['Road systems', '021. Ambulance']);
+  const cabin = spec.chains.filter(chain => chain.hardware_name.includes('Cabin'));
+  assert.equal(cabin.length, 2);
+  assert.equal(cabin.find(chain => chain.hardware_name.includes('001')).interface_type, 'LIN');
+  assert.equal(cabin.find(chain => chain.hardware_name.includes('022')).interface_type, 'Ethernet');
+});
+
+test('raw test-case citations do not declare installed hardware', () => {
+  const spec = extractEngineeringSpecification('# Police\n## Verification\n- **TC-AUTO-023-05:** Cyberangriff über Einsatzfunk-Gateway.\n'
+    + '- TC-ROBOT-001: Sensor AttackSensor responds.\nREQ: Phantom-Gateway\nController: ActualController\n');
+  assert.ok(spec.chains.some(chain => chain.hardware_name === 'Actual'));
+  assert.ok(spec.chains.every(chain => !/Einsatzfunk|Attack|Phantom/.test(chain.hardware_name)));
+});
+
+test('unknown source device roles need an explicit type answer rather than a controller fallback', () => {
+  const source = 'Architecture: Optical unit';
+  const proposal = { source_sha256: 'a'.repeat(64), interpretation: { components: [
+    { name: 'Optical unit', kind: 'CATEGORY', role: 'OTHER', quantity: null, source_quote: 'Optical unit' },
+  ], technologies: [] } };
+  const [question] = documentDeviceQuestions(source, proposal);
+  assert.equal(question.role, 'OTHER');
+  assert.throws(() => reviewDocumentEquipment(source, proposal, { [question.id]: '1' }, false), /Geräteart/);
+  const equipment = reviewDocumentEquipment(source, proposal, { [question.id]: '1' }, false, { [question.id]: 'SENSOR' });
+  const spec = extractEngineeringSpecification(`${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`);
+  assert.equal(spec.targetCounts.sensors, 1);
+  assert.equal(spec.targetCounts.ecus, 0);
+});
+
+
+test('function assignments retain exact fact identity and require a real source fact', () => {
+  const source = '# Robot\n## Functions\nMotion Control';
+  const fact = { name: 'Motion Control', kind: 'FUNCTION', role: 'OTHER', quantity: null,
+    source_quote: 'Motion Control', source_context: ['Robot', 'Functions'] };
+  const proposal = { interpretation: { components: [fact], technologies: [] } };
+  const id = documentFactIdentity(fact);
+  const equipment = reviewDocumentEquipment(source, proposal, {}, false, {}, { [id]: 'Hauptrechner' });
+  assert.deepEqual(equipment.function_assignments, { [id]: 'Hauptrechner' });
+  assert.deepEqual(readReviewedDocumentEquipment(`${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`).function_assignments, equipment.function_assignments);
+  equipment.function_assignments = { forged: 'Hauptrechner' };
+  assert.throws(() => readReviewedDocumentEquipment(`${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`), /Funktionszuordnung/);
+});
+
+test('explicitly excluding an untyped category does not fabricate a device role', () => {
+  const source = 'Architecture: Optical unit';
+  const proposal = { interpretation: { components: [{ name: 'Optical unit', kind: 'CATEGORY', role: 'OTHER', quantity: null, source_quote: 'Optical unit' }], technologies: [] } };
+  const [question] = documentDeviceQuestions(source, proposal);
+  const equipment = reviewDocumentEquipment(source, proposal, { [question.id]: '0' }, false);
+  assert.deepEqual(equipment.answers, []);
+  assert.deepEqual(equipment.excluded_questions, [question.id]);
+  const spec = extractEngineeringSpecification(`${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`);
+  assert.equal(spec.chains.length, 0);
+  assert.equal(spec.unresolvedInventoryGroups.length, 0);
+});
+
+test('typed sensor groups retain their own profile and exclude functional sensor lists', () => {
+  const quote = 'Sensorik (Kamera, Radar)';
+  const source = `# A\n${quote}\n# B\n${quote}\n# Functions\nSensorik: Diagnose`;
+  const components = ['A', 'B'].map(scope => ({ name: 'Sensorik', kind: 'CATEGORY', role: 'SENSOR', quantity: null, source_quote: quote, source_context: [scope] }));
+  components.push({ name: 'Diagnose', kind: 'FUNCTION', role: 'OTHER', quantity: null, source_quote: 'Sensorik: Diagnose', source_context: ['Functions'] });
+  const questions = documentDeviceQuestions(source, { interpretation: { components } });
+  assert.equal(questions.length, 4);
+  assert.deepEqual(questions.map(question => question.source_context[0]).sort(), ['A', 'A', 'B', 'B']);
+  assert.deepEqual(questions.map(question => question.label).sort(), ['Kamera', 'Kamera', 'Radar', 'Radar']);
+});
+
+test('requirement ID counts recognize Unicode hyphens without changing literal evidence', () => {
+  const source = 'REQ‑ADC‑02: Objektliste Position/Geschwindigkeit/Klassifikation.\nREQ-FUS-01: Fusion shall retain time.\nREQ-ADC-02: Same ID with ASCII hyphens.';
+  const facts = [{ name: 'Anforderungen', kind: 'REQUIREMENT', role: 'OTHER', quantity: null, source_quote: source }];
+  const equipment = reviewDocumentEquipment(source, { interpretation: { components: facts, technologies: [] } }, {}, false);
+  assert.equal(documentEvidenceCounts(equipment).requirementIds, 2);
+  assert.equal(equipment.facts[0].source_quote, source);
+});
+
+test('document functions reuse only unique literal responsibilities in the same source system', () => {
+  const fact = { name: 'Perception', kind: 'FUNCTION', role: 'OTHER', quantity: null, source_quote: 'Perception (Objekte, Spuren)', source_context: ['Robot A', 'Functions'] };
+  const owner = { name: 'ADC', source_context: ['Robot A', 'Architecture'], duties: [{ source_quote: fact.source_quote }] };
+  assert.deepEqual(documentSourceFunctionAssignments([fact], [owner]), { [documentFactIdentity(fact)]: 'ADC' });
+  assert.deepEqual(documentSourceFunctionAssignments([fact], [{ ...owner, source_context: ['Robot B', 'Architecture'] }]), {});
+  assert.deepEqual(documentSourceFunctionAssignments([fact], [owner, { ...owner, name: 'Other' }]), {});
+  assert.deepEqual(documentSourceFunctionAssignments([fact], [{ ...owner, duties: [] }]), {});
+});
+
+
+test('numeric source scopes preserve literal controller responsibility across sibling hosts', () => {
+  const quote = 'Perception (Objekte, Spuren)';
+  const fact = { name: 'Perception', kind: 'FUNCTION', role: 'OTHER', quantity: null, source_quote: quote,
+    source_context: ['2. Architektur', '2.3 ADAS Domain Controller (ADC)', '2.3.1 Aufgaben'] };
+  const owners = [
+    { name: 'ADC', source_context: ['2. Architektur', '2.3 ADAS Domain Controller (ADC)'], duties: [{ source_quote: quote }] },
+    { name: 'CGW', source_context: ['2. Architektur', '2.1 Central Gateway'], duties: [{ source_quote: quote }] },
+  ];
+  assert.deepEqual(documentSourceFunctionAssignments([fact], owners), { [documentFactIdentity(fact)]: 'ADC' });
+});
+
+for (const system of ['Vehicle', 'Robot Alpha', 'Plant Alpha']) {
+  test(`exact source responsibility crosses chapters only within ${system}`, () => {
+    const fact = { name: 'Fahrdynamikregelung', kind: 'FUNCTION', role: 'OTHER', quantity: null,
+      source_quote: 'Fahrdynamikregelung', source_context: [system, '4. Systemfunktionen', '4.4 Fahrzeugsteuerung'] };
+    const context = [system, '2. Domain‑Controller‑Design', '2.2 Chassis Domain Controller (CDC)'];
+    const witness = { ...fact, source_context: context };
+    const owner = { name: 'CDC', source_context: context, duties: [{ source_quote: fact.source_quote }] };
+    const assignments = documentSourceFunctionAssignments([fact, witness], [owner]);
+    assert.equal(assignments[documentFactIdentity(fact)], 'CDC');
+    assert.equal(assignments[documentFactIdentity(witness)], 'CDC');
+  });
+}
+
+for (const invalid of ['different-profile', 'ambiguous-owner', 'qualified-subject', 'composite',
+  'missing-witness', 'wrong-kind', 'wrong-role', 'quantity', 'nonliteral-subject', 'shared-citation',
+  'empty-fact-context', 'empty-owner-context', 'empty-witness-context']) {
+  test(`cross-chapter source assignment rejects ${invalid}`, () => {
+    const fact = { name: 'Fahrdynamikregelung', kind: 'FUNCTION', role: 'OTHER', quantity: null,
+      source_quote: 'Fahrdynamikregelung', source_context: ['Vehicle A', '4. Systemfunktionen', '4.4 Fahrzeugsteuerung'] };
+    const context = ['Vehicle A', '2. Domain‑Controller‑Design', '2.2 CDC'];
+    let witnesses = [{ ...fact, source_context: context }];
+    let owners = [{ name: 'CDC', source_context: context, duties: [{ source_quote: fact.source_quote }] }];
+    if (invalid === 'different-profile') {
+      witnesses[0].source_context = ['Vehicle B', ...context.slice(1)];
+      owners[0].source_context = witnesses[0].source_context;
+    } else if (invalid === 'ambiguous-owner') {
+      const otherContext = [...context.slice(0, -1), '2.3 Other'];
+      witnesses.push({ ...fact, source_context: otherContext });
+      owners.push({ ...owners[0], name: 'Other', source_context: otherContext });
+    } else if (invalid === 'qualified-subject') {
+      fact.name += ' (Steering)'; fact.source_quote = fact.name;
+    } else if (invalid === 'composite') {
+      fact.name += ' und Planning'; fact.source_quote = fact.name;
+    } else if (invalid === 'missing-witness') witnesses = [];
+    else if (invalid === 'wrong-kind') witnesses[0].kind = 'CATEGORY';
+    else if (invalid === 'wrong-role') witnesses[0].role = 'CONTROLLER';
+    else if (invalid === 'quantity') witnesses[0].quantity = 1;
+    else if (invalid === 'nonliteral-subject') fact.source_quote = 'Other source line';
+    else if (invalid === 'empty-fact-context') fact.source_context = [];
+    else if (invalid === 'empty-owner-context') {
+      owners[0].source_context = []; witnesses[0].source_context = ['Functions'];
+    } else if (invalid === 'empty-witness-context') {
+      owners[0].source_context = ['Architecture']; witnesses[0].source_context = [];
+    }
+    else if (invalid === 'shared-citation') {
+      witnesses[0].source_quote = 'Fahrdynamikregelung und Planning';
+      witnesses.push({ ...witnesses[0], name: 'Planning' });
+      owners[0].duties = [{ source_quote: 'Planning' }];
+    }
+    assert.equal(documentSourceFunctionAssignments([fact, ...witnesses], owners)[documentFactIdentity(fact)], undefined);
+  });
+}
+
+test('same numeric profile ordinal in different roots keeps unique stable device names', () => {
+  const source = '# Industry A\n## 054. Arm\n### Architecture\nEncoder\n# Industry B\n## 054. Other\n### Architecture\nEncoder';
+  const components = [
+    { name: 'Encoder', kind: 'CATEGORY', role: 'SENSOR', quantity: null, source_quote: 'Encoder', source_context: ['Industry A', '054. Arm', 'Architecture'] },
+    { name: 'Encoder', kind: 'CATEGORY', role: 'SENSOR', quantity: null, source_quote: 'Encoder', source_context: ['Industry B', '054. Other', 'Architecture'] },
+  ];
+  const proposal = { interpretation: { components, technologies: [] } };
+  const questions = documentDeviceQuestions(source, proposal);
+  const partial = reviewDocumentEquipment(source, proposal, { [questions[0].id]: '1' }, false);
+  const first = extractEngineeringSpecification(`${source}\n- Dokument-Geräte: ${JSON.stringify(partial)}`);
+  assert.deepEqual(first.chains.map(chain => chain.hardware_name), ['Encoder [Industry A/054]']);
+  const all = reviewDocumentEquipment(source, proposal, Object.fromEntries(questions.map(question => [question.id, '1'])), false);
+  const complete = extractEngineeringSpecification(`${source}\n- Dokument-Geräte: ${JSON.stringify(all)}`);
+  assert.equal(complete.targetCounts.sensors, 2);
+  assert.ok(complete.chains.some(chain => chain.hardware_name === first.chains[0].hardware_name));
+  assert.equal(new Set(complete.chains.map(chain => chain.hardware_name)).size, 2);
+});
+
+
+test('overview coverage can reference confirmed devices in another section of the same source system', () => {
+  const source = '# Anlage Nord\n## Übersicht\nDomain-Controller (Alpha, Beta)\n## Architektur\nController Alpha (A)\nController Beta (B)';
+  const proposal = { interpretation: { technologies: [], components: [
+    { name: 'Domain-Controller (Alpha, Beta)', kind: 'CATEGORY', role: 'CONTROLLER', quantity: null, source_quote: 'Domain-Controller (Alpha, Beta)', source_context: ['Anlage Nord', 'Übersicht'] },
+    ...['Controller Alpha (A)', 'Controller Beta (B)'].map(name => ({ name, kind: 'INSTANCE', role: 'CONTROLLER', quantity: 1, source_quote: name, source_context: ['Anlage Nord', 'Architektur'] })),
+  ] } };
+  const [question] = documentDeviceQuestions(source, proposal);
+  assert.deepEqual(question.covered_by, ['Controller Alpha (A)', 'Controller Beta (B)']);
+  const equipment = reviewDocumentEquipment(source, proposal, { [question.id]: 'covered' }, false);
+  assert.equal(equipment.answers[0].coverage_confirmed, true);
+  const spec = extractEngineeringSpecification(`${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`);
+  assert.equal(spec.targetCounts.ecus, 2);
+  assert.equal(spec.unresolvedInventoryGroups.length, 0);
+});
+
+test('overview coverage never borrows same-named devices from a different source system', () => {
+  const source = '# Anlage Nord\n## Übersicht\nDomain-Controller (Alpha, Beta)\n# Anlage Süd\n## Architektur\nController Alpha (A)\nController Beta (B)';
+  const proposal = { interpretation: { technologies: [], components: [
+    { name: 'Domain-Controller (Alpha, Beta)', kind: 'CATEGORY', role: 'CONTROLLER', quantity: null, source_quote: 'Domain-Controller (Alpha, Beta)', source_context: ['Anlage Nord', 'Übersicht'] },
+    ...['Controller Alpha (A)', 'Controller Beta (B)'].map(name => ({ name, kind: 'INSTANCE', role: 'CONTROLLER', quantity: 1, source_quote: name, source_context: ['Anlage Süd', 'Architektur'] })),
+  ] } };
+  const [question] = documentDeviceQuestions(source, proposal);
+  assert.equal(question.covered_by, undefined);
+  const equipment = reviewDocumentEquipment(source, proposal, {}, false);
+  equipment.questions[0].covered_by = ['Controller Alpha (A)', 'Controller Beta (B)'];
+  equipment.answers.push({ ...equipment.questions[0], quantity: 0, minimum: false, coverage_confirmed: true });
+  assert.throws(() => readReviewedDocumentEquipment(`${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`), /Abdeckung/);
+});
+
+test('numeric structural chapters permit explicit overview coverage within the one source system', () => {
+  const overview = 'Domain-Controller (Alpha, Beta)';
+  const source = `3. Systemstruktur (Top‑Level‑Architektur)\n3.3 Elektronische Domäne\n${overview}\n2. Domain‑Controller‑Design\n2.1 Controller Alpha (A)\n2.2 Controller Beta (B)`;
+  const proposal = { interpretation: { technologies: [], components: [
+    { name: overview, kind: 'CATEGORY', role: 'CONTROLLER', quantity: null, source_quote: overview, source_context: ['3. Systemstruktur (Top‑Level‑Architektur)', '3.3 Elektronische Domäne'] },
+    ...['Controller Alpha (A)', 'Controller Beta (B)'].map((name, index) => ({ name, kind: 'INSTANCE', role: 'CONTROLLER', quantity: 1, source_quote: name,
+      source_context: ['2. Domain‑Controller‑Design', `2.${index + 1} ${name}`] })),
+  ] } };
+  assert.deepEqual(documentDeviceQuestions(source, proposal)[0].covered_by, ['Controller Alpha (A)', 'Controller Beta (B)']);
+});
+
+
+test('architecture vision overview references explicit controllers while retaining named system roots', () => {
+  const overview = 'Zentrale Domain-Controller (Alpha, Beta)';
+  const source = `1. Zielbild der E/E‑Architektur\n${overview}\n2. Domain‑Controller‑Design\n2.1 Controller Alpha (A)\n2.2 Controller Beta (B)`;
+  const makeProposal = root => ({ interpretation: { technologies: [], components: [
+    { name: overview, kind: 'CATEGORY', role: 'CONTROLLER', quantity: null, source_quote: overview, source_context: [...root, '1. Zielbild der E/E‑Architektur'] },
+    ...['Controller Alpha (A)', 'Controller Beta (B)'].map((name, index) => ({ name, kind: 'INSTANCE', role: 'CONTROLLER', quantity: 1, source_quote: name,
+      source_context: [...root, '2. Domain‑Controller‑Design', `2.${index + 1} ${name}`] })),
+  ] } });
+  assert.deepEqual(documentDeviceQuestions(source, makeProposal([]))[0].covered_by, ['Controller Alpha (A)', 'Controller Beta (B)']);
+  const rooted = makeProposal(['Anlage Nord']);
+  assert.deepEqual(documentDeviceQuestions(source, rooted)[0].covered_by, ['Controller Alpha (A)', 'Controller Beta (B)']);
+  rooted.interpretation.components[0].source_context[0] = 'Anlage Süd';
+  assert.equal(documentDeviceQuestions(source, rooted)[0].covered_by, undefined);
+});
+
+
+test('PLC and Safety PLC have independent quantity questions in every source profile', () => {
+  const components = ['A', 'B'].flatMap(profile => ['PLC', 'Safety PLC'].map(name => ({ name, kind: 'CATEGORY', role: 'CONTROLLER', quantity: null, source_quote: name, source_context: [profile, 'Architecture'] })));
+  const questions = documentDeviceQuestions('PLC, Safety PLC', { interpretation: { components, technologies: [] } });
+  assert.equal(questions.length, 4);
+  assert.equal(new Set(questions.map(question => question.id)).size, 4);
+});
+
+test('a global source transport never selects the reviewed main computer connection', () => {
+  const source = '# Robot\n## Architecture\nHauptrechner\n## Interfaces\nCAN, Ethernet';
+  const fact = { name: 'Hauptrechner', kind: 'INSTANCE', role: 'CONTROLLER', quantity: 1, source_quote: 'Hauptrechner', source_context: ['Robot', 'Architecture'] };
+  const equipment = reviewDocumentEquipment(source, { interpretation: { components: [fact], technologies: [] } }, {}, false);
+  const spec = extractEngineeringSpecification(`${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`);
+  assert.equal(spec.chains.length, 1);
+  assert.equal(spec.chains[0].interface_type, 'Other');
+});
+
+test('shared function list evidence cannot assign Planning to the Perception duty host', () => {
+  const quote = 'Perception, Planning';
+  const facts = ['Perception', 'Planning'].map(name => ({ name, kind: 'FUNCTION', role: 'OTHER', quantity: null, source_quote: quote, source_context: ['Robot', 'Functions'] }));
+  const owners = [{ name: 'ADC', source_context: ['Robot', 'Architecture'], duties: [{ source_quote: 'Perception' }] }];
+  assert.deepEqual(documentSourceFunctionAssignments(facts, owners), { [documentFactIdentity(facts[0])]: 'ADC' });
+});
+
+test('reviewed declared controller retains only its own source duties and explicit interface', () => {
+  const source = '2. Architektur\n2.1 Controller Alpha (A)\nAufgaben:\n- Perception\nSchnittstellen:\nEthernet\n2.2 Controller Beta (B)\nAufgaben:\n- Planning\nSchnittstellen:\nCAN';
+  const components = ['Alpha (A)', 'Beta (B)'].map((name, index) => ({ name: `Controller ${name}`, kind: 'INSTANCE', role: 'CONTROLLER', quantity: 1, source_quote: `2.${index + 1} Controller ${name}`, source_context: ['2. Architektur', `2.${index + 1} Controller ${name}`] }));
+  const equipment = reviewDocumentEquipment(source, { interpretation: { components, technologies: [] } }, {}, false);
+  const spec = extractEngineeringSpecification(`${source}\n- Dokument-Geräte: ${JSON.stringify(equipment)}`);
+  assert.equal(spec.chains.length, 2);
+  assert.equal(spec.chains[0].interface_type, 'Ethernet');
+  assert.equal(spec.chains[1].interface_type, 'CAN');
+  const first = JSON.stringify(spec.chains[0].configuration.source_scoped_functions);
+  assert.match(first, /Perception/);
+  assert.doesNotMatch(first, /Planning/);
 });

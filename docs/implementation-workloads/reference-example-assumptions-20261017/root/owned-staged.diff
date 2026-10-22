@@ -1,0 +1,2012 @@
+--- a/backend/nis/agent/orchestration/project_intake.py
++++ b/backend/nis/agent/orchestration/project_intake.py
+@@ -303,6 +303,9 @@
+     return context[:]
+ 
+ 
++_DOCUMENT_GENERIC_SYSTEM_CHAPTER = '(?:(?:Systemverhalten|Systemanforderungen|Kommunikationsarchitektur|Zusammenfassung|Schnittstellen und Daten|Interfaces and Data|System behavior|System requirements|Communication architecture|Summary)|(?:(?:Erweiterte|Extended)\\s+)?(?:Safety|Cybersecurity|ADAS|Sensorfusion)(?:[- /]*(?:und|and|&)?[- /]*(?:Safety|Cybersecurity|ADAS|Sensorfusion))*[- ]+(?:Anforderungen|Requirements)|Safety,\\s*Security,\\s*(?:Qualität|Quality)\\s*(?:und|and)\\s*(?:Betrieb|Operations?)|Diagnose\\s*(?:&|und|and)\\s*OTA)(?:\\s*\\([^()\\r\\n]*\\))?'
++
++
+ def document_system_scope(context: list[str]) -> list[str]:
+     """Keep named source systems/profiles while crossing semantic chapters."""
+     import unicodedata
+@@ -311,6 +314,8 @@
+             return context[:index]
+         title = re.sub(r'[\u2010-\u2015\u2212]', '-', unicodedata.normalize('NFKC', caption))
+         title = re.sub(r'^\d+(?:\.\d+)*[.)]?\s+', '', title).rstrip(':').strip()
++        if re.fullmatch(_DOCUMENT_GENERIC_SYSTEM_CHAPTER, title, re.I):
++            return context[:index]
+         if re.fullmatch(r'(?:Systemstruktur(?:\s*\(Top-Level-Architektur\))?|System structure(?:\s*\(Top-Level Architecture\))?|Systemgrenzen(?: und Systemkontext)?|System boundaries(?: and System context)?|Systemkontext|System context|Zielbild der (?:E/E[- ]?)?Architektur|Architecture (?:vision|target)|Target architecture|Domain[- ]Controller[- ]Design|Controller[- ]Design|(?:Elektronische|Elektrische|Mechanische|Software)\s*Domäne|(?:Electronic|Electrical|Mechanical|Software) domain)', title, re.I):
+             return context[:index]
+     return context[:]
+@@ -1147,7 +1152,7 @@
+                       ensure_ascii=False, separators=(',', ':'))
+ 
+ 
+-def reviewed_document_evidence(prompt: str):
++def reviewed_document_evidence(prompt: str, *, include_source: bool = False):
+     """Validate the reviewed source snapshot before ordinary model proposal use.
+ 
+     The original source, typed facts and review answers share the existing
+@@ -1189,7 +1194,707 @@
+         raise ValueError('Unbelegte Funktionszuordnung in den Dokumentbefunden.')
+     return {'source': 'reviewed_document', 'source_name': value.get('source_name'),
+             'source_sha256': digest, 'source_chars': len(source),
++            **({'source_text': source} if include_source else {}),
+             'components': interpretation['components'], 'technologies': interpretation['technologies'],
+             'questions': value.get('questions', []), 'answers': value.get('answers', []),
+             'excluded_questions': value.get('excluded_questions', []), 'function_assignments': assignments,
+             'canonical_writes': False, 'approval_required': True}
++
++
++# Reference design is a separate planning result, never a source interpretation.
++ReferenceField = Literal['quantity', 'device_type', 'function_hosts', 'ports',
++                         'measurements', 'commands', 'communication']
++
++
++class _ReferenceModel(BaseModel):
++    model_config = ConfigDict(extra='forbid', allow_inf_nan=False, strict=True)
++
++
++class ReferenceSource(_ReferenceModel):
++    id: str = Field(min_length=1, max_length=120)
++    name: str = Field(min_length=1, max_length=180)
++    role: Literal['REFERENCE_SUPPLEMENT', 'USER_CLARIFICATION']
++    text: str = Field(min_length=1, max_length=DOCUMENT_SOURCE_MAX_CHARS)
++    source_sha256: str = Field(pattern=r'^[a-f0-9]{64}$')
++    allowed_fields: list[ReferenceField] = Field(min_length=1, max_length=7)
++
++
++class ReferenceDesignRequest(_ReferenceModel):
++    mode: Literal['EXAMPLE_PROJECT']
++    prompt: str = Field(min_length=1, max_length=4 * DOCUMENT_SOURCE_MAX_CHARS + 100_000)
++    reference_sources: list[ReferenceSource] = Field(default_factory=list, max_length=16)
++    source_request_id: str | None = Field(default=None, min_length=8, max_length=120)
++
++
++class _ReferenceChoice(_ReferenceModel):
++    rationale: str = Field(min_length=1, max_length=2000)
++    field_references: dict[ReferenceField, list[str]] = Field(default_factory=dict)
++
++
++class ReferenceDevice(_ReferenceChoice):
++    id: str = Field(min_length=1, max_length=120)
++    name: str = Field(min_length=1, max_length=120)
++    kind: Literal['CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR', 'PHYSICAL_CONTEXT']
++    context_kind: Literal['PASSIVE', 'ASSEMBLY', 'SOFTWARE_SERVICE'] | None = None
++    quantity: int = Field(strict=True, ge=1, le=1000)
++    source_fact_ids: list[str] = Field(min_length=1, max_length=1000)
++    owner_device_id: str | None = None
++    purpose: str | None = Field(default=None, min_length=1, max_length=500)
++    contained_device_ids: list[str] = Field(default_factory=list, max_length=1000)
++
++
++class ReferenceFunction(_ReferenceChoice):
++    source_fact_id: str
++    realization: Literal['ATOMIC', 'COMPOSITE']
++    executor_device_ids: list[str] = Field(default_factory=list, max_length=1000)
++    realized_by_fact_ids: list[str] = Field(default_factory=list, max_length=1000)
++
++
++class ReferencePort(_ReferenceChoice):
++    id: str = Field(min_length=1, max_length=120)
++    device_id: str
++    technology: str = Field(min_length=1, max_length=80)
++    role: Literal['LOCAL', 'BACKBONE']
++    network_scope: str = Field(min_length=1, max_length=120)
++    parameters: dict = Field(default_factory=dict)
++
++
++class ReferenceMeasurement(_ReferenceChoice):
++    device_id: str
++    measurement_id: str = Field(min_length=1, max_length=80)
++
++
++class ReferenceWireDefinition(_ReferenceModel):
++    length_bits: int = Field(strict=True, ge=1, le=524288)
++    data_type: Literal['unsigned', 'signed', 'float', 'double', 'float32', 'float64']
++    unit: str = Field(min_length=1, max_length=40)
++    factor: float
++    offset_value: float = 0
++    min_value: float | None = None
++    max_value: float | None = None
++    byte_order: Literal['little_endian', 'big_endian'] = 'little_endian'
++    semantic: dict
++    data: dict
++
++
++class ReferenceCommand(_ReferenceChoice):
++    device_id: str
++    definition: ReferenceWireDefinition
++
++
++class ReferenceCommunication(_ReferenceChoice):
++    id: str = Field(min_length=1, max_length=120)
++    producer_device_id: str
++    consumer_device_ids: list[str] = Field(min_length=1, max_length=1000)
++    producer_fact_id: str | None = None
++    consumer_fact_ids: list[str] = Field(default_factory=list, max_length=1000)
++    source_port_id: str
++    consumer_port_ids: list[str] = Field(min_length=1, max_length=1000)
++    scope: Literal['LOCAL_IO', 'DEVICE_IO', 'FUNCTION_OUTPUT']
++    role: Literal['MEASUREMENT', 'COMMAND', 'FEEDBACK', 'STATUS', 'FUNCTION_OUTPUT'] | None = None
++    signal_name: str = Field(min_length=1, max_length=120)
++    encoding: ReferenceWireDefinition
++    transmission_mode: Literal['CYCLIC', 'EVENT', 'ON_REQUEST', 'MIXED']
++    cycle_ms: float | None = Field(default=None, gt=0)
++    min_interval_ms: float | None = Field(default=None, gt=0)
++    trigger: Literal['on_change', 'explicit'] | None = None
++    trigger_description: str | None = Field(default=None, min_length=1, max_length=500)
++    release_times_ms: list[float] | None = Field(default=None, max_length=10000)
++    request_source: Literal['bus_message', 'external_application'] | None = None
++    request_communication_id: str | None = None
++    response_processing_ms: float | None = Field(default=None, ge=0)
++    request_times_ms: list[float] | None = Field(default=None, max_length=10000)
++
++
++class ReferenceFinding(_ReferenceModel):
++    code: str = Field(min_length=1, max_length=120)
++    target_ref: str = Field(min_length=1, max_length=2000)
++    message: str = Field(min_length=1, max_length=2000)
++
++
++class ReferenceFunctionalDependency(_ReferenceChoice):
++    id: str = Field(min_length=1, max_length=120)
++    producer_fact_id: str
++    consumer_fact_ids: list[str] = Field(min_length=1, max_length=1000)
++    executor_device_id: str
++    signal_name: str = Field(min_length=1, max_length=120)
++    encoding: ReferenceWireDefinition
++
++
++class ReferenceDesignProposal(_ReferenceModel):
++    devices: list[ReferenceDevice] = Field(default_factory=list, max_length=2000)
++    functions: list[ReferenceFunction] = Field(default_factory=list, max_length=4000)
++    ports: list[ReferencePort] = Field(default_factory=list, max_length=10000)
++    measurements: list[ReferenceMeasurement] = Field(default_factory=list, max_length=2000)
++    commands: list[ReferenceCommand] = Field(default_factory=list, max_length=2000)
++    communication: list[ReferenceCommunication] = Field(default_factory=list, max_length=10000)
++    functional_dependencies: list[ReferenceFunctionalDependency] = Field(default_factory=list, max_length=10000)
++    unresolved: list[ReferenceFinding] = Field(default_factory=list, max_length=4000)
++
++
++def reference_design_schema(prepared: dict | None = None) -> dict:
++    """Use one public grammar for Qwen candidates and server validation."""
++    schema = ReferenceDesignProposal.model_json_schema()
++    if prepared is not None:
++        schema['$defs']['ReferenceMeasurement']['properties']['measurement_id']['enum'] = [
++            item['id'] for item in prepared['catalog']['measurements']]
++        schema['$defs']['ReferenceDevice']['properties']['source_fact_ids']['items']['enum'] = list(prepared['facts'])
++        schema['$defs']['ReferenceFunction']['properties']['source_fact_id']['enum'] = [
++            key for key, fact in prepared['facts'].items() if fact['kind'] == 'FUNCTION']
++        schema['$defs']['ReferencePort']['properties']['technology']['enum'] = prepared['catalog']['technology_ids']
++    return schema
++
++
++def _reference_digest(value) -> str:
++    import hashlib
++    import json
++    return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True,
++                                     separators=(',', ':'), allow_nan=False).encode('utf-8')).hexdigest()
++
++
++def prepare_reference_design(arguments: dict) -> dict:
++    """Validate full primary evidence and field-scoped supplements without writes."""
++    import hashlib
++    from backend.nis.agent.context.limits import MAX_REQUIREMENT_LENGTH
++    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
++    from backend.nis.engineering.projects.project_context import current_project_id
++    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
++    request = ReferenceDesignRequest.model_validate(arguments)
++    if len(request.prompt) > MAX_REQUIREMENT_LENGTH:
++        raise ValueError('Der vollständige Referenzauftrag überschreitet die Auftragsgrenze.')
++    if sum(len(source.text) for source in request.reference_sources) > MAX_REQUIREMENT_LENGTH:
++        raise ValueError('Die vollständigen Referenzquellen überschreiten die Auftragsgrenze.')
++    evidence = reviewed_document_evidence(request.prompt, include_source=True)
++    if evidence is None:
++        raise ValueError('Eine vollständig geprüfte unveränderte Dokumentquelle ist erforderlich.')
++    references = {}
++    for source in request.reference_sources:
++        if not source.id.strip() or not source.name.strip() or source.id in references:
++            raise ValueError('Referenzquellen benötigen eindeutige nichtleere Identitäten.')
++        if hashlib.sha256(source.text.encode('utf-8')).hexdigest() != source.source_sha256:
++            raise ValueError(f'Referenzquelle {source.id}: vollständiger Quellentext und SHA stimmen nicht überein.')
++        if len(set(source.allowed_fields)) != len(source.allowed_fields):
++            raise ValueError(f'Referenzquelle {source.id}: doppelte Feldfreigabe.')
++        references[source.id] = source.model_dump(mode='json')
++    fact_id_map = {'F' + hashlib.sha256(document_fact_identity(fact).encode('utf-8')).hexdigest()[:12]:
++                   document_fact_identity(fact) for fact in evidence['components']}
++    facts = {'F' + hashlib.sha256(document_fact_identity(fact).encode('utf-8')).hexdigest()[:12]:
++             fact for fact in evidence['components']}
++    if len(facts) != len(evidence['components']):
++        raise ValueError('Die ursprünglichen Quellenbefunde besitzen doppelte Identitäten.')
++    payload = request.model_dump(mode='json')
++    catalog = reference_design_catalog(request.prompt)
++    if not isinstance(catalog, dict) or not catalog.get('measurements'):
++        raise ValueError('Der vorhandene Messgrößenkatalog ist nicht verfügbar.')
++    _reference_unique(catalog['measurements'], 'id', 'Messgrößenkatalog')
++    catalog['technology_ids'] = sorted(profile['id'] for profile in DEFAULT_TECHNOLOGY_REGISTRY.profiles())
++    catalog_digest = _reference_digest(catalog)
++    project_id = current_project_id()
++    return {'request': payload, 'project_id': project_id,
++            'request_sha256': _reference_digest({'project_id': project_id, 'request': payload, 'catalog': catalog_digest}),
++            'catalog': catalog, 'catalog_sha256': catalog_digest,
++            'source_sha256': evidence['source_sha256'], 'source_evidence': evidence,
++            'facts': facts, 'fact_id_map': fact_id_map, 'reference_sources': references,
++            'canonical_writes': False, 'approval_required': True}
++
++
++def _reference_unique(items: list[dict], field: str, label: str) -> dict:
++    result = {}
++    for item in items:
++        key = item[field]
++        if not isinstance(key, str) or not key.strip() or key in result:
++            raise ValueError(f'{label}: doppelte oder leere Identität {key!r}.')
++        result[key] = item
++    return result
++
++
++def _reference_preserves_fields(previous, candidate, *, field='') -> bool:
++    """Retain explicit values, including complete raw-code vocabularies."""
++    if isinstance(previous, dict):
++        if not isinstance(candidate, dict):
++            return False
++        if field in {'enum_values', 'reserved_values', 'invalid_values'}:
++            return previous == candidate
++        return all(key in candidate and _reference_preserves_fields(value, candidate[key], field=key)
++                   for key, value in previous.items())
++    return previous == candidate
++
++
++def _reference_wire_compatible(expected: dict, candidate: dict) -> bool:
++    """Compare physical and raw encodings, independent of display labels."""
++    defaults = {'offset_value': 0, 'byte_order': 'little_endian'}
++    for key in ('length_bits', 'data_type', 'unit', 'factor', 'offset_value', 'min_value', 'max_value', 'byte_order'):
++        if key in expected or key in defaults:
++            if expected.get(key, defaults.get(key)) != candidate.get(key, defaults.get(key)):
++                return False
++    semantic = expected.get('semantic', {})
++    if any(candidate.get('semantic', {}).get(key) != value for key, value in semantic.items() if key != 'meaning'):
++        return False
++    return _reference_preserves_fields(expected.get('data', {}), candidate.get('data', {}), field='data')
++
++
++def _reference_acyclic(graph: dict[str, list[str]], label: str) -> None:
++    from collections import deque
++    incoming = {key: 0 for key in graph}
++    for children in graph.values():
++        for child in children:
++            incoming[child] = incoming.get(child, 0) + 1
++    ready = deque(key for key, count in incoming.items() if count == 0)
++    visited = 0
++    while ready:
++        key = ready.popleft()
++        visited += 1
++        for child in graph.get(key, []):
++            incoming[child] -= 1
++            if incoming[child] == 0:
++                ready.append(child)
++    if visited != len(incoming):
++        raise ValueError(f'{label}: zyklische Zuordnung.')
++
++
++def _validate_reference_wire(definition: dict) -> None:
++    """Reuse canonical signal checks; never reinterpret physical/raw values."""
++    from backend.nis.engineering.signals.signal_integrity import integrity_checks
++    from backend.nis.engineering.signals.signal_audit import required_signal_bits
++    import math
++    if definition['factor'] <= 0:
++        raise ValueError('Referenzkodierung: Faktor muss positiv sein.')
++    semantic = definition['semantic'].get('semantic_type')
++    meaning = definition['semantic'].get('meaning')
++    if (not isinstance(meaning, str) or not meaning.strip() or len(meaning) > 2000
++            or not isinstance(semantic, str) or semantic not in {
++            'NUMERIC', 'STATE', 'ENUM', 'BOOLEAN', 'FLAG', 'COUNTER', 'RAW', 'STRING', 'BYTE_ARRAY'}):
++        raise ValueError('Referenzkodierung: explizite Signalbedeutung und bekannte Semantik fehlen.')
++    if not definition['unit'].strip():
++        raise ValueError('Referenzkodierung: Einheit fehlt.')
++    for field, kind in [('enum_values', dict), ('reserved_values', list), ('invalid_values', list)]:
++        if field in definition['data'] and not isinstance(definition['data'][field], kind):
++            raise ValueError('Referenzkodierung: Value-Domain besitzt eine ungültige Struktur.')
++    errors = integrity_checks(definition)
++    if errors:
++        raise ValueError('Referenzkodierung: ' + '; '.join(item['code'] for item in errors))
++    bits = definition['length_bits']
++    if semantic == 'NUMERIC':
++        lo, hi = definition.get('min_value'), definition.get('max_value')
++        if lo is None or hi is None or lo >= hi:
++            raise ValueError('Referenzkodierung: vollständiger physikalischer Wertebereich fehlt.')
++        if definition['data_type'] in {'float', 'float32', 'double', 'float64'}:
++            expected = 64 if definition['data_type'] in {'double', 'float64'} else 32
++            if bits != expected:
++                raise ValueError('Referenzkodierung: Gleitkommaformat und Bitlänge widersprechen sich.')
++        else:
++            required = required_signal_bits(definition)
++            # required_signal_bits owns scaling/offset and raw-width reasoning.
++            if required is None or required > bits or bits > 64:
++                raise ValueError('Referenzkodierung: Wertebereich passt nicht in die Rohkodierung.')
++            for value in (lo, hi):
++                raw = (value - definition['offset_value']) / definition['factor']
++                lower = -(2 ** (bits - 1)) if definition['data_type'] == 'signed' else 0
++                upper = 2 ** (bits - (1 if definition['data_type'] == 'signed' else 0)) - 1
++                if not math.isfinite(raw) or not lower <= raw <= upper:
++                    raise ValueError('Referenzkodierung: Rohwerte außerhalb des Datentyps.')
++    elif semantic in {'STATE', 'ENUM', 'BOOLEAN', 'FLAG'}:
++        if not definition['data'].get('enum_values') or bits > 64:
++            raise ValueError('Referenzkodierung: diskrete Value-Domain fehlt.')
++
++
++def reference_transmission_contract(item: dict, *, message_refs: dict | None = None) -> dict:
++    """Project authored scenario release fields into the existing native model."""
++    contract = {'mode': item['transmission_mode']}
++    for source, target in [('cycle_ms', 'period_ms'), ('min_interval_ms', 'minimum_interval_ms'),
++                           ('trigger', 'trigger'), ('trigger_description', 'trigger_description'),
++                           ('release_times_ms', 'release_times_ms'), ('request_source', 'request_source'),
++                           ('response_processing_ms', 'response_processing_ms'), ('request_times_ms', 'request_times_ms')]:
++        if item.get(source) is not None:
++            contract[target] = item[source]
++    if item.get('request_communication_id'):
++        identifier = item['request_communication_id']
++        contract['request_message_ref'] = (message_refs or {}).get(identifier, identifier)
++    return contract
++
++
++def validate_reference_design(result: dict, prepared: dict) -> dict:
++    return _validate_reference_design(result, prepared)
++
++
++def validate_reference_design_profile(result: dict, prepared: dict, profile) -> dict:
++    """Internal planner feedback only; final acceptance always validates all profiles."""
++    if not isinstance(profile, (list, tuple)) or any(not isinstance(value, str) for value in profile):
++        raise ValueError('Profilprüfung benötigt eine ursprüngliche Systemidentität.')
++    return _validate_reference_design(result, prepared, profile=tuple(profile))
++
++
++def _validate_reference_design(result: dict, prepared: dict, *, profile=None) -> dict:
++    """Stamp a detached review candidate; no approval, model writes or readiness."""
++    from copy import deepcopy
++    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
++    # Revalidate the complete primary input, not caller-supplied prepared facts.
++    current = prepare_reference_design(prepared['request'])
++    if current['request_sha256'] != prepared.get('request_sha256'):
++        raise ValueError('Der Referenzentwurf gehört zu einer veralteten Auftragsrevision.')
++    full_source = deepcopy(current['source_evidence'])
++    full_protected = {field: deepcopy(current['catalog'].get('confirmed_' + field, {}))
++                      for field in ('commands', 'measurements', 'connections', 'owners')}
++    if profile is not None:
++        if profile not in {tuple(document_system_scope(fact.get('source_context', [])))
++                           for fact in current['facts'].values() if fact['kind'] != 'REQUIREMENT'}:
++            raise ValueError('Profilprüfung darf keine neue oder verkürzte Systemidentität erfinden.')
++        current['facts'] = {key: fact for key, fact in current['facts'].items()
++            if tuple(document_system_scope(fact.get('source_context', []))) == profile
++            or fact['kind'] == 'REQUIREMENT' and not document_system_scope(fact.get('source_context', []))}
++        current['source_evidence']['answers'] = [answer for answer in full_source['answers']
++            if tuple(document_system_scope(answer.get('source_context', []))) == profile]
++        current['catalog']['source_devices'] = [row for row in current['catalog'].get('source_devices', [])
++            if tuple(document_system_scope((row.get('evidence') or {}).get('source_context', []))) == profile]
++        aliases = current['catalog'].get('name_aliases', {})
++        names = [fact['name'] for fact in current['facts'].values() if fact['kind'] in {'CATEGORY', 'INSTANCE'}]
++        names.extend(row['name'] for row in current['catalog']['source_devices'])
++        identities = {aliases.get(name, name.casefold()) for name in names}
++        for field in full_protected:
++            current['catalog']['confirmed_' + field] = {name: choice for name, choice in full_protected[field].items()
++                if aliases.get(name, name.casefold()) in identities}
++    value = ReferenceDesignProposal.model_validate(result).model_dump(mode='json')
++    _reference_digest(value)  # Reject non-JSON or nonfinite nested data as well.
++    facts, sources = current['facts'], current['reference_sources']
++    devices = _reference_unique(value['devices'], 'id', 'Teilnehmer')
++    functions = _reference_unique(value['functions'], 'source_fact_id', 'Funktionen')
++    ports = _reference_unique(value['ports'], 'id', 'Anschlüsse')
++    _reference_unique(value['communication'], 'id', 'Kommunikation')
++    _reference_unique(value['functional_dependencies'], 'id', 'Funktionsabhängigkeiten')
++    _reference_unique(value['measurements'], 'device_id', 'Messgrößen')
++    _reference_unique(value['commands'], 'device_id', 'Stellbefehle')
++    findings = value['unresolved']
++    scopes, bound = {}, {}
++    decision_evidence = []
++    aliases = current['catalog'].get('name_aliases', {})
++
++    def name_identity(name):
++        return aliases.get(name, name.casefold())
++
++    def scope(fact_id):
++        if fact_id not in facts:
++            raise ValueError(f'Unbekannter ursprünglicher Quellenbefund {fact_id}.')
++        return tuple(document_system_scope(facts[fact_id].get('source_context', [])))
++
++    def same_scope(ids, expected):
++        if any(scope(fact_id) != expected for fact_id in ids):
++            raise ValueError('Referenzentwurf überschreitet ursprüngliche System-/Profilgrenzen.')
++
++    def stamp(item, fields, target, fact_ids):
++        if not item['rationale'].strip():
++            raise ValueError('Jede Referenzannahme benötigt eine fachliche Begründung.')
++        if set(item['field_references']) - set(fields):
++            raise ValueError('Referenzbeleg wurde einem fremden Entscheidungsfeld zugeordnet.')
++        for field in fields:
++            reference_ids = item['field_references'].get(field, [])
++            if len(reference_ids) != len(set(reference_ids)):
++                raise ValueError('Doppelte Referenzbelege für ein Entscheidungsfeld.')
++            for reference_id in reference_ids:
++                if reference_id not in sources or field not in sources[reference_id]['allowed_fields']:
++                    raise ValueError('Referenzquelle darf dieses Entscheidungsfeld nicht ergänzen.')
++            decision_evidence.append({'kind': 'REFERENCE_ASSUMPTION', 'target_ref': target,
++                'field': field, 'rationale': item['rationale'], 'source_fact_ids': fact_ids,
++                'source_fact_kinds': {fact_id: facts[fact_id]['kind'] for fact_id in fact_ids},
++                'reference_sources': [{'id': reference_id, 'role': sources[reference_id]['role'],
++                    'source_sha256': sources[reference_id]['source_sha256']} for reference_id in reference_ids]})
++
++    for device_id, device in devices.items():
++        ids = device['source_fact_ids']
++        if len(ids) != len(set(ids)):
++            raise ValueError('Teilnehmer besitzt doppelte Quellenbindungen.')
++        device_scope = scope(ids[0])
++        same_scope(ids, device_scope)
++        scopes[device_id] = device_scope
++        if not device['name'].strip():
++            raise ValueError('Ein Referenzteilnehmer benötigt einen Namen.')
++        physical = device['kind'] == 'PHYSICAL_CONTEXT'
++        if not physical and device['quantity'] != 1:
++            raise ValueError('Elektronische Referenzteilnehmer benötigen einzelne Identitäten, Anschlüsse und Ausführer; Gruppenmenge ist keine Adressierung.')
++        if physical != bool(device['context_kind']) or (device['contained_device_ids'] and not physical):
++            raise ValueError('Physischer/Software-Kontext benötigt eine explizite getrennte Realisierung.')
++        for fact_id in ids:
++            fact = facts[fact_id]
++            # Requirements/functions may motivate *proposed* additional devices.
++            # They remain their original kinds in source_evidence; this binding
++            # never promotes them into confirmed source inventory.
++            if fact['role'] != 'OTHER' and device['kind'] != fact['role']:
++                raise ValueError('Belegte Geräteart darf durch die Referenzannahme nicht ersetzt werden.')
++            bound.setdefault(fact_id, []).append(device_id)
++        device_fields = ['quantity', 'device_type']
++        if device['owner_device_id'] is not None:
++            device_fields.append('function_hosts')
++        stamp(device, device_fields, device_id, ids)
++    names = [name_identity(device['name']) for device in devices.values()]
++    if len(names) != len(set(names)):
++        raise ValueError('Referenzteilnehmer benötigen projektweit eindeutige Namen.')
++    for device_id, device in devices.items():
++        for child in device['contained_device_ids']:
++            if child not in devices or scopes[child] != scopes[device_id]:
++                raise ValueError('Kontextbindung verweist auf fremden oder unbekannten Teilnehmer.')
++        owner = device['owner_device_id']
++        if owner is not None and (device['kind'] not in {'SENSOR', 'ACTUATOR', 'PHYSICAL_CONTEXT'}
++                or owner not in devices or devices[owner]['kind'] not in {'CONTROLLER', 'GATEWAY'}
++                or scopes[owner] != scopes[device_id]):
++            raise ValueError('Lokale Gerätezuordnung benötigt einen Controller im selben Profil.')
++        if device['kind'] == 'PHYSICAL_CONTEXT' and not device['contained_device_ids'] and owner is None:
++            findings.append({'code': 'REFERENCE_CONTEXT_UNBOUND', 'target_ref': device_id,
++                'message': 'Passiver, Baugruppen- oder Softwarekontext benötigt eine explizite Zuordnung zu seinen tatsächlichen Geräten, damit er im kanonischen Modell erhalten bleibt.'})
++    _reference_acyclic({key: item['contained_device_ids'] for key, item in devices.items()}, 'Kontextbindung')
++    for fact_id, fact in facts.items():
++        if fact['kind'] not in {'CATEGORY', 'INSTANCE'}:
++            continue
++        represented = bound.get(fact_id, [])
++        if not represented:
++            findings.append({'code': 'REFERENCE_INVENTORY_UNCOVERED', 'target_ref': fact_id,
++                             'message': 'Ursprünglicher Gerätebefund ist im Referenzentwurf noch nicht abgebildet.'})
++        if fact['kind'] == 'INSTANCE' and represented:
++            count = sum(devices[device_id]['quantity'] for device_id in represented)
++            if count != fact['quantity']:
++                raise ValueError('Explizite ursprüngliche Instanzmenge darf nicht ersetzt werden.')
++            expected_names = {name_identity(row['name']) for row in current['catalog'].get('source_devices', [])
++                if (row.get('evidence') or {}).get('source_quote') == fact['source_quote']
++                and (row.get('evidence') or {}).get('source_context', []) == fact.get('source_context', [])}
++            if expected_names and {name_identity(devices[key]['name']) for key in represented} != expected_names:
++                raise ValueError('Explizite ursprüngliche Instanzidentität muss im bestehenden quellenbezogenen Namenspfad erhalten bleiben.')
++    for answer in current['source_evidence']['answers']:
++        if answer.get('coverage_confirmed'):
++            continue
++        matching = [fact_id for fact_id, fact in facts.items() if fact['kind'] == 'CATEGORY'
++                    and fact['name'] == answer.get('label')
++                    and fact.get('source_context', []) == answer.get('source_context', [])]
++        if not matching:
++            findings.append({'code': 'REFERENCE_REVIEWED_INVENTORY_UNMAPPED', 'target_ref': str(answer.get('id') or 'inventory'),
++                             'message': 'Die vorher bestätigte Geräteentscheidung benötigt eine eindeutige Quellenbindung.'})
++            continue
++        represented = {device_id for fact_id in matching for device_id in bound.get(fact_id, [])
++                       if devices[device_id]['kind'] != 'PHYSICAL_CONTEXT'}
++        quantity = answer.get('quantity')
++        if type(quantity) is not int or quantity < 0 or quantity > 1000:
++            raise ValueError('Vorherige bestätigte Geräteentscheidung besitzt keine gültige Menge.')
++        count = sum(devices[device_id]['quantity'] for device_id in represented)
++        if (answer.get('minimum') and count < quantity) or (not answer.get('minimum') and count != quantity):
++            raise ValueError('Vorher bestätigte Gerätemenge darf nicht ersetzt oder unterschritten werden.')
++        if any(answer.get('role') and devices[device_id]['kind'] != answer['role'] for device_id in represented):
++            raise ValueError('Vorher bestätigte Geräteart darf nicht ersetzt werden.')
++
++    for fact_id, function in functions.items():
++        if fact_id not in facts or facts[fact_id]['kind'] != 'FUNCTION':
++            raise ValueError('Funktionsrealisierung benötigt einen ursprünglichen Funktionsbefund.')
++        executors, children = function['executor_device_ids'], function['realized_by_fact_ids']
++        confirmed_assignments = {**current['catalog'].get('source_function_assignments', {}),
++                                 **current['source_evidence']['function_assignments']}
++        confirmed = confirmed_assignments.get(current['fact_id_map'][fact_id])
++        if confirmed and function['realization'] != 'ATOMIC':
++            raise ValueError('Bereits bestätigte atomare Funktionszuordnung darf nicht ersetzt werden.')
++        if len(executors) != len(set(executors)) or len(children) != len(set(children)):
++            raise ValueError('Doppelte Funktionsrealisierung.')
++        if function['realization'] == 'ATOMIC':
++            if not executors or children:
++                raise ValueError('Atomare Funktion benötigt Ausführer und keine zusammengesetzten Teilverweise.')
++            for executor in executors:
++                if executor not in devices or devices[executor]['kind'] not in {'CONTROLLER', 'GATEWAY'}:
++                    raise ValueError('Funktionsausführer ist kein elektronischer Controller.')
++                if scopes[executor] != scope(fact_id):
++                    raise ValueError('Funktionsausführer überschreitet die ursprüngliche Profilgrenze.')
++            if confirmed and {name_identity(devices[key]['name']) for key in executors} != {name_identity(confirmed)}:
++                raise ValueError('Bereits bestätigter Funktionsausführer darf nicht ersetzt werden.')
++        elif executors or not children or any(child not in functions for child in children):
++            raise ValueError('Zusammengesetzte Funktion benötigt gültige Teilfunktionen und keinen eigenen Ausführer.')
++        same_scope(children, scope(fact_id))
++        stamp(function, ['function_hosts'], fact_id, [fact_id])
++    _reference_acyclic({key: item['realized_by_fact_ids'] for key, item in functions.items()}, 'Funktionsabdeckung')
++    for fact_id, fact in facts.items():
++        if fact['kind'] == 'FUNCTION' and fact_id not in functions:
++            findings.append({'code': 'REFERENCE_FUNCTION_UNCOVERED', 'target_ref': fact_id,
++                             'message': 'Ursprünglicher Funktionsbefund benötigt noch eine Realisierung.'})
++
++    def electronic(device_id, kinds=None):
++        if device_id not in devices or devices[device_id]['kind'] == 'PHYSICAL_CONTEXT':
++            raise ValueError('Kommunikation benötigt einen realisierbaren elektronischen Teilnehmer.')
++        if kinds and devices[device_id]['kind'] not in kinds:
++            raise ValueError('Entscheidung passt nicht zur Geräteart.')
++        return devices[device_id]
++
++    network_scopes = {}
++    for port_id, port in ports.items():
++        device = electronic(port['device_id'])
++        network_identity = (scopes[port['device_id']], port['technology'])
++        if port['network_scope'] in network_scopes and network_scopes[port['network_scope']] != network_identity:
++            raise ValueError('Netzsegmentidentität darf keine Profile oder fremden Technologien zusammenführen.')
++        network_scopes[port['network_scope']] = network_identity
++        identity = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(port['technology'])
++        try:
++            DEFAULT_TECHNOLOGY_REGISTRY.profile(identity)
++        except (KeyError, ValueError) as error:
++            raise ValueError('Referenzanschluss benötigt eine registrierte Technologie.') from error
++        if identity != port['technology']:
++            raise ValueError('Referenzanschluss benötigt die kanonische Technologieidentität.')
++        review = DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters(identity, port['parameters'])
++        for finding in review.get('findings', []):
++            if finding.get('severity') in {'ERROR', 'BLOCKER', 'OPEN', 'REVIEW'}:
++                findings.append({'code': 'REFERENCE_PORT_' + finding.get('code', 'REVIEW_REQUIRED'),
++                    'target_ref': port_id, 'message': finding.get('message') or str(finding)})
++        stamp(port, ['ports'], port_id, device['source_fact_ids'])
++    for field, kind in [('measurements', 'SENSOR'), ('commands', 'ACTUATOR')]:
++        for item in value[field]:
++            device = electronic(item['device_id'], {kind})
++            if field == 'commands':
++                _validate_reference_wire(item['definition'])
++            elif item['measurement_id'] not in {row['id'] for row in current['catalog']['measurements']}:
++                raise ValueError('Messgröße gehört nicht zum vorhandenen Messgrößenkatalog.')
++            stamp(item, [field], item['device_id'], device['source_fact_ids'])
++    for item in value['communication']:
++        producer = electronic(item['producer_device_id'])
++        consumers = item['consumer_device_ids']
++        if len(consumers) != len(set(consumers)):
++            raise ValueError('Doppelte Kommunikationsempfänger.')
++        if item['producer_device_id'] in consumers:
++            raise ValueError('Lokale Verarbeitung ist kein physischer Selbsttransport.')
++        for consumer in consumers:
++            electronic(consumer)
++            if scopes[consumer] != scopes[item['producer_device_id']]:
++                raise ValueError('Kommunikation überschreitet unabhängige ursprüngliche Profilgrenzen.')
++        function_ids = [*item['consumer_fact_ids'], *([item['producer_fact_id']] if item['producer_fact_id'] else [])]
++        if any(fact_id not in functions for fact_id in function_ids):
++            raise ValueError('Kommunikation verweist auf unbekannte Funktionsrealisierung.')
++        if any(functions[fact_id]['realization'] != 'ATOMIC' for fact_id in function_ids):
++            raise ValueError('Physische Kommunikation benötigt konkrete atomare Funktionspartner, keine Zusammenfassung.')
++        same_scope(function_ids, scopes[item['producer_device_id']])
++        def executors(fact_id):
++            pending, seen, hosts = [fact_id], set(), set()
++            while pending:
++                current_id = pending.pop()
++                if current_id in seen:
++                    continue
++                seen.add(current_id)
++                function = functions[current_id]
++                hosts.update(function['executor_device_ids'])
++                pending.extend(function['realized_by_fact_ids'])
++            return hosts
++        if item['producer_fact_id'] and item['producer_device_id'] not in executors(item['producer_fact_id']):
++            raise ValueError('Funktionaler Sender passt nicht zum bestätigten Referenzausführer.')
++        if any(not executors(fact_id).intersection(consumers) for fact_id in item['consumer_fact_ids']):
++            raise ValueError('Funktionaler Empfänger passt nicht zum bestätigten Referenzausführer.')
++        if item['scope'] == 'LOCAL_IO':
++            owners = {key if devices[key]['kind'] in {'CONTROLLER', 'GATEWAY'} else devices[key]['owner_device_id']
++                      for key in [item['producer_device_id'], *consumers]}
++            if None in owners or len(owners) != 1:
++                raise ValueError('Lokale Kommunikation darf ihre bestätigte Gerätezuordnung nicht verlassen.')
++        if item['source_port_id'] not in ports or ports[item['source_port_id']]['device_id'] != item['producer_device_id']:
++            raise ValueError('Kommunikation benötigt den tatsächlichen Senderanschluss.')
++        if len(item['consumer_port_ids']) != len(consumers) or len(set(item['consumer_port_ids'])) != len(consumers):
++            raise ValueError('Kommunikation benötigt je Empfänger einen eindeutigen Anschluss.')
++        for consumer, port_id in zip(consumers, item['consumer_port_ids']):
++            if port_id not in ports or ports[port_id]['device_id'] != consumer:
++                raise ValueError('Kommunikation benötigt den tatsächlichen Empfängeranschluss.')
++        if item['transmission_mode'] in {'CYCLIC', 'MIXED'} and item['cycle_ms'] is None:
++            raise ValueError('Zyklischer Referenzverkehr benötigt einen expliziten Zyklus.')
++        if item['transmission_mode'] == 'CYCLIC' and item['trigger']:
++            raise ValueError('Ereignisanteil benötigt einen entsprechenden Übertragungsmodus.')
++        if item['transmission_mode'] != 'CYCLIC' and (not item['trigger'] or not item['trigger'].strip() or item['min_interval_ms'] is None):
++            if item['transmission_mode'] != 'ON_REQUEST':
++                raise ValueError('Ereignisverkehr benötigt Auslöser und Mindestabstand; kein erfundener periodischer Ersatz.')
++        from backend.nis.engineering.capacity.transmission import profile as transmission_profile
++        release = transmission_profile(reference_transmission_contract(item), item['cycle_ms'])
++        if release['errors']:
++            raise ValueError('Referenz-Sendeverhalten: ' + '; '.join(release['errors']))
++        if item['transmission_mode'] == 'ON_REQUEST' and item['request_source'] == 'bus_message':
++            request = next((row for row in value['communication'] if row['id'] == item['request_communication_id']), None)
++            if (request is None or request['id'] == item['id']
++                    or item['producer_device_id'] not in request['consumer_device_ids']
++                    or request['producer_device_id'] not in consumers):
++                raise ValueError('Busantwort benötigt die zugehörige tatsächliche Anfrage im selben Kommunikationsmodell.')
++        _validate_reference_wire(item['encoding'])
++        role = item['role'] or ('MEASUREMENT' if producer['kind'] == 'SENSOR' else
++            'FEEDBACK' if producer['kind'] == 'ACTUATOR' else
++            'COMMAND' if all(devices[key]['kind'] == 'ACTUATOR' for key in consumers) else 'FUNCTION_OUTPUT')
++        wire = item['encoding']
++        if role == 'COMMAND':
++            actuators = [devices[key] for key in consumers if devices[key]['kind'] == 'ACTUATOR']
++            if not actuators:
++                raise ValueError('Stellbefehl benötigt einen tatsächlichen Aktorempfänger.')
++            for actuator in actuators:
++                command = next((row['definition'] for row in value['commands'] if row['device_id'] == actuator['id']), None)
++                if command is None:
++                    command = next((definition for name, definition in current['catalog'].get('confirmed_commands', {}).items()
++                                    if name_identity(name) == name_identity(actuator['name'])), None)
++                if command is None or not _reference_wire_compatible(command, wire):
++                    raise ValueError('Kommunikationskodierung passt nicht zur Stellgröße des Aktorempfängers.')
++        if role == 'MEASUREMENT':
++            if producer['kind'] != 'SENSOR':
++                raise ValueError('Messdaten benötigen einen tatsächlichen Sensorproduzenten.')
++            measurement = next((row['measurement_id'] for row in value['measurements'] if row['device_id'] == producer['id']), None)
++            if measurement is None:
++                measurement = next((choice for name, choice in current['catalog'].get('confirmed_measurements', {}).items()
++                                    if name_identity(name) == name_identity(producer['name'])), None)
++            measurement_profile = next((row for row in current['catalog']['measurements'] if row['id'] == measurement), None)
++            expected_semantics = ({measurement_profile['semanticType']} if measurement_profile and 'semanticType' in measurement_profile else
++                                  {'STATE', 'ENUM', 'BOOLEAN', 'FLAG'} if measurement_profile and measurement_profile['unit'] in {'code', 'state'} else {'NUMERIC'})
++            if (measurement_profile is None or measurement_profile['unit'] != wire['unit']
++                    or wire['semantic']['semantic_type'] not in expected_semantics
++                    or ('payloadBytes' in measurement_profile and measurement_profile['payloadBytes'] * 8 != wire['length_bits'])):
++                raise ValueError('Kommunikationskodierung passt nicht zur gewählten Messgröße.')
++        stamp(item, ['communication'], item['id'], producer['source_fact_ids'])
++    for item in value['functional_dependencies']:
++        electronic(item['executor_device_id'], {'CONTROLLER', 'GATEWAY'})
++        producer = item['producer_fact_id']
++        consumers = item['consumer_fact_ids']
++        if len(consumers) != len(set(consumers)) or producer in consumers:
++            raise ValueError('Funktionsabhängigkeit benötigt getrennte eindeutige Funktionspartner.')
++        for fact_id in [producer, *consumers]:
++            if fact_id not in functions or functions[fact_id]['realization'] != 'ATOMIC':
++                raise ValueError('Lokale Funktionsabhängigkeit benötigt bekannte atomare Funktionen.')
++            if item['executor_device_id'] not in functions[fact_id]['executor_device_ids']:
++                raise ValueError('Lokale Funktionsabhängigkeit benötigt denselben tatsächlichen Ausführer.')
++        same_scope([producer, *consumers], scopes[item['executor_device_id']])
++        _validate_reference_wire(item['encoding'])
++        stamp(item, ['communication'], item['id'], [producer, *consumers])
++    # The planner fills gaps. Omitting an unchanged old choice inherits it from
++    # the original request; supplying a candidate may add missing fields but
++    # cannot rewrite explicit values, vocabularies, recipients or ports.
++    participants = {name_identity(device['name']): device_id for device_id, device in devices.items()}
++    commands = {item['device_id']: item['definition'] for item in value['commands']}
++    measurements = {item['device_id']: item['measurement_id'] for item in value['measurements']}
++    protected_fields = {}
++    for field in ('commands', 'measurements', 'connections', 'owners'):
++        previous = current['catalog'].get('confirmed_' + field, {})
++        protected_fields[field] = deepcopy(previous)
++        for name, existing_choice in previous.items():
++            if field == 'connections' and str(existing_choice).casefold() in {'other', 'unknown', ''}:
++                continue
++            device_id = participants.get(name_identity(name))
++            if device_id is None or devices[device_id]['kind'] == 'PHYSICAL_CONTEXT':
++                raise ValueError('Ein zuvor bestätigter Teilnehmer darf nicht entfallen oder umbenannt werden.')
++            if field == 'commands' and device_id in commands and not _reference_preserves_fields(existing_choice, commands[device_id]):
++                raise ValueError('Vorher bestätigte Aktorkodierung darf nicht überschrieben werden.')
++            if field == 'measurements' and device_id in measurements and existing_choice != measurements[device_id]:
++                raise ValueError('Vorher bestätigte Messgröße darf nicht überschrieben werden.')
++            if field == 'connections':
++                expected = existing_choice if isinstance(existing_choice, list) else [existing_choice]
++                proposed = {port['technology'] for port in ports.values() if port['device_id'] == device_id}
++                if not proposed:
++                    findings.append({'code': 'REFERENCE_CONFIRMED_PORT_UNPLANNED', 'target_ref': device_id,
++                        'message': 'Vorher bestätigter Anschluss benötigt im Referenzentwurf seine konkrete physische Portidentität.'})
++                if proposed and not {DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(item) for item in expected}.issubset(proposed):
++                    raise ValueError('Vorher bestätigte Anschlüsse dürfen nicht ersetzt werden.')
++            if field == 'owners' and devices[device_id]['owner_device_id'] is not None:
++                owner_name = devices[devices[device_id]['owner_device_id']]['name']
++                if name_identity(owner_name) != name_identity(existing_choice):
++                    raise ValueError('Vorher bestätigte Gerätezuordnung darf nicht ersetzt werden.')
++    return {'schema_version': 1, 'status': 'REVIEW_REQUIRED', 'mode': 'EXAMPLE_PROJECT',
++        'project_id': current['project_id'],
++        'request_sha256': current['request_sha256'], 'source_sha256': current['source_sha256'],
++        'source_evidence': full_source,
++        'request': deepcopy(current['request']), 'fact_id_map': deepcopy(current['fact_id_map']),
++        'catalog_sha256': current['catalog_sha256'],
++        'protected_fields': full_protected,
++        'reference_sources': deepcopy(current['reference_sources']),
++        'proposal': value, 'decision_evidence': decision_evidence,
++        'processing_evidence': 'NONE', 'timing_evidence': 'NONE',
++        'coverage': {'inventory_fact_ids': [key for key, fact in facts.items() if fact['kind'] in {'INSTANCE', 'CATEGORY'}],
++            'function_fact_ids': [key for key, fact in facts.items() if fact['kind'] == 'FUNCTION'],
++            'requirement_fact_ids': [key for key, fact in facts.items() if fact['kind'] == 'REQUIREMENT'],
++            'inventory_bindings': {key: ids for key, ids in bound.items() if facts[key]['kind'] in {'INSTANCE', 'CATEGORY'}},
++            'derived_device_bindings': {key: ids for key, ids in bound.items() if facts[key]['kind'] in {'FUNCTION', 'REQUIREMENT'}}},
++        'canonical_writes': False, 'approval_required': True,
++        **({'validation_scope': 'PROFILE_ONLY', 'source_profile': list(profile)} if profile is not None else {})}
+--- a/backend/tests/test_reference_design.py
++++ b/backend/tests/test_reference_design.py
+@@ -0,0 +1,690 @@
++"""Reference candidates are unit fixtures, never product/model acceptance."""
++from copy import deepcopy
++import hashlib
++import json
++
++import pytest
++
++from backend.nis.agent.orchestration import project_intake as intake
++
++
++def fixture_request(*, references=None, answers=None, assignments=None):
++    source = ('Controller (ECU)\nSensorik (Temperatursensoren)\nAktorik (Ventile)\n'
++              'Funktion: Regelung\nFunktion: Diagnose\nFunktion: Gesamtfunktion\n'
++              'REQ-001: Das System MUSS diagnostizierbar sein.')
++    rows = [
++        ('Controller (ECU)', 'INSTANCE', 'CONTROLLER', 1, 'Controller (ECU)'),
++        ('Sensorik (Temperatursensoren)', 'CATEGORY', 'SENSOR', None, 'Sensorik (Temperatursensoren)'),
++        ('Aktorik (Ventile)', 'CATEGORY', 'ACTUATOR', None, 'Aktorik (Ventile)'),
++        *[(name, 'FUNCTION', 'OTHER', None, 'Funktion: ' + name) for name in ('Regelung', 'Diagnose', 'Gesamtfunktion')],
++        ('REQ-001', 'REQUIREMENT', 'OTHER', None, 'REQ-001: Das System MUSS diagnostizierbar sein.'),
++    ]
++    facts = [{'name': name, 'kind': kind, 'role': role, 'quantity': count,
++              'source_quote': quote, 'source_context': []} for name, kind, role, count, quote in rows]
++    envelope = {'source_text': source, 'source_name': 'complete-example.txt',
++                'source_sha256': hashlib.sha256(source.encode()).hexdigest(), 'source_chars': len(source),
++                'devices': [{'name': facts[0]['name'], 'role': 'CONTROLLER', 'quantity': 1,
++                             'source_quote': facts[0]['source_quote'], 'source_context': [], 'minimum': False}],
++                'questions': [{key: value for key, value in answer.items() if key in
++                    {'id', 'label', 'role', 'source_quote', 'source_context'}} for answer in answers or []],
++                'facts': facts, 'technologies': [{'name': 'ECU', 'kind': 'DEVICE_ALIAS', 'source_quote': 'Controller (ECU)'}],
++                'answers': answers or [], 'function_assignments': assignments or {}}
++    return {'mode': 'EXAMPLE_PROJECT', 'prompt': source + '\n- Dokument-Geräte: ' + json.dumps(envelope, ensure_ascii=False),
++            'reference_sources': references or []}
++
++
++def wire():
++    return {'length_bits': 1, 'data_type': 'unsigned', 'unit': 'code', 'factor': 1,
++            'min_value': 0, 'max_value': 1,
++            'semantic': {'semantic_type': 'BOOLEAN', 'meaning': 'Ventil öffnen/schließen'},
++            'data': {'enum_values': {'CLOSE': 0, 'OPEN': 1}}}
++
++
++def fixture_design(prepared):
++    ids = {fact['name']: fact_id for fact_id, fact in prepared['facts'].items()}
++    devices = [{'id': key, 'name': name, 'kind': kind, 'quantity': count,
++                'source_fact_ids': [ids[fact]], 'rationale': 'Prüfbarer Referenzentwurf'}
++               for key, name, kind, count, fact in [
++                   ('C', 'Controller (ECU)', 'CONTROLLER', 1, 'Controller (ECU)'),
++                   ('S', 'Temperatursensor', 'SENSOR', 1, 'Sensorik (Temperatursensoren)'),
++                   ('A', 'Ventil', 'ACTUATOR', 1, 'Aktorik (Ventile)')]]
++    for device in devices:
++        source_fact = prepared['facts'][device['source_fact_ids'][0]]
++        if source_fact['kind'] == 'INSTANCE':
++            previous = [row for row in prepared.get('catalog', {}).get('source_devices', [])
++                        if row.get('evidence', {}).get('source_quote') == source_fact['source_quote']
++                        and row.get('evidence', {}).get('source_context', []) == source_fact.get('source_context', [])]
++            if previous:
++                device['name'] = previous[0]['name']
++    return {'devices': devices,
++            'functions': [{'source_fact_id': ids[name], 'realization': 'ATOMIC', 'executor_device_ids': ['C'],
++                           'rationale': 'Ausführung im Referenzcontroller'} for name in ('Regelung', 'Diagnose', 'Gesamtfunktion')],
++            'measurements': [{'device_id': 'S', 'measurement_id': 'temperature', 'rationale': 'Temperaturmessung'}],
++            'commands': [{'device_id': 'A', 'definition': wire(), 'rationale': 'Schaltendes Referenzventil'}]}
++
++
++@pytest.fixture
++def prepared():
++    return intake.prepare_reference_design(fixture_request())
++
++
++def test_complete_original_and_short_ids_survive_detached_review(prepared):
++    result = intake.validate_reference_design(fixture_design(prepared), prepared)
++    assert result['status'] == 'REVIEW_REQUIRED'
++    assert result['canonical_writes'] is False and result['approval_required'] is True
++    assert result['source_evidence'] == prepared['source_evidence']
++    assert result['source_evidence']['source_text'] in result['request']['prompt']
++    assert 'source_text' not in intake.reviewed_document_evidence(prepared['request']['prompt'])
++    assert result['request'] == prepared['request']
++    assert len(result['coverage']['requirement_fact_ids']) == 1
++    assert len(result['coverage']['function_fact_ids']) == 3
++    assert all(len(key) == 13 and key.startswith('F') for key in result['fact_id_map'])
++    assert all(identity == intake.document_fact_identity(prepared['facts'][key])
++               for key, identity in result['fact_id_map'].items())
++    assert all(item['kind'] == 'REFERENCE_ASSUMPTION' for item in result['decision_evidence'])
++    result['source_evidence']['components'][0]['name'] = 'edited copy'
++    assert prepared['source_evidence']['components'][0]['name'] != 'edited copy'
++
++
++@pytest.mark.parametrize('corruption', ['source_hash', 'source_chars', 'fact_quote', 'fact_kind'])
++def test_primary_source_evidence_cannot_be_replaced(corruption):
++    request = fixture_request()
++    original, raw = request['prompt'].split('\n- Dokument-Geräte: ')
++    envelope = json.loads(raw)
++    if corruption == 'source_hash': envelope['source_sha256'] = '0' * 64
++    elif corruption == 'source_chars': envelope['source_chars'] -= 1
++    elif corruption == 'fact_quote': envelope['facts'][0]['source_quote'] = 'Invented controller'
++    else: envelope['facts'][1].update(kind='INSTANCE', quantity=1)
++    request['prompt'] = original + '\n- Dokument-Geräte: ' + json.dumps(envelope)
++    with pytest.raises(ValueError): intake.prepare_reference_design(request)
++
++
++def reference(fields=('commands',)):
++    text = 'Kommunikationsbeispiel mit 100 ECUs, keine Primärstückliste.'
++    return {'id': 'R1', 'name': 'reference.txt', 'role': 'REFERENCE_SUPPLEMENT', 'text': text,
++            'source_sha256': hashlib.sha256(text.encode()).hexdigest(), 'allowed_fields': list(fields)}
++
++
++def test_reference_inventory_is_not_promoted_and_field_scope_is_enforced():
++    prepared = intake.prepare_reference_design(fixture_request(references=[reference()]))
++    assert len(prepared['facts']) == 7
++    candidate = fixture_design(prepared)
++    candidate['commands'][0]['field_references'] = {'commands': ['R1']}
++    result = intake.validate_reference_design(candidate, prepared)
++    assert result['reference_sources']['R1']['role'] == 'REFERENCE_SUPPLEMENT'
++    assert any(item['reference_sources'] for item in result['decision_evidence'])
++    candidate['devices'][0]['field_references'] = {'quantity': ['R1']}
++    with pytest.raises(ValueError, match='Entscheidungsfeld'): intake.validate_reference_design(candidate, prepared)
++
++
++@pytest.mark.parametrize('mutation', ['hash', 'duplicate_id', 'bad_role', 'duplicate_scope'])
++def test_reference_manifest_rejects_corruption(mutation):
++    refs = [reference()]
++    if mutation == 'hash': refs[0]['source_sha256'] = '0' * 64
++    elif mutation == 'duplicate_id': refs.append(deepcopy(refs[0]))
++    elif mutation == 'bad_role': refs[0]['role'] = 'ORIGINAL'
++    else: refs[0]['allowed_fields'] = ['commands', 'commands']
++    with pytest.raises(ValueError): intake.prepare_reference_design(fixture_request(references=refs))
++
++
++def test_model_cannot_claim_approval_or_source_authority(prepared):
++    for key in ('approved', 'canonical_writes', 'decision_evidence', 'source_evidence'):
++        candidate = fixture_design(prepared)
++        candidate[key] = True
++        with pytest.raises(ValueError): intake.validate_reference_design(candidate, prepared)
++
++
++def test_stale_request_and_untrusted_prepared_facts(prepared):
++    candidate = fixture_design(prepared)
++    stale = deepcopy(prepared)
++    stale['request']['prompt'] += '\nnew revision'
++    with pytest.raises(ValueError, match='Auftragsrevision'): intake.validate_reference_design(candidate, stale)
++    forged = deepcopy(prepared)
++    forged['facts'] = {}
++    assert intake.validate_reference_design(candidate, forged)['source_evidence'] == prepared['source_evidence']
++
++
++@pytest.mark.parametrize('mutation', ['unknown_fact', 'duplicate_device', 'name_collision', 'instance_quantity', 'known_role', 'float_quantity'])
++def test_identity_quantity_and_known_role_guards(prepared, mutation):
++    candidate = fixture_design(prepared)
++    if mutation == 'unknown_fact': candidate['devices'][0]['source_fact_ids'] = ['unknown']
++    elif mutation == 'duplicate_device': candidate['devices'].append(deepcopy(candidate['devices'][0]))
++    elif mutation == 'name_collision': candidate['devices'][1]['name'] = candidate['devices'][0]['name']
++    elif mutation == 'instance_quantity': candidate['devices'][0]['quantity'] = 2
++    elif mutation == 'known_role': candidate['devices'][1]['kind'] = 'CONTROLLER'
++    else: candidate['devices'][1]['quantity'] = 1.5
++    with pytest.raises(ValueError): intake.validate_reference_design(candidate, prepared)
++
++
++def test_composite_preserves_source_binding_without_own_executor(prepared):
++    candidate = fixture_design(prepared)
++    parent = candidate['functions'][-1]
++    parent.update(realization='COMPOSITE', executor_device_ids=[],
++                  realized_by_fact_ids=[row['source_fact_id'] for row in candidate['functions'][:-1]])
++    result = intake.validate_reference_design(candidate, prepared)
++    assert len(result['coverage']['function_fact_ids']) == 3
++    assert result['proposal']['functions'][-1]['executor_device_ids'] == []
++    parent['realized_by_fact_ids'].append(parent['source_fact_id'])
++    with pytest.raises(ValueError, match='zyklisch'): intake.validate_reference_design(candidate, prepared)
++
++
++def test_confirmed_atomic_owner_cannot_be_hidden_by_composite():
++    original = fixture_request()
++    raw = json.loads(original['prompt'].split('\n- Dokument-Geräte: ')[1])
++    fact = next(f for f in raw['facts'] if f['name'] == 'Gesamtfunktion')
++    prepared = intake.prepare_reference_design(fixture_request(assignments={intake.document_fact_identity(fact): 'Controller (ECU)'}))
++    candidate = fixture_design(prepared)
++    candidate['functions'][-1].update(realization='COMPOSITE', executor_device_ids=[],
++                                    realized_by_fact_ids=[candidate['functions'][0]['source_fact_id']])
++    with pytest.raises(ValueError, match='bestätigte'): intake.validate_reference_design(candidate, prepared)
++
++
++def test_missing_source_items_are_explicit_findings_not_deleted(prepared):
++    candidate = fixture_design(prepared)
++    candidate['functions'].pop()
++    candidate['devices'].pop()
++    candidate['commands'] = []
++    result = intake.validate_reference_design(candidate, prepared)
++    assert {f['code'] for f in result['proposal']['unresolved']} >= {'REFERENCE_FUNCTION_UNCOVERED', 'REFERENCE_INVENTORY_UNCOVERED'}
++    assert result['source_evidence'] == prepared['source_evidence']
++
++
++@pytest.mark.parametrize('mutation', ['unknown_measurement', 'bits', 'raw_overlap', 'semantic_unit', 'nan'])
++def test_existing_measurement_and_wire_invariants(prepared, mutation):
++    candidate = fixture_design(prepared)
++    definition = candidate['commands'][0]['definition']
++    if mutation == 'unknown_measurement': candidate['measurements'][0]['measurement_id'] = 'not-a-registry-id'
++    elif mutation == 'bits': definition['data']['enum_values']['OPEN'] = 4
++    elif mutation == 'raw_overlap': definition['data']['invalid_values'] = [1]
++    elif mutation == 'semantic_unit': definition['unit'] = 'Nm'
++    else: definition['data']['invalid_values'] = [float('nan')]
++    with pytest.raises(ValueError): intake.validate_reference_design(candidate, prepared)
++
++
++def test_physical_context_cannot_serve_as_controller(prepared):
++    candidate = fixture_design(prepared)
++    # A source FUNCTION can motivate a new execution node, never prove hardware.
++    candidate['devices'].append({'id': 'P', 'name': 'Softwarekontext', 'kind': 'PHYSICAL_CONTEXT',
++        'context_kind': 'SOFTWARE_SERVICE', 'quantity': 1,
++        'source_fact_ids': [candidate['functions'][0]['source_fact_id']], 'rationale': 'Quellenbindung ohne erfundene ECU'})
++    intake.validate_reference_design(candidate, prepared)
++    candidate['functions'][0]['executor_device_ids'] = ['P']
++    with pytest.raises(ValueError, match='Controller'): intake.validate_reference_design(candidate, prepared)
++
++
++def test_reviewed_counts_remain_exact_or_minimum():
++    answer = {'id': 'SENSOR:Sensorik (Temperatursensoren):Sensorik (Temperatursensoren)', 'label': 'Sensorik (Temperatursensoren)', 'source_context': [],
++              'source_quote': 'Sensorik (Temperatursensoren)', 'role': 'SENSOR', 'quantity': 3, 'minimum': True}
++    prepared = intake.prepare_reference_design(fixture_request(answers=[answer]))
++    candidate = fixture_design(prepared)
++    with pytest.raises(ValueError, match='Gerätemenge'): intake.validate_reference_design(candidate, prepared)
++    for index in range(2, 5):
++        sensor = deepcopy(candidate['devices'][1])
++        sensor.update(id=f'S{index}', name=f'Temperatursensor{index}')
++        candidate['devices'].append(sensor)
++    intake.validate_reference_design(candidate, prepared)
++    answer['minimum'] = False
++    prepared = intake.prepare_reference_design(fixture_request(answers=[answer]))
++    with pytest.raises(ValueError, match='Gerätemenge'): intake.validate_reference_design(candidate, prepared)
++
++
++@pytest.mark.parametrize('source_kind', ['FUNCTION', 'REQUIREMENT'])
++def test_additional_hardware_is_a_reference_derivation_not_a_source_fact(prepared, source_kind):
++    candidate = fixture_design(prepared)
++    fact_id = next(key for key, fact in prepared['facts'].items() if fact['kind'] == source_kind)
++    candidate['devices'].append({'id': 'DERIVED', 'name': 'Referenzdrucksensor', 'kind': 'SENSOR',
++        'quantity': 1, 'owner_device_id': 'C', 'source_fact_ids': [fact_id],
++        'rationale': 'Zusätzlicher Sensor als ausdrücklich zu prüfende Referenzauslegung'})
++    result = intake.validate_reference_design(candidate, prepared)
++    assert result['source_evidence'] == prepared['source_evidence']
++    evidence = [row for row in result['decision_evidence'] if row['target_ref'] == 'DERIVED']
++    assert evidence and all(row['kind'] == 'REFERENCE_ASSUMPTION' for row in evidence)
++    assert all(row['source_fact_kinds'][fact_id] == source_kind for row in evidence)
++    assert fact_id not in result['coverage']['inventory_bindings']
++    assert 'DERIVED' in result['coverage']['derived_device_bindings'][fact_id]
++    assert len(result['coverage']['function_fact_ids']) == 3
++
++
++def test_controller_fact_cannot_be_relabelled_as_derived_sensor(prepared):
++    candidate = fixture_design(prepared)
++    candidate['devices'].append({'id': 'DERIVED', 'name': 'Referenzdrucksensor', 'kind': 'SENSOR',
++        'quantity': 1, 'source_fact_ids': candidate['devices'][0]['source_fact_ids'],
++        'rationale': 'Unzulässige Umdeutung einer Controllerdeklaration'})
++    with pytest.raises(ValueError, match='Geräteart'): intake.validate_reference_design(candidate, prepared)
++
++
++def with_communication(candidate):
++    candidate['devices'][1]['owner_device_id'] = 'C'
++    candidate['ports'] = [{'id': node + 'port', 'device_id': node, 'technology': 'i2c',
++        'role': 'LOCAL', 'network_scope': 'reference_local_i2c', 'parameters': {},
++        'rationale': 'Getrennt zu prüfender physischer Anschluss'} for node in ('S', 'C')]
++    candidate['communication'] = [{'id': 'TEMP', 'producer_device_id': 'S', 'consumer_device_ids': ['C'],
++        'source_port_id': 'Sport', 'consumer_port_ids': ['Cport'], 'scope': 'LOCAL_IO',
++        'signal_name': 'Temperatur', 'encoding': {'length_bits': 16, 'data_type': 'signed', 'unit': 'degC',
++            'factor': 0.1, 'offset_value': 0, 'min_value': -40, 'max_value': 125,
++            'semantic': {'semantic_type': 'NUMERIC', 'meaning': 'Temperatur'},
++            'data': {'minimum': -40, 'maximum': 125, 'resolution': 0.1}},
++        'transmission_mode': 'CYCLIC', 'cycle_ms': 100, 'rationale': 'Expliziter Referenzmesszyklus'}]
++    return candidate
++
++
++def test_port_and_event_design_is_reviewed_without_qualifying_physical_parameters(prepared):
++    candidate = with_communication(fixture_design(prepared))
++    result = intake.validate_reference_design(candidate, prepared)
++    assert len(result['proposal']['ports']) == 2
++    assert 'validation_scope' not in result
++    assert result['status'] == 'REVIEW_REQUIRED'
++    assert any(item['code'].startswith('REFERENCE_PORT_') for item in result['proposal']['unresolved'])
++    candidate['communication'][0].update(transmission_mode='EVENT', cycle_ms=None, trigger='on_change', trigger_description='Temperaturänderung', min_interval_ms=10)
++    intake.validate_reference_design(candidate, prepared)
++
++
++@pytest.mark.parametrize('mutation', ['sender_port', 'receiver_port', 'unknown_protocol', 'cycle', 'event_rate', 'event_trigger', 'physical_traffic', 'function_host', 'local_owner'])
++def test_transport_and_function_bindings_cannot_be_faked(prepared, mutation):
++    candidate = with_communication(fixture_design(prepared))
++    communication = candidate['communication'][0]
++    if mutation == 'sender_port': communication['source_port_id'] = 'Cport'
++    elif mutation == 'receiver_port': communication['consumer_port_ids'] = ['Sport']
++    elif mutation == 'unknown_protocol': candidate['ports'][0]['technology'] = 'unknown-tech'
++    elif mutation == 'cycle': communication['cycle_ms'] = None
++    elif mutation == 'event_rate': communication.update(transmission_mode='EVENT', trigger='on_change', min_interval_ms=None)
++    elif mutation == 'event_trigger': communication.update(transmission_mode='EVENT', min_interval_ms=10, trigger=None)
++    elif mutation == 'physical_traffic': candidate['devices'][1].update(kind='PHYSICAL_CONTEXT', context_kind='PASSIVE')
++    elif mutation == 'function_host': communication['producer_fact_id'] = candidate['functions'][0]['source_fact_id']
++    else: candidate['devices'][1]['owner_device_id'] = None
++    with pytest.raises(ValueError): intake.validate_reference_design(candidate, prepared)
++
++
++@pytest.mark.parametrize('case', ['unsigned_negative', 'too_narrow', 'float_width', 'nonaligned_range'])
++def test_numeric_encoding_retains_sign_scale_and_width(prepared, case):
++    candidate = with_communication(fixture_design(prepared))
++    encoding = candidate['communication'][0]['encoding']
++    if case == 'unsigned_negative': encoding['data_type'] = 'unsigned'
++    elif case == 'too_narrow': encoding['length_bits'] = 8
++    elif case == 'float_width': encoding.update(data_type='float32', length_bits=16)
++    else: encoding['factor'] = 0.3
++    with pytest.raises(ValueError): intake.validate_reference_design(candidate, prepared)
++
++
++def test_candidate_cannot_move_between_projects(prepared):
++    from backend.nis.engineering.projects.project_context import activate_project, reset_project
++    token = activate_project('different-example-project')
++    try:
++        with pytest.raises(ValueError, match='Auftragsrevision'):
++            intake.validate_reference_design(fixture_design(prepared), prepared)
++    finally:
++        reset_project(token)
++
++
++def test_live_catalog_revision_and_known_source_host_are_protected(monkeypatch):
++    from backend.nis.agent.tools import wizard_generation
++    original_catalog = wizard_generation.reference_design_catalog
++    request = fixture_request()
++    prepared = intake.prepare_reference_design(request)
++    def changed_catalog(prompt):
++        return {**original_catalog(prompt), 'catalog_revision': 'changed'}
++    monkeypatch.setattr(wizard_generation, 'reference_design_catalog', changed_catalog)
++    with pytest.raises(ValueError, match='Auftragsrevision'):
++        intake.validate_reference_design(fixture_design(prepared), prepared)
++    legacy = next(identity for key, identity in prepared['fact_id_map'].items()
++                  if prepared['facts'][key]['name'] == 'Regelung')
++    def known_host_catalog(prompt):
++        return {**original_catalog(prompt), 'source_function_assignments': {legacy: 'Controller (ECU)'}}
++    monkeypatch.setattr(wizard_generation, 'reference_design_catalog', known_host_catalog)
++    prepared = intake.prepare_reference_design(request)
++    candidate = fixture_design(prepared)
++    candidate['devices'].append({'id': 'C2', 'name': 'Referenzcontroller', 'kind': 'CONTROLLER', 'quantity': 1,
++        'source_fact_ids': [candidate['functions'][0]['source_fact_id']], 'rationale': 'Zusätzlicher Entwurfsknoten'})
++    candidate['functions'][0]['executor_device_ids'] = ['C2']
++    with pytest.raises(ValueError, match='Funktionsausführer'):
++        intake.validate_reference_design(candidate, prepared)
++
++
++def profiled_fixture():
++    request = fixture_request()
++    original = json.loads(request['prompt'].split('\n- Dokument-Geräte: ')[1])
++    labels = ['054. Roboterbeispiel', '055. Zellenbeispiel']
++    source = '\n'.join('# ' + label + '\n' + original['source_text'] for label in labels)
++    envelope = {**original, 'source_text': source, 'source_chars': len(source),
++                'source_sha256': hashlib.sha256(source.encode()).hexdigest(),
++                'devices': [{**device, 'source_context': [label]} for label in labels for device in original['devices']],
++                'facts': [{**fact, 'source_context': [label]} for label in labels for fact in original['facts']]}
++    prepared = intake.prepare_reference_design({'mode': 'EXAMPLE_PROJECT',
++        'prompt': source + '\n- Dokument-Geräte: ' + json.dumps(envelope, ensure_ascii=False)})
++    candidate = {}
++    for index, label in enumerate(labels):
++        subset = {**prepared, 'facts': {key: fact for key, fact in prepared['facts'].items()
++                                      if fact['source_context'] == [label]}}
++        part = fixture_design(subset)
++        prefix = str(index) + '_'
++        for device in part['devices']:
++            device['id'] = prefix + device['id']
++            if device['kind'] != 'CONTROLLER': device['name'] = prefix + device['name']
++        for function in part['functions']:
++            function['executor_device_ids'] = [prefix + key for key in function['executor_device_ids']]
++        for field in ('commands', 'measurements'):
++            for item in part[field]: item['device_id'] = prefix + item['device_id']
++        for field, items in part.items(): candidate.setdefault(field, []).extend(items)
++    return prepared, candidate
++
++
++@pytest.mark.parametrize('mutation', ['host', 'derived_device', 'owner', 'network_identity'])
++def test_same_labels_do_not_merge_independent_source_profiles(mutation):
++    prepared, candidate = profiled_fixture()
++    result = intake.validate_reference_design(candidate, prepared)
++    assert len(result['coverage']['function_fact_ids']) == 6
++    if mutation == 'host': candidate['functions'][0]['executor_device_ids'] = ['1_C']
++    elif mutation == 'derived_device': candidate['devices'][0]['source_fact_ids'].append(candidate['devices'][3]['source_fact_ids'][0])
++    elif mutation == 'owner': candidate['devices'][1]['owner_device_id'] = '1_C'
++    else:
++        candidate['ports'] = [{'id': key + 'port', 'device_id': key, 'technology': 'i2c', 'role': 'LOCAL',
++            'network_scope': 'accidentally_shared', 'rationale': 'Getrennte Quellenprofile'} for key in ('0_C', '1_C')]
++    with pytest.raises(ValueError): intake.validate_reference_design(candidate, prepared)
++
++
++@pytest.mark.parametrize('caption', [
++    '6. Systemverhalten (High-Level)', '3. Kommunikationsarchitektur',
++    '5. Systemanforderungen (Top-Level)', '4. Safety-Anforderungen (ISO 26262)',
++    '5. Cybersecurity-Anforderungen (ISO 21434)', '7. Erweiterte Safety-Requirements (ISO 26262)',
++    '8. Erweiterte Cybersecurity-Requirements (ISO 21434)', '9. Erweiterte ADAS-/Sensorfusion-Requirements',
++    '6. Diagnose & OTA', '8. Zusammenfassung', '5. Schnittstellen und Daten',
++    '8. Safety, Security, Qualität und Betrieb', 'Interfaces and Data',
++    'Safety, Security, Quality and Operations', 'Extended Safety Requirements',
++])
++def test_generic_chapter_scope_is_not_an_independent_source_system(caption):
++    assert intake.document_system_scope([caption, '6.1 Normalbetrieb']) == []
++    named = ['D – Industrieautomation, Produktion und Robotik', '054. Kollaborativer Roboterarm']
++    assert intake.document_system_scope([*named, caption, '6.1 Normalbetrieb']) == named
++    assert intake.document_system_scope(['vehicle-example', caption]) == ['vehicle-example']
++
++
++@pytest.mark.parametrize('name', ['054. Kollaborativer Roboterarm', '056. Mobiler Service-Roboter mit Greifarm',
++                                 '062. Digitale Fabriklinie / Montagewerk', 'Safety PLC', 'Cybersecurity Gateway'])
++def test_named_system_identity_is_never_removed_as_a_generic_chapter(name):
++    assert intake.document_system_scope([name]) == [name]
++
++
++@pytest.mark.parametrize('field,value', [('factor', True), ('unit', ' '),
++    ('semantic', {'semantic_type': [], 'meaning': 'bad'}),
++    ('semantic', {'semantic_type': 'BOOLEAN', 'meaning': {'bad': 'shape'}}),
++    ('data', {'enum_values': []})])
++def test_malformed_wire_fields_are_actionable_validation_errors(prepared, field, value):
++    candidate = fixture_design(prepared)
++    candidate['commands'][0]['definition'][field] = value
++    with pytest.raises(ValueError): intake.validate_reference_design(candidate, prepared)
++
++
++def with_local_dependency(candidate):
++    candidate['functional_dependencies'] = [{'id': 'local_function_data',
++        'producer_fact_id': candidate['functions'][0]['source_fact_id'],
++        'consumer_fact_ids': [candidate['functions'][1]['source_fact_id']],
++        'executor_device_id': 'C', 'signal_name': 'Funktionsergebnis', 'encoding': wire(),
++        'rationale': 'Prüfbare lokale Datenabhängigkeit; Algorithmus und Timing sind unbestätigt'}]
++    return candidate
++
++
++def test_local_function_dependency_preserves_no_physical_self_transport(prepared):
++    candidate = with_local_dependency(fixture_design(prepared))
++    result = intake.validate_reference_design(candidate, prepared)
++    assert result['proposal']['communication'] == []
++    assert len(result['proposal']['functional_dependencies']) == 1
++    assert result['processing_evidence'] == 'NONE' and result['timing_evidence'] == 'NONE'
++    assert any(row['target_ref'] == 'local_function_data' and row['kind'] == 'REFERENCE_ASSUMPTION'
++               for row in result['decision_evidence'])
++
++
++@pytest.mark.parametrize('mutation', ['unknown', 'composite', 'different_host', 'self', 'duplicate', 'physical_port'])
++def test_function_dependency_cannot_fake_function_or_host_binding(prepared, mutation):
++    candidate = with_local_dependency(fixture_design(prepared))
++    dependency = candidate['functional_dependencies'][0]
++    if mutation == 'unknown': dependency['producer_fact_id'] = 'unknown'
++    elif mutation == 'composite':
++        candidate['functions'][0].update(realization='COMPOSITE', executor_device_ids=[],
++            realized_by_fact_ids=[candidate['functions'][2]['source_fact_id']])
++    elif mutation == 'different_host':
++        candidate['devices'].append({'id': 'C2', 'name': 'Zweiter Referenzcontroller', 'kind': 'CONTROLLER',
++            'quantity': 1, 'source_fact_ids': [candidate['functions'][1]['source_fact_id']], 'rationale': 'Zusätzlicher Controllerentwurf'})
++        candidate['functions'][1]['executor_device_ids'] = ['C2']
++    elif mutation == 'self': dependency['consumer_fact_ids'] = [dependency['producer_fact_id']]
++    elif mutation == 'duplicate': dependency['consumer_fact_ids'] *= 2
++    else: dependency['source_port_id'] = 'invented_loopback'
++    with pytest.raises(ValueError): intake.validate_reference_design(candidate, prepared)
++
++
++def confirmed_fixture(monkeypatch):
++    from backend.nis.agent.tools import wizard_generation
++    original = wizard_generation.reference_design_catalog
++    controller_name = next((row['name'] for row in original(fixture_request()['prompt']).get('source_devices', [])
++                            if row.get('evidence', {}).get('source_quote') == 'Controller (ECU)'), 'Controller (ECU)')
++    command = {**wire(), 'length_bits': 8}
++    choices = {'confirmed_commands': {'Ventil (A)': command},
++        'confirmed_measurements': {'Temperatursensor': 'temperature'},
++        'confirmed_connections': {'Temperatursensor': 'I2C'},
++        'confirmed_owners': {'Temperatursensor': controller_name},
++        'name_aliases': {'Ventil (A)': 'ventil', 'Ventil': 'ventil'}}
++    def confirmed_catalog(prompt):
++        catalog = original(prompt)
++        return {**catalog, **deepcopy(choices), 'name_aliases': {**catalog.get('name_aliases', {}), **choices['name_aliases']}}
++    monkeypatch.setattr(wizard_generation, 'reference_design_catalog', confirmed_catalog)
++    prepared = intake.prepare_reference_design(fixture_request())
++    candidate = fixture_design(prepared)
++    candidate['commands'][0]['definition'] = deepcopy(command)
++    candidate['devices'][1]['owner_device_id'] = 'C'
++    return prepared, candidate, choices
++
++
++def test_unchanged_confirmed_choices_are_inherited_instead_of_regenerated(monkeypatch):
++    prepared, candidate, choices = confirmed_fixture(monkeypatch)
++    candidate['commands'] = []
++    candidate['measurements'] = []
++    candidate['devices'][1]['owner_device_id'] = None
++    result = intake.validate_reference_design(candidate, prepared)
++    assert result['protected_fields']['commands'] == choices['confirmed_commands']
++    assert result['protected_fields']['connections'] == choices['confirmed_connections']
++    assert result['protected_fields']['owners'] == choices['confirmed_owners']
++    assert result['source_evidence'] == prepared['source_evidence']
++
++
++@pytest.mark.parametrize('mutation', ['rename', 'command_width', 'command_vocab', 'measurement', 'connection', 'owner'])
++def test_reference_proposals_cannot_overwrite_previously_confirmed_fields(monkeypatch, mutation):
++    prepared, candidate, choices = confirmed_fixture(monkeypatch)
++    if mutation == 'rename': candidate['devices'][-1]['name'] = 'Umbenannt'
++    elif mutation == 'command_width': candidate['commands'][0]['definition']['length_bits'] = 16
++    elif mutation == 'command_vocab': candidate['commands'][0]['definition']['data']['enum_values']['INVENTED_ERROR'] = 255
++    elif mutation == 'measurement': candidate['measurements'][0]['measurement_id'] = 'humidity'
++    elif mutation == 'connection': candidate['ports'] = [{'id': 'different_port', 'device_id': 'S', 'technology': 'can',
++        'role': 'LOCAL', 'network_scope': 'different_can', 'rationale': 'Unerlaubter Ersatz eines bestätigten Anschlusses'}]
++    else:
++        candidate['devices'].append({'id': 'C2', 'name': 'Zweiter Referenzcontroller', 'kind': 'CONTROLLER', 'quantity': 1,
++            'source_fact_ids': [candidate['functions'][0]['source_fact_id']], 'rationale': 'Zusätzlicher Controllerentwurf'})
++        candidate['devices'][1]['owner_device_id'] = 'C2'
++    with pytest.raises(ValueError): intake.validate_reference_design(candidate, prepared)
++
++
++def test_additional_ports_keep_all_confirmed_ports(monkeypatch):
++    prepared, candidate, _ = confirmed_fixture(monkeypatch)
++    candidate['ports'] = [{'id': key, 'device_id': 'S', 'technology': technology, 'role': 'LOCAL',
++        'network_scope': 'separate_' + technology, 'rationale': 'Zusätzlicher prüfpflichtiger Anschluss'}
++        for key, technology in [('existing_i2c', 'i2c'), ('additional_can', 'can')]]
++    result = intake.validate_reference_design(candidate, prepared)
++    assert len(result['proposal']['ports']) == 2
++
++
++@pytest.mark.parametrize('mode', ['EVENT', 'MIXED', 'ON_REQUEST'])
++def test_native_release_contracts_do_not_invent_periodic_requests(prepared, mode):
++    from backend.nis.engineering.capacity.transmission import release_grid
++    candidate = with_communication(fixture_design(prepared))
++    row = candidate['communication'][0]
++    row.update(transmission_mode=mode, min_interval_ms=10, cycle_ms=100 if mode == 'MIXED' else None)
++    if mode == 'ON_REQUEST': row.update(request_source='external_application', request_times_ms=[20., 50.])
++    else: row.update(trigger='explicit', release_times_ms=[20., 50.])
++    result = intake.validate_reference_design(candidate, prepared)
++    saved = result['proposal']['communication'][0]
++    times = release_grid(intake.reference_transmission_contract(saved), saved['cycle_ms'], 100)
++    assert times == ([0., 20., 50., 100.] if mode == 'MIXED' else [20., 50.])
++
++
++@pytest.mark.parametrize('mutation', ['missing_request', 'independent_times', 'negative_time', 'too_close'])
++def test_invalid_release_inputs_are_not_replaced_with_cycles(prepared, mutation):
++    candidate = with_communication(fixture_design(prepared))
++    row = candidate['communication'][0]
++    row.update(transmission_mode='ON_REQUEST', cycle_ms=None, min_interval_ms=10,
++               request_source='bus_message', request_communication_id='unknown', response_processing_ms=1)
++    if mutation == 'independent_times': row['request_times_ms'] = [1.]
++    elif mutation == 'negative_time': row.update(request_source='external_application', request_times_ms=[-1.])
++    elif mutation == 'too_close': row.update(request_source='external_application', request_times_ms=[1., 2.])
++    with pytest.raises(ValueError): intake.validate_reference_design(candidate, prepared)
++
++
++def with_command(candidate, definition=None):
++    candidate = with_communication(candidate)
++    candidate['devices'][-1]['owner_device_id'] = 'C'
++    candidate['ports'].append({'id': 'Aport', 'device_id': 'A', 'technology': 'i2c', 'role': 'LOCAL',
++        'network_scope': 'reference_local_i2c', 'rationale': 'Bewusster Aktoranschluss'})
++    candidate['communication'].append({'id': 'COMMAND', 'producer_device_id': 'C', 'consumer_device_ids': ['A'],
++        'source_port_id': 'Cport', 'consumer_port_ids': ['Aport'], 'scope': 'LOCAL_IO', 'role': 'COMMAND',
++        'signal_name': 'Ventilbefehl', 'encoding': deepcopy(definition or wire()),
++        'transmission_mode': 'CYCLIC', 'cycle_ms': 100, 'rationale': 'Stellgröße am tatsächlichen Aktorempfänger'})
++    return candidate
++
++
++def test_command_encoding_is_bound_to_actuator_and_keeps_raw_vocabulary(prepared):
++    candidate = with_command(fixture_design(prepared))
++    candidate['communication'][-1]['encoding']['semantic']['meaning'] = 'Gleichbedeutender Ventilbefehl'
++    assert len(intake.validate_reference_design(candidate, prepared)['proposal']['communication']) == 2
++    candidate['communication'][-1]['encoding']['data']['enum_values'] = {'OPEN': 0, 'CLOSE': 1}
++    with pytest.raises(ValueError, match='Stellgröße'): intake.validate_reference_design(candidate, prepared)
++
++
++@pytest.mark.parametrize('mutation', ['width', 'unit', 'missing', 'semantic'])
++def test_command_and_measurement_encodings_cannot_diverge_from_selected_quantity(prepared, mutation):
++    candidate = with_command(fixture_design(prepared))
++    if mutation == 'width': candidate['communication'][-1]['encoding']['length_bits'] = 8
++    elif mutation == 'unit': candidate['communication'][0]['encoding']['unit'] = 'Nm'
++    elif mutation == 'missing': candidate['commands'] = []
++    else: candidate['communication'][0]['encoding'] = wire()
++    with pytest.raises(ValueError): intake.validate_reference_design(candidate, prepared)
++
++
++def test_status_is_separate_from_sensor_measurement(prepared):
++    candidate = with_communication(fixture_design(prepared))
++    status = deepcopy(candidate['communication'][0])
++    status.update(id='STATUS', role='STATUS', signal_name='Sensorstatus', encoding=wire())
++    candidate['communication'].append(status)
++    assert len(intake.validate_reference_design(candidate, prepared)['proposal']['communication']) == 2
++
++
++def test_inherited_command_encoding_is_still_checked(monkeypatch):
++    prepared, candidate, choices = confirmed_fixture(monkeypatch)
++    candidate = with_command(candidate, choices['confirmed_commands']['Ventil (A)'])
++    candidate['commands'] = []
++    intake.validate_reference_design(candidate, prepared)
++    candidate['communication'][-1]['encoding']['length_bits'] = 16
++    with pytest.raises(ValueError, match='Stellgröße'): intake.validate_reference_design(candidate, prepared)
++
++
++def test_electronics_are_individually_addressed_and_unplanned_confirmed_ports_remain_findings(monkeypatch):
++    prepared, candidate, _ = confirmed_fixture(monkeypatch)
++    result = intake.validate_reference_design(candidate, prepared)
++    assert any(row['code'] == 'REFERENCE_CONFIRMED_PORT_UNPLANNED' for row in result['proposal']['unresolved'])
++    candidate['devices'][1]['quantity'] = 2
++    with pytest.raises(ValueError, match='einzelne Identitäten'): intake.validate_reference_design(candidate, prepared)
++
++
++def test_multiple_explicit_instances_keep_their_total_without_implicit_group_endpoints():
++    request = fixture_request()
++    source, serialized = request['prompt'].split('\n- Dokument-Geräte: ')
++    envelope = json.loads(serialized)
++    envelope['facts'][0]['quantity'] = 2
++    source = source.replace('Controller (ECU)', '2 Controller (ECU)')
++    envelope['facts'][0]['source_quote'] = '2 Controller (ECU)'
++    envelope['devices'][0].update(quantity=2, source_quote='2 Controller (ECU)')
++    envelope.update(source_text=source, source_chars=len(source), source_sha256=hashlib.sha256(source.encode()).hexdigest())
++    request['prompt'] = source + '\n- Dokument-Geräte: ' + json.dumps(envelope)
++    prepared = intake.prepare_reference_design(request)
++    candidate = fixture_design(prepared)
++    second = deepcopy(candidate['devices'][0]); second.update(id='C2',name='ControllerZwei')
++    previous = [row['name'] for row in prepared.get('catalog', {}).get('source_devices', [])
++                if row.get('evidence', {}).get('source_quote') == '2 Controller (ECU)']
++    if len(previous) == 2: second['name'] = previous[1]
++    candidate['devices'].append(second)
++    assert len(intake.validate_reference_design(candidate, prepared)['coverage']['inventory_bindings'][candidate['devices'][0]['source_fact_ids'][0]]) == 2
++
++
++def single_profile_part(candidate, prefix='0_'):
++    return {key: [deepcopy(row) for row in rows if
++        (row.get('id', '').startswith(prefix) if key == 'devices' else
++         row.get('device_id', '').startswith(prefix) if key in {'commands', 'measurements'} else
++         all(host.startswith(prefix) for host in row.get('executor_device_ids', [])))]
++        for key, rows in candidate.items()}
++
++
++def test_internal_profile_feedback_keeps_complete_original_but_final_validation_requires_all():
++    prepared, candidate = profiled_fixture()
++    partial = single_profile_part(candidate)
++    profile = ['054. Roboterbeispiel']
++    checked = intake.validate_reference_design_profile(partial, prepared, profile)
++    assert checked['validation_scope'] == 'PROFILE_ONLY'
++    assert checked['source_profile'] == profile
++    assert checked['proposal']['unresolved'] == []
++    assert len(checked['coverage']['function_fact_ids']) == 3
++    assert checked['source_evidence'] == prepared['source_evidence']
++    assert checked['fact_id_map'] == prepared['fact_id_map']
++    final = intake.validate_reference_design(partial, prepared)
++    assert 'validation_scope' not in final
++    assert len(final['coverage']['function_fact_ids']) == 6
++    assert {row['code'] for row in final['proposal']['unresolved']} >= {'REFERENCE_FUNCTION_UNCOVERED', 'REFERENCE_INVENTORY_UNCOVERED'}
++
++
++def test_profile_identity_survives_measurement_catalog_validation(prepared):
++    candidate = with_communication(fixture_design(prepared))
++    checked = intake.validate_reference_design_profile(candidate, prepared, [])
++    assert checked['source_profile'] == []
++    assert checked['validation_scope'] == 'PROFILE_ONLY'
++    assert 'validation_scope' not in intake.validate_reference_design(candidate, prepared)
++
++
++def test_physical_context_has_explicit_canonical_membership_without_becoming_an_executor(prepared):
++    candidate = fixture_design(prepared)
++    candidate['devices'].append({'id': 'SW', 'name': 'Steuerungssoftware', 'kind': 'PHYSICAL_CONTEXT',
++        'context_kind': 'SOFTWARE_SERVICE', 'quantity': 1, 'source_fact_ids': [candidate['functions'][0]['source_fact_id']],
++        'rationale': 'Expliziter Softwarekontext auf dem Ausführungsgerät'})
++    checked = intake.validate_reference_design(candidate, prepared)
++    assert any(row['code'] == 'REFERENCE_CONTEXT_UNBOUND' for row in checked['proposal']['unresolved'])
++    candidate['devices'][-1]['owner_device_id'] = 'C'
++    checked = intake.validate_reference_design(candidate, prepared)
++    assert not any(row['code'] == 'REFERENCE_CONTEXT_UNBOUND' for row in checked['proposal']['unresolved'])
++    assert checked['proposal']['devices'][-1]['kind'] == 'PHYSICAL_CONTEXT'
++    assert all(row['executor_device_ids'] == ['C'] for row in checked['proposal']['functions'])
++
++
++@pytest.mark.parametrize('mutation', ['foreign_fact', 'foreign_profile', 'invented_scope', 'changed_source'])
++def test_internal_profile_feedback_cannot_change_scope_or_primary_evidence(mutation):
++    prepared, candidate = profiled_fixture()
++    partial = single_profile_part(candidate)
++    profile = ['054. Roboterbeispiel']
++    if mutation == 'foreign_fact': partial['devices'].append(deepcopy(candidate['devices'][3]))
++    elif mutation == 'foreign_profile': profile = ['055. Zellenbeispiel']
++    elif mutation == 'invented_scope': profile = ['054.']
++    else: prepared['request']['prompt'] += '\nchanged request'
++    with pytest.raises(ValueError): intake.validate_reference_design_profile(partial, prepared, profile)
++
++
++def test_same_instance_label_uses_existing_scoped_identity_and_profile_specific_protection(monkeypatch):
++    from backend.nis.agent.tools import wizard_generation
++    prepared, candidate = profiled_fixture()
++    original_catalog = wizard_generation.reference_design_catalog
++    source_devices = [{'name': device['name'], 'device_type': 'PLC', 'evidence': deepcopy(prepared['facts'][device['source_fact_ids'][0]])}
++                      for device in candidate['devices'] if device['kind'] == 'CONTROLLER']
++    monkeypatch.setattr(wizard_generation, 'reference_design_catalog', lambda prompt: {
++        **original_catalog(prompt), 'source_devices': source_devices,
++        'confirmed_commands': {'1_Ventil': wire()}, 'confirmed_owners': {'1_Temperatursensor': '1_Controller (ECU)'},
++    })
++    prepared = intake.prepare_reference_design(prepared['request'])
++    partial = single_profile_part(candidate)
++    checked = intake.validate_reference_design_profile(partial, prepared, ['054. Roboterbeispiel'])
++    assert checked['proposal']['unresolved'] == []
++    assert checked['protected_fields']['commands'] == {'1_Ventil': wire()}
++    partial['devices'][0]['name'] = 'LostOriginalScopedIdentity'
++    with pytest.raises(ValueError, match='Instanzidentität'):
++        intake.validate_reference_design_profile(partial, prepared, ['054. Roboterbeispiel'])
+--- a/frontend/src/features/agent/lib/actuator-commands.ts
++++ b/frontend/src/features/agent/lib/actuator-commands.ts
+@@ -43,6 +43,9 @@
+ }
+ 
+ export function proposedActuatorCommand(name: string, purpose = ''): { choice: 'OPEN_CLOSE' | 'POSITION'; reason: string } | null {
++  // A drive name does not define its commanded physical quantity. Keep torque
++  // and speed requirements available for a reviewed custom wire definition.
++  if (/drehmoment|torque|drehzahl|rotational[ -]?speed|\brpm\b/i.test(purpose)) return null;
+   if (/ventil|valve/i.test(name) && /\bproportional\w*\b/i.test(purpose))
+     return { choice: 'POSITION', reason: 'Proportionales Ventil: Stellposition als editierbare Entwurfsvorgabe' };
+   if (/(?:Schaltausgang|SchaltausgangActuator)$/.test(name))
+@@ -51,8 +54,10 @@
+     return { choice: 'POSITION', reason: 'Stellglied: 0–100 %, Auflösung 0,1 % als editierbare Entwurfsvorgabe' };
+   if (/ventil|valve|relais|relay|schalt/i.test(name))
+     return { choice: 'OPEN_CLOSE', reason: 'Schaltendes Stellglied; binärer Entwurf, Kodierung prüfen' };
+-  if (/motor|drive|servo|linear|antrieb|motion|lüfter|luefter|fan|steering/i.test(name))
+-    return { choice: 'POSITION', reason: 'Stellendes Gerät; 0–100-%-Entwurf, Bereich und Auflösung prüfen' };
++  const meaning = `${name} ${purpose}`;
++  const relativePosition = /0\s*(?:[-–—]|\.\.|bis|to)\s*100\s*%|(?:relative\w*\s+(?:stell)?position)|(?:stell)?position\s+(?:in\s+)?(?:prozent|percent)/i;
++  if (/(?:stell)?position/i.test(meaning) && relativePosition.test(meaning))
++    return { choice: 'POSITION', reason: 'Relative Stellposition: 0–100-%-Entwurf, Bereich und Auflösung prüfen' };
+   return null;
+ }
+ 
+--- a/frontend/src/features/agent/lib/device-proposals.test.mjs
++++ b/frontend/src/features/agent/lib/device-proposals.test.mjs
+@@ -15,6 +15,22 @@
+ 
+ test('actuator proposals distinguish switching from position control', () => {
+   assert.equal(proposedActuatorCommand('Ventilaktor1')?.choice, 'OPEN_CLOSE');
+-  assert.equal(proposedActuatorCommand('Linearantriebe1')?.choice, 'POSITION');
++  assert.equal(proposedActuatorCommand('Linearantriebe1', 'Stellposition 0–100 %')?.choice, 'POSITION');
+   assert.equal(proposedActuatorCommand('Unknown1'), null);
+ });
++
++test('drive names do not substitute a position preset for unspecified or different command quantities', () => {
++  for (const name of ['Antriebs ', 'Antriebsmotor', 'Motor', 'Servo', 'Linearantriebe1', 'MotionActuator', 'Luefter', 'Fan', 'Steering'])
++    assert.equal(proposedActuatorCommand(name), null, name);
++  for (const purpose of ['Drehmomentanforderung', 'Requested torque in Nm', 'Drehzahlsollwert', 'Rotational speed in rpm'])
++    assert.equal(proposedActuatorCommand('Positionsantrieb', purpose), null, purpose);
++  assert.equal(proposedActuatorCommand('Servomotor', 'Position in Grad von -90 bis 90'), null);
++});
++
++test('relative position evidence and explicit generic presets remain reviewable candidates', () => {
++  assert.equal(proposedActuatorCommand('Servo', 'Stellposition 0–100 %')?.choice, 'POSITION');
++  assert.equal(proposedActuatorCommand('Servo', 'Relative position in percent')?.choice, 'POSITION');
++  assert.equal(proposedActuatorCommand('Antrieb', 'Position 0..100 %')?.choice, 'POSITION');
++  assert.equal(proposedActuatorCommand('SystemStellglied')?.choice, 'POSITION');
++  assert.equal(proposedActuatorCommand('SystemSchaltausgang')?.choice, 'OPEN_CLOSE');
++});
+--- a/frontend/src/features/agent/lib/engineering-specification.ts
++++ b/frontend/src/features/agent/lib/engineering-specification.ts
+@@ -1,4 +1,5 @@
+-import { documentDeviceQuestions, documentParticipantName, readReviewedDocumentEquipment } from './document-clarification.ts';
++import technologyProjection from '../../communication/lib/technology-projection.json' with { type: 'json' };
++import { documentDeviceQuestions, documentParticipantName, documentFactIdentity, readReviewedDocumentEquipment } from './document-clarification.ts';
+ import { industryTemplateLabel, industryTemplateProfile } from "./industry-templates/index.ts";
+ import { conciseGeneratedName } from "../../engineering/lib/engineering-names.ts";
+ import { automotiveFunctionOutputs } from "./industry-templates/automotive-functions.ts";
+@@ -6,6 +7,7 @@
+ import inventoryVocabulary from './inventory-vocabulary.json' with { type: 'json' };
+ 
+ export function addAutomotiveFunctionOutputs(chains: ExtractedEngineeringChain[], domain: string, includeFunctionalDependencies = true): ExtractedEngineeringChain[] {
++  if (chains.some(isReferenceDesignChain)) return chains;
+   if (domain !== "automotive") return chains;
+   const result = [...chains];
+   const usedIds = new Set(chains.map(chain => Number(chain.message_id_hex)));
+@@ -45,6 +47,7 @@
+   domain: string,
+   prompt = '',
+ ): ExtractedEngineeringChain[] {
++  if (chains.some(isReferenceDesignChain)) return chains;
+   if (domain === 'automotive') return addAutomotiveFunctionOutputs(chains, domain, !/per Wizard-Uebernehmen bestaetigt/.test(prompt) || /"functional_routes"\s*:\s*\[\s*\{/.test(prompt));
+   const path = INDUSTRY_GENERATION_PATHS[domain];
+   return path ? path(chains, domain) : chains;
+@@ -77,8 +80,8 @@
+   signal_display_name: string;
+   start_bit: number;
+   length_bits: number;
+-  byte_order: "little_endian";
+-  data_type: "signed" | "unsigned";
++  byte_order: "little_endian" | "big_endian";
++  data_type: "signed" | "unsigned" | "float" | "double" | "float32" | "float64";
+   factor: number;
+   offset_value: number;
+   unit?: string;
+@@ -104,6 +107,7 @@
+   networkArchitecture: NetworkArchitectureMode;
+   targetCounts: EngineeringTargetCounts;
+   unresolvedInventoryGroups: string[];
++  reference_design?: Record<string, unknown>;
+ };
+ 
+ export type EngineeringDomainEvidence = {
+@@ -194,6 +198,7 @@
+  * placeholder signal. Message packing assigns the final offsets and DLC.
+  */
+ export function expandEngineeringSignalModel(chains: ExtractedEngineeringChain[], preserveHistoricalLimit = false) {
++  if (chains.some(isReferenceDesignChain)) return chains;
+   return chains.flatMap((chain) => {
+     if (!requiresCompleteSignalModel(chain) || chain.configuration?.functional_output_template) return [chain];
+     const candidates = [
+@@ -316,7 +321,7 @@
+   maxValue?: number;
+   factor?: number;
+   offsetValue?: number;
+-  dataType?: "signed" | "unsigned";
++  dataType?: ExtractedEngineeringChain["data_type"];
+ }) {
+   const min = typeof input.minValue === "number" && Number.isFinite(input.minValue) ? input.minValue : 0;
+   const max = typeof input.maxValue === "number" && Number.isFinite(input.maxValue) ? input.maxValue : 255;
+@@ -413,6 +418,7 @@
+   targetLoadPercent = DEFAULT_INTERFACE_TARGET_LOAD_PERCENT,
+   prompt = '',
+ ) {
++  if (chains.some(isReferenceDesignChain)) return chains;
+   const packed = chains.map((chain) => ({ ...chain, function_name: conciseGeneratedName('Function', chain.function_name) }));
+   const grouped = new Map<string, ExtractedEngineeringChain[]>();
+   const graphRaw = prompt.match(/^- Systemcluster-Graph:\s*(\[[^\r\n]*\])\s*$/m)?.[1];
+@@ -537,10 +543,10 @@
+   hardwareName: string;
+   interfaceType: string;
+   cycleMs: number;
+-  dataType: "signed" | "unsigned";
++  dataType: ExtractedEngineeringChain["data_type"];
+   lengthBits: number;
+   startBit: number;
+-  byteOrder: "little_endian";
++  byteOrder: ExtractedEngineeringChain["byte_order"];
+   factor: number;
+   offset: number;
+   unit?: string;
+@@ -2082,7 +2088,7 @@
+   return /\b(?:Musterprojekt|Beispielprojekt|example project|sample project|Skalierungsziel)\b/i.test(withoutNegatedExamples) ? 'EXAMPLE_PROJECT' : 'REAL_PROJECT';
+ }
+ 
+-function explicitDeviceConnections(text: string): Record<string, string> {
++export function explicitDeviceConnections(text: string): Record<string, string> {
+   const raw = text.match(/^- Geräteanschlüsse:\s*(\{[^\r\n]*\})\s*$/m)?.[1];
+   if (!raw) return {};
+   let values: Record<string, string>;
+@@ -2095,7 +2101,7 @@
+   }));
+ }
+ 
+-function explicitDeviceOwners(text: string): Record<string, string> {
++export function explicitDeviceOwners(text: string): Record<string, string> {
+   const raw = text.match(/^- Gerätezuordnungen:\s*(\{[^\r\n]*\})\s*$/m)?.[1];
+   if (!raw) return {};
+   let values: Record<string, string>;
+@@ -2114,6 +2120,8 @@
+   domainOverride?: string,
+   completenessFirst = false,
+ ): ExtractedEngineeringSpecification {
++  const reference = readDocumentReferenceDesign(text);
++  if (reference) return extractReferenceDesignSpecification(text, reference, overrides, domainOverride);
+   const documentEquipment = readReviewedDocumentEquipment(text);
+   text = text.replace(/^- Dokument-Geräte:[^\r\n]*$/gm, '');
+   const originalLines = text.split(/\r?\n/);
+@@ -2431,6 +2439,7 @@
+ 
+ /** The reviewed graph owns device identities; catalog expansion must not replace them. */
+ export function reconcileConfirmedGraphDevices(spec: ExtractedEngineeringSpecification, prompt: string) {
++  if (spec.reference_design) return spec.chains;
+   const raw = prompt.match(/^- Systemcluster-Graph:\s*(\[[^\r\n]*\])\s*$/m)?.[1];
+   if (!raw) return spec.chains;
+   const graph = JSON.parse(raw) as ConfirmedClusterGraph;
+@@ -2549,6 +2558,7 @@
+ }
+ 
+ export function applyConfirmedClusterGraph(chains: ExtractedEngineeringChain[], prompt: string) {
++  if (chains.some(isReferenceDesignChain)) return chains;
+   const raw = prompt.match(/^- Systemcluster-Graph:\s*(\[[^\r\n]*\])\s*$/m)?.[1];
+   if (!raw) return chains;
+   let graph: ConfirmedClusterGraph;
+@@ -2631,3 +2641,255 @@
+   const parameterEvidence = /(messbereich|auflösung|aufloesung|schrittweite|sollwert|grenzwert|kommunikationsprotokoll|funktions.parameter)/i.test(text);
+   return extracted.chains.length >= 2 || (extracted.chains.length === 1 && parameterEvidence);
+ }
++
++
++type ReferenceWire = {
++  length_bits: number; data_type: ExtractedEngineeringChain['data_type']; unit: string; factor: number;
++  offset_value?: number; min_value?: number | null; max_value?: number | null;
++  byte_order?: ExtractedEngineeringChain['byte_order']; semantic: Record<string, unknown>; data: Record<string, unknown>;
++};
++type ReferenceParticipant = {
++  id: string; name: string; kind: 'CONTROLLER' | 'GATEWAY' | 'SENSOR' | 'ACTUATOR' | 'PHYSICAL_CONTEXT';
++  quantity: number; source_fact_ids: string[]; owner_device_id?: string | null; purpose?: string | null;
++  rationale: string; context_kind?: string | null; contained_device_ids?: string[];
++};
++type ReferencePhysicalPort = {
++  id: string; device_id: string; technology: string; network_scope: string;
++  role: 'LOCAL' | 'BACKBONE'; parameters: Record<string, unknown>; rationale: string;
++};
++type ReferenceRelease = {
++  id: string; producer_device_id: string; consumer_device_ids: string[];
++  source_port_id: string; consumer_port_ids: string[]; scope: 'LOCAL_IO' | 'DEVICE_IO' | 'FUNCTION_OUTPUT';
++  role?: 'MEASUREMENT' | 'COMMAND' | 'FEEDBACK' | 'STATUS' | 'FUNCTION_OUTPUT' | null;
++  producer_fact_id?: string | null; consumer_fact_ids?: string[]; signal_name: string; encoding: ReferenceWire;
++  transmission_mode: 'CYCLIC' | 'EVENT' | 'ON_REQUEST' | 'MIXED'; cycle_ms?: number | null;
++  min_interval_ms?: number | null; trigger?: string | null; trigger_description?: string | null;
++  release_times_ms?: number[] | null; request_source?: string | null; request_communication_id?: string | null;
++  response_processing_ms?: number | null; request_times_ms?: number[] | null; rationale: string;
++};
++type ReferencePlan = {
++  devices: ReferenceParticipant[]; ports: ReferencePhysicalPort[]; communication: ReferenceRelease[];
++  functions: Array<{ source_fact_id: string; realization: 'ATOMIC' | 'COMPOSITE'; executor_device_ids: string[]; realized_by_fact_ids: string[] }>;
++  measurements: Array<{ device_id: string; measurement_id: string }>;
++  commands: Array<{ device_id: string; definition: ReferenceWire }>;
++  functional_dependencies?: Array<Record<string, unknown>>;
++  unresolved: Array<{ code: string; target_ref: string; message: string }>;
++};
++export type AcceptedDocumentReferenceDesign = {
++  schema_version: 1; design_id: string; revision: number; request_sha256: string; source_sha256: string;
++  status: 'ACCEPTED'; proposal: ReferencePlan; fact_id_map: Record<string, string>;
++  decision_evidence: Array<Record<string, unknown>>; protected_fields: Record<string, Record<string, unknown>>;
++};
++
++/** This selects review data only. The server checks its stored design/revision. */
++export function readDocumentReferenceDesign(text: string): AcceptedDocumentReferenceDesign | undefined {
++  const marker = [...text.matchAll(/^- Dokument-Referenzentwurf:\s*([^\r\n]+)$/gm)].at(-1);
++  if (!marker) return;
++  const value = JSON.parse(marker[1]) as AcceptedDocumentReferenceDesign;
++  if (!value || value.schema_version !== 1 || value.status !== 'ACCEPTED'
++      || typeof value.design_id !== 'string' || !value.design_id.trim()
++      || !Number.isSafeInteger(value.revision) || value.revision < 1
++      || !/^[a-f0-9]{64}$/.test(value.request_sha256) || !/^[a-f0-9]{64}$/.test(value.source_sha256)
++      || !value.proposal || !Array.isArray(value.proposal.devices) || !Array.isArray(value.proposal.ports)
++      || !Array.isArray(value.proposal.communication) || !Array.isArray(value.proposal.functions)
++      || !Array.isArray(value.proposal.measurements) || !Array.isArray(value.proposal.commands)
++      || !Array.isArray(value.proposal.unresolved) || !value.fact_id_map) {
++    throw new Error('Der Referenzentwurf benötigt eine aktuelle, ausdrücklich übernommene Revision.');
++  }
++  const source = readReviewedDocumentEquipment(text);
++  if (!source?.facts || source.source_sha256 !== value.source_sha256)
++    throw new Error('Der Referenzentwurf gehört nicht zur unveränderten vollständigen Dokumentquelle.');
++  const original = new Set(source.facts.map(fact => documentFactIdentity(fact)));
++  const identities = Object.values(value.fact_id_map);
++  if (identities.length !== original.size || new Set(identities).size !== identities.length
++      || identities.some(identity => !original.has(identity))
++      || Object.keys(value.fact_id_map).some(id => !/^F[a-f0-9]{12}$/.test(id)))
++    throw new Error('Die ursprünglichen Quellenbefunde des Referenzentwurfs sind unvollständig oder verändert.');
++  return value;
++}
++
++export function isReferenceDesignChain(chain: ExtractedEngineeringChain) {
++  return typeof chain.configuration?.reference_design_id === 'string';
++}
++
++/** Compile an already reviewed NIS plan through the existing chain contract. */
++function extractReferenceDesignSpecification(
++  text: string, selection: AcceptedDocumentReferenceDesign,
++  overrides: Partial<EngineeringHardwareCounts>, domainOverride?: string,
++): ExtractedEngineeringSpecification {
++  const originalText = text.replace(/^- Dokument-Referenzentwurf:[^\r\n]*\r?\n?/gm, '');
++  const base = extractEngineeringSpecification(originalText, overrides, domainOverride);
++  const plan = structuredClone(selection.proposal);
++  const unique = <T extends { id: string }>(items: T[], label: string) => {
++    const values = new Map(items.map(item => [item.id, item]));
++    if (values.size !== items.length) throw new Error(`${label}: doppelte Referenzidentität.`);
++    return values;
++  };
++  const devices = unique(plan.devices, 'Teilnehmer');
++  const ports = unique(plan.ports, 'Anschlüsse');
++  unique(plan.communication, 'Kommunikation');
++  const functions = new Map(plan.functions.map(item => [item.source_fact_id, item]));
++  const source = readReviewedDocumentEquipment(text)!;
++  const sourceFacts = new Map(source.facts!.map(fact => [documentFactIdentity(fact), fact]));
++  const fact = (id: string) => {
++    const found = sourceFacts.get(selection.fact_id_map[id]);
++    if (!found) throw new Error(`Unbekannter ursprünglicher Quellenbefund ${id}.`);
++    return found;
++  };
++  const names = new Set<string>();
++  for (const device of devices.values()) {
++    const identity = normalizeHardwareName(device.name).toLocaleLowerCase('de');
++    if (!device.name.trim() || names.has(identity)) throw new Error('Referenzteilnehmer benötigen eindeutige technische Namen.');
++    names.add(identity);
++    if (device.kind !== 'PHYSICAL_CONTEXT' && device.quantity !== 1)
++      throw new Error(`${device.name}: Der NIS-Referenzplan muss elektronisch adressierte Teilnehmer einzeln mit eindeutigen IDs ausweisen. Eine Gruppenmenge bestätigt keine Port- oder Ausführerzuordnung.`);
++    device.source_fact_ids.forEach(fact);
++  }
++  const electronic = (id: string) => {
++    const device = devices.get(id);
++    if (!device || device.kind === 'PHYSICAL_CONTEXT') throw new Error('Ein physischer Anschluss benötigt einen elektronischen Referenzteilnehmer.');
++    return device;
++  };
++  const wireType = (device: ReferenceParticipant) => {
++    if (device.kind === 'GATEWAY') return 'Gateway';
++    if (device.kind === 'SENSOR') return 'SensorController';
++    if (device.kind === 'ACTUATOR') return 'ActuatorController';
++    const previous = base.chains.find(chain => normalizeHardwareName(chain.hardware_name).toLocaleLowerCase('de')
++      === normalizeHardwareName(device.name).toLocaleLowerCase('de') && isEngineeringControllerDevice(chain.device_type));
++    return previous?.device_type ?? controllerDeviceTypeForModel(base.modelType || base.domain);
++  };
++  const projection = new Map(technologyProjection.technologies.map(item => [item.id, item]));
++  for (const port of ports.values()) {
++    electronic(port.device_id);
++    if (!projection.has(port.technology)) throw new Error(`Nicht registrierte Referenztechnologie ${port.technology}.`);
++  }
++  const measurements = new Map(plan.measurements.map(item => [item.device_id, item.measurement_id]));
++  const commands = new Map(plan.commands.map(item => [item.device_id, item.definition]));
++  const inherited = (field: string, device: ReferenceParticipant) => {
++    const identity = normalizeHardwareName(device.name).toLocaleLowerCase('de');
++    return Object.entries(selection.protected_fields[field] ?? {}).find(([name]) =>
++      normalizeHardwareName(name).toLocaleLowerCase('de') === identity)?.[1];
++  };
++  const contextFor = (device: ReferenceParticipant) => device.source_fact_ids.map(id => fact(id).source_context ?? []);
++  const configuration = (device: ReferenceParticipant, port?: ReferencePhysicalPort) => {
++    const inheritedOwner = inherited('owners', device);
++    const owner = device.owner_device_id ? electronic(device.owner_device_id)
++      : typeof inheritedOwner === 'string' ? [...devices.values()].find(item =>
++        normalizeHardwareName(item.name).toLocaleLowerCase('de') === normalizeHardwareName(inheritedOwner).toLocaleLowerCase('de')) : undefined;
++    const measurement = measurements.get(device.id) ?? inherited('measurements', device);
++    const command = commands.get(device.id) ?? inherited('commands', device);
++    return {
++      reference_design_id: selection.design_id, reference_design_revision: selection.revision,
++      reference_request_sha256: selection.request_sha256, reference_source_sha256: selection.source_sha256,
++      reference_device_id: device.id, reference_source_fact_ids: [...device.source_fact_ids],
++      reference_source_contexts: contextFor(device), reference_device: structuredClone(device),
++      reference_port_id: port?.id ?? null, reference_port: port ? structuredClone(port) : null,
++      design_evidence: 'REFERENCE_ASSUMPTION', processing_evidence: 'NONE', timing_evidence: 'NONE',
++      ...(owner ? { functional_owner: owner.name, functional_owner_source: device.owner_device_id ? 'reference_assumption' : 'explicit_user_statement' } : {}),
++      ...(measurement ? { sensor_measurement: measurement, measurement_source: measurements.has(device.id) ? 'reference_assumption' : 'explicit_user_statement' } : {}),
++      ...(command && typeof command === 'object' ? { actuator_command_template: commands.has(device.id)
++        ? { ...structuredClone(command), source: 'wizard-reference-design-v1', design_evidence: 'REFERENCE_ASSUMPTION' }
++        : structuredClone(command) } : {}),
++    };
++  };
++  const receiveOnly = (device: ReferenceParticipant, port?: ReferencePhysicalPort): ExtractedEngineeringChain => ({
++    hardware_name: device.name, hardware_description: device.purpose ?? device.rationale, device_type: wireType(device),
++    function_name: '', function_description: '', interface_name: port ? `${device.name}_${port.id}` : '',
++    interface_type: port?.technology ?? 'Other', transport_network_ref: port?.network_scope,
++    message_name: '', message_id_hex: '0x0', direction: 'tx', cycle_ms: 0, dlc: 0,
++    signal_name: '', signal_display_name: '', start_bit: 0, length_bits: 0, byte_order: 'little_endian',
++    data_type: 'unsigned', factor: 1, offset_value: 0, domain: base.domain,
++    configuration: { ...configuration(device, port), reference_receive_only: true,
++      reference_no_port: !port, reference_communication_id: null },
++    quality: { validation_status: 'REFERENCE_REVIEW_REQUIRED', hardware_evidence: false },
++  });
++  const chains: ExtractedEngineeringChain[] = [];
++  const transmittedPorts = new Set<string>();
++  const releaseContract = (row: ReferenceRelease): Record<string, unknown> => {
++    const result: Record<string, unknown> = { mode: row.transmission_mode };
++    const fields = { cycle_ms: 'period_ms', min_interval_ms: 'minimum_interval_ms', trigger: 'trigger',
++      trigger_description: 'trigger_description', release_times_ms: 'release_times_ms', request_source: 'request_source',
++      response_processing_ms: 'response_processing_ms', request_times_ms: 'request_times_ms' } as const;
++    for (const [from, to] of Object.entries(fields)) {
++      const value = row[from as keyof typeof fields];
++      if (value != null) result[to] = structuredClone(value);
++    }
++    if (row.request_communication_id) result.reference_request_communication_id = row.request_communication_id;
++    return result;
++  };
++  for (const [index, row] of plan.communication.entries()) {
++    const producer = electronic(row.producer_device_id);
++    const port = ports.get(row.source_port_id);
++    if (!port || port.device_id !== producer.id) throw new Error(`${row.id}: eindeutiger Senderanschluss fehlt.`);
++    if (row.consumer_port_ids.length !== row.consumer_device_ids.length) throw new Error(`${row.id}: Empfängeranschlüsse sind unvollständig.`);
++    const consumers = row.consumer_device_ids.map((id, i) => {
++      const device = electronic(id), endpoint = ports.get(row.consumer_port_ids[i]);
++      if (!endpoint || endpoint.device_id !== id || id === producer.id) throw new Error(`${row.id}: tatsächlicher Empfängeranschluss fehlt oder verweist auf Selbsttransport.`);
++      return device;
++    });
++    if (!consumers.length) throw new Error(`${row.id}: bewusste Empfänger fehlen.`);
++    const sourceFunction = row.producer_fact_id ? functions.get(row.producer_fact_id) : undefined;
++    if (row.producer_fact_id && (!sourceFunction || sourceFunction.realization !== 'ATOMIC'
++        || !sourceFunction.executor_device_ids.includes(producer.id)))
++      throw new Error(`${row.id}: Senderfunktion muss eine konkrete atomare Realisierung auf dem Sender sein.`);
++    const wire = row.encoding;
++    const rawBytes = Math.ceil(wire.length_bits / 8);
++    const technology = projection.get(port.technology)!;
++    if (technology.max_payload_bytes != null && rawBytes > technology.max_payload_bytes)
++      throw new Error(`${row.id}: Nutzlast überschreitet das registrierte Technologieprofil.`);
++    // Existing CAN-FD padding classes are shared with ordinary frame packing.
++    const payload = port.technology === 'can_fd' ? validPayloadBytes('canfd', rawBytes) : rawBytes;
++    if (!payload || payload < rawBytes) throw new Error(`${row.id}: Nutzlast benötigt eine explizite Segmentierungsplanung.`);
++    const functionName = row.producer_fact_id ? `${producer.name}_${fact(row.producer_fact_id).name}` : `${producer.name}_${row.signal_name}`;
++    const role = row.role ?? (producer.kind === 'SENSOR' ? 'MEASUREMENT' : producer.kind === 'ACTUATOR' ? 'FEEDBACK'
++      : consumers.every(device => device.kind === 'ACTUATOR') ? 'COMMAND' : 'FUNCTION_OUTPUT');
++    const numeric = wire.semantic.semantic_type === 'NUMERIC';
++    chains.push({
++      ...receiveOnly(producer, port),
++      function_name: conciseGeneratedName('Function', functionName), function_description: row.rationale,
++      message_name: `${producer.name}_${row.id}`, message_id_hex: `0x${(0x180 + index).toString(16).toUpperCase()}`,
++      signal_name: conciseGeneratedName('Signal', `${producer.name}_${row.id}_${row.signal_name}`), signal_display_name: row.signal_name,
++      cycle_ms: row.cycle_ms ?? row.min_interval_ms ?? 0, dlc: payload, length_bits: wire.length_bits,
++      byte_order: wire.byte_order ?? 'little_endian', data_type: wire.data_type, factor: wire.factor,
++      offset_value: wire.offset_value ?? 0, unit: wire.unit,
++      ...(wire.min_value != null ? { min_value: wire.min_value } : {}),
++      ...(wire.max_value != null ? { max_value: wire.max_value } : {}),
++      semantic: structuredClone(wire.semantic), data: structuredClone(wire.data),
++      configuration: { ...configuration(producer, port), reference_receive_only: false,
++        reference_communication_id: row.id, reference_function_fact_id: row.producer_fact_id ?? null,
++        reference_communication: structuredClone(row), transmission: releaseContract(row),
++        raw_datatype: wire.data_type, bit_length: wire.length_bits, signed: wire.data_type === 'signed',
++        factor: wire.factor, offset: wire.offset_value ?? 0, endianness: wire.byte_order ?? 'little_endian', start_bit: 0,
++        encoding_type: numeric ? 'linear' : wire.semantic.semantic_type === 'BYTE_ARRAY' ? 'raw' : 'coded',
++        ...(wire.data.structured_payload ? { structured_payload: structuredClone(wire.data.structured_payload) } : {}),
++        communication_contract: { scope: row.scope, role, design_evidence: 'REFERENCE_ASSUMPTION' },
++      },
++      communication: { producer: producer.name, consumers: consumers.map(device => device.name),
++        transmission_mode: row.transmission_mode, ...(row.cycle_ms != null ? { cycle_time_ms: row.cycle_ms } : {}) },
++      quality: { semantic_complete: true, value_domain_complete: true, encoding_complete: true,
++        validation_status: 'REFERENCE_REVIEW_REQUIRED', hardware_evidence: false },
++    });
++    transmittedPorts.add(port.id);
++  }
++  for (const device of devices.values()) {
++    if (device.kind === 'PHYSICAL_CONTEXT') continue;
++    const physicalPorts = [...ports.values()].filter(port => port.device_id === device.id);
++    if (!physicalPorts.length) chains.push(receiveOnly(device));
++    else for (const port of physicalPorts) if (!transmittedPorts.has(port.id)) chains.push(receiveOnly(device, port));
++  }
++  const counts = { ecus: 0, gateways: 0, sensors: 0, actuators: 0, explicit: true };
++  for (const device of devices.values()) {
++    if (device.kind === 'CONTROLLER') counts.ecus++;
++    else if (device.kind === 'GATEWAY') counts.gateways++;
++    else if (device.kind === 'SENSOR') counts.sensors++;
++    else if (device.kind === 'ACTUATOR') counts.actuators++;
++  }
++  const networks = new Map<string, Set<string>>();
++  for (const port of ports.values()) networks.set(port.technology, new Set([...(networks.get(port.technology) ?? []), port.network_scope]));
++  return { ...base, chains, interfaceType: plan.ports[0]?.technology ?? 'Other',
++    communicationSystems: [...networks.keys()], communicationSystemCounts: Object.fromEntries([...networks].map(([id, values]) => [id, values.size])),
++    targetCounts: counts, unresolvedInventoryGroups: plan.unresolved.map(item => item.message),
++    reference_design: { ...structuredClone(selection), original_facts: structuredClone(source.facts),
++      processing_evidence: 'NONE', timing_evidence: 'NONE' },
++  };
++}
+--- a/frontend/scripts/extract-wizard-specification.mjs
++++ b/frontend/scripts/extract-wizard-specification.mjs
+@@ -1,15 +1,48 @@
+-// Pure data adapter: reuse the wizard's domain catalogs without any HTTP or writes.
+-import { applyIndustryGenerationPath, applyConfirmedClusterGraph, extractEngineeringSpecification, expandEngineeringSignalModel, packEngineeringChains, reconcileConfirmedGraphDevices } from '../src/features/agent/lib/engineering-specification.ts';
+-import { completeFunctionalDeviceDesign, usesFunctionalDeviceDesign } from '../src/features/agent/lib/functional-device-design.ts';
+-
+-let input = '';
+-for await (const chunk of process.stdin) input += chunk;
+-const { prompt } = JSON.parse(input);
+-if (typeof prompt !== 'string' || prompt.length > 120000) throw new Error('Invalid wizard specification');
+-const specification = extractEngineeringSpecification(prompt);
+-const imported = !usesFunctionalDeviceDesign(prompt);
+-const expanded = expandEngineeringSignalModel(completeFunctionalDeviceDesign(applyConfirmedClusterGraph(reconcileConfirmedGraphDevices(specification, prompt), prompt), prompt, false), imported);
+-specification.chains = imported
+-  ? applyIndustryGenerationPath(packEngineeringChains(expanded, undefined, prompt), specification.domain, prompt)
+-  : packEngineeringChains(applyIndustryGenerationPath(completeFunctionalDeviceDesign(expanded, prompt), specification.domain, prompt), undefined, prompt);
+-process.stdout.write(JSON.stringify(specification));
++// Pure data adapter: reuse the wizard's domain catalogs without any HTTP or writes.
++import { applyIndustryGenerationPath, applyConfirmedClusterGraph, extractEngineeringSpecification, expandEngineeringSignalModel, packEngineeringChains, reconcileConfirmedGraphDevices, explicitDeviceConnections, explicitDeviceOwners, normalizeHardwareName } from '../src/features/agent/lib/engineering-specification.ts';
++import { completeFunctionalDeviceDesign, usesFunctionalDeviceDesign, OBJECT_LIST_SCHEMA } from '../src/features/agent/lib/functional-device-design.ts';
++import { SENSOR_MEASUREMENTS, sensorMeasurementSelections } from '../src/features/agent/lib/sensor-measurements.ts';
++import { ACTUATOR_COMMANDS, actuatorCommands } from '../src/features/agent/lib/actuator-commands.ts';
++import { documentSourceFunctionAssignments, readReviewedDocumentEquipment } from '../src/features/agent/lib/document-clarification.ts';
++import { MAX_WIZARD_DOCUMENT_CHARS } from '../src/features/agent/lib/chat-attachments.ts';
++
++let input = '';
++for await (const chunk of process.stdin) input += chunk;
++const { prompt, operation } = JSON.parse(input);
++if (typeof prompt !== 'string' || Array.from(prompt).length > 4 * MAX_WIZARD_DOCUMENT_CHARS + 100000) throw new Error('Invalid wizard specification');
++const specification = extractEngineeringSpecification(prompt);
++if (operation === 'reference-catalog') {
++  const equipment = readReviewedDocumentEquipment(prompt);
++  const owners = specification.chains.filter(chain => Array.isArray(chain.configuration?.source_scoped_functions))
++    .map(chain => ({ name: chain.hardware_name,
++      source_context: chain.configuration.document_equipment_evidence?.source_context,
++      duties: chain.configuration.source_scoped_functions }));
++  const confirmed_commands = actuatorCommands(prompt);
++  const confirmed_measurements = sensorMeasurementSelections(prompt);
++  const confirmed_connections = explicitDeviceConnections(prompt);
++  const confirmed_owners = explicitDeviceOwners(prompt);
++  const names = [...new Set([...specification.chains.map(chain => chain.hardware_name),
++    ...(equipment?.facts ?? []).filter(fact => ['INSTANCE', 'CATEGORY'].includes(fact.kind)).map(fact => fact.name),
++    ...Object.keys(confirmed_commands), ...Object.keys(confirmed_measurements),
++    ...Object.keys(confirmed_connections), ...Object.keys(confirmed_owners)])];
++  process.stdout.write(JSON.stringify({
++    measurements: SENSOR_MEASUREMENTS.map(({ match, ...value }) => ({ ...value, alias_pattern: match.source })),
++    actuator_commands: ACTUATOR_COMMANDS, object_list_schema: OBJECT_LIST_SCHEMA,
++    confirmed_commands, confirmed_measurements, confirmed_connections, confirmed_owners,
++    name_aliases: Object.fromEntries(names.map(name => [name, normalizeHardwareName(name).toLocaleLowerCase('de')])),
++    source_function_assignments: documentSourceFunctionAssignments(equipment?.facts ?? [], owners),
++    source_devices: specification.chains.filter(chain => chain.configuration?.document_equipment_evidence)
++      .map(chain => ({ name: chain.hardware_name, device_type: chain.device_type,
++        evidence: chain.configuration.document_equipment_evidence })),
++  }));
++} else if (specification.reference_design) {
++  process.stdout.write(JSON.stringify(specification));
++} else {
++if (operation !== undefined) throw new Error('Unknown wizard adapter operation');
++const imported = !usesFunctionalDeviceDesign(prompt);
++const expanded = expandEngineeringSignalModel(completeFunctionalDeviceDesign(applyConfirmedClusterGraph(reconcileConfirmedGraphDevices(specification, prompt), prompt), prompt, false), imported);
++specification.chains = imported
++  ? applyIndustryGenerationPath(packEngineeringChains(expanded, undefined, prompt), specification.domain, prompt)
++  : packEngineeringChains(applyIndustryGenerationPath(completeFunctionalDeviceDesign(expanded, prompt), specification.domain, prompt), undefined, prompt);
++process.stdout.write(JSON.stringify(specification));
++}
+--- a/frontend/src/features/agent/lib/reference-specification.test.mjs
++++ b/frontend/src/features/agent/lib/reference-specification.test.mjs
+@@ -0,0 +1,80 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { createHash } from 'node:crypto';
++import { extractEngineeringSpecification, expandEngineeringSignalModel, applyIndustryGenerationPath,
++  packEngineeringChains, reconcileConfirmedGraphDevices, applyConfirmedClusterGraph, readDocumentReferenceDesign } from './engineering-specification.ts';
++import { documentFactIdentity } from './document-clarification.ts';
++const sha = text => createHash('sha256').update(text).digest('hex');
++function example() {
++  const source = 'Controller\nSensor\nAktor\nRegelung\nDiagnose\nREQ-001: Erhalten';
++  const facts = [['Controller','INSTANCE','CONTROLLER'], ['Sensor','CATEGORY','SENSOR'], ['Aktor','CATEGORY','ACTUATOR'],
++    ['Regelung','FUNCTION','OTHER'], ['Diagnose','FUNCTION','OTHER'], ['REQ-001: Erhalten','REQUIREMENT','OTHER']]
++    .map(([name, kind, role]) => ({ name, kind, role, quantity: kind === 'INSTANCE' ? 1 : null, source_quote:name, source_context:[] }));
++  const ids = facts.map(fact => 'F' + sha(documentFactIdentity(fact)).slice(0,12));
++  const equipment = { source_text:source, source_name:'reference-example.txt', source_sha256:sha(source), source_chars:source.length,
++    facts, technologies:[], devices:[{name:'Controller',role:'CONTROLLER',quantity:1,source_quote:'Controller',minimum:false}], questions:[], answers:[], function_assignments:{} };
++  const definition = {length_bits:1,data_type:'unsigned',unit:'code',factor:1,offset_value:0,
++    semantic:{semantic_type:'BOOLEAN',meaning:'Stellbefehl'},data:{enum_values:{OFF:0,ON:1}}};
++  const design = {schema_version:1,design_id:'test-design',revision:1,request_sha256:'a'.repeat(64),source_sha256:sha(source),status:'ACCEPTED',
++    fact_id_map:Object.fromEntries(facts.map((fact,i)=>[ids[i],documentFactIdentity(fact)])),decision_evidence:[],protected_fields:{},
++    proposal:{devices:[['C','Controller','CONTROLLER'],['S','Sensor','SENSOR'],['A','Aktor','ACTUATOR']].map(([id,name,kind],i)=>({id,name,kind,quantity:1,source_fact_ids:[ids[i]],rationale:'Referenzannahme',...(i?{owner_device_id:'C'}:{})})),
++      ports:[['CP','C'],['SP','S'],['AP','A']].map(([id,device_id])=>({id,device_id,technology:'can_fd',network_scope:'local',role:'LOCAL',parameters:{},rationale:'Referenzanschluss'})),
++      functions:[{source_fact_id:ids[3],realization:'ATOMIC',executor_device_ids:['C'],realized_by_fact_ids:[],rationale:'Referenzzuordnung'},
++        {source_fact_id:ids[4],realization:'ATOMIC',executor_device_ids:['C'],realized_by_fact_ids:[],rationale:'Referenzzuordnung'}],
++      commands:[{device_id:'A',definition}],measurements:[],functional_dependencies:[{id:'LOCAL',producer_fact_id:ids[3],consumer_fact_ids:[ids[4]],executor_device_id:'C',encoding:definition}],
++      communication:[{id:'COMMAND',producer_device_id:'C',consumer_device_ids:['A'],source_port_id:'CP',consumer_port_ids:['AP'],
++        scope:'LOCAL_IO',role:'COMMAND',signal_name:'Stellbefehl',producer_fact_id:ids[3],encoding:definition,transmission_mode:'EVENT',
++        trigger:'explicit',release_times_ms:[20,50],min_interval_ms:10,rationale:'Expliziter Referenzverkehr'}],unresolved:[]}};
++  return {equipment,design,ids, prompt:()=>source+'\n- Dokument-Geräte: '+JSON.stringify(equipment)+'\n- Dokument-Referenzentwurf: '+JSON.stringify(design)};
++}
++test('accepted plan retains complete source facts, atomic and local function bindings without synthetic traffic',()=>{
++  const {prompt,design}=example(), spec=extractEngineeringSpecification(prompt());
++  assert.equal(spec.chains.length,3);
++  assert.deepEqual(spec.reference_design.original_facts,JSON.parse(prompt().split('- Dokument-Geräte: ')[1].split('\n')[0]).facts);
++  assert.deepEqual(spec.reference_design.proposal.functional_dependencies,design.proposal.functional_dependencies);
++  const tx=spec.chains.filter(c=>!c.configuration.reference_receive_only);
++  assert.equal(tx.length,1);assert.equal(tx[0].configuration.reference_communication_id,'COMMAND');
++  assert.equal(tx[0].configuration.reference_function_fact_id,design.proposal.functions[0].source_fact_id);
++  assert.deepEqual(tx[0].configuration.transmission,{mode:'EVENT',minimum_interval_ms:10,trigger:'explicit',release_times_ms:[20,50]});
++  assert.equal(tx[0].configuration.processing_evidence,'NONE');
++  for(const c of spec.chains.filter(c=>c.configuration.reference_receive_only)) {
++    assert.equal(c.signal_name,'');assert.equal(c.message_name,'');assert.equal(c.function_name,'');assert.equal(c.length_bits,0);assert.equal(c.cycle_ms,0);
++  }
++  assert.equal(expandEngineeringSignalModel(spec.chains).length,3);
++  assert.equal(packEngineeringChains(spec.chains).length,3);
++  assert.equal(applyIndustryGenerationPath(spec.chains,'automotive',prompt()).length,3);
++  assert.equal(applyConfirmedClusterGraph(spec.chains,prompt()).length,3);
++  assert.equal(reconcileConfirmedGraphDevices(spec,prompt()).length,3);
++});
++test('all physical ports remain distinct including receive-only and no-port electronics',()=>{
++  const ex=example();
++  ex.design.proposal.ports.push({...ex.design.proposal.ports[0],id:'BACKBONE',technology:'ethernet',network_scope:'backbone',role:'BACKBONE'});
++  ex.design.proposal.devices.push({id:'C2',name:'LocalCompute',kind:'CONTROLLER',quantity:1,source_fact_ids:[ex.ids[4]],rationale:'Lokale Referenzausführung'});
++  const spec=extractEngineeringSpecification(ex.prompt());
++  assert.equal(spec.chains.length,5);
++  assert.equal(spec.chains.filter(c=>c.configuration.reference_device_id==='C').length,2);
++  const local=spec.chains.find(c=>c.configuration.reference_device_id==='C2');
++  assert.equal(local.configuration.reference_no_port,true);assert.equal(local.interface_name,'');
++});
++test('compiler preserves signed, floating, big endian and explicit structured payload fields',()=>{
++  const ex=example(), row=ex.design.proposal.communication[0];
++  row.encoding={...row.encoding,length_bits:32,data_type:'float32',byte_order:'big_endian',unit:'Nm',min_value:-10,max_value:10,
++    semantic:{semantic_type:'NUMERIC',meaning:'Drehmoment'},data:{structured_payload:{processing_evidence:'NONE',fields:[{name:'x',bits:32}]}}};
++  const chain=extractEngineeringSpecification(ex.prompt()).chains[0];
++  assert.equal(chain.data_type,'float32');assert.equal(chain.byte_order,'big_endian');assert.equal(chain.min_value,-10);
++  assert.deepEqual(chain.configuration.structured_payload,row.encoding.data.structured_payload);
++  assert.equal(chain.dlc,4);
++});
++test('compiler refuses source loss, unknown wire technology and implicit group addressing',()=>{
++  for(const mutation of ['hash','facts','technology','group','consumer','function']) {
++    const ex=example();
++    if(mutation==='hash') ex.design.source_sha256='b'.repeat(64);
++    if(mutation==='facts') delete ex.design.fact_id_map[ex.ids[5]];
++    if(mutation==='technology') ex.design.proposal.ports[0].technology='fictional';
++    if(mutation==='group') ex.design.proposal.devices[1].quantity=3;
++    if(mutation==='consumer') ex.design.proposal.communication[0].consumer_port_ids=[];
++    if(mutation==='function') ex.design.proposal.communication[0].producer_fact_id=ex.ids[5];
++    assert.throws(()=>extractEngineeringSpecification(ex.prompt()),undefined,mutation);
++  }
++  assert.equal(readDocumentReferenceDesign('No accepted design'),undefined);
++});

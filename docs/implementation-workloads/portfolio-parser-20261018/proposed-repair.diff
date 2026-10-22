@@ -1,0 +1,279 @@
+--- before/backend/nis/agent/orchestration/project_intake.py
++++ staged/backend/nis/agent/orchestration/project_intake.py
+@@ -1,5 +1,8 @@
+ """Recognize project design requests without pretending that a search creates a model."""
+ import re
++import unicodedata
++
++from backend.nis.agent.tools.inventory_quantities import VOCABULARY, quantities
+ from typing import Literal
+ 
+ from pydantic import BaseModel, ConfigDict, Field
+@@ -211,6 +214,9 @@
+     text = text.translate(str.maketrans({char: '-' for char in '\u2010\u2011\u2012\u2013\u2014\u2212'}))
+     if re.search(r'^\s*(?:[\w-]*REQ[-_]|Anforderungen\s*:|Requirements\s*:)|\b(?:muss|müssen|must|shall|soll|sollen|should)\b', text, re.I):
+         return {'kind': 'REQUIREMENT', 'role': 'OTHER', 'quantity': None}
++    # Method requirements describe how to model a system, not its installed inventory.
++    if re.match(r'^(?:Die Architektur wird (?:mindestens )?in\b.*\bzerlegt|The architecture (?:is to be|shall be) decomposed\b)|^(?:Jede[rsnm]?|Each|Every)\s+(?:Funktion|Function|Schnittstelle|Interface)\b.*\b(?:wird|werden|must|shall|is to be)\b', text, re.I):
++        return {'kind': 'REQUIREMENT', 'role': 'OTHER', 'quantity': None}
+     # Bare architecture services describe logical responsibilities. Physical
+     # server/controller qualifiers retain their separately proven device role.
+     if re.fullmatch(r'\s*(?:[-*]\s*)?(?:Fleet Manager|Map|Traffic Service|MES|WMS-Anbindung|Lagerverwaltung|Warehouse Management|Safety Zones|Rezept- und Batchsystem|Historian|Alarmmanagement|Materialfluss|Qualitätsmanagement|Werkerassistenz|Traceability|Energieplattform|Datenbank)\s*\.?\s*', text, re.I):
+@@ -230,7 +236,7 @@
+     role = None
+     if re.search(r'[\w-]*gateway\b', text, re.I):
+         role = 'GATEWAY'
+-    elif re.search(r'[\w-]*(?:controller|computer|rechner|steuergerät|steuerung|server|workstation)\b|\b(?:SPS|DCS|SIS|PLC|CNC|ECU|HMI|BMS)\b', text, re.I):
++    elif re.search(r'[\w-]*(?:controller|computer|rechner|steuergerät|steuerung|server|workstation)(?:s|n|en)?\b|\b(?:SPS|DCS|SIS|PLC|CNC|ECU|HMI|BMS)\b', text, re.I):
+         role = 'CONTROLLER'
+     elif re.match(r'\s*(?:Greifer|Greifarm|Endeffektor|[\w-]*motor(?:en)?|[\w-]*(?:aktuator|aktor)(?:en)?)\b', text, re.I):
+         role = 'ACTUATOR'  # Integrated feedback does not change the actuator's hardware role.
+@@ -293,30 +299,27 @@
+     return offsets, contexts
+ 
+ 
++def document_chapter_kind(caption: str) -> str | None:
++    """Resolve semantic chapters through the shared source vocabulary."""
++    title = re.sub(r'[\u2010-\u2015\u2212]', '-', unicodedata.normalize('NFKC', caption))
++    title = re.sub(r'^\d+(?:\.\d+)*[.)]?\s+', '', title).rstrip(':').strip()
++    return next((kind for kind, pattern in VOCABULARY['document_chapters'].items()
++                 if re.fullmatch(pattern, title, re.I)), None)
++
++
+ def document_source_scope(context: list[str]) -> list[str]:
+     """Remove only a semantic section caption, retaining named device scopes."""
+     if not context:
+         return []
+-    label = re.sub(r'^\d+(?:\.\d+)*[.)]?\s+', '', context[-1]).rstrip(':').strip()
+-    if re.fullmatch(r'(?:Architektur|Architecture|Hardware(?:komponenten| components)?|Systemfunktionen|Funktionsbeschreibung|Functional description|Funktionen|Functions|Aufgaben|Responsibilities|(?:Referenz[- ]?)?Anforderungen|(?:Reference )?Requirements|Schnittstellen|Interfaces|Anschlüsse|Connections|Übersicht|Overview|Systemübersicht|System overview)', label, re.I):
++    if document_chapter_kind(context[-1]) in {'architecture', 'functions', 'requirements', 'interfaces', 'overview'}:
+         return context[:-1]
+     return context[:]
+ 
+ 
+-_DOCUMENT_GENERIC_SYSTEM_CHAPTER = '(?:(?:Systemverhalten|Systemanforderungen|Kommunikationsarchitektur|Zusammenfassung|Schnittstellen und Daten|Interfaces and Data|System behavior|System requirements|Communication architecture|Summary)|(?:(?:Erweiterte|Extended)\\s+)?(?:Safety|Cybersecurity|ADAS|Sensorfusion)(?:[- /]*(?:und|and|&)?[- /]*(?:Safety|Cybersecurity|ADAS|Sensorfusion))*[- ]+(?:Anforderungen|Requirements)|Safety,\\s*Security,\\s*(?:Qualität|Quality)\\s*(?:und|and)\\s*(?:Betrieb|Operations?)|Diagnose\\s*(?:&|und|and)\\s*OTA)(?:\\s*\\([^()\\r\\n]*\\))?'
+-
+-
+ def document_system_scope(context: list[str]) -> list[str]:
+-    """Keep named source systems/profiles while crossing semantic chapters."""
+-    import unicodedata
++    """Keep named systems while crossing shared semantic chapters."""
+     for index, caption in enumerate(context):
+-        if not document_source_scope([caption]):
+-            return context[:index]
+-        title = re.sub(r'[\u2010-\u2015\u2212]', '-', unicodedata.normalize('NFKC', caption))
+-        title = re.sub(r'^\d+(?:\.\d+)*[.)]?\s+', '', title).rstrip(':').strip()
+-        if re.fullmatch(_DOCUMENT_GENERIC_SYSTEM_CHAPTER, title, re.I):
+-            return context[:index]
+-        if re.fullmatch(r'(?:Systemstruktur(?:\s*\(Top-Level-Architektur\))?|System structure(?:\s*\(Top-Level Architecture\))?|Systemgrenzen(?: und Systemkontext)?|System boundaries(?: and System context)?|Systemkontext|System context|Zielbild der (?:E/E[- ]?)?Architektur|Architecture (?:vision|target)|Target architecture|Domain[- ]Controller[- ]Design|Controller[- ]Design|(?:Elektronische|Elektrische|Mechanische|Software)\s*Domäne|(?:Electronic|Electrical|Mechanical|Software) domain)', title, re.I):
++        if document_chapter_kind(caption):
+             return context[:index]
+     return context[:]
+ 
+@@ -342,6 +345,7 @@
+     markdown_path = []
+     numbered_path = []
+     heading_sequence = 0
++    function_table = False
+     context_rows = [{**row, 'source_ref': 'CTX-' + row['source_ref']} for row in document_source_references(scope_prefix)]
+     for row in [*context_rows, *rows]:
+         text = row['text'].strip()
+@@ -351,6 +355,7 @@
+         logical = markdown[2] if markdown else text
+         heading = re.match(r'^(\d+(?:\.\d+)*)[.)]?\s+(.+)', logical)
+         structural = heading[2] if heading else logical
++        chapter = document_chapter_kind(structural)
+         if markdown:
+             level = len(markdown[1])
+             markdown_path = [entry for entry in markdown_path if entry[0] < level]
+@@ -362,31 +367,44 @@
+             identifier = heading[1]
+             numbered_path = [entry for entry in numbered_path if identifier.startswith(entry[0] + '.')]
+             numbered_path.append((identifier, logical))
++        if heading:
++            function_table = False
++        if text.startswith('|'):
++            cells = [cell.strip().strip('*') for cell in text.strip('|').split('|')]
++            if any(re.fullmatch(r'Funktionsgruppe|Funktion|Function group|Function', cell, re.I) for cell in cells):
++                function_table = True
++                continue
++            if function_table and all(re.fullmatch(r'[: -]+', cell) for cell in cells):
++                continue
++            if function_table and not normative_row:
++                row_policy = {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}
++        else:
++            function_table = False
+         if heading and architecture_section is not None and not heading[1].startswith(architecture_section + '.'):
+             architecture_section = None
+-        if heading and re.fullmatch(r'(?:Architektur|Architecture|Hardware(?:komponenten| components)?)\s*:?\s*', structural, re.I):
++        if heading and chapter == 'architecture':
+             architecture_section = heading[1]
+         if heading and interface_section is not None and not heading[1].startswith(interface_section + '.'):
+             interface_section = None
+         if (heading and re.match(r'^(?:Schnittstellen|Interfaces|Anschlüsse|Connections)\b', structural, re.I)) or re.match(r'^(?:Schnittstellen|Interfaces|Anschlüsse|Connections)\s*:', structural, re.I):
+             interface_section = heading[1] if heading else ''
+-        elif re.match(r'^(?:Aufgaben|Tasks|Responsibilities|Funktionen|Functions|Systemfunktionen|Funktionsbeschreibung|Hardware|Architektur|Architecture|Plattform|Platform|Implementierung|Implementation|Sensorik|Aktorik|Anforderungen|Requirements)\s*(?::|\(|$)', structural, re.I) or re.match(r'^(?:Controller|Gateway|ECU)\s*:', structural, re.I):
++        elif re.match(r'^(?:Aufgaben|Tasks|Responsibilities|Funktionen|Functions|Systemfunktionen|Kernfunktionen|Core functions|Funktionsbeschreibung|Hardware|Architektur|Architecture|Plattform|Platform|Implementierung|Implementation|Sensorik|Aktorik|Anforderungen|Requirements)\s*(?::|\(|$)', structural, re.I) or re.match(r'^(?:Controller|Gateway|ECU)\s*:', structural, re.I):
+             interface_section = None
+         if heading and platform_section is not None and not heading[1].startswith(platform_section + '.'):
+             platform_section = None
+         if re.match(r'^(?:Plattform|Platform|Implementierung|Implementation)\s*(?::|$)', structural, re.I):
+             platform_section = heading[1] if heading else ''
+-        elif re.match(r'^(?:Aufgaben|Tasks|Responsibilities|Funktionen|Functions|Systemfunktionen|Funktionsbeschreibung|Hardware|Architektur|Architecture|Sensorik|Aktorik|Schnittstellen|Interfaces|Anschlüsse|Anforderungen|Requirements)\s*(?::|\(|$)', structural, re.I):
++        elif re.match(r'^(?:Aufgaben|Tasks|Responsibilities|Funktionen|Functions|Systemfunktionen|Kernfunktionen|Core functions|Funktionsbeschreibung|Hardware|Architektur|Architecture|Sensorik|Aktorik|Schnittstellen|Interfaces|Anschlüsse|Anforderungen|Requirements)\s*(?::|\(|$)', structural, re.I):
+             platform_section = None
+         if heading and assurance_section is not None and not heading[1].startswith(assurance_section + '.'):
+             assurance_section = None
+-        assurance_header = re.fullmatch(r'(?:Safety|Security|Sicherheit)(?:\s*(?:,|/|&|und|and)\s*(?:Safety|Security|Sicherheit|Qualität|Quality|Betrieb|Operations?))*\s*:?\s*', structural, re.I)
++        assurance_header = chapter == 'assurance'
+         if assurance_header:
+             assurance_section = heading[1] if heading else ''
+         if assurance_section is not None and not assurance_header:
+             row_policy = {'kind': 'REQUIREMENT', 'role': 'OTHER', 'quantity': None}
+             normative_row = True
+-        requirement_header = re.fullmatch(r'(?:(?:Referenz[- ]?)?Anforderungen|(?:Reference )?Requirements)\s*:?\s*', structural, re.I)
++        requirement_header = chapter == 'requirements'
+         if requirement_header:
+             requirement_section = heading[1] if heading else ''
+             requirement_lead = False
+@@ -408,7 +426,7 @@
+             excluded_section = None
+         if (excluded_section is not None and (not normative_row or excluded_normative)) or text.startswith('/') or re.match(r'^\s*[-*]?\s*\*{0,2}TC[-_]', text, re.I):
+             continue
+-        function_header = re.search(r'^(?:\d+(?:\.\d+)*[.)]?\s+)?(?:Systemfunktionen|Funktionsbeschreibung|Functional description|Funktionen|Functions|Aufgaben|Responsibilities)\s*:?\s*$', logical, re.I)
++        function_header = chapter == 'functions'
+         if function_header:
+             function_section = heading[1] if heading else ''
+             first_function_body = True
+@@ -445,7 +463,7 @@
+                 continue  # Transport declarations remain technology facts, not hardware.
+         if not normative_row and re.match(r'^(?:Beispiel\s+\d+|Systembeschreibung\b|System description\b|Systemübersicht\s*:|System overview\s*:|Erweiterungen\s*:|Testfälle\s*:)', text, re.I):
+             continue  # Context, future ideas and tests do not declare additional installed hardware.
+-        if not normative_row and re.match(r'^(?:Der|Die|Das|Es|The)\b', text, re.I) and re.search(r'\b(?:ist|sind|nutzt|beschreibt|besteht|uses|is|are)\b', text, re.I):
++        if not normative_row and not any(quantities(text).values()) and re.match(r'^(?:Der|Die|Das|Es|The)\b', text, re.I) and re.search(r'\b(?:ist|sind|nutzt|beschreibt|besteht|uses|is|are)\b', text, re.I):
+             continue
+         if not normative_row and re.search(r'\b(?:für|for|über|via)\b', text, re.I):
+             from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
+@@ -465,7 +483,7 @@
+             continue
+         if re.search(r'→|\b(?:angebunden|angeschlossen|verbunden)\b', text, re.I) and function_section is None:
+             continue  # Connection statements are technology evidence, not additional hardware declarations.
+-        prefix = re.match(r'^\s*(?:Architektur|Architecture|Hardwarekomponenten|Hardware components)\s*:\s*', text, re.I)
++        prefix = re.match(r'^\s*(?:(?:Architektur|Architecture|Hardwarekomponenten|Hardware components)\s*:\s*|(?:Die Architektur (?:wird aus|besteht aus)|The architecture (?:is composed of|consists of))\s+)', text, re.I)
+         body = text[prefix.end():] if prefix else text
+         clauses, start, depth = [], 0, 0
+         for index, char in enumerate(body):
+@@ -474,7 +492,7 @@
+             elif depth == 0 and (char in ',;' or (architecture_section is not None and char == '/' and index > 0 and index + 1 < len(body) and body[index - 1] != '-' and body[index + 1] != '-')):
+                 clauses.append(body[start:index].strip().rstrip('.'))
+                 start = index + 1
+-            elif depth == 0 and architecture_section is not None and not body[:index].rstrip().endswith('-') and re.match(r' (?:und|and) ', body[index:]):
++            elif depth == 0 and (architecture_section is not None or prefix) and not body[:index].rstrip().endswith('-') and re.match(r' (?:und|and) ', body[index:]):
+                 delimiter = re.match(r' (?:und|and) ', body[index:])[0]
+                 clauses.append(body[start:index].strip().rstrip('.'))
+                 start = index + len(delimiter)
+@@ -488,14 +506,14 @@
+             clauses = [re.sub(r'^[-*]\s+', '', clause).strip().rstrip('.') for clause in clauses]
+         policies = [document_component_policy(clause) for clause in clauses]
+         mixed_hardware = len({p['role'] for p in policies if p and p['kind'] in {'CATEGORY', 'INSTANCE'}}) > 1
+-        split = len(clauses) > 1 and not normative_row and (function_list or prefix or architecture_section is not None or (mixed_hardware and not re.search(r'Funktion|Function|Anforderung|REQ|Testf', text, re.I)))
++        split = len(clauses) > 1 and not normative_row and not function_table and (function_list or prefix or architecture_section is not None or (mixed_hardware and not re.search(r'Funktion|Function|Anforderung|REQ|Testf', text, re.I)))
+         for index, clause in enumerate(clauses if split else [text]):
+-            policy = row_policy if normative_row else document_component_policy(clause)
++            policy = row_policy if normative_row or function_table else document_component_policy(clause)
+             if architecture_section is not None and policy is None:
+                 policy = {'kind': 'CATEGORY', 'role': 'OTHER', 'quantity': None}
+             if function_section is not None and not (policy and policy['kind'] == 'REQUIREMENT'):
+                 policy = {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}
+-            required = bool(architecture_section is not None or split or in_functions or required_body or re.match(r'^(?:Funktionen?|Functions?)\s*:', text, re.I)
++            required = bool(function_table or architecture_section is not None or split or in_functions or required_body or re.match(r'^(?:Funktionen?|Functions?)\s*:', text, re.I)
+                             or (policy and policy['kind'] in {'CATEGORY', 'INSTANCE', 'REQUIREMENT'})
+                             or (policy and policy['kind'] == 'FUNCTION' and re.search(_DOCUMENT_ACTION, clause, re.I)))
+             if function_section is not None and not function_header:
+--- before/frontend/src/features/agent/lib/document-clarification.ts
++++ staged/frontend/src/features/agent/lib/document-clarification.ts
+@@ -1,3 +1,4 @@
++import inventoryVocabulary from './inventory-vocabulary.json' with { type: 'json' };
+ import type { DocumentIntakeProposal } from './engineering-agent.ts';
+ 
+ type DeviceRole = 'CONTROLLER' | 'GATEWAY' | 'SENSOR' | 'ACTUATOR';
+@@ -174,18 +175,18 @@
+   return equipment;
+ }
+ 
++function documentChapterKind(caption: string) {
++  const title = caption.normalize('NFKC').replace(/[\u2010-\u2015\u2212]/g, '-').replace(/^\d+(?:\.\d+)*[.)]?\s+/u, '').replace(/:\s*$/u, '').trim();
++  return Object.entries(inventoryVocabulary.document_chapters).find(([, pattern]) => new RegExp(`^(?:${pattern})$`, 'iu').test(title))?.[0];
++}
++
+ export function documentSourceScope(context: string[]) {
+   if (!context.length) return [];
+-  const label = context.at(-1)!.replace(/^\d+(?:\.\d+)*[.)]?\s+/u, '').replace(/:\s*$/u, '').trim();
+-  return /^(?:Architektur|Architecture|Hardware(?:komponenten| components)?|Systemfunktionen|Funktionsbeschreibung|Functional description|Funktionen|Functions|Aufgaben|Responsibilities|(?:Referenz[- ]?)?Anforderungen|(?:Reference )?Requirements|Schnittstellen|Interfaces|Anschlüsse|Connections|Übersicht|Overview|Systemübersicht|System overview)$/iu.test(label) ? context.slice(0, -1) : [...context];
++  return ['architecture', 'functions', 'requirements', 'interfaces', 'overview'].includes(documentChapterKind(context.at(-1)!) ?? '') ? context.slice(0, -1) : [...context];
+ }
+ 
+ export function documentSystemScope(context: string[]) {
+-  const index = context.findIndex(label => {
+-    if (documentSourceScope([label]).length === 0) return true;
+-    const title = label.normalize('NFKC').replace(/[\u2010-\u2015\u2212]/g, '-').replace(/^\d+(?:\.\d+)*[.)]?\s+/u, '').replace(/:\s*$/u, '').trim();
+-    return /^(?:Systemstruktur(?:\s*\(Top-Level-Architektur\))?|System structure(?:\s*\(Top-Level Architecture\))?|Systemgrenzen(?: und Systemkontext)?|System boundaries(?: and System context)?|Systemkontext|System context|Zielbild der (?:E\/E[- ]?)?Architektur|Architecture (?:vision|target)|Target architecture|Domain[- ]Controller[- ]Design|Controller[- ]Design|(?:Elektronische|Elektrische|Mechanische|Software)\s*Domäne|(?:Electronic|Electrical|Mechanical|Software) domain)$/iu.test(title) || new RegExp("^(?:(?:(?:Systemverhalten|Systemanforderungen|Kommunikationsarchitektur|Zusammenfassung|Schnittstellen und Daten|Interfaces and Data|System behavior|System requirements|Communication architecture|Summary)|(?:(?:Erweiterte|Extended)\\s+)?(?:Safety|Cybersecurity|ADAS|Sensorfusion)(?:[- /]*(?:und|and|&)?[- /]*(?:Safety|Cybersecurity|ADAS|Sensorfusion))*[- ]+(?:Anforderungen|Requirements)|Safety,\\s*Security,\\s*(?:Qualität|Quality)\\s*(?:und|and)\\s*(?:Betrieb|Operations?)|Diagnose\\s*(?:&|und|and)\\s*OTA)(?:\\s*\\([^()\\r\\n]*\\))?)$", "iu").test(title);
+-  });
++  const index = context.findIndex(label => documentChapterKind(label) !== undefined);
+   return index < 0 ? [...context] : context.slice(0, index);
+ }
+ 
+--- before/backend/nis/domain/inventory-vocabulary.json
++++ staged/backend/nis/domain/inventory-vocabulary.json
+@@ -10,13 +10,22 @@
+       "generic": "^(?:aktoren|actuators?|aktuatoren)$"
+     },
+     "ecus": {
+-      "nouns": "(?:funktions)?controllers?|sps|plcs?|(?:sicherheits|echtzeit)?steuerung(?:en)?|steuerungs ?rechenknoten|rechner|recheneinheiten|raspberry pi(?: 5)?|flugrechner|industrial pc|ecus?",
+-      "generic": "^(?:controllers?|funktionscontrollers?|(?:funktionalen )?steuerungen|steuerungs ?rechenknoten|ecus?)$",
++      "nouns": "(?:funktions)?controller(?:s|n)?|sps|plcs?|(?:sicherheits|echtzeit)?steuerung(?:en)?|steuerungs ?rechenknoten|rechner|recheneinheiten|raspberry pi(?: 5)?|flugrechner|industrial pc|ecus?",
++      "generic": "^(?:controller(?:s|n)?|funktionscontroller(?:s|n)?|(?:funktionalen )?steuerungen|steuerungs ?rechenknoten|ecus?)$",
+       "additional_compute": "(?:(?:edge|high performance) (?:computer|compute nodes?)|auswerte ?pc|leistungsfaehigen? rechner)"
+     },
+     "gateways": {
+       "nouns": "gateways?",
+       "generic": ".*"
+     }
++  },
++  "document_chapters": {
++    "architecture": "(?:Architektur|Architecture|Hardware(?:komponenten| components)?|(?:Mechanische|Elektrische|Elektronische|Physische|Logische|Mechanical|Electrical|Electronic|Physical|Logical)(?:[, /-]+(?:und|and|E/E|mechanische|elektrische|elektronische|physische|logische|mechanical|electrical|electronic|physical|logical))*[- ]+(?:Architektur|Architecture))",
++    "functions": "(?:Systemfunktionen|Kernfunktionen|Core functions|Funktionsbeschreibung|Functional description|Funktionen|Functions|Aufgaben|Responsibilities)",
++    "requirements": "(?:(?:(?:Referenz[- ]?|Regulatorische |Funktionale |Nichtfunktionale |Technische ))?Anforderungen|(?:(?:Reference|Regulatory|Functional|Nonfunctional|Technical) )?Requirements)",
++    "assurance": "(?:Safety|Security|Sicherheit|SOTIF|KI-Sicherheit|Cybersecurity)(?:\\s*(?:,|/|&|und|and)\\s*(?:Safety|Security|Sicherheit|SOTIF|KI-Sicherheit|Cybersecurity|Compliance|Qualität|Quality|Betrieb|Operations?))*",
++    "interfaces": "(?:Schnittstellen|Interfaces|Anschlüsse|Connections)(?:\\s+(?:und|and)\\s+(?:Daten(?:objekte)?|[Dd]ata(?: objects)?))?",
++    "overview": "(?:Übersicht|Overview|Systemübersicht|System overview)",
++    "generic": "(?:(?:(?:Systemverhalten|Systemanforderungen|Kommunikationsarchitektur|Zusammenfassung|Schnittstellen und Daten|Interfaces and Data|System behavior|System requirements|Communication architecture|Summary)|(?:(?:Erweiterte|Extended)\\s+)?(?:Safety|Cybersecurity|ADAS|Sensorfusion)(?:[- /]*(?:und|and|&)?[- /]*(?:Safety|Cybersecurity|ADAS|Sensorfusion))*[- ]+(?:Anforderungen|Requirements)|Safety,\\s*Security,\\s*(?:Qualität|Quality)\\s*(?:und|and)\\s*(?:Betrieb|Operations?)|Diagnose\\s*(?:&|und|and)\\s*OTA)(?:\\s*\\([^()\\r\\n]*\\))?|(?:Zweck|Purpose)(?:\\s+(?:und|and)\\s+(?:Systemgrenze|Systemübersicht|System boundary|System overview))?|Produkt- und Einsatzprofil|Product and operating profile|Betriebsmodi und Degradation|Operating modes and degradation|Ergebnisartefakte|Result artifacts|(?:[\\w/,-]+\\s+)*(?:Wahrnehmungsumfang|Automatisierungsumfang|Funktionsumfang)|Systemstruktur(?:\\s*\\(Top-Level-Architektur\\))?|System structure(?:\\s*\\(Top-Level Architecture\\))?|Systemgrenzen(?: und Systemkontext)?|System boundaries(?: and System context)?|Systemkontext|System context|Zielbild der (?:E/E[- ]?)?Architektur|Architecture (?:vision|target)|Target architecture|Domain[- ]Controller[- ]Design|Controller[- ]Design|(?:Elektronische|Elektrische|Mechanische|Software)\\s*Domäne|(?:Electronic|Electrical|Mechanical|Software) domain)"
+   }
+ }
+--- before/frontend/src/features/agent/lib/inventory-vocabulary.json
++++ staged/frontend/src/features/agent/lib/inventory-vocabulary.json
+@@ -10,13 +10,22 @@
+       "generic": "^(?:aktoren|actuators?|aktuatoren)$"
+     },
+     "ecus": {
+-      "nouns": "(?:funktions)?controllers?|sps|plcs?|(?:sicherheits|echtzeit)?steuerung(?:en)?|steuerungs ?rechenknoten|rechner|recheneinheiten|raspberry pi(?: 5)?|flugrechner|industrial pc|ecus?",
+-      "generic": "^(?:controllers?|funktionscontrollers?|(?:funktionalen )?steuerungen|steuerungs ?rechenknoten|ecus?)$",
++      "nouns": "(?:funktions)?controller(?:s|n)?|sps|plcs?|(?:sicherheits|echtzeit)?steuerung(?:en)?|steuerungs ?rechenknoten|rechner|recheneinheiten|raspberry pi(?: 5)?|flugrechner|industrial pc|ecus?",
++      "generic": "^(?:controller(?:s|n)?|funktionscontroller(?:s|n)?|(?:funktionalen )?steuerungen|steuerungs ?rechenknoten|ecus?)$",
+       "additional_compute": "(?:(?:edge|high performance) (?:computer|compute nodes?)|auswerte ?pc|leistungsfaehigen? rechner)"
+     },
+     "gateways": {
+       "nouns": "gateways?",
+       "generic": ".*"
+     }
++  },
++  "document_chapters": {
++    "architecture": "(?:Architektur|Architecture|Hardware(?:komponenten| components)?|(?:Mechanische|Elektrische|Elektronische|Physische|Logische|Mechanical|Electrical|Electronic|Physical|Logical)(?:[, /-]+(?:und|and|E/E|mechanische|elektrische|elektronische|physische|logische|mechanical|electrical|electronic|physical|logical))*[- ]+(?:Architektur|Architecture))",
++    "functions": "(?:Systemfunktionen|Kernfunktionen|Core functions|Funktionsbeschreibung|Functional description|Funktionen|Functions|Aufgaben|Responsibilities)",
++    "requirements": "(?:(?:(?:Referenz[- ]?|Regulatorische |Funktionale |Nichtfunktionale |Technische ))?Anforderungen|(?:(?:Reference|Regulatory|Functional|Nonfunctional|Technical) )?Requirements)",
++    "assurance": "(?:Safety|Security|Sicherheit|SOTIF|KI-Sicherheit|Cybersecurity)(?:\\s*(?:,|/|&|und|and)\\s*(?:Safety|Security|Sicherheit|SOTIF|KI-Sicherheit|Cybersecurity|Compliance|Qualität|Quality|Betrieb|Operations?))*",
++    "interfaces": "(?:Schnittstellen|Interfaces|Anschlüsse|Connections)(?:\\s+(?:und|and)\\s+(?:Daten(?:objekte)?|[Dd]ata(?: objects)?))?",
++    "overview": "(?:Übersicht|Overview|Systemübersicht|System overview)",
++    "generic": "(?:(?:(?:Systemverhalten|Systemanforderungen|Kommunikationsarchitektur|Zusammenfassung|Schnittstellen und Daten|Interfaces and Data|System behavior|System requirements|Communication architecture|Summary)|(?:(?:Erweiterte|Extended)\\s+)?(?:Safety|Cybersecurity|ADAS|Sensorfusion)(?:[- /]*(?:und|and|&)?[- /]*(?:Safety|Cybersecurity|ADAS|Sensorfusion))*[- ]+(?:Anforderungen|Requirements)|Safety,\\s*Security,\\s*(?:Qualität|Quality)\\s*(?:und|and)\\s*(?:Betrieb|Operations?)|Diagnose\\s*(?:&|und|and)\\s*OTA)(?:\\s*\\([^()\\r\\n]*\\))?|(?:Zweck|Purpose)(?:\\s+(?:und|and)\\s+(?:Systemgrenze|Systemübersicht|System boundary|System overview))?|Produkt- und Einsatzprofil|Product and operating profile|Betriebsmodi und Degradation|Operating modes and degradation|Ergebnisartefakte|Result artifacts|(?:[\\w/,-]+\\s+)*(?:Wahrnehmungsumfang|Automatisierungsumfang|Funktionsumfang)|Systemstruktur(?:\\s*\\(Top-Level-Architektur\\))?|System structure(?:\\s*\\(Top-Level Architecture\\))?|Systemgrenzen(?: und Systemkontext)?|System boundaries(?: and System context)?|Systemkontext|System context|Zielbild der (?:E/E[- ]?)?Architektur|Architecture (?:vision|target)|Target architecture|Domain[- ]Controller[- ]Design|Controller[- ]Design|(?:Elektronische|Elektrische|Mechanische|Software)\\s*Domäne|(?:Electronic|Electrical|Mechanical|Software) domain)"
+   }
+ }

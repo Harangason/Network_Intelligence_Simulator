@@ -1,0 +1,436 @@
+{
+  "goal_id": "document-stream-lifecycle-20261020",
+  "goal_type": "IMPLEMENTATION",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "kind": "repair",
+  "status": "VALIDATING",
+  "modify_code": true,
+  "allow_repair": true,
+  "requested_change": "Stop non-durable abandoned document/reference requests without further inference; preserve durable wizard resume and normal full completion. Close joint originals/release afterwards.",
+  "project_scope": "Canonical NIS; no manual product-model changes.",
+  "required_outcomes": [
+    "abandoned_document_inference_stops",
+    "frontend_requests_owned_by_current_view",
+    "reference_cancellation_persisted_without_acceptance",
+    "durable_wizard_survival_preserved"
+  ],
+  "validation_requirements": [
+    "prechange_reproduction",
+    "stream_cancellation_regressions",
+    "native_request_cancellation_transport",
+    "reference_cancel_persistence",
+    "frontend_stream_regressions",
+    "typecheck",
+    "reference_regressions"
+  ],
+  "revision_before": {
+    "backend/nis/agent/tools/cancellation.py": "eab11ac6a47469e9101cc96eb937b3be20777fe8e8bec45963dfc779ba173b05",
+    "backend/nis/agent/tools/api.py": "b0879c6aa957992b03f31b3432103f8d55753d73dac027b914e8a14bebaf86e0",
+    "backend/nis/agent/orchestration/local_reasoner.py": "89d70b9d2abbf5c8da3cd3b8895b9b426f1d0b52622dd43d97482504fcf42a6b",
+    "backend/nis/agent/tools/project_draft.py": "c585ee5f4dc4e01fd2e582f05b0a12ec044d82da61602e40a67469f733cf9f76",
+    "frontend/src/features/agent/ui/agent-chat-core.tsx": "60d5fbdace5b0e6b695f189d7fe44458ed9eeae7db2e108131a228858cf1650f",
+    "frontend/src/features/agent/lib/engineering-agent.ts": "5b9104b8a8f1aca2490a28f8b1e78c7124656f6ee71886c84101e5003530f48f",
+    "backend/tests/test_document_stream_cancellation.py": "cbb4b280c258260efe71fa463672490b397b6bdd414e3d0c3df3ad80e9509a46",
+    "backend/tests/test_reference_design_integration.py": "58bc62ac5c522adf56582fe45fed8deb9f3c5271b6831054834a217ac4c84bc7",
+    "frontend/src/features/agent/lib/document-intake-response.test.mjs": "71b33e3010f4729e1da37856a1c28510f16c734f016b369db733b2ab8c43db20",
+    "backend/nis/app/__main__.py": "618d579eaeb526f0d87bb296bbdee9e6ba869e9116baa797f5fb2a53cdb2fde6"
+  },
+  "files_changed": [
+    "backend/nis/agent/tools/cancellation.py",
+    "backend/nis/agent/tools/api.py",
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/nis/agent/tools/project_draft.py",
+    "frontend/src/features/agent/ui/agent-chat-core.tsx",
+    "frontend/src/features/agent/lib/engineering-agent.ts",
+    "backend/tests/test_document_stream_cancellation.py",
+    "backend/tests/test_reference_design_integration.py",
+    "frontend/src/features/agent/lib/document-intake-response.test.mjs",
+    "backend/nis/app/__main__.py"
+  ],
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\before\\backend\\nis\\agent\\tools\\cancellation.py",
+      "sha256": "f29602305fdddf8ed3d98c497b5b964d902ba38fe35a45c5eeba152231389cdf"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\before\\backend\\nis\\agent\\tools\\api.py",
+      "sha256": "74aa955e7759a28955d0ff2dec9911098bb74fa32bb5d99ab27da27386a279a1"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\before\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "f04aa0e8a59ed0b0f3109cca04e06bac7cd370db45c2b4a119928b3993eb6175"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\before\\backend\\nis\\agent\\tools\\project_draft.py",
+      "sha256": "5e1c5ef693b0a445418da036129102c32213bc0dffe14180dfd2b273bda837b4"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\before\\frontend\\src\\features\\agent\\ui\\agent-chat-core.tsx",
+      "sha256": "aecec9541f87c66e6e3fd0733910b26189f1578f4766622c4e9a6001657b99ba"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\before\\frontend\\src\\features\\agent\\lib\\engineering-agent.ts",
+      "sha256": "b9afe02be007a8c50aee9aa12feceff65331d41986031bc187e0a476ff02f405"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\before\\backend\\tests\\test_reference_design_integration.py",
+      "sha256": "7392ca86d9ec7c833b75b0673528c2a5c0e45ccf7e56ebde5a62a250849f320a"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\before\\frontend\\src\\features\\agent\\lib\\document-intake-response.test.mjs",
+      "sha256": "f3442fbebdb90340e418bff849d11afca49264f145061f680d6eb714fe2edeb4"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\before\\backend\\nis\\app\\__main__.py",
+      "sha256": "618d579eaeb526f0d87bb296bbdee9e6ba869e9116baa797f5fb2a53cdb2fde6"
+    }
+  ],
+  "repair": {
+    "finding_ids": [
+      "NON_DURABLE_DOCUMENT_WORKER_OUTLIVES_CLOSED_STREAM",
+      "WAITRESS_DEFAULT_DOES_NOT_OBSERVE_CLIENT_DISCONNECT_DURING_RESPONSE"
+    ],
+    "owner": "PROJECT_PRODUCT",
+    "first_failing_layer": "HTTP document stream lifecycle and browser request ownership, before any next native request. Actual Waitress response socket observation is also disabled by launcher defaults.",
+    "root_cause": "Both captured production document_intake route and current shared local-document helper dispatch a worker that never receives stream-disconnect cancellation. The loop can proceed to further segments after a closed stream. Wizard document/reference fetches have no AbortController tied to view/source lifecycle. This is distinct from deliberately durable wizard chat survival, which must remain unchanged. The exact outstanding live source/request cannot be inferred solely from slot metadata. Actual HTTP reproduction on installed Waitress3.0.2: default channel_request_lookahead=0 leaves worker active36s after client closes; same helper with lookahead1 cancels at15.005s. Current production launcher omits this option. This is an additional NIS server-configuration cause, not inferred provider failure.",
+    "reproduction": "Pure bounded fake-handler reproductions executed against current helper and exact captured production route: after response.close(), released handler still enters its next stage. No SQL, real inference, or production writes.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\disconnect-reproduction.json",
+        "sha256": "11b59130974ec0a4f9412c1e557d220ea79e323ec00e3f0c95f6dcab54283ac3"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\actual-production-disconnect-reproduction.json",
+        "sha256": "accb8f4ae055546a0281f83e0de8900c7ab73c3bec898ec4e29bb3e5c49eafa1"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\actual-production-document-code.json",
+        "sha256": "d02281015198c847534d276801e44b40c595351dc112aad4ad271f5845fd511b"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\waitress-wire-reproduction\\result.json",
+        "sha256": "cff4d5a8ff64c15f83dc7c263d579635f673f2be854abc269f8247c19e498afc"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\waitress-connection-root-cause.json",
+        "sha256": "8ef11697b9dbdcb27251b540d9b902a6a6580193403e3ea22b26cb9771c93bd7"
+      }
+    ],
+    "affected_files": [
+      "backend/nis/agent/tools/cancellation.py",
+      "backend/nis/agent/tools/api.py",
+      "backend/nis/agent/orchestration/local_reasoner.py",
+      "backend/nis/agent/tools/project_draft.py",
+      "frontend/src/features/agent/ui/agent-chat-core.tsx",
+      "frontend/src/features/agent/lib/engineering-agent.ts",
+      "backend/tests/test_document_stream_cancellation.py",
+      "backend/tests/test_reference_design_integration.py",
+      "frontend/src/features/agent/lib/document-intake-response.test.mjs",
+      "backend/nis/app/__main__.py"
+    ],
+    "affected_services": [
+      "local document HTTP streaming",
+      "RunCancellation",
+      "LocalEngineeringReasoner.interpret_document/plan_reference_design",
+      "reference generation PostCommitAction",
+      "EngineeringAgentWizard document/reference fetch",
+      "Canonical Waitress startup"
+    ],
+    "required_fix": "Reuse existing cancellation registry; bind non-durable request cancellation to native async tasks, cancel on stream close and browser view/source/project changes, persist guarded reference CANCELED status, preserve completed proposals and intentional durable wizard continuation. No provider/model/timeout/context/output/gate changes. Set the existing Waitress server channel_request_lookahead=1 so disconnection is detected during a response; preserve all native model/time/context/output budgets and the existing heartbeat interval. Add a real HTTP test through production main(), retain30-second native acceptance.",
+    "acceptance_criteria": [
+      "Closed non-durable streams interrupt pending native await and never start another section.",
+      "Cancellation before worker bind and after result is safe and releases slots.",
+      "Reference cancellation stays unaccepted and permits a new normal operation; successor token remains protected.",
+      "Normal document/reference completion and durable wizard behavior remain unchanged.",
+      "Browser abort cancels response reader; stale responses/progress do not update the current source/project."
+    ],
+    "targeted_tests": [
+      "Real helper disconnect with bound async fake transport",
+      "Pre-bind cancellation and normal completion",
+      "Actual reasoner cancellation at HTTP await for intake/reference",
+      "PostCommit reference CANCELED persistence and no canonical objects",
+      "Browser stream abort while waiting and preserved normal UTF8/result behavior",
+      "Existing wizard cancellation and reference regressions",
+      "Real production main()/Waitress HTTP disconnect and existing durable chat survival"
+    ],
+    "regression_scope": "Request ownership/lifecycle only; no source facts/schema/semantics/quantity/transport changes.",
+    "weaken_assertions_to_pass": false
+  },
+  "unresolved_decisions": [],
+  "remaining_findings": [
+    "New Waitress startup configuration passes64 isolated cases; native retest on its exact new normal image remains required.",
+    "Image budget100/100. Exact deletion of archived test app30613c75a967 plus its PREPARED image awaits explicit human answer. Database remains.",
+    "Both original complete models/simulations and full release/production delivery remain mandatory."
+  ],
+  "delivery": {
+    "decision": "YES",
+    "authorization": "User explicitly requests cause repair and final tested productive release; standing AGENTS production delivery authorization.",
+    "target": "Canonical NetworkIS on13500",
+    "tested_version": null,
+    "running_version": "sha256:3792d2e086e43af616d9fb63fd371c352fe101db5136b84f381cd9999363785b",
+    "checks": {
+      "release": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "deployment": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "health": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "functional": {
+        "status": "PENDING",
+        "evidence": []
+      }
+    }
+  },
+  "parent_workload": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\workload.json",
+  "at_utc": "2026-10-20T12:44:34.284069+00:00",
+  "initial_revision_before": {
+    "backend/nis/agent/tools/cancellation.py": "f29602305fdddf8ed3d98c497b5b964d902ba38fe35a45c5eeba152231389cdf",
+    "backend/nis/agent/tools/api.py": "74aa955e7759a28955d0ff2dec9911098bb74fa32bb5d99ab27da27386a279a1",
+    "backend/nis/agent/orchestration/local_reasoner.py": "f04aa0e8a59ed0b0f3109cca04e06bac7cd370db45c2b4a119928b3993eb6175",
+    "backend/nis/agent/tools/project_draft.py": "5e1c5ef693b0a445418da036129102c32213bc0dffe14180dfd2b273bda837b4",
+    "frontend/src/features/agent/ui/agent-chat-core.tsx": "aecec9541f87c66e6e3fd0733910b26189f1578f4766622c4e9a6001657b99ba",
+    "frontend/src/features/agent/lib/engineering-agent.ts": "b9afe02be007a8c50aee9aa12feceff65331d41986031bc187e0a476ff02f405",
+    "backend/tests/test_document_stream_cancellation.py": null,
+    "backend/tests/test_reference_design_integration.py": "7392ca86d9ec7c833b75b0673528c2a5c0e45ccf7e56ebde5a62a250849f320a",
+    "frontend/src/features/agent/lib/document-intake-response.test.mjs": "f3442fbebdb90340e418bff849d11afca49264f145061f680d6eb714fe2edeb4",
+    "backend/nis/app/__main__.py": "618d579eaeb526f0d87bb296bbdee9e6ba869e9116baa797f5fb2a53cdb2fde6"
+  },
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\after\\backend\\nis\\agent\\tools\\cancellation.py",
+      "sha256": "eab11ac6a47469e9101cc96eb937b3be20777fe8e8bec45963dfc779ba173b05"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\after\\backend\\nis\\agent\\tools\\api.py",
+      "sha256": "b0879c6aa957992b03f31b3432103f8d55753d73dac027b914e8a14bebaf86e0"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\after\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "89d70b9d2abbf5c8da3cd3b8895b9b426f1d0b52622dd43d97482504fcf42a6b"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\after\\backend\\nis\\agent\\tools\\project_draft.py",
+      "sha256": "c585ee5f4dc4e01fd2e582f05b0a12ec044d82da61602e40a67469f733cf9f76"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\after\\frontend\\src\\features\\agent\\ui\\agent-chat-core.tsx",
+      "sha256": "60d5fbdace5b0e6b695f189d7fe44458ed9eeae7db2e108131a228858cf1650f"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\after\\frontend\\src\\features\\agent\\lib\\engineering-agent.ts",
+      "sha256": "5b9104b8a8f1aca2490a28f8b1e78c7124656f6ee71886c84101e5003530f48f"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\after\\backend\\tests\\test_document_stream_cancellation.py",
+      "sha256": "cbb4b280c258260efe71fa463672490b397b6bdd414e3d0c3df3ad80e9509a46"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\after\\backend\\tests\\test_reference_design_integration.py",
+      "sha256": "58bc62ac5c522adf56582fe45fed8deb9f3c5271b6831054834a217ac4c84bc7"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\after\\frontend\\src\\features\\agent\\lib\\document-intake-response.test.mjs",
+      "sha256": "71b33e3010f4729e1da37856a1c28510f16c734f016b369db733b2ab8c43db20"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\after\\backend\\nis\\app\\__main__.py",
+      "sha256": "79a65d58358ffc457cda41065920b0e6c9322cb5a78e6bb6b12704e882e626fb"
+    }
+  ],
+  "checks_in_progress": {},
+  "checks_passed": {
+    "stream_backend": {
+      "tests": 20,
+      "evidence": "cancellation-regressions.xml"
+    },
+    "frontend_reader": {
+      "tests": 15,
+      "evidence": "frontend-regressions.tap"
+    },
+    "typecheck": {
+      "exit_code": 0,
+      "evidence": "typecheck-result.json"
+    }
+  },
+  "operational_recovery": {
+    "evidence": "production-worker-recovery.json",
+    "new_code_deployed": false
+  },
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\owned-changes.diff",
+      "sha256": "fdecc4a302bb7dceb51e524c9d412e6502591a2b916bddecc756bb83f3db05b1"
+    }
+  ],
+  "validations": {
+    "prechange_reproduction": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\disconnect-reproduction.json",
+          "sha256": "11b59130974ec0a4f9412c1e557d220ea79e323ec00e3f0c95f6dcab54283ac3"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\actual-production-disconnect-reproduction.json",
+          "sha256": "accb8f4ae055546a0281f83e0de8900c7ab73c3bec898ec4e29bb3e5c49eafa1"
+        }
+      ]
+    },
+    "stream_cancellation_regressions": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\cancellation-regressions.xml",
+          "sha256": "487209547db2223237b3bfd43e1448553ca2f5ebe6f3d0df443548ab184f1b12"
+        }
+      ]
+    },
+    "native_request_cancellation_transport": {
+      "status": "FAILED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\native-document-disconnect\\failure-review.json",
+          "sha256": "3d6fafa12e8ed4fdb752e0d198eda58bf2b6043bce27ff7aa28b92462f6a0292"
+        }
+      ]
+    },
+    "reference_cancel_persistence": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\cancellation-regressions.xml",
+          "sha256": "487209547db2223237b3bfd43e1448553ca2f5ebe6f3d0df443548ab184f1b12"
+        }
+      ]
+    },
+    "frontend_stream_regressions": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\frontend-regressions.tap",
+          "sha256": "1cf79a4d367b6bddb1a3f59b7a483e9924c80e5c8081eb833be792640e2a0120"
+        }
+      ]
+    },
+    "typecheck": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\typecheck-result.json",
+          "sha256": "94ba47e23acadc2c38f588b7344c191cbaccbde25e7d4e1b593dc2cf86b40489"
+        }
+      ]
+    },
+    "reference_regressions": {
+      "status": "PASSED",
+      "cases": 452,
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\document-reference-regressions.xml",
+          "sha256": "6090b51fad3a9a2882f3bda69253eb84f18c26414a587939c71cb6f37b38053f"
+        }
+      ]
+    }
+  },
+  "outcomes": {
+    "abandoned_document_inference_stops": {
+      "status": "PENDING",
+      "evidence": []
+    },
+    "frontend_requests_owned_by_current_view": {
+      "status": "PENDING",
+      "evidence": []
+    },
+    "reference_cancellation_persisted_without_acceptance": {
+      "status": "PENDING",
+      "evidence": []
+    },
+    "durable_wizard_survival_preserved": {
+      "status": "PENDING",
+      "evidence": []
+    }
+  },
+  "additional_native_grammar_validation": {
+    "status": "PASSED",
+    "cases": 14,
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\native-four-fact-schemas-after-product\\native-private-schema-checks.json",
+        "sha256": "7a1328bf746166922263ccbe9cb9c54c74415a5ae2763e5f6ce89a7a3dadf68c"
+      }
+    ],
+    "scope": "Compiler/grammar fixtures only; no complete original intake/model/simulation/release PASS."
+  },
+  "completion_status": "VALIDATING; both original full workflows and exact-image production delivery still pending in parent.",
+  "additional_server_validation": {
+    "status": "PASSED",
+    "cases": 64,
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\waitress-after-regressions.xml",
+        "sha256": "2d4897e52d42f58492090b62a4559bffbd12c374e20d766be7152239d7b4f7c7"
+      }
+    ],
+    "native_image_retest": {
+      "status": "PASSED",
+      "checks": {
+        "document": {
+          "status": "PASSED",
+          "image_id": "sha256:8826cf8dcbb36a99a0c8a0204435ae5347dda72c79af48b6fb471b9dba625b36",
+          "source_sha256": "863f7aa13b0dd8c0b5f76ba35b620d05d3ea370bec913df603d4d86463df4cbc",
+          "first_observed_idle_after_close_seconds": 4.674852200001624,
+          "canonical_model_unchanged": true,
+          "evidence": {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\native-document-disconnect-a65-current-image\\result.json",
+            "sha256": "869fa67611ed4a8b6621482da6b601dc3be199d1660547ee112b7f63f07cef7d"
+          }
+        },
+        "reference": {
+          "status": "PASSED",
+          "image_id": "sha256:8826cf8dcbb36a99a0c8a0204435ae5347dda72c79af48b6fb471b9dba625b36",
+          "source_sha256": "863f7aa13b0dd8c0b5f76ba35b620d05d3ea370bec913df603d4d86463df4cbc",
+          "first_observed_idle_after_close_seconds": 16.139275100002124,
+          "canonical_model_unchanged": true,
+          "evidence": {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-stream-lifecycle-repair\\native-reference-disconnect-a65-current-image\\result.json",
+            "sha256": "c461e3fbe9fadfb47e2743ea041d341b6e4aeea2c8d484fed776d070d5760a98"
+          }
+        }
+      }
+    },
+    "native_image_document_retest": {
+      "status": "PASSED",
+      "image_id": "sha256:8826cf8dcbb36a99a0c8a0204435ae5347dda72c79af48b6fb471b9dba625b36",
+      "evidence": "native-document-disconnect-a65-current-image/result.json"
+    }
+  },
+  "current_source": {
+    "at_utc": "2026-10-20T13:11:31.403472+00:00",
+    "source_sha256": "863f7aa13b0dd8c0b5f76ba35b620d05d3ea370bec913df603d4d86463df4cbc",
+    "commit_id": "70f0c160bc4f08bd23437f6b3c175523d1e5859c",
+    "verification_sha256": "c40f3a510118a55cd10d69c92397a7b97e4c6f1d6d9f3b8feea28cfc48ff4c5c"
+  },
+  "additional_ui_repair": {
+    "workload": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261020\\document-network-error-repair\\workload.json",
+    "local_cases": 18,
+    "browser_contract_cases": 4,
+    "typecheck": "PASSED",
+    "production_deployed": false
+  },
+  "resolved_storage_authorization": {
+    "question_call": "request_user_input_async",
+    "exact_app": "nis-e2e-app-30613c75a967",
+    "exact_image": "networkis:candidate-30613c75a967",
+    "evidence": "archive-review-30613c75a967/archive-audit.json",
+    "database_removal_requested": false,
+    "answer": "Genau diesen Test-Appcontainer und dieses Image entfernen",
+    "question_id": "call_8da1cbae63dd4482bfa85f7bf32043bf",
+    "removal_evidence": "archive-review-30613c75a967/authorized-removal.json"
+  }
+}

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import asyncio
-from backend.nis.agent.context.limits import MAX_REQUIREMENT_LENGTH
+from backend.nis.agent.context.limits import MAX_REQUIREMENT_LENGTH, MAX_REQUIREMENT_REQUEST_BYTES
 from concurrent.futures import ThreadPoolExecutor
 import hmac
 import json
@@ -38,6 +38,7 @@ from backend.nis.agent.tools.run_status import reconcile_model_apply
 from backend.nis.agent.tools.run_status import restore_wizard_continuation_prompt
 from backend.nis.agent.tools.cancellation import RunCancellation
 from backend.nis.agent.tools.cancellation import request_cancel
+from backend.nis.agent.tools.cancellation import active_document_request
 from backend.nis.workflow.services.service import WorkflowStatusService
 from datetime import datetime, timezone
 from backend.nis.agent.api.agent_response import validate_response
@@ -163,44 +164,99 @@ def project_draft():
 
 @agent_api.post('/document-intake')
 def document_intake():
-    """Local-model interpretation only; acceptance follows normal wizard review."""
-    from backend.nis.agent.orchestration.project_intake import interpret_project_document
-    request.max_content_length = 512 * 1024
+    from backend.nis.agent.orchestration.project_intake import DOCUMENT_REQUEST_MAX_BYTES, interpret_project_document
+    request.max_content_length = DOCUMENT_REQUEST_MAX_BYTES
     if not _human_intent():
         return jsonify({'error': 'Bitte die lokale Dokumentauswertung ausdrücklich starten.'}), 403
+    return _local_document_response('interpret_project_document', interpret_project_document,
+                                    'Lokaler Qwen startet die vollständige Dokumentprüfung.')
+
+
+@agent_api.route('/document-reference-design', methods=['GET', 'POST'])
+def document_reference_design():
+    from backend.nis.agent.tools import project_draft as drafts
+    from backend.nis.agent.context.limits import MAX_REQUIREMENT_REQUEST_BYTES
+    request.max_content_length = MAX_REQUIREMENT_REQUEST_BYTES
+    if request.method == 'GET':
+        result = execute(ToolAuthority(_project(), 'local-human'), 'inspect_reference_design',
+                         Permission.READ_MODEL, {}, lambda _: drafts.inspect_reference_design())
+        response = jsonify(result.model_dump(mode='json'))
+        response.headers['Cache-Control'] = 'no-store'
+        return response, 200 if result.success else 409
+    if not _human_intent():
+        return jsonify({'error': 'Die Referenzplanung muss ausdrücklich als Beispielauftrag gestartet werden.'}), 403
+    return _local_document_response('generate_reference_design', drafts.generate_reference_design,
+                                    'Lokaler Qwen plant getrennte, prüfbare Referenzannahmen.')
+
+
+@agent_api.post('/document-reference-design/accept')
+def accept_document_reference_design():
+    from backend.nis.agent.tools import project_draft as drafts
+    if not _human_intent():
+        return jsonify({'error': 'Referenzannahmen vor der Übernahme ausdrücklich prüfen.'}), 403
+    result = execute(ToolAuthority(_project(), 'local-human'), 'accept_reference_design',
+                     Permission.GENERATE_PROPOSAL, request.get_json(silent=True) or {}, drafts.accept_reference_design)
+    response = jsonify(result.model_dump(mode='json'))
+    response.headers['Cache-Control'] = 'no-store'
+    return response, 200 if result.success else 409
+
+
+def _local_document_response(tool_name, handler, initial_text):
+    arguments = request.get_json(silent=True) or {}
     if not _slots.acquire(blocking=False):
         return jsonify({'error': 'Alle lokalen KI-Arbeitsplätze sind belegt. Bitte erneut versuchen.'}), 429
     authority = ToolAuthority(_project(), 'local-human')
-    arguments = request.get_json(silent=True) or {}
     if 'application/x-ndjson' in request.headers.get('Accept', ''):
         queue = Queue()
+        cancellation = RunCancellation(authority.project_id, 'document-' + uuid4().hex)
+        def progress(event):
+            cancellation.check()
+            queue.put(event)
         def worker():
+            token = active_document_request.set(cancellation)
             try:
-                result = execute(ToolAuthority(authority.project_id, authority.actor, progress_callback=queue.put),
-                    'interpret_project_document', Permission.GENERATE_PROPOSAL, arguments, interpret_project_document)
+                cancellation.check()
+                result = execute(ToolAuthority(authority.project_id, authority.actor, progress_callback=progress),
+                    tool_name, Permission.GENERATE_PROPOSAL, arguments, handler)
+                cancellation.check()
                 queue.put({'type': 'RESULT', 'result': result.model_dump(mode='json')})
+            except asyncio.CancelledError:
+                # The stream has no durable turn to resume after its reader leaves.
+                pass
             finally:
+                active_document_request.reset(token)
+                cancellation.close()
                 _slots.release()
                 queue.put(None)
-        _executor.submit(worker)
+        try:
+            _executor.submit(worker)
+        except Exception:
+            cancellation.close()
+            _slots.release()
+            raise
         @stream_with_context
         def stream():
-            yield json.dumps({'type': 'PROGRESS', 'text': 'Lokaler Qwen startet die vollständige Dokumentprüfung.'}) + '\n'
-            while True:
-                try:
-                    item = queue.get(timeout=15)
-                except Empty:
-                    yield json.dumps({'type': 'HEARTBEAT'}) + '\n'
-                    continue
-                if item is None:
-                    break
-                yield json.dumps(item, ensure_ascii=False) + '\n'
-        return Response(stream(), mimetype='application/x-ndjson',
-                        headers={'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no'})
+            try:
+                yield json.dumps({'type': 'PROGRESS', 'text': initial_text}) + '\n'
+                while True:
+                    try:
+                        item = queue.get(timeout=15)
+                    except Empty:
+                        yield json.dumps({'type': 'HEARTBEAT'}) + '\n'
+                        continue
+                    if item is None:
+                        break
+                    yield json.dumps(item, ensure_ascii=False) + '\n'
+            finally:
+                request_cancel(*cancellation.key)
+        response = Response(stream(), mimetype='application/x-ndjson',
+                            headers={'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no'})
+        response.call_on_close(lambda: request_cancel(*cancellation.key))
+        return response
     try:
-        result = execute(authority, 'interpret_project_document',
+        result = execute(authority, tool_name,
                          Permission.GENERATE_PROPOSAL, arguments,
-                         interpret_project_document)
+                         handler)
         response = jsonify(result.model_dump(mode='json'))
         response.headers['Cache-Control'] = 'no-store'
         return response, 200 if result.success else 422
@@ -507,6 +563,7 @@ def finish_wizard(wizard_run_id):
 
 @agent_api.post("/chat")
 def chat():
+    request.max_content_length = MAX_REQUIREMENT_REQUEST_BYTES
     payload = request.get_json(silent=True)
     if not isinstance(payload,dict) or (not payload.get('input') and not payload.get('wizard_command') and (not isinstance(payload.get("prompt"),str) or not payload["prompt"].strip())):
         return jsonify({"error":"Eine Anforderung als prompt ist erforderlich."}),400
@@ -522,8 +579,11 @@ def chat():
     project_id = _project()
     workflow = WorkflowStatusService(project_id).get(summary=True)
     if payload.get('wizard_command') is None:
-        payload['prompt'] = restore_wizard_continuation_prompt(
-            payload['prompt'], (workflow.get('context') or {}).get('agent_wizard_status'))
+        try:
+            payload['prompt'] = restore_wizard_continuation_prompt(
+                payload['prompt'], (workflow.get('context') or {}).get('agent_wizard_status'))
+        except ValueError as exc:
+            return jsonify({'error': str(exc)}), 400
     raw_context = payload.get("context") or {}
     if not isinstance(raw_context, dict) or not isinstance(payload['prompt'], str) or len(payload["prompt"]) > MAX_REQUIREMENT_LENGTH:
         return jsonify({"error":"Ungültiger Kontext oder zu lange Anforderung."}),400

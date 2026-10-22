@@ -1,0 +1,67 @@
+--- before
++++ I:\PycharmProjects\My_first_Network_Simulator\docs\implementation-workloads\reference-example-assumptions-20261017\root\verify_robot_saved_model.py
+@@ -31,7 +31,33 @@
+     return value
+ 
+ 
+-def verify(model, reference, project):
++def verify_source_baseline(components, approved_components, historical):
++    """Keep exact reviewed facts and historical literals, independently of grouping."""
++    facts = {document_fact_identity(row): row for row in components}
++    approved = {document_fact_identity(row): row for row in approved_components}
++    assert len(facts) == len(components), 'Duplicate reference source facts'
++    assert len(approved) == len(approved_components), 'Duplicate approved intake facts'
++    assert facts.keys() == approved.keys(), 'Reference source facts differ from the reviewed original intake'
++    # The identity function defines the six original source fields. Require
++    # those values too, without relying only on their derived digest.
++    for key, row in facts.items():
++        for field in ('name', 'kind', 'role', 'quantity', 'source_quote', 'source_context'):
++            assert row.get(field) == approved[key].get(field), 'Reviewed source field changed: ' + field
++    for old in historical:
++        witnesses = [row for row in components
++                      if row.get('source_context', []) == old.get('source_context', [])
++                      and old['source_quote'] in row['source_quote']]
++        assert witnesses, 'Historical literal source or context missing: ' + repr(old)
++        if old['kind'] == 'INSTANCE':
++            assert any(row['kind'] == 'INSTANCE' and row['role'] == old['role']
++                       and row['quantity'] == old['quantity'] for row in witnesses), 'Explicit original instance changed'
++        elif old['role'] != 'OTHER':
++            assert any(row['kind'] == old['kind'] and row['role'] == old['role']
++                       and row['quantity'] == old['quantity'] for row in witnesses), 'Explicit original inventory role/count changed'
++    return facts
++
++
++def verify(model, reference, project, approved_components):
+     assert project and project != 'default'
+     project = project.removeprefix('network-project-')
+     assert model['project_id'].removeprefix('network-project-') == project
+@@ -54,9 +80,7 @@
+         context_map[joined] = context
+     historical = [dict(name=row['name'], kind=row['kind'], role=row['role'], quantity=row['quantity'],
+         source_quote=row['quote'], source_context=context_map[row['context']]) for row in read(historical_file)]
+-    facts = {document_fact_identity(row): row for row in evidence['components']}
+-    missing_original = [row for row in historical if document_fact_identity(row) not in facts]
+-    assert not missing_original, 'Previously preserved literal source facts missing or regrouped: ' + repr(missing_original[:4])
++    facts = verify_source_baseline(evidence['components'], approved_components, historical)
+     hardware = model['hardware']
+     functions = model['functions']
+     by_id = {row['id']: row for row in hardware}
+@@ -164,9 +188,16 @@
+     parser.add_argument('--reference', required=True)
+     parser.add_argument('--out', required=True)
+     parser.add_argument('--project', required=True, help='Actual project ID verified in the selected application environment; never default.')
++    parser.add_argument('--reviewed-intake', required=True, type=Path,
++                        help='Actual independently reviewed original document response, never a generated model.')
++    parser.add_argument('--reviewed-intake-sha256', required=True,
++                        help='Immutable response hash from the separately recorded source review.')
+     args = parser.parse_args()
+-    result = verify(unwrap(read(args.model)), unwrap(read(args.reference)), args.project)
++    assert hashlib.sha256(args.reviewed_intake.read_bytes()).hexdigest() == args.reviewed_intake_sha256, 'Reviewed intake response changed'
++    intake = unwrap(read(args.reviewed_intake))
++    result = verify(unwrap(read(args.model)), unwrap(read(args.reference)), args.project,
++                    intake['interpretation']['components'])
+     result['inputs'] = [{'path': str(Path(path).resolve()), 'sha256': hashlib.sha256(Path(path).read_bytes()).hexdigest()}
+-                       for path in (args.model, args.reference, EXPECTED)]
++                       for path in (args.model, args.reference, EXPECTED, args.reviewed_intake)]
+     Path(args.out).write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+     print(json.dumps(result, ensure_ascii=False))

@@ -1,0 +1,110 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -629,6 +629,7 @@
+                               + ('Ausschließlich IO für die angeforderte vorhandene Teilnehmer-ID liefern; keine anderen Geräte, Anschlüsse, Messgrößen oder Befehle überschreiben. Alle Nachbarteilnehmer bleiben als Planungskontext sichtbar. ' if device_ids else '')
+                               + ('Nur den angeforderten ursprünglichen Inventarbefund ergänzen: höchstens zwei Teilnehmer. Vorhandene passende Teilnehmer mit unveränderter ID, Realisierung und bisherigen Quellenbindungen wiederverwenden; nur Quellenbindungen ergänzen. Für ein benanntes Listenmitglied source_member_bindings mit FactID und wörtlichem Mitglied angeben. Keine andere Typeninstanz damit ersetzen. Fachlich nötige zusätzliche Hardware darf anhand ursprünglicher Funktionen/Anforderungen begründet werden, nicht mit fremder Geräteart. Owner müssen bereits im current_candidate existieren oder in derselben Antwort entstehen. ' if inventory_target else '')
+                               + ('inventory_complete betrifft ausschließlich die angeforderte Inventarentscheidung. Falls dafür weitere Teilnehmer über diese höchstens zwei hinaus benötigt werden, false liefern; NIS fordert dann den nächsten Abschnitt an. Erst true liefern, wenn alle dafür benötigten Teilnehmer im bisherigen Kandidaten und dieser Antwort vorliegen. Zwei ist keine Obergrenze des Gesamtinventars. Fehlende Angaben anderer Planungsstufen nicht als Inventarlücke melden. ' if inventory_target else '')
++                              + ('Weitere Hardware für die zugehörigen Funktionen/Anforderungen mit deren eigenen FactIDs begründen. Zusätzliche Sensoren/Aktoren sind keine weiteren Instanzen ihres Controllers. Das angeforderte Quellgerät bei Folgeschritten als unveränderten Anker wiederverwenden, statt seine explizite Stückzahl zu erhöhen. ' if inventory_target else '')
+                               + ('Genau die angeforderten Port-IDs liefern. id, device_id, technology, role und network_scope unverändert übernehmen; nur parameters und ports-spezifische Begründung/Referenzbelege auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
+                               + ('Genau die angeforderten Funktions-FactIDs abdecken; Abhängigkeiten nur mit diesen Senderfunktionen liefern. Andere ursprüngliche Funktions-FactIDs dürfen bewusste Empfänger oder COMPOSITE-Bestandteile sein. ' if function_ids else ''))}
+                 messages = [{'role': 'system', 'content': system}, {'role': 'user', 'content': json.dumps(prompt, ensure_ascii=False)}]
+@@ -725,25 +726,29 @@
+                                 and (member is None or row['source_member_bindings'].get(fact_id) == member)]
+                             missing_names = [name for name in expected_names if name not in {row['name'] for row in represented}]
+                             required = fact['quantity'] if fact['kind'] == 'INSTANCE' else 1
+-                            if len(represented) >= required and not missing_names and (
+-                                    fact['kind'] == 'INSTANCE' or native_complete is True):
++                            if len(represented) >= required and not missing_names and native_complete is True:
+                                 break
+                             target = {'fact_id': fact_id, 'member': member, 'names': missing_names[:2],
+                                       'minimum_rows': min(2, max(1, required - len(represented)))}
+                             devices = await infer('Teilnehmer', {'devices'}, feedback=feedback, inventory_target=target)
+                             merged = _reference_merge_inventory_devices(current['devices'], devices['devices'], target)
+                             native_complete = devices['inventory_complete']
+-                            if merged == current['devices'] and not native_complete:
++                            previous = {row['id']: row for row in current['devices']}
++                            progress = len(merged) > len(previous) or any(
++                                set(row['source_fact_ids']) != set(previous[row['id']]['source_fact_ids'])
++                                or row['source_member_bindings'] != previous[row['id']]['source_member_bindings']
++                                for row in merged if row['id'] in previous)
++                            if not progress and not native_complete:
+                                 raise ValueError('Inventarergänzung hat keine fehlende ursprüngliche Geräteabdeckung ergänzt.')
+                             current['devices'] = merged
+                             current['unresolved'].extend(devices['unresolved'])
+                             after = [row for row in merged if fact_id in row['source_fact_ids']
+                                 and (member is None or row['source_member_bindings'].get(fact_id) == member)]
+                             coverage_done = len(after) >= required and all(name in {row['name'] for row in after} for name in expected_names)
+-                            if len(after) <= len(represented) and not (native_complete and coverage_done):
++                            if not progress and not coverage_done:
+                                 raise ValueError('Inventarergänzung muss zusätzliche angeforderte Instanzabdeckung herstellen.')
+-                            if fact['kind'] == 'INSTANCE' and len(after) >= required and not native_complete:
+-                                raise ValueError('Explizite ursprüngliche Instanzmenge darf nicht durch weitere Inventarabschnitte erweitert werden.')
++                            if fact['kind'] == 'INSTANCE' and sum(row['quantity'] for row in after) > required:
++                                raise ValueError('Explizite ursprüngliche Instanzmenge darf nicht überschritten werden.')
+                 inventory_findings = _validate_reference_inventory({'devices': current['devices']}, prepared, profile)
+                 if inventory_findings:
+                     raise ValueError('Inventar vor Anschlussplanung unvollständig: ' + json.dumps(inventory_findings, ensure_ascii=False))
+--- before/backend/tests/test_reference_reasoner.py
++++ after/backend/tests/test_reference_reasoner.py
+@@ -38,7 +38,8 @@
+ 
+ def reasoner_with_transport(monkeypatch, *, family='qwen3', truncate=False, capture=None, timeout=False,
+                             foreign_io=None, duplicate_port_ids=False, retry_foreign_port=False, omit_inventory_role=None,
+-                            request=None, design_factory=complete_design, never_complete_inventory_role=None):
++                            request=None, design_factory=complete_design, never_complete_inventory_role=None,
++                            instance_derived_ids=()):
+     prepared = intake.prepare_reference_design(request or fixture_request())
+     design = design_factory(prepared)
+     observed = []
+@@ -66,6 +67,10 @@
+             fresh = [row for row in candidate['devices'] if row['id'] not in existing]
+             candidate['inventory_complete'] = len(fresh) <= 2 and prepared['facts'][target['fact_id']]['role'] != never_complete_inventory_role
+             candidate['devices'] = (fresh or candidate['devices'])[:2]
++            if instance_derived_ids and prepared['facts'][target['fact_id']]['kind'] == 'INSTANCE':
++                extras = [row for row in design['devices'] if row['id'] in instance_derived_ids and row['id'] not in existing]
++                candidate['devices'] = candidate['devices'][:1] + deepcopy(extras[:1])
++                candidate['inventory_complete'] = len(extras) <= 1
+         if content.get('port_ids_for_this_stage'):
+             selected = set(content['port_ids_for_this_stage'])
+             candidate['ports'] = [row for row in candidate['ports'] if row['id'] in selected]
+@@ -416,3 +421,40 @@
+         run_reference(reasoner, prepared)
+     assert len(observed) == 3  # Controller and two sensor attempts, no IO.
+     assert not any(row['device_ids_for_this_stage'] for row in observed)
++
++
++def test_one_explicit_controller_can_continue_for_separately_derived_sensors(monkeypatch):
++    def derived_sensors(prepared):
++        design = complete_design(prepared)
++        function_id = next(key for key, fact in prepared['facts'].items() if fact['name'] == 'Regelung')
++        for number in (2, 3):
++            device_id = 'S' + str(number)
++            design['devices'].append({**deepcopy(design['devices'][1]), 'id': device_id,
++                'name': 'Abgeleiteter Temperatursensor ' + str(number), 'source_fact_ids': [function_id]})
++            design['ports'].append({**deepcopy(design['ports'][1]), 'id': 'P' + device_id, 'device_id': device_id})
++            design['measurements'].append({**deepcopy(design['measurements'][0]), 'device_id': device_id})
++            design['communication'].append({**deepcopy(design['communication'][0]), 'id': 'derived-temperature-' + str(number),
++                'signal_name': 'derived-temperature-' + str(number), 'producer_device_id': device_id, 'source_port_id': 'P' + device_id})
++        return design
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch, design_factory=derived_sensors, instance_derived_ids=('S2', 'S3'))
++    result = run_reference(reasoner, prepared)
++    anchor_id = next(key for key, fact in prepared['facts'].items() if fact['kind'] == 'INSTANCE')
++    stages = [row for row in observed if (row['inventory_target_for_this_stage'] or {}).get('fact_id') == anchor_id]
++    assert len(stages) == 2
++    assert len(stages[1]['current_candidate']['devices']) == 2  # One anchor plus first derived sensor.
++    assert sum(anchor_id in row['source_fact_ids'] for row in result['proposal']['devices']) == 1
++    assert len(result['proposal']['measurements']) == 3
++    assert result['proposal']['unresolved'] == []
++    assert len(result['coverage']['derived_device_bindings']) == 1
++
++
++def test_native_continuation_still_rejects_actual_explicit_source_count_overflow(monkeypatch):
++    def overcount(prepared):
++        design = complete_design(prepared)
++        design['devices'].insert(1, {**deepcopy(design['devices'][0]), 'id': 'C2'})
++        return design
++    reasoner, prepared, observed = reasoner_with_transport(monkeypatch, design_factory=overcount)
++    with pytest.raises(ValueError, match='Instanzmenge darf nicht überschritten'):
++        run_reference(reasoner, prepared)
++    assert len(observed) == 1
++    assert not any(row['device_ids_for_this_stage'] for row in observed)
