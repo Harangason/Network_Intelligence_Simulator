@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="17.611" timestamp="2026-10-22T23:01:52.202801+02:00" hostname="Haranga"><testcase classname="tests.test_reference_inventory_focus" name="test_live_inventory_output_identifies_the_current_original_selection" time="16.762"><failure message="AssertionError: The visible output must identify this original selection, not only a repeated phase.&#10;assert 'Sensorik (Temperatursensoren)' in 'Lokaler Qwen · Physisches Quelleninventar: Warte auf lokale Providerantwort; Eingabeverarbeitung und Ausgabe noch nic... beobachtbar. 0 Antwortzeichen empfangen; 0 s für diesen Aufruf. 0 frühere Modellantworten; kein freigegebenes Modell.'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x00000223F3FB4770&gt;
+
+    def test_live_inventory_output_identifies_the_current_original_selection(monkeypatch):
+        from backend.nis.engineering.goal_execution.progress import sink
+        from backend.tests.test_reference_reasoner import reasoner_with_transport, run_reference
+        instance, prepared, _ = reasoner_with_transport(monkeypatch)
+        events = []
+        token = sink.set(events.append)
+        try:
+            result = run_reference(instance, prepared)
+        finally:
+            sink.reset(token)
+        outputs = [event for event in events if event.get('metadata', {}).get('source') == 'document_reference_output'
+                   and event['metadata'].get('inventory_target')]
+        assert outputs
+        for event in outputs:
+            metadata = event['metadata']
+            target = metadata['inventory_target']
+            label = target['member'] or prepared['facts'][target['fact_id']]['name']
+&gt;           assert label in event['text'], 'The visible output must identify this original selection, not only a repeated phase.'
+E           AssertionError: The visible output must identify this original selection, not only a repeated phase.
+E           assert 'Sensorik (Temperatursensoren)' in 'Lokaler Qwen · Physisches Quelleninventar: Warte auf lokale Providerantwort; Eingabeverarbeitung und Ausgabe noch nic... beobachtbar. 0 Antwortzeichen empfangen; 0 s für diesen Aufruf. 0 frühere Modellantworten; kein freigegebenes Modell.'
+
+backend\tests\test_reference_inventory_focus.py:79: AssertionError</failure></testcase></testsuite></testsuites>

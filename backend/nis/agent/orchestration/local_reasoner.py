@@ -148,7 +148,7 @@ def _reference_fresh_inventory_id(prepared, kind, available, existing_ids):
     return candidate
 
 
-def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None, existing_devices=()):
+def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None, existing_devices=(), existing_ports=()):
     """Narrow the native decoder, without changing public proposal validation."""
     from copy import deepcopy
     from backend.nis.agent.orchestration.project_intake import reference_model_output_schema
@@ -189,6 +189,27 @@ def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=
     if device_ids:
         for field in allowed & {'ports', 'measurements', 'commands'}:
             item(field)['properties']['device_id']['enum'] = list(device_ids)
+    if port_intent and device_ids:
+        from hashlib import sha256
+        definition = deepcopy(item('ports'))
+        existing_ids = {row['id'] for row in existing_ports}
+        prefixes, variants = set(), []
+        for owner in device_ids:
+            stem = 'port-' + sha256(owner.encode('utf-8')).hexdigest()[:12] + '-'
+            generation = 1
+            prefix = stem + str(generation) + '-'
+            while prefix in prefixes or any(identity.startswith(prefix) for identity in existing_ids):
+                generation += 1
+                prefix = stem + str(generation) + '-'
+            prefixes.add(prefix)
+            variant = deepcopy(definition)
+            variant['properties']['device_id']['enum'] = [owner]
+            # These are fresh identity namespaces, never technical port facts.
+            # Public length, duplicate-ID and existing-port gates still apply.
+            variant['properties']['id']['pattern'] = '^' + prefix + '[A-Za-z0-9_-]+$'
+            variants.append(variant)
+        schema['$defs'][schema['properties']['ports']['items']['$ref'].rsplit('/', 1)[-1]] = (
+            variants[0] if len(variants) == 1 else {'anyOf': variants})
     if port_ids:
         keyed_selection('ports', 'port_parameters', 'id', port_ids,
                         ('parameters', 'rationale', 'field_references'))
@@ -273,6 +294,14 @@ def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=
             properties['device_id']['enum'] = [device['id']]
             properties['source_fact_ids']['items']['enum'] = missing
             properties['source_fact_ids'].update(minItems=1, maxItems=len(missing))
+            if device.get('owner_device_id') is None:
+                # Existing bindings omit immutable owner/identity fields. Their
+                # permitted evidence keys still depend on that known owner.
+                references = properties['field_references']
+                properties['field_references'] = {'type': 'object',
+                    'properties': {key: deepcopy(references['additionalProperties'])
+                                   for key in ('quantity', 'device_type')},
+                    'additionalProperties': False}
             choices.append({'type': 'object', 'properties': properties,
                             'required': list(properties), 'additionalProperties': False})
         schema['properties']['inventory_choices'] = {
@@ -364,6 +393,9 @@ def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=
         if 'field_references' in properties and fields:
             if properties.get('owner_device_id', {}).get('type') == 'null':
                 fields = tuple(field for field in fields if field != 'function_hosts')
+            narrowed = properties['field_references'].get('properties')
+            if isinstance(narrowed, dict):
+                fields = tuple(field for field in fields if field in narrowed)
             references = {}
             for field in fields:
                 identities = [key for key, source in prepared['reference_sources'].items()
@@ -773,9 +805,30 @@ def _reference_context_messages(history, previous, current, system, maximum, *, 
         'nis_context_patch, diese Operationen anschließend auf den aktuellen Planungskontext '
         'anwenden, nicht auf die Tabellendarstellung. Bei einem Anker-Neustand gilt der '
         'Patch ab dem ursprünglichen Kontext der ersten Nachricht; zwischenzeitliche '
-        'Vorschläge sind durch diesen vollständigen aktuellen Neustand ersetzt.')
+        'Vorschläge sind durch diesen vollständigen aktuellen Neustand ersetzt. '
+        'nis_current_selection wiederholt die aktuelle Auswahl und die geprüften vorhandenen '
+        'Gerätebindungen direkt lesbar außerhalb der Tabellen. Sie gehört zur jeweiligen Nachricht; '
+        'bei einer Fortsetzung zählt ausschließlich die Auswahl in der letzten Nutzernachricht. '
+        'Diese Lesehilfe ersetzt weder den vollständigen Kontext noch seine Quellen oder Prüfungen.')
+
+    def wire(context):
+        packed = _reference_context_snapshot(context)
+        if (current.get('inventory_target_for_this_stage') is not None
+                or current.get('derivation_fact_ids_for_this_stage') is not None):
+            if 'nis_context_snapshot' not in packed:
+                packed = {'nis_context_snapshot': packed, 'nis_context_tables': [], 'nis_context_copies': []}
+            packed['nis_current_selection'] = {
+                'planning_stage': current['planning_stage'],
+                'inventory_target': deepcopy(current.get('inventory_target_for_this_stage')),
+                'derivation_fact_ids': deepcopy(current.get('derivation_fact_ids_for_this_stage')),
+                'existing_inventory': [{key: deepcopy(row[key]) for key in
+                    ('id', 'name', 'kind', 'source_fact_ids', 'source_member_bindings')}
+                    for row in current['current_candidate']['devices']],
+            }
+        return json.dumps(packed, ensure_ascii=False, separators=(',', ':'))
+
     full = [{'role': 'system', 'content': system + protocol},
-            {'role': 'user', 'content': json.dumps(_reference_context_snapshot(current), ensure_ascii=False, separators=(',', ':'))}]
+            {'role': 'user', 'content': wire(current)}]
     # An older complete native anchor may fit when the latest anchor plus
     # its exact reply does not. Retain its cacheable prefix before rebasing
     # to a fresh snapshot; every alternative passes the same byte guard.
@@ -786,9 +839,8 @@ def _reference_context_messages(history, previous, current, system, maximum, *, 
         anchor_messages, anchor_context = candidate_anchor
         if not anchor_messages or anchor_messages[0] != full[0]:
             raise ValueError('Der native Kontextanker gehört nicht zu diesem Planungsprotokoll.')
-        anchored = [*deepcopy(anchor_messages), {'role': 'user', 'content': json.dumps(
-            _reference_context_snapshot({'nis_context_patch': _reference_context_patch(anchor_context, current)}),
-            ensure_ascii=False, separators=(',', ':'))}]
+        anchored = [*deepcopy(anchor_messages), {'role': 'user', 'content': wire(
+            {'nis_context_patch': _reference_context_patch(anchor_context, current)})}]
         try:
             _reference_context_window(anchored, maximum)
         except ValueError:
@@ -798,9 +850,8 @@ def _reference_context_messages(history, previous, current, system, maximum, *, 
             if anchored_size is None or size < anchored_size:
                 full, anchored_size = anchored, size
     if history and previous is not None:
-        appended = [*history, {'role': 'user', 'content': json.dumps(
-            _reference_context_snapshot({'nis_context_patch': _reference_context_patch(previous, current)}),
-            ensure_ascii=False, separators=(',', ':'))}]
+        appended = [*history, {'role': 'user', 'content': wire(
+            {'nis_context_patch': _reference_context_patch(previous, current)})}]
         try:
             _reference_context_window(appended, maximum)
         except ValueError:
@@ -1311,7 +1362,7 @@ class LocalEngineeringReasoner:
                               {key: row[key] for key in ('id', 'name', 'kind')}
                               for row in current['devices']] if inventory_stage else None,
                           'instruction': ('Nur die genannten Outputfelder füllen; alle anderen Modellarrays leer. Echte offene Entscheidungen dürfen immer in unresolved stehen. '
-                              + ('Inventarstufen liefern inventory_choices und inventory_complete; devices und alle anderen Modelllisten bleiben leer, echte Rückfragen bleiben in unresolved zulässig. inventory_choices enthält gemeinsam neue Geräte ODER Bindungen an vorhandene Geräte. existing_inventory_for_this_stage zeigt den tatsächlichen aktuellen Bestand einschließlich vorhandener Sensoren und Aktoren. Diese bleiben auch bei anderen Quellenbefunden physisch vorhanden; niemals unter NEW erneut definieren. Bereits vollständig gebundene Teilnehmer nicht wiederholen. Die Hardwareentscheidung knapp begründen; anstehende eigene Planungsschritte gehören zu inventory_complete=false, nicht als vermeintliche Fachentscheidung in unresolved. ' if inventory_stage else '')
+                              + ('Inventarstufen liefern inventory_choices und inventory_complete; devices und alle anderen Modelllisten bleiben leer, echte Rückfragen bleiben in unresolved zulässig. inventory_choices enthält gemeinsam neue Geräte ODER Bindungen an vorhandene Geräte. existing_inventory_for_this_stage zeigt den tatsächlichen aktuellen Bestand einschließlich vorhandener Sensoren und Aktoren. Diese bleiben auch bei anderen Quellenbefunden physisch vorhanden; niemals unter NEW erneut definieren. Bereits vollständig gebundene Teilnehmer nicht wiederholen. Die Hardwareentscheidung knapp begründen. inventory_complete bewertet ausschließlich den Bedarf der aktuell ausgewählten Quellenbefunde; spätere Hardware-, IO-, Funktions- oder Kommunikationsstufen machen diese Auswahl nicht unvollständig. Diese späteren Stufen werden unabhängig vollständig ausgeführt und sind keine offenen Fachentscheidungen in unresolved. ' if inventory_stage else '')
                               + 'Nur den ausdrücklich ausgewählten Stufenbereich vollständig liefern; vorhandene eindeutige IDs erhalten. '
                               'Jede Auswahl in rationale mit einem kurzen fachlichen Satz und höchstens 240 Zeichen begründen; '
                               'Quellenbindungen und technische Entscheidungen vollständig in ihren eigenen Feldern erhalten. '
@@ -1346,6 +1397,13 @@ class LocalEngineeringReasoner:
                         'selection_labels': [prepared['facts'][key]['name'] for key in function_ids],
                         'scope_index': all_function_ids.index(function_ids[0]) // 4 + 1,
                         'scope_count': (len(all_function_ids) + 3) // 4}
+                elif inventory_target:
+                    fact_id, member = inventory_target['fact_id'], inventory_target.get('member')
+                    selection_metadata = {'selected_inventory_fact_ids': [fact_id],
+                        'selection_labels': [member or prepared['facts'][fact_id]['name']],
+                        'selected_inventory_bound_count': sum(fact_id in row['source_fact_ids']
+                            and (member is None or row['source_member_bindings'].get(fact_id) == member)
+                            for row in current['devices'])}
                 selection_text = ('; Auswahl: ' + '; '.join(selection_metadata['selection_labels'])
                                   if selection_metadata else '')
                 def report_validation(error=None):
@@ -1359,7 +1417,7 @@ class LocalEngineeringReasoner:
                         rejected = sum(row.get('validation_status') == 'REJECTED' for row in calls)
                         detail = 'Antwort abgelehnt: ' + str(error) if error is not None else 'Stufenantwort intern validiert'
                         progress({'type': 'PROGRESS', 'status': 'RUNNING',
-                            'text': f'Lokaler Qwen · {stage}: {detail}. {validated} intern validierte und {rejected} abgelehnte Antworten; kein freigegebenes Modell.',
+                            'text': f'Lokaler Qwen · {stage}{selection_text}: {detail}. {validated} intern validierte und {rejected} abgelehnte Antworten; kein freigegebenes Modell.',
                             'metadata': {**deepcopy(progress_details), 'source': 'document_reference_validation',
                                 'completed_calls': len(calls), 'validated_calls': validated, 'rejected_calls': rejected,
                                 'validation_status': status, 'validation_error': str(error) if error is not None else None,
@@ -1396,7 +1454,8 @@ class LocalEngineeringReasoner:
                            'format': _reference_schema_for_stage(prepared, allowed, port_ids=port_ids,
                                function_ids=function_ids, port_intent=port_intent, device_ids=device_ids,
                                inventory_target=inventory_target, derivation_fact_ids=derivation_fact_ids,
-                               existing_devices=current['devices'] if inventory_stage else ()),
+                               existing_devices=current['devices'] if inventory_stage else (),
+                               existing_ports=current['ports'] if port_intent else ()),
                             'think': False, 'stream': True, 'keep_alive': self.keep_alive,
                            'options': {'temperature': 0, 'num_predict': 8192, 'num_ctx': self.context_tokens}}
                 for attempt in range(2):

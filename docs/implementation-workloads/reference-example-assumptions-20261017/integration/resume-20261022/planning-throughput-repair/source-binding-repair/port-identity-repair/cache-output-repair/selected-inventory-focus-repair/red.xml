@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="7" time="28.211" timestamp="2026-10-22T22:59:36.643959+02:00" hostname="Haranga"><testcase classname="tests.test_reference_inventory_focus" name="test_a_different_literal_type_in_the_name_cannot_count_as_selected_member[Radar Sensor-Lidar]" time="7.652"><failure message="Failed: DID NOT RAISE ValueError">name = 'Radar Sensor', member = 'Lidar'
+
+    @pytest.mark.parametrize(('name', 'member'), [('Radar Sensor', 'Lidar'), ('Lidar front unit', 'Radar')])
+    def test_a_different_literal_type_in_the_name_cannot_count_as_selected_member(name, member):
+        prepared, _, row = typed_device(name, member)
+&gt;       with pytest.raises(ValueError, match='Typenbindung'):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+backend\tests\test_reference_inventory_focus.py:25: Failed</failure></testcase><testcase classname="tests.test_reference_inventory_focus" name="test_a_different_literal_type_in_the_name_cannot_count_as_selected_member[Lidar front unit-Radar]" time="3.686"><failure message="Failed: DID NOT RAISE ValueError">name = 'Lidar front unit', member = 'Radar'
+
+    @pytest.mark.parametrize(('name', 'member'), [('Radar Sensor', 'Lidar'), ('Lidar front unit', 'Radar')])
+    def test_a_different_literal_type_in_the_name_cannot_count_as_selected_member(name, member):
+        prepared, _, row = typed_device(name, member)
+&gt;       with pytest.raises(ValueError, match='Typenbindung'):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+backend\tests\test_reference_inventory_focus.py:25: Failed</failure></testcase><testcase classname="tests.test_reference_inventory_focus" name="test_matching_or_noncontradictory_names_still_need_the_normal_full_review[Radar Sensor-Radar]" time="3.197" /><testcase classname="tests.test_reference_inventory_focus" name="test_matching_or_noncontradictory_names_still_need_the_normal_full_review[Lidar front unit-Lidar]" time="3.598" /><testcase classname="tests.test_reference_inventory_focus" name="test_matching_or_noncontradictory_names_still_need_the_normal_full_review[Optical ranging unit-Lidar]" time="3.610" /><testcase classname="tests.test_reference_inventory_focus" name="test_matching_or_noncontradictory_names_still_need_the_normal_full_review[Radarless optical unit-Lidar]" time="3.472" /><testcase classname="tests.test_reference_inventory_focus" name="test_current_inventory_selection_and_coverage_are_literal_after_the_cached_prefix" time="1.967"><failure message="KeyError: 'nis_current_selection'">def test_current_inventory_selection_and_coverage_are_literal_after_the_cached_prefix():
+        prepared, fact, radar = typed_device('Radar Sensor', 'Radar')
+        original = prepared['request']['original_requirement'] if 'original_requirement' in prepared['request'] else prepared['source_evidence']
+        first = {'original_source': deepcopy(original), 'planning_stage': 'Physisches Quelleninventar',
+            'inventory_target_for_this_stage': {'fact_id': fact, 'member': 'Radar', 'names': [], 'minimum_rows': 1, 'max_rows': 1},
+            'derivation_fact_ids_for_this_stage': None, 'current_candidate': {'devices': []}}
+        messages, _, _ = reasoner._reference_context_messages([], None, first, 'Independent protocol', 131072)
+        history = [*messages, {'role': 'assistant', 'content': '{"independent_fixture_reply":true}'}]
+        current = deepcopy(first)
+        current['inventory_target_for_this_stage']['member'] = 'Lidar'
+        current['current_candidate']['devices'] = [radar]
+        wire, _, _ = reasoner._reference_context_messages(history, first, current, 'Independent protocol', 131072,
+            anchor=(history, first))
+        assert wire[:2] == messages, 'Keep the already processed exact original prefix.'
+        assert effective_reference_context(wire) == current, 'All complete original data and current state must survive.'
+&gt;       focus = json.loads(wire[-1]['content'])['nis_current_selection']
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'nis_current_selection'
+
+backend\tests\test_reference_inventory_focus.py:53: KeyError</failure></testcase></testsuite></testsuites>

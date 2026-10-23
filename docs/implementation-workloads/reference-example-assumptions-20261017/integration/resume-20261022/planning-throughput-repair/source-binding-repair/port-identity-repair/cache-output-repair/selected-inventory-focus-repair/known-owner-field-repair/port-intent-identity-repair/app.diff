@@ -1,0 +1,49 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -148,7 +148,7 @@
+     return candidate
+ 
+ 
+-def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None, existing_devices=()):
++def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None, existing_devices=(), existing_ports=()):
+     """Narrow the native decoder, without changing public proposal validation."""
+     from copy import deepcopy
+     from backend.nis.agent.orchestration.project_intake import reference_model_output_schema
+@@ -189,6 +189,27 @@
+     if device_ids:
+         for field in allowed & {'ports', 'measurements', 'commands'}:
+             item(field)['properties']['device_id']['enum'] = list(device_ids)
++    if port_intent and device_ids:
++        from hashlib import sha256
++        definition = deepcopy(item('ports'))
++        existing_ids = {row['id'] for row in existing_ports}
++        prefixes, variants = set(), []
++        for owner in device_ids:
++            stem = 'port-' + sha256(owner.encode('utf-8')).hexdigest()[:12] + '-'
++            generation = 1
++            prefix = stem + str(generation) + '-'
++            while prefix in prefixes or any(identity.startswith(prefix) for identity in existing_ids):
++                generation += 1
++                prefix = stem + str(generation) + '-'
++            prefixes.add(prefix)
++            variant = deepcopy(definition)
++            variant['properties']['device_id']['enum'] = [owner]
++            # These are fresh identity namespaces, never technical port facts.
++            # Public length, duplicate-ID and existing-port gates still apply.
++            variant['properties']['id']['pattern'] = '^' + prefix + '[A-Za-z0-9_-]+$'
++            variants.append(variant)
++        schema['$defs'][schema['properties']['ports']['items']['$ref'].rsplit('/', 1)[-1]] = (
++            variants[0] if len(variants) == 1 else {'anyOf': variants})
+     if port_ids:
+         keyed_selection('ports', 'port_parameters', 'id', port_ids,
+                         ('parameters', 'rationale', 'field_references'))
+@@ -1433,7 +1454,8 @@
+                            'format': _reference_schema_for_stage(prepared, allowed, port_ids=port_ids,
+                                function_ids=function_ids, port_intent=port_intent, device_ids=device_ids,
+                                inventory_target=inventory_target, derivation_fact_ids=derivation_fact_ids,
+-                               existing_devices=current['devices'] if inventory_stage else ()),
++                               existing_devices=current['devices'] if inventory_stage else (),
++                               existing_ports=current['ports'] if port_intent else ()),
+                             'think': False, 'stream': True, 'keep_alive': self.keep_alive,
+                            'options': {'temperature': 0, 'num_predict': 8192, 'num_ctx': self.context_tokens}}
+                 for attempt in range(2):

@@ -1,0 +1,25 @@
+{
+  "at_utc": "2026-10-22T22:46:42.986268+00:00",
+  "status": "READ_ONLY_ROOT_CAUSE_PENDING_INDEPENDENT_RED_GREEN",
+  "owner": "PROJECT_PRODUCT",
+  "first_failing_layer": "Private existing-inventory field-reference decoder projection",
+  "actual_failure": "Normal request82132 INVALID_INPUT/Exit1 after function_hosts was repeated on immutable existing CONTROLLER nodes, including after feedback. All3 rejected rawresponses are preserved.",
+  "cause": "Public device stamp permits quantity and device_type, plus function_hosts only when owner_device_id is non-null. The private bound_choices projection handles explicit owner_device_id.type=null on new records, but existing binding nodes omit owner_device_id entirely although the chosen immutable device identity fixes its actual null owner. Thus their native grammar still offers function_hosts, including an empty array, which the public gate correctly rejects.",
+  "repair_plan": [
+    "Bind explicit permitted field-reference keys per existing immutable device using its known owner value",
+    "Preserve explicit narrowed key sets in final source-reference projection instead of widening them again",
+    "Keep function_hosts available for owned sensors/actors/contexts and for actual function executor decisions",
+    "Do not delete invalid response fields, mutate existing owner/identity, relax public gates or reuse partial inventories"
+  ],
+  "required_counterexamples": [
+    "Known owner-null controller and sensor: nonempty and empty function_hosts field must fail native schema; public runtime rejection remains",
+    "Owned sensor can still declare function_hosts",
+    "Logical ReferenceFunction can still declare function_hosts",
+    "Existing quantity/device_type references and source/delta/cardinality restrictions remain valid"
+  ],
+  "no_tests_or_app_edits_yet": true,
+  "terminal_evidence": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\terminal-native-82132.json",
+    "sha256": "01a38efb32d522d0e40525a65fb38d9056ee1cb39fd41bc57001805aa621b621"
+  }
+}

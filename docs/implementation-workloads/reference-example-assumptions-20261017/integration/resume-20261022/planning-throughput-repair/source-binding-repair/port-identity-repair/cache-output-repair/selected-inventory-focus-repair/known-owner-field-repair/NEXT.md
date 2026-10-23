@@ -1,0 +1,15 @@
+# CURRENT: native11301 terminal INVALID_INPUT; budget-safe stop at48%
+
+Actual normal RESULT/response INVALID_INPUT, native Session11301 Exit1, drivers77848/70308 gone; main provider has no worker child. Server status saved in terminal-11301-verified. Guard54366 Exit0, actual SIGCONT at2026-10-23T01:38:51.978851UTC; production launcherPID1 S, production3792 ready unchanged. 22 replies:20validated/2rejected. Infotainment Domain port-intent attempted to reuse an already planned port ID. This is not a full model or Original acceptance. No new request, tests, builds, source edit, release or deployment performed for this budget save.
+
+User hard stop50% weekly use; actual48% at2026-10-23T04:20:46UTC. Work stops conservatively before the hard limit. No shutdown. Next resumption requires fresh budget and real resource coordination, then exact raw-response diagnosis and general RED/GREEN repair without weakening public gates, model/context/output/timeout or original scope. Current9fd image remains PREPARED only; both full Original acceptances, real ALL simulations, all15+15, full release gate and actual production delivery remain required. Do not reuse private inventories or silently reduce source scope. Notify peers of actual terminal/recovery, no automatic GO.
+
+## Historical prior running checkpoint
+
+# CURRENT: whole fresh vehicle11301 active
+
+Actual native drivers77848/70308 since2026-10-22T23:50:11UTC. Unchanged exact-process restoreguard54366 ARMED; only old optional production launcherPID1 paused, backend/frontend/database ready. Normal candidate9fd3f73a0c3d, image08edc3043679, source9d6c6e77479a, HEADb9d2782, verification244cce4f. Only PREPARED, not full release PASS. Both original source-only transfers independently16responses/2exactimports/realisolatedDB-DNS/net/port/image/emptycanonicaltables+jobs verified. Historical36f intake origin preserved, no fresh intake claimed.
+
+Read actual state integration/native-known-owner-field-vehicle/state.json and plan-reference/events.ndjson. Fresh whole normal request, NO internal inventory resume. While WHOLE request runs: no new inference, tests, builds, release or application source changes. Monitor real driver identities, dynamic mainprovider/childworker tokens, actual events/calls and normal terminal output. No end inference from idle, CPU, lost handle or phase label. Then both full original acceptances, actual ALL jobs/snapshots/PASS conformance/0failedroutes/alltracepages, all15+15, full exact normal-image gate and scripts/release-and-deploy.py actual production remain required. Production3792 unchanged. No shutdown.
+
+Last weekly actual42% at2026-10-23T01:17:45UTC; HARD STOP50%. See weekly-limit.json. At50% stop Codex work and save exact active request/guard/provider state; no silent abort of the independent local request, no shutdown. No automations or new chats/subagents. Resource peers directly informed of actual11301 start and whole-request boundary; all peer test blocks terminal, no modelGo. Mandatory original acceptance and deployment have not been achieved.

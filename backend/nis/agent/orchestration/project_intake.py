@@ -1705,8 +1705,13 @@ def _validate_reference_design(result: dict, prepared: dict, *, profile=None, in
                 raise ValueError('Belegte Geräteart darf durch die Referenzannahme nicht ersetzt werden.')
             bound.setdefault(fact_id, []).append(device_id)
         for fact_id, member in device['source_member_bindings'].items():
-            if fact_id not in ids or member not in reference_inventory_members(facts[fact_id]):
+            members = reference_inventory_members(facts[fact_id]) if fact_id in ids else []
+            if member not in members:
                 raise ValueError('Typenbindung benötigt ein wörtliches Mitglied der eigenen ursprünglichen Gerätegruppe.')
+            def named_type(value):
+                return re.search(r'(?<!\w)' + re.escape(value) + r'(?!\w)', device['name'], re.I)
+            if not named_type(member) and any(named_type(other) for other in members if other != member):
+                raise ValueError('Typenbindung widerspricht dem im Teilnehmernamen ausdrücklich genannten anderen ursprünglichen Gerätetyp.')
         device_fields = ['quantity', 'device_type']
         if device['owner_device_id'] is not None:
             device_fields.append('function_hosts')

@@ -1,0 +1,27 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -273,6 +273,14 @@
+             properties['device_id']['enum'] = [device['id']]
+             properties['source_fact_ids']['items']['enum'] = missing
+             properties['source_fact_ids'].update(minItems=1, maxItems=len(missing))
++            if device.get('owner_device_id') is None:
++                # Existing bindings omit immutable owner/identity fields. Their
++                # permitted evidence keys still depend on that known owner.
++                references = properties['field_references']
++                properties['field_references'] = {'type': 'object',
++                    'properties': {key: deepcopy(references['additionalProperties'])
++                                   for key in ('quantity', 'device_type')},
++                    'additionalProperties': False}
+             choices.append({'type': 'object', 'properties': properties,
+                             'required': list(properties), 'additionalProperties': False})
+         schema['properties']['inventory_choices'] = {
+@@ -364,6 +372,9 @@
+         if 'field_references' in properties and fields:
+             if properties.get('owner_device_id', {}).get('type') == 'null':
+                 fields = tuple(field for field in fields if field != 'function_hosts')
++            narrowed = properties['field_references'].get('properties')
++            if isinstance(narrowed, dict):
++                fields = tuple(field for field in fields if field in narrowed)
+             references = {}
+             for field in fields:
+                 identities = [key for key, source in prepared['reference_sources'].items()

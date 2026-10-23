@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="9" time="24.724" timestamp="2026-10-23T00:54:28.597739+02:00" hostname="Haranga"><testcase classname="tests.test_reference_inventory_field_scope" name="test_ownerless_existing_identity_cannot_emit_function_host_field[references0-C]" time="5.978"><failure message="KeyError: 'minimum_rows'">identity = 'C', references = ['R1']
+
+    @pytest.mark.parametrize('identity', ['C', 'S'])
+    @pytest.mark.parametrize('references', [['R1'], []])
+    def test_ownerless_existing_identity_cannot_emit_function_host_field(identity, references):
+&gt;       prepared, known, value, schema, merged = existing_selection(identity, {'function_hosts': references})
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_inventory_field_scope.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_inventory_field_scope.py:28: in existing_selection
+    merged = reasoner._reference_merge_inventory_devices(known, delta,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+devices = [{'rationale': 'Prüfbarer Referenzentwurf', 'field_references': {}, 'id': 'C', 'name': 'Controller', ...}, {'rationale...tursensor', ...}, {'rationale': 'Prüfbarer Referenzentwurf', 'field_references': {}, 'id': 'A', 'name': 'Ventil', ...}]
+proposed = [{'rationale': 'Independent field eligibility example.', 'field_references': {'function_hosts': ['R1']}, 'id': 'C', 'name': 'Controller', ...}]
+target = {'derivation_fact_ids': ['F05b5bf743577']}
+facts = {'Fc609c6ef02e8': {'name': 'Controller (ECU)', 'kind': 'INSTANCE', 'role': 'CONTROLLER', 'quantity': 1, ...}, 'F0d13bd...y': None, ...}, 'F05b5bf743577': {'name': 'Regelung', 'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None, ...}, ...}
+
+    def _reference_merge_inventory_devices(devices, proposed, target, facts):
+        """Accumulate native inventory without replacing existing identities."""
+        from copy import deepcopy
+        by_id = {row['id']: deepcopy(row) for row in devices}
+        ids = [row['id'] for row in proposed]
+        derived = 'derivation_fact_ids' in target
+        previous_selected = [] if derived else [row for row in devices if target['fact_id'] in row['source_fact_ids']
+            and (not target.get('member') or row['source_member_bindings'].get(target['fact_id']) == target['member'])]
+        required = 0 if derived else (facts[target['fact_id']]['quantity'] if facts[target['fact_id']]['kind'] == 'INSTANCE' else 1)
+&gt;       empty_allowed = target['minimum_rows'] == 0 and not target.get('names') and (derived or len(previous_selected) &gt;= required)
+                        ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'minimum_rows'
+
+backend\nis\agent\orchestration\local_reasoner.py:491: KeyError</failure></testcase><testcase classname="tests.test_reference_inventory_field_scope" name="test_ownerless_existing_identity_cannot_emit_function_host_field[references0-S]" time="1.946"><failure message="KeyError: 'minimum_rows'">identity = 'S', references = ['R1']
+
+    @pytest.mark.parametrize('identity', ['C', 'S'])
+    @pytest.mark.parametrize('references', [['R1'], []])
+    def test_ownerless_existing_identity_cannot_emit_function_host_field(identity, references):
+&gt;       prepared, known, value, schema, merged = existing_selection(identity, {'function_hosts': references})
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_inventory_field_scope.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_inventory_field_scope.py:28: in existing_selection
+    merged = reasoner._reference_merge_inventory_devices(known, delta,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+devices = [{'rationale': 'Prüfbarer Referenzentwurf', 'field_references': {}, 'id': 'C', 'name': 'Controller', ...}, {'rationale...tursensor', ...}, {'rationale': 'Prüfbarer Referenzentwurf', 'field_references': {}, 'id': 'A', 'name': 'Ventil', ...}]
+proposed = [{'rationale': 'Independent field eligibility example.', 'field_references': {'function_hosts': ['R1']}, 'id': 'S', 'name': 'Temperatursensor', ...}]
+target = {'derivation_fact_ids': ['F05b5bf743577']}
+facts = {'Fc609c6ef02e8': {'name': 'Controller (ECU)', 'kind': 'INSTANCE', 'role': 'CONTROLLER', 'quantity': 1, ...}, 'F0d13bd...y': None, ...}, 'F05b5bf743577': {'name': 'Regelung', 'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None, ...}, ...}
+
+    def _reference_merge_inventory_devices(devices, proposed, target, facts):
+        """Accumulate native inventory without replacing existing identities."""
+        from copy import deepcopy
+        by_id = {row['id']: deepcopy(row) for row in devices}
+        ids = [row['id'] for row in proposed]
+        derived = 'derivation_fact_ids' in target
+        previous_selected = [] if derived else [row for row in devices if target['fact_id'] in row['source_fact_ids']
+            and (not target.get('member') or row['source_member_bindings'].get(target['fact_id']) == target['member'])]
+        required = 0 if derived else (facts[target['fact_id']]['quantity'] if facts[target['fact_id']]['kind'] == 'INSTANCE' else 1)
+&gt;       empty_allowed = target['minimum_rows'] == 0 and not target.get('names') and (derived or len(previous_selected) &gt;= required)
+                        ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'minimum_rows'
+
+backend\nis\agent\orchestration\local_reasoner.py:491: KeyError</failure></testcase><testcase classname="tests.test_reference_inventory_field_scope" name="test_ownerless_existing_identity_cannot_emit_function_host_field[references1-C]" time="1.807"><failure message="KeyError: 'minimum_rows'">identity = 'C', references = []
+
+    @pytest.mark.parametrize('identity', ['C', 'S'])
+    @pytest.mark.parametrize('references', [['R1'], []])
+    def test_ownerless_existing_identity_cannot_emit_function_host_field(identity, references):
+&gt;       prepared, known, value, schema, merged = existing_selection(identity, {'function_hosts': references})
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_inventory_field_scope.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_inventory_field_scope.py:28: in existing_selection
+    merged = reasoner._reference_merge_inventory_devices(known, delta,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+devices = [{'rationale': 'Prüfbarer Referenzentwurf', 'field_references': {}, 'id': 'C', 'name': 'Controller', ...}, {'rationale...tursensor', ...}, {'rationale': 'Prüfbarer Referenzentwurf', 'field_references': {}, 'id': 'A', 'name': 'Ventil', ...}]
+proposed = [{'rationale': 'Independent field eligibility example.', 'field_references': {'function_hosts': []}, 'id': 'C', 'name': 'Controller', ...}]
+target = {'derivation_fact_ids': ['F05b5bf743577']}
+facts = {'Fc609c6ef02e8': {'name': 'Controller (ECU)', 'kind': 'INSTANCE', 'role': 'CONTROLLER', 'quantity': 1, ...}, 'F0d13bd...y': None, ...}, 'F05b5bf743577': {'name': 'Regelung', 'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None, ...}, ...}
+
+    def _reference_merge_inventory_devices(devices, proposed, target, facts):
+        """Accumulate native inventory without replacing existing identities."""
+        from copy import deepcopy
+        by_id = {row['id']: deepcopy(row) for row in devices}
+        ids = [row['id'] for row in proposed]
+        derived = 'derivation_fact_ids' in target
+        previous_selected = [] if derived else [row for row in devices if target['fact_id'] in row['source_fact_ids']
+            and (not target.get('member') or row['source_member_bindings'].get(target['fact_id']) == target['member'])]
+        required = 0 if derived else (facts[target['fact_id']]['quantity'] if facts[target['fact_id']]['kind'] == 'INSTANCE' else 1)
+&gt;       empty_allowed = target['minimum_rows'] == 0 and not target.get('names') and (derived or len(previous_selected) &gt;= required)
+                        ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'minimum_rows'
+
+backend\nis\agent\orchestration\local_reasoner.py:491: KeyError</failure></testcase><testcase classname="tests.test_reference_inventory_field_scope" name="test_ownerless_existing_identity_cannot_emit_function_host_field[references1-S]" time="1.809"><failure message="KeyError: 'minimum_rows'">identity = 'S', references = []
+
+    @pytest.mark.parametrize('identity', ['C', 'S'])
+    @pytest.mark.parametrize('references', [['R1'], []])
+    def test_ownerless_existing_identity_cannot_emit_function_host_field(identity, references):
+&gt;       prepared, known, value, schema, merged = existing_selection(identity, {'function_hosts': references})
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_inventory_field_scope.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_inventory_field_scope.py:28: in existing_selection
+    merged = reasoner._reference_merge_inventory_devices(known, delta,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+devices = [{'rationale': 'Prüfbarer Referenzentwurf', 'field_references': {}, 'id': 'C', 'name': 'Controller', ...}, {'rationale...tursensor', ...}, {'rationale': 'Prüfbarer Referenzentwurf', 'field_references': {}, 'id': 'A', 'name': 'Ventil', ...}]
+proposed = [{'rationale': 'Independent field eligibility example.', 'field_references': {'function_hosts': []}, 'id': 'S', 'name': 'Temperatursensor', ...}]
+target = {'derivation_fact_ids': ['F05b5bf743577']}
+facts = {'Fc609c6ef02e8': {'name': 'Controller (ECU)', 'kind': 'INSTANCE', 'role': 'CONTROLLER', 'quantity': 1, ...}, 'F0d13bd...y': None, ...}, 'F05b5bf743577': {'name': 'Regelung', 'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None, ...}, ...}
+
+    def _reference_merge_inventory_devices(devices, proposed, target, facts):
+        """Accumulate native inventory without replacing existing identities."""
+        from copy import deepcopy
+        by_id = {row['id']: deepcopy(row) for row in devices}
+        ids = [row['id'] for row in proposed]
+        derived = 'derivation_fact_ids' in target
+        previous_selected = [] if derived else [row for row in devices if target['fact_id'] in row['source_fact_ids']
+            and (not target.get('member') or row['source_member_bindings'].get(target['fact_id']) == target['member'])]
+        required = 0 if derived else (facts[target['fact_id']]['quantity'] if facts[target['fact_id']]['kind'] == 'INSTANCE' else 1)
+&gt;       empty_allowed = target['minimum_rows'] == 0 and not target.get('names') and (derived or len(previous_selected) &gt;= required)
+                        ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'minimum_rows'
+
+backend\nis\agent\orchestration\local_reasoner.py:491: KeyError</failure></testcase><testcase classname="tests.test_reference_inventory_field_scope" name="test_ownerless_existing_identity_keeps_device_type_and_quantity_fields[C]" time="1.776"><failure message="KeyError: 'minimum_rows'">identity = 'C'
+
+    @pytest.mark.parametrize('identity', ['C', 'S'])
+    def test_ownerless_existing_identity_keeps_device_type_and_quantity_fields(identity):
+&gt;       prepared, known, value, schema, merged = existing_selection(identity,
+            {'device_type': ['R1'], 'quantity': []})
+
+backend\tests\test_reference_inventory_field_scope.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_inventory_field_scope.py:28: in existing_selection
+    merged = reasoner._reference_merge_inventory_devices(known, delta,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+devices = [{'rationale': 'Prüfbarer Referenzentwurf', 'field_references': {}, 'id': 'C', 'name': 'Controller', ...}, {'rationale...tursensor', ...}, {'rationale': 'Prüfbarer Referenzentwurf', 'field_references': {}, 'id': 'A', 'name': 'Ventil', ...}]
+proposed = [{'rationale': 'Independent field eligibility example.', 'field_references': {'device_type': ['R1'], 'quantity': []}, 'id': 'C', 'name': 'Controller', ...}]
+target = {'derivation_fact_ids': ['F05b5bf743577']}
+facts = {'Fc609c6ef02e8': {'name': 'Controller (ECU)', 'kind': 'INSTANCE', 'role': 'CONTROLLER', 'quantity': 1, ...}, 'F0d13bd...y': None, ...}, 'F05b5bf743577': {'name': 'Regelung', 'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None, ...}, ...}
+
+    def _reference_merge_inventory_devices(devices, proposed, target, facts):
+        """Accumulate native inventory without replacing existing identities."""
+        from copy import deepcopy
+        by_id = {row['id']: deepcopy(row) for row in devices}
+        ids = [row['id'] for row in proposed]
+        derived = 'derivation_fact_ids' in target
+        previous_selected = [] if derived else [row for row in devices if target['fact_id'] in row['source_fact_ids']
+            and (not target.get('member') or row['source_member_bindings'].get(target['fact_id']) == target['member'])]
+        required = 0 if derived else (facts[target['fact_id']]['quantity'] if facts[target['fact_id']]['kind'] == 'INSTANCE' else 1)
+&gt;       empty_allowed = target['minimum_rows'] == 0 and not target.get('names') and (derived or len(previous_selected) &gt;= required)
+                        ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'minimum_rows'
+
+backend\nis\agent\orchestration\local_reasoner.py:491: KeyError</failure></testcase><testcase classname="tests.test_reference_inventory_field_scope" name="test_ownerless_existing_identity_keeps_device_type_and_quantity_fields[S]" time="1.852"><failure message="KeyError: 'minimum_rows'">identity = 'S'
+
+    @pytest.mark.parametrize('identity', ['C', 'S'])
+    def test_ownerless_existing_identity_keeps_device_type_and_quantity_fields(identity):
+&gt;       prepared, known, value, schema, merged = existing_selection(identity,
+            {'device_type': ['R1'], 'quantity': []})
+
+backend\tests\test_reference_inventory_field_scope.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_inventory_field_scope.py:28: in existing_selection
+    merged = reasoner._reference_merge_inventory_devices(known, delta,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+devices = [{'rationale': 'Prüfbarer Referenzentwurf', 'field_references': {}, 'id': 'C', 'name': 'Controller', ...}, {'rationale...tursensor', ...}, {'rationale': 'Prüfbarer Referenzentwurf', 'field_references': {}, 'id': 'A', 'name': 'Ventil', ...}]
+proposed = [{'rationale': 'Independent field eligibility example.', 'field_references': {'device_type': ['R1'], 'quantity': []}, 'id': 'S', 'name': 'Temperatursensor', ...}]
+target = {'derivation_fact_ids': ['F05b5bf743577']}
+facts = {'Fc609c6ef02e8': {'name': 'Controller (ECU)', 'kind': 'INSTANCE', 'role': 'CONTROLLER', 'quantity': 1, ...}, 'F0d13bd...y': None, ...}, 'F05b5bf743577': {'name': 'Regelung', 'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None, ...}, ...}
+
+    def _reference_merge_inventory_devices(devices, proposed, target, facts):
+        """Accumulate native inventory without replacing existing identities."""
+        from copy import deepcopy
+        by_id = {row['id']: deepcopy(row) for row in devices}
+        ids = [row['id'] for row in proposed]
+        derived = 'derivation_fact_ids' in target
+        previous_selected = [] if derived else [row for row in devices if target['fact_id'] in row['source_fact_ids']
+            and (not target.get('member') or row['source_member_bindings'].get(target['fact_id']) == target['member'])]
+        required = 0 if derived else (facts[target['fact_id']]['quantity'] if facts[target['fact_id']]['kind'] == 'INSTANCE' else 1)
+&gt;       empty_allowed = target['minimum_rows'] == 0 and not target.get('names') and (derived or len(previous_selected) &gt;= required)
+                        ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'minimum_rows'
+
+backend\nis\agent\orchestration\local_reasoner.py:491: KeyError</failure></testcase><testcase classname="tests.test_reference_inventory_field_scope" name="test_owned_existing_sensor_keeps_function_host_reference" time="1.613"><failure message="KeyError: 'minimum_rows'">def test_owned_existing_sensor_keeps_function_host_reference():
+&gt;       prepared, _, value, schema, merged = existing_selection('S', {'function_hosts': ['R1']}, owned=True)
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_inventory_field_scope.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_inventory_field_scope.py:28: in existing_selection
+    merged = reasoner._reference_merge_inventory_devices(known, delta,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+devices = [{'rationale': 'Prüfbarer Referenzentwurf', 'field_references': {}, 'id': 'C', 'name': 'Controller', ...}, {'rationale...tursensor', ...}, {'rationale': 'Prüfbarer Referenzentwurf', 'field_references': {}, 'id': 'A', 'name': 'Ventil', ...}]
+proposed = [{'rationale': 'Independent field eligibility example.', 'field_references': {'function_hosts': ['R1']}, 'id': 'S', 'name': 'Temperatursensor', ...}]
+target = {'derivation_fact_ids': ['F05b5bf743577']}
+facts = {'Fc609c6ef02e8': {'name': 'Controller (ECU)', 'kind': 'INSTANCE', 'role': 'CONTROLLER', 'quantity': 1, ...}, 'F0d13bd...y': None, ...}, 'F05b5bf743577': {'name': 'Regelung', 'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None, ...}, ...}
+
+    def _reference_merge_inventory_devices(devices, proposed, target, facts):
+        """Accumulate native inventory without replacing existing identities."""
+        from copy import deepcopy
+        by_id = {row['id']: deepcopy(row) for row in devices}
+        ids = [row['id'] for row in proposed]
+        derived = 'derivation_fact_ids' in target
+        previous_selected = [] if derived else [row for row in devices if target['fact_id'] in row['source_fact_ids']
+            and (not target.get('member') or row['source_member_bindings'].get(target['fact_id']) == target['member'])]
+        required = 0 if derived else (facts[target['fact_id']]['quantity'] if facts[target['fact_id']]['kind'] == 'INSTANCE' else 1)
+&gt;       empty_allowed = target['minimum_rows'] == 0 and not target.get('names') and (derived or len(previous_selected) &gt;= required)
+                        ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'minimum_rows'
+
+backend\nis\agent\orchestration\local_reasoner.py:491: KeyError</failure></testcase><testcase classname="tests.test_reference_inventory_field_scope" name="test_logical_function_keeps_executor_reference_with_keyed_selection" time="3.809" /><testcase classname="tests.test_reference_inventory_field_scope" name="test_source_field_eligibility_is_not_widened_for_an_owned_sensor" time="2.147"><failure message="KeyError: 'minimum_rows'">def test_source_field_eligibility_is_not_widened_for_an_owned_sensor():
+&gt;       prepared, _, value, schema, merged = existing_selection('S', {'quantity': ['R1']}, owned=True)
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_inventory_field_scope.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_inventory_field_scope.py:28: in existing_selection
+    merged = reasoner._reference_merge_inventory_devices(known, delta,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+devices = [{'rationale': 'Prüfbarer Referenzentwurf', 'field_references': {}, 'id': 'C', 'name': 'Controller', ...}, {'rationale...tursensor', ...}, {'rationale': 'Prüfbarer Referenzentwurf', 'field_references': {}, 'id': 'A', 'name': 'Ventil', ...}]
+proposed = [{'rationale': 'Independent field eligibility example.', 'field_references': {'quantity': ['R1']}, 'id': 'S', 'name': 'Temperatursensor', ...}]
+target = {'derivation_fact_ids': ['F05b5bf743577']}
+facts = {'Fc609c6ef02e8': {'name': 'Controller (ECU)', 'kind': 'INSTANCE', 'role': 'CONTROLLER', 'quantity': 1, ...}, 'F0d13bd...y': None, ...}, 'F05b5bf743577': {'name': 'Regelung', 'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None, ...}, ...}
+
+    def _reference_merge_inventory_devices(devices, proposed, target, facts):
+        """Accumulate native inventory without replacing existing identities."""
+        from copy import deepcopy
+        by_id = {row['id']: deepcopy(row) for row in devices}
+        ids = [row['id'] for row in proposed]
+        derived = 'derivation_fact_ids' in target
+        previous_selected = [] if derived else [row for row in devices if target['fact_id'] in row['source_fact_ids']
+            and (not target.get('member') or row['source_member_bindings'].get(target['fact_id']) == target['member'])]
+        required = 0 if derived else (facts[target['fact_id']]['quantity'] if facts[target['fact_id']]['kind'] == 'INSTANCE' else 1)
+&gt;       empty_allowed = target['minimum_rows'] == 0 and not target.get('names') and (derived or len(previous_selected) &gt;= required)
+                        ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'minimum_rows'
+
+backend\nis\agent\orchestration\local_reasoner.py:491: KeyError</failure></testcase></testsuite></testsuites>

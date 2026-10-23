@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="9" time="36.969" timestamp="2026-10-23T00:55:17.730915+02:00" hostname="Haranga"><testcase classname="tests.test_reference_inventory_field_scope" name="test_ownerless_existing_identity_cannot_emit_function_host_field[references0-C]" time="6.286"><failure message="AssertionError: Native grammar must exclude a known ineligible field, including its empty key.&#10;assert not True&#10; +  where True = is_valid({'devices': [], 'functions': [], 'ports': [], 'measurements': [], ...})&#10; +    where is_valid = Draft202012Validator(schema={'$defs': {'NativeReferenceBinding_0_3': {'anyOf': [{'additionalProperties': False, 'prope....nalDependency'}, 'maxItems': 0, 'title': 'Functional Dependencies', 'type': 'array'}, ...}, ...}, format_checker=None).is_valid&#10; +      where Draft202012Validator(schema={'$defs': {'NativeReferenceBinding_0_3': {'anyOf': [{'additionalProperties': False, 'prope....nalDependency'}, 'maxItems': 0, 'title': 'Functional Dependencies', 'type': 'array'}, ...}, ...}, format_checker=None) = Draft202012Validator({'$defs': {'ReferenceCommand': {'additionalProperties': False, 'properties': {'rationale': {'minLength': 1, 'title': '...Measurement'}, 'title': 'Measurements', 'type': 'array', 'maxItems': 0}, ...}, 'title': 'ReferenceDesignProposal', ...})">identity = 'C', references = ['R1']
+
+    @pytest.mark.parametrize('identity', ['C', 'S'])
+    @pytest.mark.parametrize('references', [['R1'], []])
+    def test_ownerless_existing_identity_cannot_emit_function_host_field(identity, references):
+        prepared, known, value, schema, merged = existing_selection(identity, {'function_hosts': references})
+        before = deepcopy(known)
+        with pytest.raises(ValueError, match='fremden Entscheidungsfeld'):
+            intake._validate_reference_inventory({'devices': merged}, prepared, (), partial=True)
+        assert known == before, 'Binding/validation must preserve the immutable existing owner and identity.'
+&gt;       assert not Draft202012Validator(schema).is_valid(value), (
+            'Native grammar must exclude a known ineligible field, including its empty key.')
+E       AssertionError: Native grammar must exclude a known ineligible field, including its empty key.
+E       assert not True
+E        +  where True = is_valid({'devices': [], 'functions': [], 'ports': [], 'measurements': [], ...})
+E        +    where is_valid = Draft202012Validator(schema={'$defs': {'NativeReferenceBinding_0_3': {'anyOf': [{'additionalProperties': False, 'prope....nalDependency'}, 'maxItems': 0, 'title': 'Functional Dependencies', 'type': 'array'}, ...}, ...}, format_checker=None).is_valid
+E        +      where Draft202012Validator(schema={'$defs': {'NativeReferenceBinding_0_3': {'anyOf': [{'additionalProperties': False, 'prope....nalDependency'}, 'maxItems': 0, 'title': 'Functional Dependencies', 'type': 'array'}, ...}, ...}, format_checker=None) = Draft202012Validator({'$defs': {'ReferenceCommand': {'additionalProperties': False, 'properties': {'rationale': {'minLength': 1, 'title': '...Measurement'}, 'title': 'Measurements', 'type': 'array', 'maxItems': 0}, ...}, 'title': 'ReferenceDesignProposal', ...})
+
+backend\tests\test_reference_inventory_field_scope.py:41: AssertionError</failure></testcase><testcase classname="tests.test_reference_inventory_field_scope" name="test_ownerless_existing_identity_cannot_emit_function_host_field[references0-S]" time="3.533"><failure message="AssertionError: Native grammar must exclude a known ineligible field, including its empty key.&#10;assert not True&#10; +  where True = is_valid({'devices': [], 'functions': [], 'ports': [], 'measurements': [], ...})&#10; +    where is_valid = Draft202012Validator(schema={'$defs': {'NativeReferenceBinding_0_3': {'anyOf': [{'additionalProperties': False, 'prope....nalDependency'}, 'maxItems': 0, 'title': 'Functional Dependencies', 'type': 'array'}, ...}, ...}, format_checker=None).is_valid&#10; +      where Draft202012Validator(schema={'$defs': {'NativeReferenceBinding_0_3': {'anyOf': [{'additionalProperties': False, 'prope....nalDependency'}, 'maxItems': 0, 'title': 'Functional Dependencies', 'type': 'array'}, ...}, ...}, format_checker=None) = Draft202012Validator({'$defs': {'ReferenceCommand': {'additionalProperties': False, 'properties': {'rationale': {'minLength': 1, 'title': '...Measurement'}, 'title': 'Measurements', 'type': 'array', 'maxItems': 0}, ...}, 'title': 'ReferenceDesignProposal', ...})">identity = 'S', references = ['R1']
+
+    @pytest.mark.parametrize('identity', ['C', 'S'])
+    @pytest.mark.parametrize('references', [['R1'], []])
+    def test_ownerless_existing_identity_cannot_emit_function_host_field(identity, references):
+        prepared, known, value, schema, merged = existing_selection(identity, {'function_hosts': references})
+        before = deepcopy(known)
+        with pytest.raises(ValueError, match='fremden Entscheidungsfeld'):
+            intake._validate_reference_inventory({'devices': merged}, prepared, (), partial=True)
+        assert known == before, 'Binding/validation must preserve the immutable existing owner and identity.'
+&gt;       assert not Draft202012Validator(schema).is_valid(value), (
+            'Native grammar must exclude a known ineligible field, including its empty key.')
+E       AssertionError: Native grammar must exclude a known ineligible field, including its empty key.
+E       assert not True
+E        +  where True = is_valid({'devices': [], 'functions': [], 'ports': [], 'measurements': [], ...})
+E        +    where is_valid = Draft202012Validator(schema={'$defs': {'NativeReferenceBinding_0_3': {'anyOf': [{'additionalProperties': False, 'prope....nalDependency'}, 'maxItems': 0, 'title': 'Functional Dependencies', 'type': 'array'}, ...}, ...}, format_checker=None).is_valid
+E        +      where Draft202012Validator(schema={'$defs': {'NativeReferenceBinding_0_3': {'anyOf': [{'additionalProperties': False, 'prope....nalDependency'}, 'maxItems': 0, 'title': 'Functional Dependencies', 'type': 'array'}, ...}, ...}, format_checker=None) = Draft202012Validator({'$defs': {'ReferenceCommand': {'additionalProperties': False, 'properties': {'rationale': {'minLength': 1, 'title': '...Measurement'}, 'title': 'Measurements', 'type': 'array', 'maxItems': 0}, ...}, 'title': 'ReferenceDesignProposal', ...})
+
+backend\tests\test_reference_inventory_field_scope.py:41: AssertionError</failure></testcase><testcase classname="tests.test_reference_inventory_field_scope" name="test_ownerless_existing_identity_cannot_emit_function_host_field[references1-C]" time="3.656"><failure message="AssertionError: Native grammar must exclude a known ineligible field, including its empty key.&#10;assert not True&#10; +  where True = is_valid({'devices': [], 'functions': [], 'ports': [], 'measurements': [], ...})&#10; +    where is_valid = Draft202012Validator(schema={'$defs': {'NativeReferenceBinding_0_3': {'anyOf': [{'additionalProperties': False, 'prope....nalDependency'}, 'maxItems': 0, 'title': 'Functional Dependencies', 'type': 'array'}, ...}, ...}, format_checker=None).is_valid&#10; +      where Draft202012Validator(schema={'$defs': {'NativeReferenceBinding_0_3': {'anyOf': [{'additionalProperties': False, 'prope....nalDependency'}, 'maxItems': 0, 'title': 'Functional Dependencies', 'type': 'array'}, ...}, ...}, format_checker=None) = Draft202012Validator({'$defs': {'ReferenceCommand': {'additionalProperties': False, 'properties': {'rationale': {'minLength': 1, 'title': '...Measurement'}, 'title': 'Measurements', 'type': 'array', 'maxItems': 0}, ...}, 'title': 'ReferenceDesignProposal', ...})">identity = 'C', references = []
+
+    @pytest.mark.parametrize('identity', ['C', 'S'])
+    @pytest.mark.parametrize('references', [['R1'], []])
+    def test_ownerless_existing_identity_cannot_emit_function_host_field(identity, references):
+        prepared, known, value, schema, merged = existing_selection(identity, {'function_hosts': references})
+        before = deepcopy(known)
+        with pytest.raises(ValueError, match='fremden Entscheidungsfeld'):
+            intake._validate_reference_inventory({'devices': merged}, prepared, (), partial=True)
+        assert known == before, 'Binding/validation must preserve the immutable existing owner and identity.'
+&gt;       assert not Draft202012Validator(schema).is_valid(value), (
+            'Native grammar must exclude a known ineligible field, including its empty key.')
+E       AssertionError: Native grammar must exclude a known ineligible field, including its empty key.
+E       assert not True
+E        +  where True = is_valid({'devices': [], 'functions': [], 'ports': [], 'measurements': [], ...})
+E        +    where is_valid = Draft202012Validator(schema={'$defs': {'NativeReferenceBinding_0_3': {'anyOf': [{'additionalProperties': False, 'prope....nalDependency'}, 'maxItems': 0, 'title': 'Functional Dependencies', 'type': 'array'}, ...}, ...}, format_checker=None).is_valid
+E        +      where Draft202012Validator(schema={'$defs': {'NativeReferenceBinding_0_3': {'anyOf': [{'additionalProperties': False, 'prope....nalDependency'}, 'maxItems': 0, 'title': 'Functional Dependencies', 'type': 'array'}, ...}, ...}, format_checker=None) = Draft202012Validator({'$defs': {'ReferenceCommand': {'additionalProperties': False, 'properties': {'rationale': {'minLength': 1, 'title': '...Measurement'}, 'title': 'Measurements', 'type': 'array', 'maxItems': 0}, ...}, 'title': 'ReferenceDesignProposal', ...})
+
+backend\tests\test_reference_inventory_field_scope.py:41: AssertionError</failure></testcase><testcase classname="tests.test_reference_inventory_field_scope" name="test_ownerless_existing_identity_cannot_emit_function_host_field[references1-S]" time="3.687"><failure message="AssertionError: Native grammar must exclude a known ineligible field, including its empty key.&#10;assert not True&#10; +  where True = is_valid({'devices': [], 'functions': [], 'ports': [], 'measurements': [], ...})&#10; +    where is_valid = Draft202012Validator(schema={'$defs': {'NativeReferenceBinding_0_3': {'anyOf': [{'additionalProperties': False, 'prope....nalDependency'}, 'maxItems': 0, 'title': 'Functional Dependencies', 'type': 'array'}, ...}, ...}, format_checker=None).is_valid&#10; +      where Draft202012Validator(schema={'$defs': {'NativeReferenceBinding_0_3': {'anyOf': [{'additionalProperties': False, 'prope....nalDependency'}, 'maxItems': 0, 'title': 'Functional Dependencies', 'type': 'array'}, ...}, ...}, format_checker=None) = Draft202012Validator({'$defs': {'ReferenceCommand': {'additionalProperties': False, 'properties': {'rationale': {'minLength': 1, 'title': '...Measurement'}, 'title': 'Measurements', 'type': 'array', 'maxItems': 0}, ...}, 'title': 'ReferenceDesignProposal', ...})">identity = 'S', references = []
+
+    @pytest.mark.parametrize('identity', ['C', 'S'])
+    @pytest.mark.parametrize('references', [['R1'], []])
+    def test_ownerless_existing_identity_cannot_emit_function_host_field(identity, references):
+        prepared, known, value, schema, merged = existing_selection(identity, {'function_hosts': references})
+        before = deepcopy(known)
+        with pytest.raises(ValueError, match='fremden Entscheidungsfeld'):
+            intake._validate_reference_inventory({'devices': merged}, prepared, (), partial=True)
+        assert known == before, 'Binding/validation must preserve the immutable existing owner and identity.'
+&gt;       assert not Draft202012Validator(schema).is_valid(value), (
+            'Native grammar must exclude a known ineligible field, including its empty key.')
+E       AssertionError: Native grammar must exclude a known ineligible field, including its empty key.
+E       assert not True
+E        +  where True = is_valid({'devices': [], 'functions': [], 'ports': [], 'measurements': [], ...})
+E        +    where is_valid = Draft202012Validator(schema={'$defs': {'NativeReferenceBinding_0_3': {'anyOf': [{'additionalProperties': False, 'prope....nalDependency'}, 'maxItems': 0, 'title': 'Functional Dependencies', 'type': 'array'}, ...}, ...}, format_checker=None).is_valid
+E        +      where Draft202012Validator(schema={'$defs': {'NativeReferenceBinding_0_3': {'anyOf': [{'additionalProperties': False, 'prope....nalDependency'}, 'maxItems': 0, 'title': 'Functional Dependencies', 'type': 'array'}, ...}, ...}, format_checker=None) = Draft202012Validator({'$defs': {'ReferenceCommand': {'additionalProperties': False, 'properties': {'rationale': {'minLength': 1, 'title': '...Measurement'}, 'title': 'Measurements', 'type': 'array', 'maxItems': 0}, ...}, 'title': 'ReferenceDesignProposal', ...})
+
+backend\tests\test_reference_inventory_field_scope.py:41: AssertionError</failure></testcase><testcase classname="tests.test_reference_inventory_field_scope" name="test_ownerless_existing_identity_keeps_device_type_and_quantity_fields[C]" time="3.946" /><testcase classname="tests.test_reference_inventory_field_scope" name="test_ownerless_existing_identity_keeps_device_type_and_quantity_fields[S]" time="3.794" /><testcase classname="tests.test_reference_inventory_field_scope" name="test_owned_existing_sensor_keeps_function_host_reference" time="3.652" /><testcase classname="tests.test_reference_inventory_field_scope" name="test_logical_function_keeps_executor_reference_with_keyed_selection" time="3.608" /><testcase classname="tests.test_reference_inventory_field_scope" name="test_source_field_eligibility_is_not_widened_for_an_owned_sensor" time="3.690" /></testsuite></testsuites>
