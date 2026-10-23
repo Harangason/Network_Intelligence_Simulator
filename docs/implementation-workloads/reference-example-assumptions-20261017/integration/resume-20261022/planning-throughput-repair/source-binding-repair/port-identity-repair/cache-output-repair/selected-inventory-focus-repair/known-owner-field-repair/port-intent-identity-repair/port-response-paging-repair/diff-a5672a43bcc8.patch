@@ -1,0 +1,44 @@
+--- before/backend/tests/test_reference_reasoner.py
++++ after/backend/tests/test_reference_reasoner.py
+@@ -257,8 +257,26 @@
+         if 'port_intents' in payload['format']['properties'] and not duplicate_port_ids:
+             # Model native technical choices, not a fabricated identity answer.
+             # The explicit duplicate-ID bypass fixture remains unchanged.
++            rows = candidate.get('ports', [])
++            if foreign_io not in allowed and not retry_foreign_port:
++                from collections import Counter
++                def signature(row):
++                    return tuple(row[key] for key in ('device_id', 'technology', 'role', 'network_scope'))
++                existing = Counter(signature(row) for row in content['current_candidate']['ports'])
++                pending = []
++                for row in rows:
++                    key = signature(row)
++                    if existing[key]:
++                        existing[key] -= 1
++                    else:
++                        pending.append(row)
++                candidate['port_intents_complete'] = len(pending) <= 1
++                rows = pending[:1]
++            else:
++                # Preserve deliberately invalid authored records in full.
++                candidate['port_intents_complete'] = True
+             candidate['port_intents'] = [{key: deepcopy(value) for key, value in row.items() if key != 'id'}
+-                                         for row in candidate.get('ports', [])]
++                                         for row in rows]
+             candidate['ports'] = []
+         if 'port_parameters' in payload['format']['properties']:
+             rows = candidate.get('ports', [])
+@@ -444,9 +462,12 @@
+     schema = _reference_schema_for_stage(prepared, {field}, device_ids=('chosen-owner',), port_intent=field == 'ports')
+     name = {'ports': 'ReferencePort', 'measurements': 'ReferenceMeasurement', 'commands': 'ReferenceCommand'}[field]
+     assert schema['$defs'][name]['properties']['device_id']['enum'] == ['chosen-owner']
+-    active = {field, 'unresolved'} | ({'port_intents'} if field == 'ports' else set())
++    active = {field, 'unresolved'} | ({'port_intents', 'port_intents_complete'} if field == 'ports' else set())
+     assert all(row['maxItems'] == 0 for key, row in schema['properties'].items() if key not in active)
+     if field == 'ports':
++        assert schema['properties']['port_intents_complete'] == {'type': 'boolean'}
++        assert 'port_intents_complete' in schema['required']
++        assert schema['properties']['port_intents']['maxItems'] == 1
+         intent = schema['properties']['port_intents']['items']
+         assert intent['properties']['device_id']['enum'] == ['chosen-owner']
+         assert 'id' not in intent['properties'] and intent['additionalProperties'] is False

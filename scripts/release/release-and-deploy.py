@@ -58,7 +58,7 @@ def gate_lock(root):
 
 
 def prepared_stack(docker, paths, source, commit, *, prepare, keep, ai_url,
-                   image=None, development_base=None):
+                   image=None, development_base=None, model_environment=None):
     """Reuse one healthy exact stack; never accumulate retained environments.
 
     Stopped and unclassified containers count too: deletion needs a separate
@@ -121,6 +121,8 @@ def prepared_stack(docker, paths, source, commit, *, prepare, keep, ai_url,
                         or f'LOCAL_AI_BASE_URL={ai_url}' not in app['Config'].get('Env', [])):
                     continue
                 env = dict(item.split('=', 1) for item in app['Config'].get('Env', []) if '=' in item)
+                if any(env.get(name) != value for name, value in (model_environment or {}).items()):
+                    continue
                 database = urlsplit(env.get('DATABASE_URL', ''))
                 if (database.hostname != 'test-db' or database.username != 'nis_test'
                         or database.port != 5432 or database.path != '/nis_test_e2e'

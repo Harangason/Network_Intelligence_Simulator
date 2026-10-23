@@ -4,12 +4,14 @@
   "modify_code": true,
   "allow_repair": true,
   "campaign_id": "nis-ea-independent-20260924-run1",
-  "status": "TARGETED12_PASS_REFINE_SINGLE_OWNER_PROJECTION",
-  "requested_change": "Exclude existing port IDs in native port-intent decoding using participant-bound fresh namespaces, keeping public identity/technical/source gates unchanged.",
+  "status": "LOCAL_CODEC_PASS_PREPARED_IMAGE_TRANSFER_VERIFIED",
+  "requested_change": "NIS assigns collision-checked new port identities for native id-free port intents. Preserve exact selected owner and all model-chosen technical fields, existing port identities, all public/source/merge gates and full Original scope.",
   "revision_before": {
-    "backend/nis/agent/orchestration/local_reasoner.py": "17fff9576bd4ae366df433f4cf47a3c3578f9f26d821119a7b7accf66e5d21d4",
-    "backend/tests/test_reference_port_intent_identity.py": "bb083fe5f6094631cce787ad1156b9c9ce1340e1e6a4399ce0e8014a4d9034f7",
-    "docs/implementation-workloads/reference-example-assumptions-20261017/integration/resume-20261022/planning-throughput-repair/source-binding-repair/port-identity-repair/cache-output-repair/selected-inventory-focus-repair/known-owner-field-repair/port-intent-identity-repair/probe_native_port_grammar.py": null
+    "backend/nis/agent/orchestration/local_reasoner.py": "2c868c4bceff4a7bd8771816af0e659260c5b3d7899c5240cfbca35705128166",
+    "backend/tests/test_reference_port_intent_identity.py": "7ce6873ca08908194fbb45ee602164571843136fb687a7152889984503a5813d",
+    "docs/implementation-workloads/reference-example-assumptions-20261017/integration/resume-20261022/planning-throughput-repair/source-binding-repair/port-identity-repair/cache-output-repair/selected-inventory-focus-repair/known-owner-field-repair/port-intent-identity-repair/probe_native_port_grammar.py": "76f785ceef55fda00fe74db32919628da74711852d8ebe507750655d75594c3c",
+    "backend/tests/test_reference_reasoner.py": "c5ff476e0ed309af0cb9a1d4fa97c0f14cf4db8567c86d20f892756984a34488",
+    "backend/tests/test_reference_port_intent_allocation.py": "3b25d0cba4f9a12865dfc7a04584c077becbbe163d28e61607c5c7a52c478d08"
   },
   "before": [
     {
@@ -31,7 +33,7 @@
   "repair": {
     "owner": "PROJECT_PRODUCT",
     "first_failing_layer": "Private port-intent native schema identity projection",
-    "root_cause": "Each selected participant batch can emit arbitrary port IDs, including IDs used by earlier batches. Runtime correctly rejects reuse; retry grammar continues to offer it. Native11301 repeated port-idc-eth-01 even on retry. Public identity validation must remain strict; native new-port IDs need a collision-free participant-bound namespace without mutating accepted ports or assigning technical port facts.",
+    "root_cause": "Each selected participant batch can emit arbitrary port IDs, including IDs used by earlier batches. Runtime correctly rejects reuse; retry grammar continues to offer it. Native11301 repeated port-idc-eth-01 even on retry. Public identity validation must remain strict; native new-port IDs need a collision-free participant-bound namespace without mutating accepted ports or assigning technical port facts. Native causal comparison also proves that decoder field order selected a generated hash ID before its participant. Emit immutable participant first so the namespace follows that decision; do not let an opaque generated prefix determine the participant. An independently authored two-port response with different technologies but the same owner/ID still passes the prefix grammar. IDs are NIS bookkeeping, not a technical inference decision; allocating them in the existing native stage codec removes both cross-batch and intra-batch identity collisions without rewriting a model decision.",
     "weaken_assertions_to_pass": false,
     "reproduction": "Actual native11301 normal INVALID_INPUT plus authored schema collision counterexamples and existing bypassed-decoder runtime regression.",
     "evidence": [
@@ -46,13 +48,32 @@
       {
         "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\red.xml",
         "sha256": "a250f4bcec66ee7e160bae54f1523acb06337ce9c879f62eeb4725d5a2c4c142"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\native-exact-owner-first\\result.json",
+        "sha256": "0da8be7e3e20d757050cbcfea278660a9dddc7fe66283ed3e241e322dd2908ab"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\owner-order-red.xml",
+        "sha256": "787b83c48a3f6e26ab9a4cdfbbc952c54c37088930df29eeab09c3d0cc9cc20a"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\within-response-collision.json",
+        "sha256": "c0135a3ba60b509d78cb37b08c9b9492b2ab5cbd5da592ae35fef59d7dd89a1e"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\allocation-red.xml",
+        "sha256": "0e5003389cc88925ef14733c98259e9407779095f517f431cc9a954983493ca7"
       }
     ],
     "affected_files": [
       "backend/nis/agent/orchestration/local_reasoner.py",
-      "backend/tests/test_reference_port_intent_identity.py"
+      "backend/tests/test_reference_port_intent_identity.py",
+      "backend/tests/test_reference_port_intent_allocation.py",
+      "backend/tests/test_reference_reasoner.py",
+      "backend/tests/test_reference_planning_throughput.py"
     ],
-    "required_fix": "Constrain native fresh-port IDs per selected immutable device, exclude existing namespace collisions, preserve all public/runtime validation and technical choices.",
+    "required_fix": "Native port_intents omit id and choose owner first. Existing NIS stage codec assigns collision-checked IDs, preserving every technical/reference field and original strict validation.",
     "acceptance_criteria": [
       "No old ID or another selected owner namespace is accepted by private schema",
       "No changes to already planned ports, public schema, full source, provider/model/context/output/timeout",
@@ -68,7 +89,13 @@
     "Stop at75percent actual weekly used (human explicitly confirmed25percent remaining)",
     "No manual model correction, source reduction or gate relaxation"
   ],
-  "files_changed": [],
+  "files_changed": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_port_intent_identity.py",
+    "backend/tests/test_reference_port_intent_allocation.py",
+    "backend/tests/test_reference_reasoner.py",
+    "backend/tests/test_reference_planning_throughput.py"
+  ],
   "tests": [],
   "validation": {},
   "preflight": {},
@@ -77,5 +104,162 @@
     "authorization": "Standing human task and AGENTS exact tested-image delivery after both Originals and full gate",
     "target": "Canonical NetworkIS production13500"
   },
-  "completion_status": "REPAIR_PENDING"
+  "completion_status": "LOCAL_VALIDATION_PASSED_ORIGINALS_FULL_GATE_AND_DELIVERY_PENDING",
+  "native_fixture_protocol_revision": {
+    "reason": "Native technical intent records now deliberately omit IDs. Positive fixtures must emit port_intents and follow actual assigned IDs in later stages. All deliberately invalid IDs/owners and public/runtime negative assertions are preserved.",
+    "prototype_snapshot": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\namespace-prototype",
+    "independent_new_protocol_red": "allocation-red.xml",
+    "independent_new_protocol_green": "allocation-green.xml"
+  },
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\after\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "2c868c4bceff4a7bd8771816af0e659260c5b3d7899c5240cfbca35705128166"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\after\\backend\\tests\\test_reference_port_intent_identity.py",
+      "sha256": "7ce6873ca08908194fbb45ee602164571843136fb687a7152889984503a5813d"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\after\\backend\\tests\\test_reference_port_intent_allocation.py",
+      "sha256": "3b25d0cba4f9a12865dfc7a04584c077becbbe163d28e61607c5c7a52c478d08"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\after\\backend\\tests\\test_reference_reasoner.py",
+      "sha256": "05da11d96f8ee6077c1a46b9b06e2a175f491675279017fa2d69e30c8d772072"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\after\\backend\\tests\\test_reference_planning_throughput.py",
+      "sha256": "787b2b423051de92abc3bcb365dad73c772d3abdd452ae78099ecb0fec37c4df"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\app.diff",
+      "sha256": "34f64a533219a0c80f2051997e6bd3c9bf0820bf599eaf0f6a3ef345bf074a2e"
+    }
+  ],
+  "remaining_findings": [],
+  "outcomes": {
+    "fresh_participant_bound_port_ids": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\regression-aggregate.json",
+          "sha256": "c86ba208306041da4ff54fd9fc2ba861ffea923992a32f39b50edf624ef4fbed"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\source-scope-proof.json",
+          "sha256": "0f592502312ffc235276d38375ddc8c396e39551a6e840c5abf0350e518bfa1f"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\native-server-owned-ports\\result.json",
+          "sha256": "afda6478e308010796187da768b8e92323baa73d698f9458daa55254426d0d9c"
+        }
+      ]
+    },
+    "existing_ports_public_gates_unchanged": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\regression-aggregate.json",
+          "sha256": "c86ba208306041da4ff54fd9fc2ba861ffea923992a32f39b50edf624ef4fbed"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\source-scope-proof.json",
+          "sha256": "0f592502312ffc235276d38375ddc8c396e39551a6e840c5abf0350e518bfa1f"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\native-server-owned-ports\\result.json",
+          "sha256": "afda6478e308010796187da768b8e92323baa73d698f9458daa55254426d0d9c"
+        }
+      ]
+    },
+    "exact_runtime_port_guard_preserved": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\regression-aggregate.json",
+          "sha256": "c86ba208306041da4ff54fd9fc2ba861ffea923992a32f39b50edf624ef4fbed"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\source-scope-proof.json",
+          "sha256": "0f592502312ffc235276d38375ddc8c396e39551a6e840c5abf0350e518bfa1f"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\native-server-owned-ports\\result.json",
+          "sha256": "afda6478e308010796187da768b8e92323baa73d698f9458daa55254426d0d9c"
+        }
+      ]
+    }
+  },
+  "validations": {
+    "independent_red_green": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\regression-aggregate.json",
+          "sha256": "c86ba208306041da4ff54fd9fc2ba861ffea923992a32f39b50edf624ef4fbed"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\source-scope-proof.json",
+          "sha256": "0f592502312ffc235276d38375ddc8c396e39551a6e840c5abf0350e518bfa1f"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\allocation-red.xml",
+          "sha256": "0e5003389cc88925ef14733c98259e9407779095f517f431cc9a954983493ca7"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\allocation-green.xml",
+          "sha256": "ad462c935d06b35ecdd3897a8acb5ffaf0ebca7694e2058c4493c3fdde0576d1"
+        }
+      ]
+    },
+    "isolated_adjacent_regressions": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\regression-aggregate.json",
+          "sha256": "c86ba208306041da4ff54fd9fc2ba861ffea923992a32f39b50edf624ef4fbed"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\source-scope-proof.json",
+          "sha256": "0f592502312ffc235276d38375ddc8c396e39551a6e840c5abf0350e518bfa1f"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\allocation-red.xml",
+          "sha256": "0e5003389cc88925ef14733c98259e9407779095f517f431cc9a954983493ca7"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\allocation-green.xml",
+          "sha256": "ad462c935d06b35ecdd3897a8acb5ffaf0ebca7694e2058c4493c3fdde0576d1"
+        }
+      ]
+    },
+    "source_scope_proof": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\regression-aggregate.json",
+          "sha256": "c86ba208306041da4ff54fd9fc2ba861ffea923992a32f39b50edf624ef4fbed"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\source-scope-proof.json",
+          "sha256": "0f592502312ffc235276d38375ddc8c396e39551a6e840c5abf0350e518bfa1f"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\allocation-red.xml",
+          "sha256": "0e5003389cc88925ef14733c98259e9407779095f517f431cc9a954983493ca7"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\allocation-green.xml",
+          "sha256": "ad462c935d06b35ecdd3897a8acb5ffaf0ebca7694e2058c4493c3fdde0576d1"
+        }
+      ]
+    }
+  },
+  "native_instruction_observation": {
+    "path": "docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\native-exact-owner-first\\result.json",
+    "scope": "Historical authored CAN instruction mismatch preserved; not an Original model acceptance. Both real Originals still require source/technology review."
+  }
 }

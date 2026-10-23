@@ -1,0 +1,1251 @@
+{
+  "model": "qwen3.8:27b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Authored native JSON grammar counterprobe, no project writes. Return exactly two new CAN LOCAL port intents: one for owner-a and one for owner-b. Use network_scope authored-network, parameters {}, one short rationale each, empty field_references. All other model arrays empty. These IDs already exist and must never be reused: [\"port-952568751510-1-01\", \"port-idc-eth-01\"]. Choose fresh IDs permitted by the schema. /no_think"
+    }
+  ],
+  "format": {
+    "$defs": {
+      "ReferenceCommand": {
+        "additionalProperties": false,
+        "properties": {
+          "rationale": {
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string",
+            "maxLength": 240
+          },
+          "field_references": {
+            "type": "object",
+            "properties": {
+              "commands": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "device_id": {
+            "title": "Device Id",
+            "type": "string"
+          },
+          "definition": {
+            "$ref": "#/$defs/ReferenceWireDefinition"
+          }
+        },
+        "required": [
+          "rationale",
+          "device_id",
+          "definition"
+        ],
+        "title": "ReferenceCommand",
+        "type": "object"
+      },
+      "ReferenceCommunication": {
+        "additionalProperties": false,
+        "properties": {
+          "rationale": {
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string",
+            "maxLength": 240
+          },
+          "field_references": {
+            "type": "object",
+            "properties": {
+              "communication": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "producer_device_id": {
+            "title": "Producer Device Id",
+            "type": "string"
+          },
+          "consumer_device_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Consumer Device Ids",
+            "type": "array"
+          },
+          "producer_fact_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Producer Fact Id"
+          },
+          "consumer_fact_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Consumer Fact Ids",
+            "type": "array"
+          },
+          "source_port_id": {
+            "title": "Source Port Id",
+            "type": "string"
+          },
+          "consumer_port_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Consumer Port Ids",
+            "type": "array"
+          },
+          "scope": {
+            "enum": [
+              "LOCAL_IO",
+              "DEVICE_IO",
+              "FUNCTION_OUTPUT"
+            ],
+            "title": "Scope",
+            "type": "string"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "enum": [
+                  "MEASUREMENT",
+                  "COMMAND",
+                  "FEEDBACK",
+                  "STATUS",
+                  "FUNCTION_OUTPUT"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Role"
+          },
+          "signal_name": {
+            "minLength": 1,
+            "title": "Signal Name",
+            "type": "string"
+          },
+          "encoding": {
+            "$ref": "#/$defs/ReferenceWireDefinition"
+          },
+          "transmission_mode": {
+            "enum": [
+              "CYCLIC",
+              "EVENT",
+              "ON_REQUEST",
+              "MIXED"
+            ],
+            "title": "Transmission Mode",
+            "type": "string"
+          },
+          "cycle_ms": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cycle Ms"
+          },
+          "min_interval_ms": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Min Interval Ms"
+          },
+          "trigger": {
+            "anyOf": [
+              {
+                "enum": [
+                  "on_change",
+                  "explicit"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Trigger"
+          },
+          "trigger_description": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Trigger Description"
+          },
+          "release_times_ms": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Release Times Ms"
+          },
+          "request_source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "bus_message",
+                  "external_application"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Request Source"
+          },
+          "request_communication_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Request Communication Id"
+          },
+          "response_processing_ms": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Response Processing Ms"
+          },
+          "request_times_ms": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Request Times Ms"
+          }
+        },
+        "required": [
+          "rationale",
+          "id",
+          "producer_device_id",
+          "consumer_device_ids",
+          "source_port_id",
+          "consumer_port_ids",
+          "scope",
+          "signal_name",
+          "encoding",
+          "transmission_mode"
+        ],
+        "title": "ReferenceCommunication",
+        "type": "object"
+      },
+      "ReferenceDevice": {
+        "additionalProperties": false,
+        "properties": {
+          "rationale": {
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string",
+            "maxLength": 240
+          },
+          "field_references": {
+            "type": "object",
+            "properties": {
+              "quantity": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 0
+              },
+              "device_type": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 0
+              },
+              "function_hosts": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "CONTROLLER",
+              "GATEWAY",
+              "SENSOR",
+              "ACTUATOR",
+              "PHYSICAL_CONTEXT"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "context_kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "PASSIVE",
+                  "ASSEMBLY",
+                  "SOFTWARE_SERVICE"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Context Kind"
+          },
+          "quantity": {
+            "maximum": 1000,
+            "minimum": 1,
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "source_fact_ids": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "Fc609c6ef02e8",
+                "F0d13bdd245f9",
+                "Fb14d14502074",
+                "F05b5bf743577",
+                "F529de96dd573",
+                "F43a2bc676eed",
+                "Fa0bd7609b4d2"
+              ]
+            },
+            "minItems": 1,
+            "title": "Source Fact Ids",
+            "type": "array"
+          },
+          "source_member_bindings": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Source Member Bindings",
+            "type": "object"
+          },
+          "owner_device_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Owner Device Id"
+          },
+          "purpose": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Purpose"
+          },
+          "contained_device_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Contained Device Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rationale",
+          "id",
+          "name",
+          "kind",
+          "quantity",
+          "source_fact_ids"
+        ],
+        "title": "ReferenceDevice",
+        "type": "object"
+      },
+      "ReferenceFinding": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "target_ref": {
+            "minLength": 1,
+            "title": "Target Ref",
+            "type": "string"
+          },
+          "message": {
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "target_ref",
+          "message"
+        ],
+        "title": "ReferenceFinding",
+        "type": "object"
+      },
+      "ReferenceFunction": {
+        "additionalProperties": false,
+        "properties": {
+          "rationale": {
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string",
+            "maxLength": 240
+          },
+          "field_references": {
+            "type": "object",
+            "properties": {
+              "function_hosts": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "source_fact_id": {
+            "title": "Source Fact Id",
+            "type": "string",
+            "enum": [
+              "F05b5bf743577",
+              "F529de96dd573",
+              "F43a2bc676eed"
+            ]
+          },
+          "realization": {
+            "enum": [
+              "ATOMIC",
+              "COMPOSITE"
+            ],
+            "title": "Realization",
+            "type": "string"
+          },
+          "executor_device_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Executor Device Ids",
+            "type": "array"
+          },
+          "realized_by_fact_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Realized By Fact Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rationale",
+          "source_fact_id",
+          "realization"
+        ],
+        "title": "ReferenceFunction",
+        "type": "object"
+      },
+      "ReferenceFunctionalDependency": {
+        "additionalProperties": false,
+        "properties": {
+          "rationale": {
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string",
+            "maxLength": 240
+          },
+          "field_references": {
+            "type": "object",
+            "properties": {
+              "communication": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "producer_fact_id": {
+            "title": "Producer Fact Id",
+            "type": "string"
+          },
+          "consumer_fact_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Consumer Fact Ids",
+            "type": "array"
+          },
+          "executor_device_id": {
+            "title": "Executor Device Id",
+            "type": "string"
+          },
+          "signal_name": {
+            "minLength": 1,
+            "title": "Signal Name",
+            "type": "string"
+          },
+          "encoding": {
+            "$ref": "#/$defs/ReferenceWireDefinition"
+          }
+        },
+        "required": [
+          "rationale",
+          "id",
+          "producer_fact_id",
+          "consumer_fact_ids",
+          "executor_device_id",
+          "signal_name",
+          "encoding"
+        ],
+        "title": "ReferenceFunctionalDependency",
+        "type": "object"
+      },
+      "ReferenceMeasurement": {
+        "additionalProperties": false,
+        "properties": {
+          "rationale": {
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string",
+            "maxLength": 240
+          },
+          "field_references": {
+            "type": "object",
+            "properties": {
+              "measurements": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "device_id": {
+            "title": "Device Id",
+            "type": "string"
+          },
+          "measurement_id": {
+            "minLength": 1,
+            "title": "Measurement Id",
+            "type": "string",
+            "enum": [
+              "object_list",
+              "image_frame",
+              "point_cloud",
+              "inertial_vector",
+              "radar_detections",
+              "navigation_fix",
+              "selector_state",
+              "linear_speed",
+              "relative_position",
+              "safety_state",
+              "temperature",
+              "speed",
+              "torque",
+              "pressure",
+              "flow",
+              "current",
+              "voltage",
+              "position",
+              "angle",
+              "force",
+              "suspension_travel",
+              "wheel_load",
+              "tire_wear",
+              "angular_rate",
+              "humidity",
+              "co2",
+              "presence",
+              "ph",
+              "conductivity",
+              "fill_level",
+              "distance",
+              "acceleration"
+            ]
+          }
+        },
+        "required": [
+          "rationale",
+          "device_id",
+          "measurement_id"
+        ],
+        "title": "ReferenceMeasurement",
+        "type": "object"
+      },
+      "ReferencePort": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "device_id": {
+                "title": "Device Id",
+                "type": "string",
+                "enum": [
+                  "owner-a"
+                ]
+              },
+              "rationale": {
+                "minLength": 1,
+                "title": "Rationale",
+                "type": "string",
+                "maxLength": 240
+              },
+              "field_references": {
+                "type": "object",
+                "properties": {
+                  "ports": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "R1"
+                      ]
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "id": {
+                "minLength": 1,
+                "title": "Id",
+                "type": "string",
+                "pattern": "^port-952568751510-2-[A-Za-z0-9_-]+$"
+              },
+              "technology": {
+                "minLength": 1,
+                "title": "Technology",
+                "type": "string",
+                "enum": [
+                  "5g",
+                  "adc",
+                  "afdx",
+                  "amqp",
+                  "arinc429",
+                  "avb",
+                  "bacnet_ip",
+                  "bacnet_mstp",
+                  "bacnet_sc",
+                  "bluetooth_le",
+                  "can",
+                  "can_aerospace",
+                  "can_fd",
+                  "can_xl",
+                  "canopen",
+                  "cc_link",
+                  "cc_link_ie",
+                  "ccp",
+                  "cip_safety",
+                  "coap",
+                  "custom_binary",
+                  "custom_protocol",
+                  "custom_tcp",
+                  "custom_text",
+                  "custom_udp",
+                  "dac",
+                  "dali",
+                  "dds",
+                  "devicenet",
+                  "dnp3",
+                  "doip",
+                  "etb",
+                  "ethercat",
+                  "ethernet",
+                  "ethernet_ip",
+                  "flexray",
+                  "foundation_fieldbus_h1",
+                  "fsoe",
+                  "generic_can",
+                  "generic_ethernet",
+                  "generic_serial",
+                  "goose",
+                  "gpio",
+                  "hart",
+                  "http",
+                  "i2c",
+                  "i3c",
+                  "iec60870_5_101",
+                  "iec60870_5_104",
+                  "iec61162",
+                  "iec61850",
+                  "interbus",
+                  "io_link",
+                  "io_link_wireless",
+                  "ip",
+                  "isobus",
+                  "j1939",
+                  "knx_ip",
+                  "knx_rf",
+                  "knx_tp",
+                  "lin",
+                  "lonworks",
+                  "lorawan",
+                  "lte_m",
+                  "lvds",
+                  "m_bus",
+                  "matter",
+                  "mil_std_1553",
+                  "mipi_csi2",
+                  "mipi_dsi",
+                  "mms",
+                  "modbus_ascii",
+                  "modbus_rtu",
+                  "modbus_tcp",
+                  "most",
+                  "mqtt",
+                  "mqtt_sn",
+                  "mvb",
+                  "nb_iot",
+                  "nfc",
+                  "nmea0183",
+                  "nmea2000",
+                  "obd2",
+                  "ocpp",
+                  "one_wire",
+                  "opc_ua",
+                  "opc_ua_pubsub",
+                  "opensafety",
+                  "pcie",
+                  "powerlink",
+                  "profibus_dp",
+                  "profibus_pa",
+                  "profinet",
+                  "profisafe",
+                  "pwm",
+                  "rfid",
+                  "ros2",
+                  "rs232",
+                  "rs422",
+                  "rs485",
+                  "sampled_values",
+                  "sercos_iii",
+                  "someip",
+                  "someip_sd",
+                  "spacewire",
+                  "sparkplug_b",
+                  "spi",
+                  "sunspec_modbus",
+                  "tcp",
+                  "thread",
+                  "trdp",
+                  "tsn",
+                  "tte",
+                  "uart",
+                  "udp",
+                  "uds",
+                  "usb",
+                  "uwb",
+                  "websocket",
+                  "wifi",
+                  "wireless_m_bus",
+                  "wirelesshart",
+                  "wtb",
+                  "xcp",
+                  "zigbee"
+                ]
+              },
+              "role": {
+                "enum": [
+                  "LOCAL",
+                  "BACKBONE"
+                ],
+                "title": "Role",
+                "type": "string"
+              },
+              "network_scope": {
+                "minLength": 1,
+                "title": "Network Scope",
+                "type": "string"
+              },
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "rationale",
+              "id",
+              "device_id",
+              "technology",
+              "role",
+              "network_scope"
+            ],
+            "title": "ReferencePort",
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "device_id": {
+                "title": "Device Id",
+                "type": "string",
+                "enum": [
+                  "owner-b"
+                ]
+              },
+              "rationale": {
+                "minLength": 1,
+                "title": "Rationale",
+                "type": "string",
+                "maxLength": 240
+              },
+              "field_references": {
+                "type": "object",
+                "properties": {
+                  "ports": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "R1"
+                      ]
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "id": {
+                "minLength": 1,
+                "title": "Id",
+                "type": "string",
+                "pattern": "^port-3c31ba8d4dab-1-[A-Za-z0-9_-]+$"
+              },
+              "technology": {
+                "minLength": 1,
+                "title": "Technology",
+                "type": "string",
+                "enum": [
+                  "5g",
+                  "adc",
+                  "afdx",
+                  "amqp",
+                  "arinc429",
+                  "avb",
+                  "bacnet_ip",
+                  "bacnet_mstp",
+                  "bacnet_sc",
+                  "bluetooth_le",
+                  "can",
+                  "can_aerospace",
+                  "can_fd",
+                  "can_xl",
+                  "canopen",
+                  "cc_link",
+                  "cc_link_ie",
+                  "ccp",
+                  "cip_safety",
+                  "coap",
+                  "custom_binary",
+                  "custom_protocol",
+                  "custom_tcp",
+                  "custom_text",
+                  "custom_udp",
+                  "dac",
+                  "dali",
+                  "dds",
+                  "devicenet",
+                  "dnp3",
+                  "doip",
+                  "etb",
+                  "ethercat",
+                  "ethernet",
+                  "ethernet_ip",
+                  "flexray",
+                  "foundation_fieldbus_h1",
+                  "fsoe",
+                  "generic_can",
+                  "generic_ethernet",
+                  "generic_serial",
+                  "goose",
+                  "gpio",
+                  "hart",
+                  "http",
+                  "i2c",
+                  "i3c",
+                  "iec60870_5_101",
+                  "iec60870_5_104",
+                  "iec61162",
+                  "iec61850",
+                  "interbus",
+                  "io_link",
+                  "io_link_wireless",
+                  "ip",
+                  "isobus",
+                  "j1939",
+                  "knx_ip",
+                  "knx_rf",
+                  "knx_tp",
+                  "lin",
+                  "lonworks",
+                  "lorawan",
+                  "lte_m",
+                  "lvds",
+                  "m_bus",
+                  "matter",
+                  "mil_std_1553",
+                  "mipi_csi2",
+                  "mipi_dsi",
+                  "mms",
+                  "modbus_ascii",
+                  "modbus_rtu",
+                  "modbus_tcp",
+                  "most",
+                  "mqtt",
+                  "mqtt_sn",
+                  "mvb",
+                  "nb_iot",
+                  "nfc",
+                  "nmea0183",
+                  "nmea2000",
+                  "obd2",
+                  "ocpp",
+                  "one_wire",
+                  "opc_ua",
+                  "opc_ua_pubsub",
+                  "opensafety",
+                  "pcie",
+                  "powerlink",
+                  "profibus_dp",
+                  "profibus_pa",
+                  "profinet",
+                  "profisafe",
+                  "pwm",
+                  "rfid",
+                  "ros2",
+                  "rs232",
+                  "rs422",
+                  "rs485",
+                  "sampled_values",
+                  "sercos_iii",
+                  "someip",
+                  "someip_sd",
+                  "spacewire",
+                  "sparkplug_b",
+                  "spi",
+                  "sunspec_modbus",
+                  "tcp",
+                  "thread",
+                  "trdp",
+                  "tsn",
+                  "tte",
+                  "uart",
+                  "udp",
+                  "uds",
+                  "usb",
+                  "uwb",
+                  "websocket",
+                  "wifi",
+                  "wireless_m_bus",
+                  "wirelesshart",
+                  "wtb",
+                  "xcp",
+                  "zigbee"
+                ]
+              },
+              "role": {
+                "enum": [
+                  "LOCAL",
+                  "BACKBONE"
+                ],
+                "title": "Role",
+                "type": "string"
+              },
+              "network_scope": {
+                "minLength": 1,
+                "title": "Network Scope",
+                "type": "string"
+              },
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "rationale",
+              "id",
+              "device_id",
+              "technology",
+              "role",
+              "network_scope"
+            ],
+            "title": "ReferencePort",
+            "type": "object"
+          }
+        ]
+      },
+      "ReferenceWireDefinition": {
+        "additionalProperties": false,
+        "properties": {
+          "length_bits": {
+            "maximum": 524288,
+            "minimum": 1,
+            "title": "Length Bits",
+            "type": "integer"
+          },
+          "data_type": {
+            "enum": [
+              "unsigned",
+              "signed",
+              "float",
+              "double",
+              "float32",
+              "float64"
+            ],
+            "title": "Data Type",
+            "type": "string"
+          },
+          "unit": {
+            "minLength": 1,
+            "title": "Unit",
+            "type": "string"
+          },
+          "factor": {
+            "title": "Factor",
+            "type": "number"
+          },
+          "offset_value": {
+            "default": 0,
+            "title": "Offset Value",
+            "type": "number"
+          },
+          "min_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Min Value"
+          },
+          "max_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Max Value"
+          },
+          "byte_order": {
+            "default": "little_endian",
+            "enum": [
+              "little_endian",
+              "big_endian"
+            ],
+            "title": "Byte Order",
+            "type": "string"
+          },
+          "semantic": {
+            "additionalProperties": true,
+            "title": "Semantic",
+            "type": "object"
+          },
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          }
+        },
+        "required": [
+          "length_bits",
+          "data_type",
+          "unit",
+          "factor",
+          "semantic",
+          "data"
+        ],
+        "title": "ReferenceWireDefinition",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "devices": {
+        "items": {
+          "$ref": "#/$defs/ReferenceDevice"
+        },
+        "title": "Devices",
+        "type": "array",
+        "maxItems": 0
+      },
+      "functions": {
+        "items": {
+          "$ref": "#/$defs/ReferenceFunction"
+        },
+        "title": "Functions",
+        "type": "array",
+        "maxItems": 0
+      },
+      "ports": {
+        "items": {
+          "$ref": "#/$defs/ReferencePort"
+        },
+        "title": "Ports",
+        "type": "array"
+      },
+      "measurements": {
+        "items": {
+          "$ref": "#/$defs/ReferenceMeasurement"
+        },
+        "title": "Measurements",
+        "type": "array",
+        "maxItems": 0
+      },
+      "commands": {
+        "items": {
+          "$ref": "#/$defs/ReferenceCommand"
+        },
+        "title": "Commands",
+        "type": "array",
+        "maxItems": 0
+      },
+      "communication": {
+        "items": {
+          "$ref": "#/$defs/ReferenceCommunication"
+        },
+        "title": "Communication",
+        "type": "array",
+        "maxItems": 0
+      },
+      "functional_dependencies": {
+        "items": {
+          "$ref": "#/$defs/ReferenceFunctionalDependency"
+        },
+        "title": "Functional Dependencies",
+        "type": "array",
+        "maxItems": 0
+      },
+      "unresolved": {
+        "items": {
+          "$ref": "#/$defs/ReferenceFinding"
+        },
+        "title": "Unresolved",
+        "type": "array"
+      }
+    },
+    "title": "ReferenceDesignProposal",
+    "type": "object"
+  },
+  "think": false,
+  "stream": false,
+  "keep_alive": "10m",
+  "options": {
+    "temperature": 0,
+    "num_predict": 8192,
+    "num_ctx": 131072
+  }
+}

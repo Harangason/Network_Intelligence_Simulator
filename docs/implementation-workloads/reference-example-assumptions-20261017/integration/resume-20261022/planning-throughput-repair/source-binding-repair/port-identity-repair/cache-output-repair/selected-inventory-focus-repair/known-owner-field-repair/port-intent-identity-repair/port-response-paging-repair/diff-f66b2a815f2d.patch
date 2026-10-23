@@ -1,0 +1,34 @@
+--- before/backend/tests/test_reference_port_intent_identity.py
++++ after/backend/tests/test_reference_port_intent_identity.py
+@@ -36,7 +36,9 @@
+ 
+ def test_native_new_id_is_bound_to_its_selected_participant():
+     _, schema = prepared_schema()
+-    Draft202012Validator(schema).validate(native(intent('owner-a'), intent('owner-b')))
++    for owner in ('owner-a', 'owner-b'):
++        Draft202012Validator(schema).validate(native(intent(owner)))
++    assert not Draft202012Validator(schema).is_valid(native(intent('owner-a'), intent('owner-b')))
+     rows = allocate([], [intent('owner-a'), intent('owner-b')])
+     assert [row['device_id'] for row in rows] == ['owner-a', 'owner-b']
+     assert rows[0]['id'] != rows[1]['id']
+@@ -59,13 +61,18 @@
+     prepared, schema = prepared_schema(('selected-owner',))
+     public = deepcopy(intake.reference_design_schema(prepared))
+     value = native(*(intent('selected-owner') for _ in range(count)))
+-    Draft202012Validator(schema).validate(value)
++    for index, row in enumerate(value['port_intents']):
++        Draft202012Validator(schema).validate({**native(row), 'port_intents_complete': index == count - 1})
++    if count > 1:
++        assert not Draft202012Validator(schema).is_valid(value)
+     rows = allocate([], value['port_intents'], ('selected-owner',))
+     assert len(rows) == count and len({row['id'] for row in rows}) == count
+     Draft202012Validator(public).validate(
+         {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'ports': rows})
+     assert intake.reference_design_schema(prepared) == public
+-    bad = deepcopy(value)
++    good = native(value['port_intents'][0])
++    Draft202012Validator(schema).validate(good)
++    bad = deepcopy(good)
+     bad['port_intents'][0]['parameters'] = {'bitrate_bps': 500000}
+     assert not Draft202012Validator(schema).is_valid(bad)
+ 

@@ -1,81 +1,79 @@
-"""Authored native identity counterexamples, not original-model acceptance."""
+"""Authored decoder/public-field counterexamples, never original acceptance."""
 from copy import deepcopy
-import inspect
 
 import pytest
 from jsonschema import Draft202012Validator
 
 from backend.nis.agent.orchestration import local_reasoner as reasoner
 from backend.nis.agent.orchestration import project_intake as intake
+from backend.tests.test_reference_port_intent_allocation import prepared_schema, intent, native, allocate
 from backend.tests.test_reference_design import fixture_request, reference
-
-
-def schema_for(owners, existing=()):
-    prepared = intake.prepare_reference_design(fixture_request(references=[reference(('ports',))]))
-    options = {'port_intent': True, 'device_ids': owners}
-    # Exercise the actual old implementation too, without a signature-only RED.
-    if 'existing_ports' in inspect.signature(reasoner._reference_schema_for_stage).parameters:
-        options['existing_ports'] = existing
-    return prepared, reasoner._reference_schema_for_stage(prepared, {'ports'}, **options)
-
-
-def port(identity, owner):
-    return {'id': identity, 'device_id': owner, 'technology': 'can', 'role': 'LOCAL',
-            'network_scope': 'authored-network', 'parameters': {},
-            'rationale': 'Authored participant connection.', 'field_references': {}}
-
-
-def proposal(*ports):
-    return {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'ports': list(ports)}
-
-
-def fresh_id(schema, owner, suffix='01'):
-    definition = schema['$defs']['ReferencePort']
-    for variant in definition.get('anyOf', [definition]):
-        fields = variant['properties']
-        if owner in fields['device_id']['enum']:
-            pattern = fields['id'].get('pattern')
-            return pattern[1:].split('[', 1)[0] + suffix if pattern else 'authored-fresh-' + suffix
-    raise AssertionError('Selected participant missing from native schema')
 
 
 @pytest.mark.parametrize('identity', ['port-idc-eth-01', 'an-existing-arbitrary-id'])
 def test_native_intent_excludes_every_existing_port_id(identity):
-    existing = [port(identity, 'earlier-owner')]
+    existing = [{'id': identity, **intent('earlier-owner')}]
     before = deepcopy(existing)
-    _, schema = schema_for(('selected-owner',), existing)
-    assert not Draft202012Validator(schema).is_valid(proposal(port(identity, 'selected-owner')))
-    assert existing == before
+    _, schema = prepared_schema(('selected-owner',))
+    legacy = {**intake.ReferenceDesignProposal().model_dump(mode='json'),
+              'ports': [{'id': identity, **intent('selected-owner')}]}
+    assert not Draft202012Validator(schema).is_valid(legacy)
+    assert not Draft202012Validator(schema).is_valid(native({'id': identity, **intent('selected-owner')}))
+    Draft202012Validator(schema).validate(native(intent('selected-owner')))
+    rows = allocate(existing, [intent('selected-owner')], ('selected-owner',))
+    assert rows[0]['id'] != identity and existing == before
 
 
 def test_fresh_namespace_skips_an_existing_matching_prefix():
-    _, first = schema_for(('selected-owner',))
-    previously_allocated = fresh_id(first, 'selected-owner')
-    _, following = schema_for(('selected-owner',), [port(previously_allocated, 'selected-owner')])
-    assert not Draft202012Validator(following).is_valid(
-        proposal(port(previously_allocated, 'selected-owner')))
-    Draft202012Validator(following).validate(proposal(port(fresh_id(following, 'selected-owner'), 'selected-owner')))
+    owner = ('selected-owner',)
+    first = allocate([], [intent(owner[0])], owner)
+    following = allocate(first, [intent(owner[0])], owner)
+    assert first[0]['id'] != following[0]['id']
+    assert following == allocate(first, [intent(owner[0])], owner)
+    _, schema = prepared_schema(owner)
+    Draft202012Validator(schema).validate(native(intent(owner[0])))
 
 
 def test_native_new_id_is_bound_to_its_selected_participant():
-    _, schema = schema_for(('owner-a', 'owner-b'))
-    identity = fresh_id(schema, 'owner-a')
-    Draft202012Validator(schema).validate(proposal(port(identity, 'owner-a')))
-    assert not Draft202012Validator(schema).is_valid(proposal(port(identity, 'owner-b')))
-    assert not Draft202012Validator(schema).is_valid(proposal(port(identity, 'foreign-owner')))
+    _, schema = prepared_schema()
+    for owner in ('owner-a', 'owner-b'):
+        Draft202012Validator(schema).validate(native(intent(owner)))
+    assert not Draft202012Validator(schema).is_valid(native(intent('owner-a'), intent('owner-b')))
+    rows = allocate([], [intent('owner-a'), intent('owner-b')])
+    assert [row['device_id'] for row in rows] == ['owner-a', 'owner-b']
+    assert rows[0]['id'] != rows[1]['id']
+    assert not Draft202012Validator(schema).is_valid(native({'id': rows[0]['id'], **intent('owner-b')}))
+    assert not Draft202012Validator(schema).is_valid(native(intent('foreign-owner')))
+    with pytest.raises(ValueError):
+        allocate([], [{'id': rows[0]['id'], **intent('owner-b')}])
+
+
+@pytest.mark.parametrize('owners', [('only-owner',), ('owner-a', 'owner-b')])
+def test_native_port_participant_is_chosen_before_opaque_generated_identity(owners):
+    _, schema = prepared_schema(owners)
+    fields = schema['properties']['port_intents']['items']['properties']
+    assert next(iter(fields)) == 'device_id'
+    assert 'id' not in fields
 
 
 @pytest.mark.parametrize('count', [1, 5, 17])
 def test_fresh_intents_preserve_unbounded_need_and_public_contract(count):
-    prepared, schema = schema_for(('selected-owner',))
+    prepared, schema = prepared_schema(('selected-owner',))
     public = deepcopy(intake.reference_design_schema(prepared))
-    value = proposal(*(port(fresh_id(schema, 'selected-owner', str(index)), 'selected-owner')
-                       for index in range(count)))
-    Draft202012Validator(schema).validate(value)
-    Draft202012Validator(public).validate(value)
+    value = native(*(intent('selected-owner') for _ in range(count)))
+    for index, row in enumerate(value['port_intents']):
+        Draft202012Validator(schema).validate({**native(row), 'port_intents_complete': index == count - 1})
+    if count > 1:
+        assert not Draft202012Validator(schema).is_valid(value)
+    rows = allocate([], value['port_intents'], ('selected-owner',))
+    assert len(rows) == count and len({row['id'] for row in rows}) == count
+    Draft202012Validator(public).validate(
+        {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'ports': rows})
     assert intake.reference_design_schema(prepared) == public
-    bad = deepcopy(value)
-    bad['ports'][0]['parameters'] = {'bitrate_bps': 500000}
+    good = native(value['port_intents'][0])
+    Draft202012Validator(schema).validate(good)
+    bad = deepcopy(good)
+    bad['port_intents'][0]['parameters'] = {'bitrate_bps': 500000}
     assert not Draft202012Validator(schema).is_valid(bad)
 
 

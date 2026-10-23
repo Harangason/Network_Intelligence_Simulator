@@ -147,11 +147,22 @@ def reasoner_with_transport(monkeypatch, *, family='qwen3', truncate=False, capt
         for field in ('ports', 'measurements', 'commands'):
             for row in active[field]:
                 row['device_id'] = mapping.get(row['device_id'], row['device_id'])
+        port_mapping = {}
+        for row in active['ports']:
+            matches = [item for item in content['current_candidate']['ports']
+                       if all(item[key] == row[key] for key in ('device_id', 'technology', 'role', 'network_scope'))]
+            if len(matches) == 1:
+                port_mapping[row['id']] = matches[0]['id']
+                row['id'] = matches[0]['id']
         for row in active['functions']:
             row['executor_device_ids'] = [mapping.get(key, key) for key in row['executor_device_ids']]
         for row in active['communication']:
             row['producer_device_id'] = mapping.get(row['producer_device_id'], row['producer_device_id'])
             row['consumer_device_ids'] = [mapping.get(key, key) for key in row['consumer_device_ids']]
+            if row.get('source_port_id') in port_mapping:
+                row['source_port_id'] = port_mapping[row['source_port_id']]
+            if 'consumer_port_ids' in row:
+                row['consumer_port_ids'] = [port_mapping.get(key, key) for key in row['consumer_port_ids']]
         candidate = {key: deepcopy(value) for key, value in active.items() if key in allowed}
         def use_offered_new_ids(rows, existing):
             items = payload['format']['properties']['inventory_choices']['items']
@@ -243,6 +254,30 @@ def reasoner_with_transport(monkeypatch, *, family='qwen3', truncate=False, capt
                     *[row for row in candidate['inventory_choices'] if row['choice_kind'] != 'EXISTING'],
                     native_existing_bindings(existing)]
             candidate['devices'] = []
+        if 'port_intents' in payload['format']['properties'] and not duplicate_port_ids:
+            # Model native technical choices, not a fabricated identity answer.
+            # The explicit duplicate-ID bypass fixture remains unchanged.
+            rows = candidate.get('ports', [])
+            if foreign_io not in allowed and not retry_foreign_port:
+                from collections import Counter
+                def signature(row):
+                    return tuple(row[key] for key in ('device_id', 'technology', 'role', 'network_scope'))
+                existing = Counter(signature(row) for row in content['current_candidate']['ports'])
+                pending = []
+                for row in rows:
+                    key = signature(row)
+                    if existing[key]:
+                        existing[key] -= 1
+                    else:
+                        pending.append(row)
+                candidate['port_intents_complete'] = len(pending) <= 1
+                rows = pending[:1]
+            else:
+                # Preserve deliberately invalid authored records in full.
+                candidate['port_intents_complete'] = True
+            candidate['port_intents'] = [{key: deepcopy(value) for key, value in row.items() if key != 'id'}
+                                         for row in rows]
+            candidate['ports'] = []
         if 'port_parameters' in payload['format']['properties']:
             rows = candidate.get('ports', [])
             prior = {row['id']: row for row in content['current_candidate']['ports']}
@@ -340,7 +375,12 @@ def test_stage_catalogs_preserve_originals_and_only_supply_selected_port_schemas
     assert all(row['parameters'] == {'bitrate_bps': 500000} for row in result['proposal']['ports'])
     parameter_stages = [row for row in observed if row['port_ids_for_this_stage']]
     assert len(parameter_stages) == 1
-    assert parameter_stages[0]['port_ids_for_this_stage'] == ['PC', 'PS', 'PA']
+    before_parameters = parameter_stages[0]['current_candidate']['ports']
+    expected_ids = [row['id'] for row in before_parameters]
+    assert len(expected_ids) == len(set(expected_ids)) == 3
+    assert parameter_stages[0]['port_ids_for_this_stage'] == expected_ids
+    assert {row['device_id'] for row in before_parameters} == {
+        row['id'] for row in parameter_stages[0]['current_candidate']['devices'] if row['kind'] != 'PHYSICAL_CONTEXT'}
     for row in observed:
         assert row['original_source'] == prepared['source_evidence']['source_text']
         assert row['reference_sources'] == prepared['reference_sources']
@@ -355,7 +395,15 @@ def test_stage_catalogs_preserve_originals_and_only_supply_selected_port_schemas
         else:
             assert schemas is None
     # Every peer remains present when the exact selected set is configured.
-    assert {row['id'] for row in parameter_stages[0]['current_candidate']['ports']} == {'PC', 'PS', 'PA'}
+    # NIS_PROFILE_IDENTITY normalizes the final opaque IDs after these stages.
+    before_names = {row['id']: row['name'] for row in parameter_stages[0]['current_candidate']['devices']}
+    after_names = {row['id']: row['name'] for row in result['proposal']['devices']}
+    assert len(set(before_names.values())) == len(before_names)
+    assert len({row['id'] for row in result['proposal']['ports']}) == 3
+    assert {(after_names[row['device_id']], row['technology'], row['role'], row['network_scope'])
+            for row in result['proposal']['ports']} == {
+        (before_names[row['device_id']], row['technology'], row['role'], row['network_scope'])
+        for row in before_parameters}
     function_stages = [row for row in observed if row['function_fact_ids_for_this_stage']]
     expected = {key for key, fact in prepared['facts'].items() if fact['kind'] == 'FUNCTION'}
     assert {key for row in function_stages for key in row['function_fact_ids_for_this_stage']} == expected
@@ -414,7 +462,16 @@ def test_io_decoder_binds_owner_without_changing_public_schema(field):
     schema = _reference_schema_for_stage(prepared, {field}, device_ids=('chosen-owner',), port_intent=field == 'ports')
     name = {'ports': 'ReferencePort', 'measurements': 'ReferenceMeasurement', 'commands': 'ReferenceCommand'}[field]
     assert schema['$defs'][name]['properties']['device_id']['enum'] == ['chosen-owner']
-    assert all(row['maxItems'] == 0 for key, row in schema['properties'].items() if key not in {field, 'unresolved'})
+    active = {field, 'unresolved'} | ({'port_intents', 'port_intents_complete'} if field == 'ports' else set())
+    assert all(row['maxItems'] == 0 for key, row in schema['properties'].items() if key not in active)
+    if field == 'ports':
+        assert schema['properties']['port_intents_complete'] == {'type': 'boolean'}
+        assert 'port_intents_complete' in schema['required']
+        assert schema['properties']['port_intents']['maxItems'] == 1
+        intent = schema['properties']['port_intents']['items']
+        assert intent['properties']['device_id']['enum'] == ['chosen-owner']
+        assert 'id' not in intent['properties'] and intent['additionalProperties'] is False
+        assert schema['properties']['ports']['maxItems'] == 0
     assert intake.reference_design_schema(prepared) == public
 
 

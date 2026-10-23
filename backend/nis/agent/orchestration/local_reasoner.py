@@ -148,7 +148,7 @@ def _reference_fresh_inventory_id(prepared, kind, available, existing_ids):
     return candidate
 
 
-def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None, existing_devices=(), existing_ports=()):
+def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None, existing_devices=()):
     """Narrow the native decoder, without changing public proposal validation."""
     from copy import deepcopy
     from backend.nis.agent.orchestration.project_intake import reference_model_output_schema
@@ -189,27 +189,24 @@ def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=
     if device_ids:
         for field in allowed & {'ports', 'measurements', 'commands'}:
             item(field)['properties']['device_id']['enum'] = list(device_ids)
-    if port_intent and device_ids:
-        from hashlib import sha256
+    if port_intent:
         definition = deepcopy(item('ports'))
-        existing_ids = {row['id'] for row in existing_ports}
-        prefixes, variants = set(), []
-        for owner in device_ids:
-            stem = 'port-' + sha256(owner.encode('utf-8')).hexdigest()[:12] + '-'
-            generation = 1
-            prefix = stem + str(generation) + '-'
-            while prefix in prefixes or any(identity.startswith(prefix) for identity in existing_ids):
-                generation += 1
-                prefix = stem + str(generation) + '-'
-            prefixes.add(prefix)
-            variant = deepcopy(definition)
-            variant['properties']['device_id']['enum'] = [owner]
-            # These are fresh identity namespaces, never technical port facts.
-            # Public length, duplicate-ID and existing-port gates still apply.
-            variant['properties']['id']['pattern'] = '^' + prefix + '[A-Za-z0-9_-]+$'
-            variants.append(variant)
-        schema['$defs'][schema['properties']['ports']['items']['$ref'].rsplit('/', 1)[-1]] = (
-            variants[0] if len(variants) == 1 else {'anyOf': variants})
+        fields = definition['properties']
+        # Native inference chooses the actual participant and technical facts.
+        # NIS bookkeeping identities are assigned by the stage codec afterward.
+        definition['properties'] = {'device_id': fields['device_id'],
+            **{key: value for key, value in fields.items() if key not in {'id', 'device_id'}}}
+        definition['required'] = [key for key in definition.get('required', []) if key != 'id']
+        schema['properties']['port_intents'] = {'type': 'array', 'items': definition, 'minItems': 0, 'maxItems': 1}
+        schema['properties']['port_intents_complete'] = {'type': 'boolean'}
+        schema.setdefault('required', []).extend(['port_intents', 'port_intents_complete'])
+        schema['properties']['ports'].update(minItems=0, maxItems=0)
+        complete = deepcopy({key: value for key, value in schema.items() if key != '$defs'})
+        incomplete = deepcopy(complete)
+        complete['properties']['port_intents_complete'] = {'type': 'boolean', 'enum': [True]}
+        incomplete['properties']['port_intents_complete'] = {'type': 'boolean', 'enum': [False]}
+        incomplete['properties']['port_intents']['minItems'] = 1
+        schema['anyOf'] = [complete, incomplete]
     if port_ids:
         keyed_selection('ports', 'port_parameters', 'id', port_ids,
                         ('parameters', 'rationale', 'field_references'))
@@ -373,7 +370,7 @@ def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=
         'inventory_choices': ('quantity', 'device_type', 'function_hosts'),
         'functions': ('function_hosts',), 'ReferenceFunction': ('function_hosts',),
         'functions_by_fact': ('function_hosts',),
-        'ports': ('ports',), 'ReferencePort': ('ports',), 'port_parameters': ('ports',),
+        'ports': ('ports',), 'ReferencePort': ('ports',), 'port_parameters': ('ports',), 'port_intents': ('ports',),
         'measurements': ('measurements',), 'ReferenceMeasurement': ('measurements',),
         'commands': ('commands',), 'ReferenceCommand': ('commands',),
         'communication': ('communication',), 'ReferenceCommunication': ('communication',),
@@ -425,6 +422,39 @@ def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=
 
     bound_choices(schema)
     return schema
+
+
+def _reference_port_page_complete(intents, complete):
+    """Bound one reply, never the total required physical connections."""
+    if (type(complete) is not bool or not isinstance(intents, list)
+            or len(intents) > 1 or (not intents and not complete)):
+        raise ValueError('Portfortsetzung benötigt höchstens eine neue Portabsicht und eine ausdrückliche '
+                         'Vollständigkeitsentscheidung; eine leere unvollständige Antwort macht keinen Fortschritt.')
+    return complete
+
+
+def _reference_expand_port_intents(existing_ports, intents, device_ids):
+    """Assign new bookkeeping IDs without changing any native port decision."""
+    from copy import deepcopy
+    from hashlib import sha256
+    if not isinstance(intents, list) or any(not isinstance(row, dict) for row in intents):
+        raise ValueError('Neue Portabsichten benötigen eine Liste vollständiger Anschlussentscheidungen.')
+    used = {row['id'] for row in existing_ports}
+    result = []
+    for row in intents:
+        if 'id' in row:
+            raise ValueError('Neue native Portabsichten dürfen keine Port-ID vorgeben.')
+        owner = row.get('device_id')
+        if not isinstance(owner, str) or owner not in device_ids:
+            raise ValueError('Die IO-Stufe enthält Daten eines nicht ausgewählten Teilnehmers.')
+        prefix = 'port-' + sha256(owner.encode('utf-8')).hexdigest()[:24] + '-'
+        ordinal = 1
+        while prefix + str(ordinal) in used:
+            ordinal += 1
+        identity = prefix + str(ordinal)
+        used.add(identity)
+        result.append({'id': identity, **deepcopy(row)})
+    return result
 
 
 def _reference_expand_inventory_bindings(devices, proposed, bindings, *, inventory_target=None):
@@ -1367,7 +1397,7 @@ class LocalEngineeringReasoner:
                               'Jede Auswahl in rationale mit einem kurzen fachlichen Satz und höchstens 240 Zeichen begründen; '
                               'Quellenbindungen und technische Entscheidungen vollständig in ihren eigenen Feldern erhalten. '
                               'Echte offene Auslegung explizit unresolved halten. '
-                              + ('Zunächst ausschließlich konkrete Portabsicht planen: parameters bleibt {}. Die folgende eigene Parameterstufe legt jeden Anschluss aus; diese Zwischenstufe ist keine vollständige Prüfung. ' if port_intent else '')
+                              + ('Zunächst ausschließlich konkrete Portabsicht über port_intents statt ports planen: Teilnehmer und alle technischen Felder vollständig wählen, aber keine id vorgeben. Je Antwort höchstens EINEN noch fehlenden physischen Anschluss planen. Vorhandene Anschlüsse in current_candidate.ports erhalten; weitere notwendige Anschlüsse mit port_intents_complete=false für die normale nächste Antwort offenhalten. port_intents_complete bewertet alle ausgewählten Teilnehmer und ist erst true, wenn sämtliche benötigten Anschlüsse geplant sind. Leeres port_intents ist nur mit true zulässig. Die Gesamtzahl benötigter Anschlüsse ist durch diese Antwortaufteilung nicht begrenzt. Keine bereits geplanten Anschlüsse erneut deklarieren; technisch identische parallele Anschlüsse nur bei tatsächlich weiterem physischem Bedarf. Die Begründung kurz und fachlich konkret formulieren. NIS vergibt anschließend eindeutige neue Port-IDs; bestehende Ports bleiben unverändert. parameters bleibt {}. Die folgende eigene Parameterstufe legt jeden Anschluss aus; diese Zwischenstufe ist keine vollständige Prüfung. ' if port_intent else '')
                               + ('Ausschließlich IO für alle angeforderten vorhandenen Teilnehmer-IDs liefern; keine anderen Geräte, Anschlüsse, Messgrößen oder Befehle überschreiben. Teilnehmer und ihre IO getrennt erhalten. Alle Nachbarteilnehmer bleiben als Planungskontext sichtbar. ' if device_ids else '')
                               + ('Jeder inventory_choices-Eintrag beginnt mit choice_kind: EXISTING für eine vorhandene ID-Bindung, NEW_<Geräteart> für wirklich neue Hardware (z.B. NEW_SENSOR passend zu kind=SENSOR). Bei EXISTING danach ausschließlich device_id, source_fact_ids, rationale und field_references auswählen; niemals id/name/kind eines alten Geräts neu schreiben. NIS erhält sämtliche unveränderlichen Gerätedaten und ergänzt nur die Quellen-/Typ-/Referenzbindung. Bei NEW_<Geräteart> danach die vollständigen neuen Gerätedaten liefern, niemals eine vorhandene ID. choice_kind wird nur intern geprüft und nicht als Modellfeld gespeichert. Die gemeinsame Stufengrenze gilt für alle Einträge zusammen. ' if inventory_stage and derivation_fact_ids is None else '')
                               + ('Nur ein echtes Gerät oder eine vorhandene Gerätebindung für den angeforderten Quellenbefund/das Typmitglied liefern, keine zweite Platzhalterzeile. source_fact_ids enthält ausschließlich diese eine FactID; source_member_bindings neuer Geräte ausschließlich das angeforderte wörtliche Mitglied. Bei vorhandenen Geräten setzt NIS die angeforderte Typbindung selbst. Funktional zusätzlich notwendige Hardware wird danach in einem eigenen Schritt geplant. ' if inventory_target else '')
@@ -1454,8 +1484,7 @@ class LocalEngineeringReasoner:
                            'format': _reference_schema_for_stage(prepared, allowed, port_ids=port_ids,
                                function_ids=function_ids, port_intent=port_intent, device_ids=device_ids,
                                inventory_target=inventory_target, derivation_fact_ids=derivation_fact_ids,
-                               existing_devices=current['devices'] if inventory_stage else (),
-                               existing_ports=current['ports'] if port_intent else ()),
+                               existing_devices=current['devices'] if inventory_stage else ()),
                             'think': False, 'stream': True, 'keep_alive': self.keep_alive,
                            'options': {'temperature': 0, 'num_predict': 8192, 'num_ctx': self.context_tokens}}
                 for attempt in range(2):
@@ -1494,8 +1523,6 @@ class LocalEngineeringReasoner:
                     except httpx.TimeoutException as error:
                         raise ValueError(f'Lokaler Qwen hat die Referenzstufe „{stage}“ innerhalb des '
                             'konfigurierten Zeitlimits nicht abgeschlossen. Kein unvollständiger Entwurf wurde übernommen.') from error
-                    if body.get('done_reason') == 'length':
-                        raise ValueError('Die lokale Referenzantwort wurde an der Ausgabegrenze abgeschnitten. Es wurde kein unvollständiger Entwurf übernommen.')
                     native_content = str((body.get('message') or {}).get('content') or '')
                     raw = native_content.strip()
                     calls.append({'profile': list(profile), 'stage': stage, 'attempt': attempt + 1,
@@ -1509,8 +1536,19 @@ class LocalEngineeringReasoner:
                                   'derivation_fact_ids': list(derivation_fact_ids) if derivation_fact_ids is not None else None,
                                   'prompt_eval_count': body.get('prompt_eval_count'), 'eval_count': body.get('eval_count'),
                                   **{key: body.get(key) for key in ('load_duration', 'prompt_eval_duration', 'eval_duration', 'total_duration')}})
+                    if body.get('done_reason') == 'length':
+                        error = 'Die lokale Referenzantwort wurde an der Ausgabegrenze abgeschnitten. Es wurde kein unvollständiger Entwurf übernommen.'
+                        report_validation(error)
+                        logging.getLogger(__name__).warning('Native reference output truncated: %s', json.dumps({
+                            'stage': stage, 'profile': list(profile), 'attempt': attempt + 1,
+                            'done_reason': body['done_reason'], 'eval_count': body.get('eval_count'),
+                            'prompt_eval_count': body.get('prompt_eval_count'), 'device_ids': list(device_ids),
+                            'response': native_content,
+                            'response_sha256': hashlib.sha256(native_content.encode()).hexdigest()}, ensure_ascii=False))
+                        raise ValueError(error)
                     try:
                         decoded = document_response_json(raw)
+                        port_page_complete = None
                         inventory_complete = decoded.pop('inventory_complete', None) if inventory_stage else None
                         if inventory_stage:
                             if decoded.get('devices', []) != []:
@@ -1518,6 +1556,14 @@ class LocalEngineeringReasoner:
                             decoded['devices'] = _reference_expand_inventory_choices(
                                 current['devices'], decoded.pop('inventory_choices'),
                                 inventory_target=inventory_target)
+                        if port_intent and 'port_intents' in decoded:
+                            if decoded.get('ports', []) != []:
+                                raise ValueError('Neue native Portabsichten ausschließlich über port_intents liefern.')
+                            native_intents = decoded.pop('port_intents')
+                            decoded['ports'] = _reference_expand_port_intents(
+                                current['ports'], native_intents, device_ids)
+                            port_page_complete = _reference_port_page_complete(
+                                native_intents, decoded.pop('port_intents_complete', None))
                         if port_ids:
                             if decoded.get('ports', []) != []:
                                 raise ValueError('Die Parameterstufe darf Portidentität, Teilnehmer, Technologie, Rolle '
@@ -1570,6 +1616,9 @@ class LocalEngineeringReasoner:
                         if inventory_stage:
                             result['inventory_complete'] = inventory_complete
                             calls[-1]['inventory_complete'] = inventory_complete
+                        if port_intent:
+                            result['port_intents_complete'] = port_page_complete if port_page_complete is not None else True
+                            calls[-1]['port_intents_complete'] = result['port_intents_complete']
                         reference_messages = [*deepcopy(payload['messages']), {'role': 'assistant', 'content': native_content}]
                         reference_prompt = deepcopy(prompt)
                         if reference_anchor is None or (context_rebased and len(full_messages) == 2):
@@ -1675,10 +1724,13 @@ class LocalEngineeringReasoner:
                         io_groups.setdefault(device['kind'], []).append(device['id'])
                 for ids in io_groups.values():
                     for start in range(0, len(ids), 4):
-                        intents = await infer('Portabsicht der ausgewählten Teilnehmer', {'ports'},
-                            feedback=feedback, port_intent=True, device_ids=tuple(ids[start:start + 4]))
-                        for field in ('ports', 'unresolved'):
-                            current[field].extend(intents[field])
+                        while True:
+                            intents = await infer('Portabsicht der ausgewählten Teilnehmer', {'ports'},
+                                feedback=feedback, port_intent=True, device_ids=tuple(ids[start:start + 4]))
+                            for field in ('ports', 'unresolved'):
+                                current[field].extend(intents[field])
+                            if intents['port_intents_complete']:
+                                break
                 parameter_groups = {}
                 for port in current['ports']:
                     parameter_groups.setdefault(port['technology'], []).append(port['id'])

@@ -1,0 +1,46 @@
+--- 
++++ 
+@@ -15,6 +15,25 @@
+ from urllib.parse import urlsplit
+ from urllib.request import build_opener, HTTPCookieProcessor, Request
+ from uuid import uuid4
++
++
++def wait_for_process_guard(path):
++    """Wait before inference for a GO bound to this exact driver instance."""
++    import os
++    path = Path(path)
++    assert not path.exists(), 'A process-guard GO must never be reused.'
++    nonce = uuid4().hex
++    waiting = path.with_suffix(path.suffix + '.waiting.json')
++    waiting.write_text(json.dumps({'pid': os.getpid(), 'nonce': nonce,
++        'at_utc': datetime.now(timezone.utc).isoformat()}) + '\n', encoding='utf-8')
++    print(json.dumps({'status': 'WAITING_FOR_EXACT_PROCESS_GUARD', 'pid': os.getpid(),
++                      'waiting': str(waiting.resolve())}), flush=True)
++    deadline = time.monotonic() + 120
++    while not path.exists():
++        assert time.monotonic() < deadline, 'No exact-process guard GO; no streamed request sent.'
++        time.sleep(0.2)
++    go = json.loads(path.read_text(encoding='utf-8'))
++    assert go['pid'] == os.getpid() and go['nonce'] == nonce, 'GO belongs to another driver instance.'
+ 
+ 
+ def verify_paused_reference_resume(pending, state, checkpoint_path, *, now=None):
+@@ -57,6 +76,8 @@
+ parser = argparse.ArgumentParser(description=__doc__)
+ parser.add_argument('--state', type=Path, required=True)
+ parser.add_argument('--stage', choices=['intake', 'plan-reference'], required=True)
++parser.add_argument('--process-guard-go', type=Path,
++                    help='Optional fresh PID/nonce GO before the existing streamed POST; no model/API limit change.')
+ parser.add_argument('--resume-checkpoint', type=Path,
+                     help='Hash-bound explicit user pause and isolated app restart; never a live-run override.')
+ args = parser.parse_args()
+@@ -82,6 +103,8 @@
+     args.state.write_text(json.dumps(state, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
+ 
+ def request(path, payload=None, headers=None, stream=False):
++    if stream and args.process_guard_go:
++        wait_for_process_guard(args.process_guard_go)
+     began = time.monotonic()
+     raw = None if payload is None else json.dumps(payload, ensure_ascii=False).encode('utf-8')
+     req = Request(BASE + path, data=raw,

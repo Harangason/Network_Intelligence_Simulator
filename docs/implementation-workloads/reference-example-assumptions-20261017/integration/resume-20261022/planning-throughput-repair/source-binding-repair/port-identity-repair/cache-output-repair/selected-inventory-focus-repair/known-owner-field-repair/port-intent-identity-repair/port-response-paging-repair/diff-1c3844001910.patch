@@ -1,0 +1,21 @@
+--- before/backend/tests/test_reference_port_intent_allocation.py
++++ after/backend/tests/test_reference_port_intent_allocation.py
+@@ -27,13 +27,16 @@
+ 
+ 
+ def native(*values):
+-    return {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'port_intents': list(values)}
++    return {**intake.ReferenceDesignProposal().model_dump(mode='json'), 'port_intents': list(values),
++            'port_intents_complete': True}
+ 
+ 
+ def test_native_port_intent_has_no_model_owned_identity():
+     prepared, schema = prepared_schema()
+     value = native(intent(), intent('owner-b'))
+-    Draft202012Validator(schema).validate(value)
++    for index, row in enumerate(value['port_intents']):
++        Draft202012Validator(schema).validate({**native(row), 'port_intents_complete': index == 1})
++    assert not Draft202012Validator(schema).is_valid(value)
+     assert schema['properties']['ports']['maxItems'] == 0
+     assert 'id' not in schema['properties']['port_intents']['items']['properties']
+     rows = allocate([], value['port_intents'])

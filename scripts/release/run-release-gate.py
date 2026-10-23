@@ -55,6 +55,16 @@ def verification_manifest():
     return hashlib.sha256(json.dumps(hashes, sort_keys=True).encode()).hexdigest()
 
 
+def local_ai_model_environment():
+    """Forward explicit existing configuration without inventing model defaults."""
+    return {name: value for name in ('LOCAL_AI_MODEL', 'LOCAL_AI_FAST_MODEL')
+            if (value := os.environ.get(name, '').strip())}
+
+
+def local_ai_model_arguments(environment):
+    return [argument for name, value in environment.items() for argument in ('-e', f'{name}={value}')]
+
+
 def main():
     spec = importlib.util.spec_from_file_location('gate_delivery', ROOT / 'scripts/release-and-deploy.py')
     delivery = importlib.util.module_from_spec(spec)
@@ -93,9 +103,11 @@ def run_gate(delivery):
     if args.output.resolve() != (ROOT / 'backend/test-output/release-gates').resolve() and args.output.exists():
         paths.extend(args.output.rglob('receipt.json'))
     ai_url = os.environ.get('NIS_E2E_LOCAL_AI_BASE_URL', 'http://127.0.0.1:1/v1').strip()
+    model_environment = local_ai_model_environment()
     existing = delivery.prepared_stack(docker, paths, initial_source_sha256, initial_commit_id,
                                       prepare=args.prepare, keep=args.keep, ai_url=ai_url,
-                                      image=args.image, development_base=args.development_base)
+                                      image=args.image, development_base=args.development_base,
+                                      model_environment=model_environment)
     if existing:
         current = info.build_manifest()
         if (current['source_sha256'], current['commit_id']) != (initial_source_sha256, initial_commit_id):
@@ -114,6 +126,7 @@ def run_gate(delivery):
     receipt = {'schema_version': 1, 'status': 'RUNNING', 'gate_pid': os.getpid(), 'checks': [], 'containers': names,
                'initial_source_sha256': initial_source_sha256, 'initial_commit_id': initial_commit_id,
                'verification_sha256': verification_manifest()}
+    receipt['local_ai_model_environment'] = model_environment
     receipt['storage'] = {'retention': 'PROTECTED_PENDING_FEATURE_AUDIT',
                           'cache_policy': CACHE_POLICY, 'builder': args.builder,
                           'automatic_image_cleanup': False}
@@ -209,6 +222,7 @@ def run_gate(delivery):
                 '-e', 'DATABASE_URL', '-e', 'NETWORKIS_ALLOW_NON_CANONICAL_ROOT=1', '-e', 'NUMERIC_ACCELERATOR=cpu',
                 '-e', 'NIS_DATA_DIR=/app/var/data', '-e', 'NIS_RUNTIME_DIR=/app/var/runtime', '-e', 'SIMULATION_EXECUTOR=thread',
                 '-e', 'AI_PROVIDER=hybrid-demand', '-e', 'CLOUD_ESCALATION=never', '-e', f'LOCAL_AI_BASE_URL={local_ai_base_url}',
+                *local_ai_model_arguments(model_environment),
                 '-p', f'127.0.0.1:{app_port}:13500', '--mount', 'type=volume,source='+names['runtime']+',target=/app/var/data', image_id)
         created.append(('container', names['app']))
         port = json.loads(control('inspect', names['app']))[0]['NetworkSettings']['Ports']['13500/tcp'][0]['HostPort']

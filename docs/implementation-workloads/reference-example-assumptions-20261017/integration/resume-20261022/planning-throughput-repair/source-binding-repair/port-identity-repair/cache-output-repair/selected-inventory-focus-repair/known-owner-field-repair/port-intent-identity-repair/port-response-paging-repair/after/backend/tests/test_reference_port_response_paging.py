@@ -1,0 +1,100 @@
+"""Authored response-size and continuation regressions; no Original acceptance."""
+from copy import deepcopy
+import hashlib
+import json
+import logging
+
+import pytest
+from jsonschema import Draft202012Validator
+
+from backend.nis.agent.orchestration import local_reasoner as reasoner
+from backend.tests.test_reference_port_intent_allocation import prepared_schema, intent, native, allocate
+from backend.tests.test_reference_reasoner import complete_design, reasoner_with_transport, run_reference
+
+
+def page(*values, complete=True):
+    return {**native(*values), 'port_intents_complete': complete}
+
+
+def test_native_reply_is_bounded_even_when_many_ports_are_required():
+    _, schema = prepared_schema()
+    oversized = page(*(intent() for _ in range(20)))
+    assert not Draft202012Validator(schema).is_valid(oversized)
+    assert schema['properties']['port_intents']['maxItems'] == 1
+
+
+def test_native_completion_is_explicit_and_empty_incomplete_is_impossible():
+    _, schema = prepared_schema()
+    validator = Draft202012Validator(schema)
+    missing = native(intent())
+    missing.pop('port_intents_complete', None)
+    assert not validator.is_valid(missing)
+    assert not validator.is_valid(page(complete=False))
+    validator.validate(page(complete=True))
+    validator.validate(page(intent(), complete=False))
+    validator.validate(page(intent(), complete=True))
+
+
+@pytest.mark.parametrize('values,complete', [([], False), ([intent()], None), ([intent()], 1), ([intent(), intent()], True)])
+def test_bypassed_decoder_cannot_close_or_stall_an_invalid_page(values, complete):
+    validate = getattr(reasoner, '_reference_port_page_complete', None)
+    assert callable(validate), 'The private completion decision also needs runtime validation.'
+    with pytest.raises(ValueError):
+        validate(values, complete)
+
+
+def test_more_than_one_native_batch_preserves_all_ports_without_global_cap():
+    prepared, schema = prepared_schema()
+    public_before = deepcopy(reasoner._reference_schema_for_stage(prepared, {'ports'}))
+    rows = []
+    expected = [intent('owner-a', 'can') for _ in range(17)]
+    for index, value in enumerate(expected):
+        value['network_scope'] = f'authored-segment-{index}'
+        wire = page(value, complete=index == len(expected) - 1)
+        Draft202012Validator(schema).validate(wire)
+        rows.extend(allocate(rows, wire['port_intents']))
+    assert len(rows) == 17 and len({row['id'] for row in rows}) == 17
+    assert [{key: value for key, value in row.items() if key != 'id'} for row in rows] == expected
+    assert reasoner._reference_schema_for_stage(prepared, {'ports'}) == public_before
+
+
+def test_actual_planner_keeps_17_parallel_authored_ports_across_pages(monkeypatch):
+    def design(prepared):
+        value = complete_design(prepared)
+        for index in range(14):
+            value['ports'].append({**deepcopy(value['ports'][0]), 'id': f'extra-{index}',
+                                   'network_scope': f'parallel-{index}'})
+        return value
+    instance, prepared, observed = reasoner_with_transport(monkeypatch, design_factory=design)
+    result = run_reference(instance, prepared)
+    pages = [row for row in observed if row['planning_stage'] == 'Portabsicht der ausgewählten Teilnehmer']
+    assert len(pages) == 17
+    assert len(result['proposal']['ports']) == 17
+    assert len({row['id'] for row in result['proposal']['ports']}) == 17
+    assert result['source_evidence']['source_text'] == prepared['source_evidence']['source_text']
+    assert result['canonical_writes'] is False
+
+
+def test_length_error_retains_exact_raw_diagnostic_and_still_fails_closed(monkeypatch, caplog):
+    from backend.nis.engineering.goal_execution.progress import sink
+    instance, prepared, observed = reasoner_with_transport(monkeypatch, truncate=True)
+    events = []
+    token = sink.set(events.append)
+    try:
+        with caplog.at_level(logging.WARNING):
+            with pytest.raises(ValueError, match='abgeschnitten'):
+                run_reference(instance, prepared)
+    finally:
+        sink.reset(token)
+    entries = [record for record in caplog.records if record.getMessage().startswith('Native reference output truncated: ')]
+    assert len(entries) == 1
+    diagnostic = json.loads(entries[0].getMessage().split(': ', 1)[1])
+    assert diagnostic['done_reason'] == 'length'
+    assert diagnostic['eval_count'] == 500
+    assert diagnostic['response_sha256'] == hashlib.sha256(diagnostic['response'].encode()).hexdigest()
+    validation = [row['metadata'] for row in events
+                  if row.get('metadata', {}).get('source') == 'document_reference_validation']
+    assert len(validation) == 1
+    assert validation[0]['completed_calls'] == validation[0]['rejected_calls'] == 1
+    assert validation[0]['validated_calls'] == 0 and validation[0]['canonical_writes'] is False
+    assert len(observed) == 1

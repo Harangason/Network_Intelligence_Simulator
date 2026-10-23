@@ -1,0 +1,22 @@
+--- before/docs/implementation-workloads/reference-example-assumptions-20261017/integration/resume-20261021/inventory-binding-cardinality-repair/progress-decoder-repair/retire_obsolete_stack.py
++++ after/docs/implementation-workloads/reference-example-assumptions-20261017/integration/resume-20261021/inventory-binding-cardinality-repair/progress-decoder-repair/retire_obsolete_stack.py
+@@ -47,6 +47,8 @@
+ parser.add_argument('--capture', default=CAPTURE)
+ parser.add_argument('--verified-image-archive', type=Path,
+                     help='Existing recoverable image archive; all identity/layer hashes are verified again.')
++parser.add_argument('--retention-evidence-dir', type=Path,
++                    help='Explicit newer verified host-tool evidence; historical evidence remains unchanged.')
+ args = parser.parse_args()
+ if args.receipt:
+     RECEIPT = args.receipt.resolve(strict=True)
+@@ -163,7 +165,9 @@
+ 
+ def run():
+     assert not (OUT / 'retirement.json').exists(), 'Never repeat completed retirement.'
+-    host = ROOT / 'docs/implementation-workloads/test-stack-retention-20261021'
++    host = (args.retention_evidence_dir.resolve(strict=True) if args.retention_evidence_dir else
++            ROOT / 'docs/implementation-workloads/test-stack-retention-20261021')
++    assert host.is_relative_to((ROOT / 'docs/implementation-workloads').resolve())
+     work = read(host / 'workload.json')
+     assert work['status'] == 'COMPLETED'
+     assert read(host / 'live-tooling-verification.json')['status'] == 'PASSED'

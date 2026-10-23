@@ -1,0 +1,35 @@
+{
+  "at_utc": "2026-10-23T10:29:29.650723+00:00",
+  "first_failing_layer": "Canonical isolated release stack drops configured model environment",
+  "evidence": [
+    {
+      "path": "scripts/release/run-release-gate.py",
+      "lines": [
+        207,
+        212
+      ],
+      "finding": "docker run forwards only LOCAL_AI_BASE_URL, no explicit LOCAL_AI_MODEL or LOCAL_AI_FAST_MODEL."
+    },
+    {
+      "path": "backend/nis/agent/orchestration/local_reasoner.py",
+      "lines": [
+        1030,
+        1031,
+        1897,
+        1898
+      ],
+      "finding": "Primary defaults to qwen3.8:27b, fast selector defaults to llama3.1:8b and certain wizard intents select it."
+    },
+    {
+      "path": "docker-compose.networkis.yml",
+      "lines": [
+        47,
+        48
+      ],
+      "finding": "Production already supports the existing LOCAL_AI_MODEL/LOCAL_AI_FAST_MODEL environment keys; no additional model registry needed."
+    }
+  ],
+  "actual_nonqwen_model_request_sent_by_this_task": false,
+  "human_constraint": "Only local qwen3.8:27b",
+  "required_fix": "Forward explicitly configured existing two model environment keys; bind retained stack reuse to these actual requested values; retain receipt evidence. Defaults and model/provider/context/output/read-timeout unchanged."
+}

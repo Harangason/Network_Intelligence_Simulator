@@ -1,0 +1,33 @@
+--- 
++++ 
+@@ -357,7 +357,12 @@
+     assert all(row['parameters'] == {'bitrate_bps': 500000} for row in result['proposal']['ports'])
+     parameter_stages = [row for row in observed if row['port_ids_for_this_stage']]
+     assert len(parameter_stages) == 1
+-    assert parameter_stages[0]['port_ids_for_this_stage'] == ['PC', 'PS', 'PA']
++    before_parameters = parameter_stages[0]['current_candidate']['ports']
++    expected_ids = [row['id'] for row in before_parameters]
++    assert len(expected_ids) == len(set(expected_ids)) == 3
++    assert parameter_stages[0]['port_ids_for_this_stage'] == expected_ids
++    assert {row['device_id'] for row in before_parameters} == {
++        row['id'] for row in parameter_stages[0]['current_candidate']['devices'] if row['kind'] != 'PHYSICAL_CONTEXT'}
+     for row in observed:
+         assert row['original_source'] == prepared['source_evidence']['source_text']
+         assert row['reference_sources'] == prepared['reference_sources']
+@@ -372,7 +377,15 @@
+         else:
+             assert schemas is None
+     # Every peer remains present when the exact selected set is configured.
+-    assert {row['id'] for row in parameter_stages[0]['current_candidate']['ports']} == {'PC', 'PS', 'PA'}
++    # NIS_PROFILE_IDENTITY normalizes the final opaque IDs after these stages.
++    before_names = {row['id']: row['name'] for row in parameter_stages[0]['current_candidate']['devices']}
++    after_names = {row['id']: row['name'] for row in result['proposal']['devices']}
++    assert len(set(before_names.values())) == len(before_names)
++    assert len({row['id'] for row in result['proposal']['ports']}) == 3
++    assert {(after_names[row['device_id']], row['technology'], row['role'], row['network_scope'])
++            for row in result['proposal']['ports']} == {
++        (before_names[row['device_id']], row['technology'], row['role'], row['network_scope'])
++        for row in before_parameters}
+     function_stages = [row for row in observed if row['function_fact_ids_for_this_stage']]
+     expected = {key for key, fact in prepared['facts'].items() if fact['kind'] == 'FUNCTION'}
+     assert {key for row in function_stages for key in row['function_fact_ids_for_this_stage']} == expected

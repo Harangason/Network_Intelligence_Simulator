@@ -1,0 +1,36 @@
+--- 
++++ 
+@@ -221,14 +221,32 @@
+         return value
+     instance, prepared, observed = reasoner_with_transport(monkeypatch, design_factory=several_sensors)
+     result = run_reference(instance, prepared)
+-    expected = {'PC', 'PS', 'PA', 'PS2', 'PS3', 'PS4', 'PS5'}
+     parameter_stages = [row for row in observed if row['port_ids_for_this_stage']]
++    before_parameters = parameter_stages[0]['current_candidate']['ports']
++    expected = {row['id'] for row in before_parameters}
++    assert len(expected) == len(before_parameters) == 7
++    assert {row['device_id'] for row in before_parameters} == {
++        row['id'] for row in parameter_stages[0]['current_candidate']['devices'] if row['kind'] != 'PHYSICAL_CONTEXT'}
+     assert [len(row['port_ids_for_this_stage']) for row in parameter_stages] == [4, 3]
+     assert set().union(*(set(row['port_ids_for_this_stage']) for row in parameter_stages)) == expected
+     assert all({port['id'] for port in row['current_candidate']['ports']} == expected for row in parameter_stages)
+     previous = set(parameter_stages[0]['port_ids_for_this_stage'])
+     assert all(port['parameters'] == {'bitrate_bps': 500000}
+                for port in parameter_stages[1]['current_candidate']['ports'] if port['id'] in previous)
++    identity_fields = ('id', 'device_id', 'technology', 'role', 'network_scope')
++    identities = {tuple(row[key] for key in identity_fields) for row in before_parameters}
++    assert all({tuple(row[key] for key in identity_fields) for row in stage['current_candidate']['ports']} == identities
++               for stage in parameter_stages)
++    # Final profile normalization legitimately replaces device/port IDs.
++    # Compare exact physical identities through the unchanged unique names.
++    before_names = {row['id']: row['name'] for row in parameter_stages[0]['current_candidate']['devices']}
++    after_names = {row['id']: row['name'] for row in result['proposal']['devices']}
++    assert len(set(before_names.values())) == len(before_names)
++    assert len({row['id'] for row in result['proposal']['ports']}) == 7
++    assert {(after_names[row['device_id']], row['technology'], row['role'], row['network_scope'])
++            for row in result['proposal']['ports']} == {
++        (before_names[row['device_id']], row['technology'], row['role'], row['network_scope'])
++        for row in before_parameters}
+     sensors = [row for row in observed if row['output_fields_for_this_stage'] == ['measurements']]
+     assert [len(row['device_ids_for_this_stage']) for row in sensors] == [4, 1]
+     assert len(result['proposal']['ports']) == 7 and len(result['proposal']['measurements']) == 5

@@ -29,9 +29,15 @@ repair.add_argument('--selected-identity-repair-dir', type=Path)
 repair.add_argument('--cache-output-repair-dir', type=Path)
 repair.add_argument('--inventory-focus-repair-dir', type=Path)
 repair.add_argument('--known-owner-field-repair-dir', type=Path)
+repair.add_argument('--port-intent-identity-repair-dir', type=Path)
+repair.add_argument('--port-response-paging-repair-dir', type=Path)
 parser.add_argument('--destination-prefix', default='native-waitress-lifecycle')
 args = parser.parse_args()
-known_owner_dir = args.known_owner_field_repair_dir.resolve() if args.known_owner_field_repair_dir else None
+port_response_dir = args.port_response_paging_repair_dir.resolve() if args.port_response_paging_repair_dir else None
+port_intent_dir = (port_response_dir.parent if port_response_dir else
+                   args.port_intent_identity_repair_dir.resolve() if args.port_intent_identity_repair_dir else None)
+known_owner_dir = (port_intent_dir.parent if port_intent_dir else
+                   args.known_owner_field_repair_dir.resolve() if args.known_owner_field_repair_dir else None)
 inventory_focus_dir = (known_owner_dir.parent if known_owner_dir else
                        args.inventory_focus_repair_dir.resolve() if args.inventory_focus_repair_dir else None)
 cache_output_dir = (inventory_focus_dir.parent if inventory_focus_dir else
@@ -52,12 +58,16 @@ receipt = json.loads(args.receipt.read_text(encoding='utf-8'))
 assert re.fullmatch('[a-z0-9-]+', args.destination_prefix)
 repair_dir = source_binding_dir or args.context_repair_dir or args.inventory_cardinality_repair_dir or args.inventory_progress_repair_dir or args.context_cache_progress_repair_dir or args.launcher_repair_dir or args.fresh_id_repair_dir or args.throughput_repair_dir
 evidence_dir = repair_dir.resolve() if repair_dir else OUT
-transfer_evidence_dir = known_owner_dir or inventory_focus_dir or cache_output_dir or selected_identity_dir or evidence_dir
+transfer_evidence_dir = port_response_dir or port_intent_dir or known_owner_dir or inventory_focus_dir or cache_output_dir or selected_identity_dir or evidence_dir
 historical_dir = args.throughput_repair_dir.resolve() if source_binding_dir else evidence_dir
 assert evidence_dir.is_relative_to(BASE.resolve())
 assert transfer_evidence_dir.is_relative_to(BASE.resolve())
 fresh_id_dir = (BASE / 'resume-20261021/inventory-binding-cardinality-repair/progress-decoder-repair/context-cache-progress-repair/launcher-repair/fresh-id-decoder-repair') if args.throughput_repair_dir else evidence_dir
 identity = json.loads((transfer_evidence_dir / ('current-input-identity.json' if repair_dir else 'waitress-candidate-input-identity.json')).read_text(encoding='utf-8'))
+port_intent_identity = (json.loads((port_intent_dir / 'current-input-identity.json').read_text())
+                        if port_response_dir else identity)
+known_owner_identity = (json.loads((known_owner_dir / 'current-input-identity.json').read_text())
+                        if port_intent_dir else identity)
 inventory_focus_identity = (json.loads((inventory_focus_dir / 'current-input-identity.json').read_text())
                             if known_owner_dir else identity)
 cache_output_identity = (json.loads((cache_output_dir / 'current-input-identity.json').read_text())
@@ -79,13 +89,25 @@ def sha(raw):
 def known_owner_baseline_bytes(name):
     """Bind the parent repair to its exact pre-change source, not today's file."""
     before = known_owner_dir / 'before' / name if known_owner_dir else None
+    return before.read_bytes() if before and before.is_file() else port_intent_baseline_bytes(name)
+
+
+def port_intent_baseline_bytes(name):
+    """Preserve the actual parent image/operator bytes across the child repair."""
+    before = port_intent_dir / 'before' / name if port_intent_dir else None
+    return before.read_bytes() if before and before.is_file() else port_response_baseline_bytes(name)
+
+
+def port_response_baseline_bytes(name):
+    """Read the exact prior port-identity image/operator, never today's child repair."""
+    before = port_response_dir / 'before' / name if port_response_dir else None
     return (before if before and before.is_file() else ROOT / name).read_bytes()
 
 
 def focus_baseline_bytes(name):
     """Read the immutable prior source, never relabel it as the new app."""
     before = inventory_focus_dir / 'before' / name if inventory_focus_dir else None
-    return (before if before and before.is_file() else ROOT / name).read_bytes()
+    return before.read_bytes() if before and before.is_file() else port_intent_baseline_bytes(name)
 
 
 def context_baseline_bytes(name):
@@ -444,27 +466,81 @@ if known_owner_dir:
     proof = json.loads((known_owner_dir / 'source-scope-proof.json').read_text())
     assert proof['status'] == 'PASS_SOURCE_SCOPE_ONLY'
     assert proof['canonical_before']['source_sha256'] == inventory_focus_identity['source_sha256']
-    assert {key: proof['canonical_after'][key] for key in identity} == identity
+    assert {key: proof['canonical_after'][key] for key in known_owner_identity} == known_owner_identity
     assert proof['changed_application_files'] == ['backend/nis/agent/orchestration/local_reasoner.py']
     assert proof['only_private_schema_factory_AST_changed'] is True
     assert proof['public_gates_and_full_planner_AST_exact'] is True
     previous_files = json.loads((inventory_focus_dir / 'actual-host-source-files.json').read_text())['files']
     current_files = json.loads((known_owner_dir / 'actual-host-source-files.json').read_text())['files']
     for entries, expected in ((previous_files, inventory_focus_identity['source_sha256']),
-                              (current_files, identity['source_sha256'])):
+                              (current_files, known_owner_identity['source_sha256'])):
         assert sha(json.dumps(entries, sort_keys=True, separators=(',', ':')).encode()) == expected
     assert set(previous_files) == set(current_files) and len(current_files) == 2313
     assert [name for name in sorted(current_files) if current_files[name] != previous_files[name]] == proof['changed_application_files']
     for name in proof['changed_application_files']:
         assert sha(known_owner_baseline_bytes(name).replace(b'\r\n', b'\n')) == previous_files[name]
-        assert sha((ROOT / name).read_bytes().replace(b'\r\n', b'\n')) == current_files[name]
+        assert sha(port_intent_baseline_bytes(name).replace(b'\r\n', b'\n')) == current_files[name]
     freeze = json.loads((known_owner_dir / 'candidate-prepare-freeze.json').read_text())
-    assert {key: freeze[key] for key in identity} == identity
+    assert {key: freeze[key] for key in known_owner_identity} == known_owner_identity
     assert freeze['targeted_regression_cases'] >= 9 and freeze['targeted_regressions_passed'] is True
     assert freeze['fresh_native_acceptance_claimed'] is False
     for saved in freeze['validation_evidence']:
         assert sha(Path(saved['path']).read_bytes()) == saved['sha256']
     result = json.loads((known_owner_dir / 'candidate-prepare-result.json').read_text())
+    assert result['exit_code'] == 0 and result['source_sha256'] == known_owner_identity['source_sha256']
+    for name, digest in freeze['frozen_affected_files'].items():
+        assert sha(port_intent_baseline_bytes(name)) == digest
+        frozen[name] = digest
+if port_intent_dir:
+    proof = json.loads((port_intent_dir / 'source-scope-proof.json').read_text())
+    assert proof['allowed_app_changes'] == ['backend/nis/agent/orchestration/local_reasoner.py']
+    assert proof['public_validation_unchanged'] and proof['model_provider_context_output_timeout_unchanged']
+    previous_files = json.loads((known_owner_dir / 'actual-host-source-files.json').read_text())['files']
+    current_files = json.loads((port_intent_dir / 'actual-host-source-files.json').read_text())['files']
+    for entries, expected in ((previous_files, known_owner_identity['source_sha256']),
+                              (current_files, port_intent_identity['source_sha256'])):
+        assert sha(json.dumps(entries, sort_keys=True, separators=(',', ':')).encode()) == expected
+    assert set(previous_files) == set(current_files) and len(current_files) == 2313
+    assert [name for name in sorted(current_files) if current_files[name] != previous_files[name]] == proof['allowed_app_changes']
+    for name in proof['allowed_app_changes']:
+        assert sha(port_intent_baseline_bytes(name).replace(b'\r\n', b'\n')) == previous_files[name]
+        assert sha(port_response_baseline_bytes(name).replace(b'\r\n', b'\n')) == current_files[name]
+    freeze = json.loads((port_intent_dir / 'candidate-prepare-freeze.json').read_text())
+    assert {key: freeze[key] for key in port_intent_identity} == port_intent_identity
+    assert freeze['targeted_regressions_passed'] and freeze['native_grammar_passed']
+    assert freeze['fresh_native_acceptance_claimed'] is False
+    for saved in freeze['validation_evidence']:
+        assert sha(Path(saved['path']).read_bytes()) == saved['sha256']
+    result = json.loads((port_intent_dir / 'candidate-prepare-result.json').read_text())
+    assert result['exit_code'] == 0 and result['source_sha256'] == port_intent_identity['source_sha256']
+    for name, digest in freeze['frozen_affected_files'].items():
+        assert sha(port_response_baseline_bytes(name)) == digest
+        frozen[name] = digest
+if port_response_dir:
+    proof = json.loads((port_response_dir / 'source-scope-proof.json').read_text())
+    assert proof['unmodified_module_AST_outside_private_schema_and_plan_method']
+    assert proof['all_previous_non_length_raise_ASTs_preserved'] and proof['provider_options_AST_exact']
+    assert proof['actual_frozen_image_source_files_compared'] == 2313
+    assert proof['all_other2312_frozen_source_files_exact']
+    previous_files = json.loads((port_intent_dir / 'actual-host-source-files.json').read_text())['files']
+    current_files = json.loads((port_response_dir / 'actual-host-source-files.json').read_text())['files']
+    for entries, expected in ((previous_files, port_intent_identity['source_sha256']),
+                              (current_files, identity['source_sha256'])):
+        assert sha(json.dumps(entries, sort_keys=True, separators=(',', ':')).encode()) == expected
+    assert set(previous_files) == set(current_files) and len(current_files) == 2313
+    assert [name for name in sorted(current_files) if current_files[name] != previous_files[name]] == ['backend/nis/agent/orchestration/local_reasoner.py']
+    for change in proof['actual_changed_application_files']:
+        name = change['path']
+        assert change['before'] == previous_files[name] and change['after'] == current_files[name]
+        assert sha(port_response_baseline_bytes(name).replace(b'\r\n', b'\n')) == previous_files[name]
+        assert sha((ROOT / name).read_bytes().replace(b'\r\n', b'\n')) == current_files[name]
+    freeze = json.loads((port_response_dir / 'candidate-prepare-freeze.json').read_text())
+    assert {key: freeze[key] for key in identity} == identity
+    assert freeze['targeted_regressions_passed'] and freeze['native_grammar_passed']
+    assert freeze['fresh_native_acceptance_claimed'] is False
+    for saved in freeze['validation_evidence']:
+        assert sha(Path(saved['path']).read_bytes()) == saved['sha256']
+    result = json.loads((port_response_dir / 'candidate-prepare-result.json').read_text())
     assert result['exit_code'] == 0 and result['source_sha256'] == identity['source_sha256']
     for name, digest in freeze['frozen_affected_files'].items():
         assert sha((ROOT / name).read_bytes()) == digest

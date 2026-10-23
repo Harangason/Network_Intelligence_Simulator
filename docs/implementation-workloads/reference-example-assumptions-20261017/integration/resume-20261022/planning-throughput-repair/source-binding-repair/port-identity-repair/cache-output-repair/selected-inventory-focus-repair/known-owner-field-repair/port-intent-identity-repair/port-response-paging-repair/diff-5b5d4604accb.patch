@@ -1,0 +1,83 @@
+--- before/docs/implementation-workloads/reference-example-assumptions-20261017/integration/resume-20261022/planning-throughput-repair/source-binding-repair/port-identity-repair/cache-output-repair/selected-inventory-focus-repair/known-owner-field-repair/port-intent-identity-repair/probe_native_port_grammar.py
++++ after/docs/implementation-workloads/reference-example-assumptions-20261017/integration/resume-20261022/planning-throughput-repair/source-binding-repair/port-identity-repair/cache-output-repair/selected-inventory-focus-repair/known-owner-field-repair/port-intent-identity-repair/probe_native_port_grammar.py
+@@ -17,11 +17,13 @@
+ parser.add_argument('--attempt', default='native-grammar')
+ parser.add_argument('--owner-first-diagnostic', action='store_true')
+ parser.add_argument('--repeat-original-prompt', action='store_true')
++parser.add_argument('--port-pages', action='store_true')
++parser.add_argument('--evidence-dir', type=Path)
+ args=parser.parse_args()
+ assert args.attempt.replace('-', '').isalnum()
+-OUT = Path(__file__).resolve().parent / args.attempt
++OUT = (args.evidence_dir.resolve() if args.evidence_dir else Path(__file__).resolve().parent) / args.attempt
+ OUT.mkdir(exist_ok=False)
+-from backend.nis.agent.orchestration.local_reasoner import _reference_schema_for_stage, _reference_context_window, _reference_expand_port_intents
++from backend.nis.agent.orchestration.local_reasoner import _reference_schema_for_stage, _reference_context_window, _reference_expand_port_intents, _reference_port_page_complete
+ from backend.nis.agent.orchestration import project_intake as intake
+ from backend.tests.test_reference_design import fixture_request, reference
+ from jsonschema import Draft202012Validator
+@@ -76,11 +78,64 @@
+     'one for owner-a and one for owner-b. Each has network_scope authored-network, parameters {}, '
+     'a short rationale and empty field_references. Select device_id first. Never supply id; '
+     'NIS assigns new IDs afterward. All ordinary model arrays, including ports, remain empty. /no_think'}]
++if args.port_pages:
++    messages=[{'role':'user','content':'Authored native port-page counterprobe, no project writes. '
++        'There are exactly two required physical ports in total, one for owner-a and one for owner-b. '
++        'For this first reply emit only the owner-a port in port_intents and port_intents_complete=false, '
++        'because owner-b remains for the next reply. Technology '+technology+', role LOCAL, '
++        'network_scope authored-network, parameters {}, a short rationale, empty field_references. '
++        'Do not supply id. Every ordinary model array, including ports, remains empty. /no_think'}]
+ payload={'model':'qwen3.8:27b','messages':messages,'format':schema,'think':False,'stream':False,
+          'keep_alive':'10m','options':{'temperature':0,'num_predict':8192,
+                                       'num_ctx':_reference_context_window(messages,131072)}}
+ write('request.json',payload)
+ write('started.json',{'at_utc':datetime.now(timezone.utc).isoformat(),'pid':os.getpid(),'actual_model_requests':1})
++if args.port_pages:
++    all_intents=[]
++    rows=[]
++    responses=[]
++    for index, owner in enumerate(owners):
++        if index:
++            payload['messages'].extend([
++                {'role':'assistant','content':responses[-1]['message']['content']},
++                {'role':'user','content':'The owner-a port has now been planned. Emit only the remaining owner-b port, '
++                 'same technology '+technology+' and same other technical facts. Set port_intents_complete=true '
++                 'because both required ports are now covered. All ordinary model arrays remain empty. /no_think'}])
++        payload['options']['num_ctx']=_reference_context_window(payload['messages'],131072)
++        write('request-'+str(index+1)+'.json',payload)
++        response=get('http://127.0.0.1:11434/api/chat',payload)
++        write('response-'+str(index+1)+'.json',response)
++        responses.append(response)
++        assert response.get('done_reason')!='length'
++        value=json.loads(response['message']['content'])
++        Draft202012Validator(schema).validate(value)
++        intents=value.pop('port_intents')
++        complete=_reference_port_page_complete(intents,value.pop('port_intents_complete'))
++        assert complete is (index==1) and len(intents)==1
++        assert intents[0]['device_id']==owner and intents[0]['technology']==technology
++        assert intents[0]['role']=='LOCAL' and intents[0]['network_scope']=='authored-network'
++        assert not intents[0]['parameters'] and 'id' not in intents[0]
++        assert all(value.get(field,[])==[] for field in ('devices','ports','measurements','commands','functions','communication','functional_dependencies','unresolved'))
++        new=_reference_expand_port_intents([*known,*rows],intents,owners)
++        value['ports']=new
++        public=intake.ReferenceDesignProposal.model_validate(value).model_dump(mode='json')
++        Draft202012Validator(intake.reference_design_schema(prepared)).validate(public)
++        for actual,native in zip(public['ports'],intents):
++            expected=intake.ReferencePort.model_validate({'id':'comparison',**native}).model_dump(mode='json')
++            assert {k:v for k,v in actual.items() if k!='id'}=={k:v for k,v in expected.items() if k!='id'}
++        all_intents.extend(intents);rows.extend(public['ports'])
++    assert known==known_before and hashlib.sha256(source.read_bytes()).hexdigest()==source_hash
++    assert len(rows)==len({row['id'] for row in rows})==2
++    assert not {row['id'] for row in rows}&{row['id'] for row in known}
++    write('normal-public-port-records.json',rows)
++    result={'status':'PASSED','at_utc':datetime.now(timezone.utc).isoformat(),'actual_model_requests':2,
++        'bounded_native_pages_with_false_then_true_completion':True,'all_technical_choices_preserved':True,
++        'fresh_ids_skip_existing_and_prior_page_ids':True,'source_sha256':source_hash,
++        'eval_counts':[r.get('eval_count') for r in responses],'canonical_writes':False,
++        'original_model_acceptance':False,'provider_model_context_output_timeout_unchanged':True}
++    write('result.json',result)
++    print(json.dumps(result),flush=True)
++    sys.exit(0)
+ response=get('http://127.0.0.1:11434/api/chat',payload)
+ write('response.json',response)
+ assert response.get('done_reason')!='length'

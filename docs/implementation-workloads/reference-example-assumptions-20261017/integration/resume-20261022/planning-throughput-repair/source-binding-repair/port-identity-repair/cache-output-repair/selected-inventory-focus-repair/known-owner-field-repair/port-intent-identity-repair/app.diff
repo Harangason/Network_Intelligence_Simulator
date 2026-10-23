@@ -1,49 +1,81 @@
 --- before/backend/nis/agent/orchestration/local_reasoner.py
 +++ after/backend/nis/agent/orchestration/local_reasoner.py
-@@ -148,7 +148,7 @@
-     return candidate
- 
- 
--def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None, existing_devices=()):
-+def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None, existing_devices=(), existing_ports=()):
-     """Narrow the native decoder, without changing public proposal validation."""
-     from copy import deepcopy
-     from backend.nis.agent.orchestration.project_intake import reference_model_output_schema
-@@ -189,6 +189,27 @@
+@@ -189,6 +189,17 @@
      if device_ids:
          for field in allowed & {'ports', 'measurements', 'commands'}:
              item(field)['properties']['device_id']['enum'] = list(device_ids)
-+    if port_intent and device_ids:
-+        from hashlib import sha256
++    if port_intent:
 +        definition = deepcopy(item('ports'))
-+        existing_ids = {row['id'] for row in existing_ports}
-+        prefixes, variants = set(), []
-+        for owner in device_ids:
-+            stem = 'port-' + sha256(owner.encode('utf-8')).hexdigest()[:12] + '-'
-+            generation = 1
-+            prefix = stem + str(generation) + '-'
-+            while prefix in prefixes or any(identity.startswith(prefix) for identity in existing_ids):
-+                generation += 1
-+                prefix = stem + str(generation) + '-'
-+            prefixes.add(prefix)
-+            variant = deepcopy(definition)
-+            variant['properties']['device_id']['enum'] = [owner]
-+            # These are fresh identity namespaces, never technical port facts.
-+            # Public length, duplicate-ID and existing-port gates still apply.
-+            variant['properties']['id']['pattern'] = '^' + prefix + '[A-Za-z0-9_-]+$'
-+            variants.append(variant)
-+        schema['$defs'][schema['properties']['ports']['items']['$ref'].rsplit('/', 1)[-1]] = (
-+            variants[0] if len(variants) == 1 else {'anyOf': variants})
++        fields = definition['properties']
++        # Native inference chooses the actual participant and technical facts.
++        # NIS bookkeeping identities are assigned by the stage codec afterward.
++        definition['properties'] = {'device_id': fields['device_id'],
++            **{key: value for key, value in fields.items() if key not in {'id', 'device_id'}}}
++        definition['required'] = [key for key in definition.get('required', []) if key != 'id']
++        schema['properties']['port_intents'] = {'type': 'array', 'items': definition, 'minItems': 0}
++        schema.setdefault('required', []).append('port_intents')
++        schema['properties']['ports'].update(minItems=0, maxItems=0)
      if port_ids:
          keyed_selection('ports', 'port_parameters', 'id', port_ids,
                          ('parameters', 'rationale', 'field_references'))
-@@ -1433,7 +1454,8 @@
-                            'format': _reference_schema_for_stage(prepared, allowed, port_ids=port_ids,
-                                function_ids=function_ids, port_intent=port_intent, device_ids=device_ids,
-                                inventory_target=inventory_target, derivation_fact_ids=derivation_fact_ids,
--                               existing_devices=current['devices'] if inventory_stage else ()),
-+                               existing_devices=current['devices'] if inventory_stage else (),
-+                               existing_ports=current['ports'] if port_intent else ()),
-                             'think': False, 'stream': True, 'keep_alive': self.keep_alive,
-                            'options': {'temperature': 0, 'num_predict': 8192, 'num_ctx': self.context_tokens}}
-                 for attempt in range(2):
+@@ -352,7 +363,7 @@
+         'inventory_choices': ('quantity', 'device_type', 'function_hosts'),
+         'functions': ('function_hosts',), 'ReferenceFunction': ('function_hosts',),
+         'functions_by_fact': ('function_hosts',),
+-        'ports': ('ports',), 'ReferencePort': ('ports',), 'port_parameters': ('ports',),
++        'ports': ('ports',), 'ReferencePort': ('ports',), 'port_parameters': ('ports',), 'port_intents': ('ports',),
+         'measurements': ('measurements',), 'ReferenceMeasurement': ('measurements',),
+         'commands': ('commands',), 'ReferenceCommand': ('commands',),
+         'communication': ('communication',), 'ReferenceCommunication': ('communication',),
+@@ -404,6 +415,30 @@
+ 
+     bound_choices(schema)
+     return schema
++
++
++def _reference_expand_port_intents(existing_ports, intents, device_ids):
++    """Assign new bookkeeping IDs without changing any native port decision."""
++    from copy import deepcopy
++    from hashlib import sha256
++    if not isinstance(intents, list) or any(not isinstance(row, dict) for row in intents):
++        raise ValueError('Neue Portabsichten benötigen eine Liste vollständiger Anschlussentscheidungen.')
++    used = {row['id'] for row in existing_ports}
++    result = []
++    for row in intents:
++        if 'id' in row:
++            raise ValueError('Neue native Portabsichten dürfen keine Port-ID vorgeben.')
++        owner = row.get('device_id')
++        if not isinstance(owner, str) or owner not in device_ids:
++            raise ValueError('Die IO-Stufe enthält Daten eines nicht ausgewählten Teilnehmers.')
++        prefix = 'port-' + sha256(owner.encode('utf-8')).hexdigest()[:24] + '-'
++        ordinal = 1
++        while prefix + str(ordinal) in used:
++            ordinal += 1
++        identity = prefix + str(ordinal)
++        used.add(identity)
++        result.append({'id': identity, **deepcopy(row)})
++    return result
+ 
+ 
+ def _reference_expand_inventory_bindings(devices, proposed, bindings, *, inventory_target=None):
+@@ -1346,7 +1381,7 @@
+                               'Jede Auswahl in rationale mit einem kurzen fachlichen Satz und höchstens 240 Zeichen begründen; '
+                               'Quellenbindungen und technische Entscheidungen vollständig in ihren eigenen Feldern erhalten. '
+                               'Echte offene Auslegung explizit unresolved halten. '
+-                              + ('Zunächst ausschließlich konkrete Portabsicht planen: parameters bleibt {}. Die folgende eigene Parameterstufe legt jeden Anschluss aus; diese Zwischenstufe ist keine vollständige Prüfung. ' if port_intent else '')
++                              + ('Zunächst ausschließlich konkrete Portabsicht über port_intents statt ports planen: Teilnehmer und alle technischen Felder vollständig wählen, aber keine id vorgeben. NIS vergibt anschließend eindeutige neue Port-IDs; bestehende Ports bleiben unverändert. parameters bleibt {}. Die folgende eigene Parameterstufe legt jeden Anschluss aus; diese Zwischenstufe ist keine vollständige Prüfung. ' if port_intent else '')
+                               + ('Ausschließlich IO für alle angeforderten vorhandenen Teilnehmer-IDs liefern; keine anderen Geräte, Anschlüsse, Messgrößen oder Befehle überschreiben. Teilnehmer und ihre IO getrennt erhalten. Alle Nachbarteilnehmer bleiben als Planungskontext sichtbar. ' if device_ids else '')
+                               + ('Jeder inventory_choices-Eintrag beginnt mit choice_kind: EXISTING für eine vorhandene ID-Bindung, NEW_<Geräteart> für wirklich neue Hardware (z.B. NEW_SENSOR passend zu kind=SENSOR). Bei EXISTING danach ausschließlich device_id, source_fact_ids, rationale und field_references auswählen; niemals id/name/kind eines alten Geräts neu schreiben. NIS erhält sämtliche unveränderlichen Gerätedaten und ergänzt nur die Quellen-/Typ-/Referenzbindung. Bei NEW_<Geräteart> danach die vollständigen neuen Gerätedaten liefern, niemals eine vorhandene ID. choice_kind wird nur intern geprüft und nicht als Modellfeld gespeichert. Die gemeinsame Stufengrenze gilt für alle Einträge zusammen. ' if inventory_stage and derivation_fact_ids is None else '')
+                               + ('Nur ein echtes Gerät oder eine vorhandene Gerätebindung für den angeforderten Quellenbefund/das Typmitglied liefern, keine zweite Platzhalterzeile. source_fact_ids enthält ausschließlich diese eine FactID; source_member_bindings neuer Geräte ausschließlich das angeforderte wörtliche Mitglied. Bei vorhandenen Geräten setzt NIS die angeforderte Typbindung selbst. Funktional zusätzlich notwendige Hardware wird danach in einem eigenen Schritt geplant. ' if inventory_target else '')
+@@ -1496,6 +1531,11 @@
+                             decoded['devices'] = _reference_expand_inventory_choices(
+                                 current['devices'], decoded.pop('inventory_choices'),
+                                 inventory_target=inventory_target)
++                        if port_intent and 'port_intents' in decoded:
++                            if decoded.get('ports', []) != []:
++                                raise ValueError('Neue native Portabsichten ausschließlich über port_intents liefern.')
++                            decoded['ports'] = _reference_expand_port_intents(
++                                current['ports'], decoded.pop('port_intents'), device_ids)
+                         if port_ids:
+                             if decoded.get('ports', []) != []:
+                                 raise ValueError('Die Parameterstufe darf Portidentität, Teilnehmer, Technologie, Rolle '

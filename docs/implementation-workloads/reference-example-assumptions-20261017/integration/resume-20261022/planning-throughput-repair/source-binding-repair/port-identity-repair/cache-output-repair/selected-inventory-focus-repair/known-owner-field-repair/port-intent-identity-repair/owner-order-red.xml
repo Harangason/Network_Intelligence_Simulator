@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="6.398" timestamp="2026-10-23T07:39:49.231534+02:00" hostname="Haranga"><testcase classname="tests.test_reference_port_intent_identity" name="test_native_port_participant_is_chosen_before_opaque_generated_identity[owners0]" time="3.985"><failure message="AssertionError: assert 'rationale' == 'device_id'&#10;  &#10;  - device_id&#10;  + rationale">owners = ('only-owner',)
+
+    @pytest.mark.parametrize('owners', [('only-owner',), ('owner-a', 'owner-b')])
+    def test_native_port_participant_is_chosen_before_opaque_generated_identity(owners):
+        # The native same-prompt counterprobe chose owner-a twice when an opaque
+        # ID namespace preceded device_id. Choosing the participant first fixed it.
+        _, schema = schema_for(owners)
+        definition = schema['$defs']['ReferencePort']
+        for variant in definition.get('anyOf', [definition]):
+&gt;           assert next(iter(variant['properties'])) == 'device_id'
+E           AssertionError: assert 'rationale' == 'device_id'
+E             
+E             - device_id
+E             + rationale
+
+backend\tests\test_reference_port_intent_identity.py:75: AssertionError</failure></testcase><testcase classname="tests.test_reference_port_intent_identity" name="test_native_port_participant_is_chosen_before_opaque_generated_identity[owners1]" time="1.486"><failure message="AssertionError: assert 'rationale' == 'device_id'&#10;  &#10;  - device_id&#10;  + rationale">owners = ('owner-a', 'owner-b')
+
+    @pytest.mark.parametrize('owners', [('only-owner',), ('owner-a', 'owner-b')])
+    def test_native_port_participant_is_chosen_before_opaque_generated_identity(owners):
+        # The native same-prompt counterprobe chose owner-a twice when an opaque
+        # ID namespace preceded device_id. Choosing the participant first fixed it.
+        _, schema = schema_for(owners)
+        definition = schema['$defs']['ReferencePort']
+        for variant in definition.get('anyOf', [definition]):
+&gt;           assert next(iter(variant['properties'])) == 'device_id'
+E           AssertionError: assert 'rationale' == 'device_id'
+E             
+E             - device_id
+E             + rationale
+
+backend\tests\test_reference_port_intent_identity.py:75: AssertionError</failure></testcase></testsuite></testsuites>
