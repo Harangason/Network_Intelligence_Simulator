@@ -1,0 +1,11 @@
+--- before/docs/implementation-workloads/reference-example-assumptions-20261017/integration/resume-20261022/planning-throughput-repair/source-binding-repair/port-identity-repair/cache-output-repair/selected-inventory-focus-repair/known-owner-field-repair/port-intent-identity-repair/probe_native_port_grammar.py
++++ after/docs/implementation-workloads/reference-example-assumptions-20261017/integration/resume-20261022/planning-throughput-repair/source-binding-repair/port-identity-repair/cache-output-repair/selected-inventory-focus-repair/known-owner-field-repair/port-intent-identity-repair/probe_native_port_grammar.py
+@@ -56,7 +56,7 @@
+ assert go['pid'] == os.getpid() and go['source_sha256'] == source_hash
+ if args.prefix_cache or args.port_groups:
+     assert go['nonce'] == nonce, 'A fresh exact-process nonce is required.'
+-command = "$mainId=@(Get-NetTCPConnection -LocalPort 11434 -State Listen | Select-Object -ExpandProperty OwningProcess -Unique);if($mainId.Count -ne 1){throw 'Ambiguous main provider'};[ordered]@{main_owner=$mainId[0];workers=@(Get-CimInstance Win32_Process | Where-Object {$_.ParentProcessId -eq $mainId[0] -and $_.Name -eq 'llama-server.exe'} | Select-Object ProcessId,CommandLine)} | ConvertTo-Json -Depth 5 -Compress"
++command = "$mainId=@(Get-NetTCPConnection -LocalPort 11434 | Where-Object {$_.OwningProcess -gt 0} | Select-Object -ExpandProperty OwningProcess -Unique);if($mainId.Count -ne 1){throw 'Ambiguous main provider'};$main=Get-CimInstance Win32_Process -Filter ('ProcessId='+$mainId[0]);if($main.Name -ne 'ollama.exe' -or $main.CommandLine -notmatch '(?:^|\\s)serve(?:\\s|$)'){throw 'Unexpected main provider identity'};[ordered]@{main_owner=$mainId[0];workers=@(Get-CimInstance Win32_Process | Where-Object {$_.ParentProcessId -eq $mainId[0] -and $_.Name -eq 'llama-server.exe'} | Select-Object ProcessId,CommandLine)} | ConvertTo-Json -Depth 5 -Compress"
+ provider = json.loads(subprocess.check_output(['powershell','-NoProfile','-Command',command],text=True))
+ for worker in provider['workers']:
+     port = re.search(r'--port\s+(\d+)', worker['CommandLine']).group(1)

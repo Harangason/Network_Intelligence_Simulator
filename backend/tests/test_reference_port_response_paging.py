@@ -58,7 +58,7 @@ def test_more_than_one_native_batch_preserves_all_ports_without_global_cap():
     assert reasoner._reference_schema_for_stage(prepared, {'ports'}) == public_before
 
 
-def test_actual_planner_keeps_17_parallel_authored_ports_across_pages(monkeypatch):
+def test_actual_planner_keeps_17_parallel_authored_ports_in_complete_scopes(monkeypatch):
     def design(prepared):
         value = complete_design(prepared)
         for index in range(14):
@@ -67,8 +67,9 @@ def test_actual_planner_keeps_17_parallel_authored_ports_across_pages(monkeypatc
         return value
     instance, prepared, observed = reasoner_with_transport(monkeypatch, design_factory=design)
     result = run_reference(instance, prepared)
-    pages = [row for row in observed if row['planning_stage'] == 'Portabsicht der ausgewählten Teilnehmer']
-    assert len(pages) == 17
+    scopes = [row for row in observed
+              if row['planning_stage'] == 'Vollständiger Anschlussbedarf der ausgewählten Teilnehmer']
+    assert len(scopes) == 3
     assert len(result['proposal']['ports']) == 17
     assert len({row['id'] for row in result['proposal']['ports']}) == 17
     assert result['source_evidence']['source_text'] == prepared['source_evidence']['source_text']

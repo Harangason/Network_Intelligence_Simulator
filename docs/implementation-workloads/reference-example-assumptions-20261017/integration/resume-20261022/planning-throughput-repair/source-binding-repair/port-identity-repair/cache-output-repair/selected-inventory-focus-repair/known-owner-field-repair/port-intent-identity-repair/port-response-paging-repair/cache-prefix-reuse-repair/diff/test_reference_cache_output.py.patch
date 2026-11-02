@@ -1,0 +1,44 @@
+--- before/backend/tests/test_reference_cache_output.py
++++ after/backend/tests/test_reference_cache_output.py
+@@ -35,14 +35,18 @@
+     return reasoner._reference_context_messages(history, previous, current, 'system', 131072, **kwargs)
+ 
+ 
+-def test_fitting_older_native_anchor_precedes_full_snapshot_fallback():
++def test_overflow_snapshot_preserves_more_current_prefix_than_a_fitting_old_anchor():
+     from backend.tests.test_reference_reasoner import effective_reference_context
+     older, newer, current = anchor_fixture()
+     original = deepcopy((older, newer, current))
+     history = [*newer[0], {'role': 'user', 'content': 'x' * 125000}]
+     messages, fallback, rebased = with_older_anchor(history, newer[1], current, newer, older)
+     assert rebased and messages == fallback
+-    assert messages[:len(older[0])] == older[0], 'A fitting complete native prefix was discarded'
++    # The fresh complete snapshot reuses almost all of the latest native
++    # request, whereas the older anchor diverges before its 65000-char notes.
++    assert len(messages) == 2
++    assert messages[1]['content'].startswith(newer[0][1]['content'][:-1])
++    assert len(newer[0][1]['content']) > len(older[0][1]['content'])
+     assert effective_reference_context(messages) == current
+     assert reasoner._reference_context_window(messages, 131072) == 131072
+     assert (older, newer, current) == original
+@@ -64,7 +68,7 @@
+         with_older_anchor(newer[0], newer[1], current, newer, older)
+ 
+ 
+-def test_compact_complete_anchor_avoids_duplicate_history_even_when_both_fit():
++def test_fitting_exact_native_history_precedes_a_smaller_complete_old_anchor():
+     from backend.tests.test_reference_reasoner import effective_reference_context
+     context = {'original_source': 'Complete unchanged original\r\nµ 🦾' + 's' * 30000,
+                'current_candidate': {'notes': ''}, 'typed': [False, 0, None]}
+@@ -81,8 +85,9 @@
+     messages, _, rebased = reasoner._reference_context_messages(
+         history, previous, current, 'system', 131072, anchor=(anchor_messages, context))
+     assert reasoner._reference_context_window(history, 131072) == 131072
+-    assert rebased, 'A fitting but unnecessarily duplicated reply history was replayed'
+-    assert sum(len(row['content'].encode('utf8')) for row in messages) < sum(
++    assert not rebased, 'A fitting exact native cache prefix was discarded'
++    assert messages[:-1] == history
++    assert sum(len(row['content'].encode('utf8')) for row in messages) > sum(
+         len(row['content'].encode('utf8')) for row in history)
+     assert messages[:len(anchor_messages)] == anchor_messages
+     assert effective_reference_context(messages) == current

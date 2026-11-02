@@ -148,10 +148,10 @@ def _reference_fresh_inventory_id(prepared, kind, available, existing_ids):
     return candidate
 
 
-def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None, existing_devices=()):
+def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, port_groups=False, device_ids=(), inventory_target=None, derivation_fact_ids=None, existing_devices=()):
     """Narrow the native decoder, without changing public proposal validation."""
     from copy import deepcopy
-    from backend.nis.agent.orchestration.project_intake import reference_model_output_schema
+    from backend.nis.agent.orchestration.project_intake import reference_model_output_schema, ReferenceDesignProposal
     schema = reference_model_output_schema(prepared)
     for field, definition in schema['properties'].items():
         if field not in allowed and field != 'unresolved':
@@ -189,6 +189,34 @@ def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=
     if device_ids:
         for field in allowed & {'ports', 'measurements', 'commands'}:
             item(field)['properties']['device_id']['enum'] = list(device_ids)
+    if port_groups:
+        if port_intent or port_ids or not device_ids or len(set(device_ids)) != len(device_ids):
+            raise ValueError('Vollständiger Anschlussbedarf benötigt eine eindeutige bestehende Teilnehmerauswahl.')
+        definition = deepcopy(item('ports'))
+        definition['properties'] = {key: value for key, value in definition['properties'].items()
+                                    if key not in {'id', 'device_id'}}
+        definition['required'] = [key for key in definition.get('required', [])
+                                  if key not in {'id', 'device_id'}]
+        limit = ReferenceDesignProposal.model_json_schema()['properties']['ports']['maxItems']
+        definition['properties']['count'] = {'type': 'integer', 'minimum': 1, 'maximum': limit}
+        definition['properties']['parameters'] = {
+            'type': 'object', 'properties': {}, 'additionalProperties': False}
+        definition['properties']['rationale']['maxLength'] = 240
+        references = definition['properties']['field_references']
+        definition['properties']['field_references'] = {'type': 'object',
+            'properties': {'ports': deepcopy(references['additionalProperties'])},
+            'additionalProperties': False}
+        definition['required'] = list(dict.fromkeys([*definition['required'], 'count', 'parameters']))
+        record = {'type': 'object', 'properties': {
+            'connections': {'type': 'array', 'items': definition, 'maxItems': limit},
+            'rationale': {'type': 'string', 'minLength': 1, 'maxLength': 240}},
+            'required': ['connections', 'rationale'], 'additionalProperties': False}
+        schema['properties']['port_groups_by_device'] = {'type': 'object',
+            'properties': {identity: deepcopy(record) for identity in device_ids},
+            'required': list(device_ids), 'additionalProperties': False}
+        schema['properties']['port_plan_complete'] = {'type': 'boolean', 'enum': [True]}
+        schema.setdefault('required', []).extend(['port_groups_by_device', 'port_plan_complete'])
+        schema['properties']['ports'].update(minItems=0, maxItems=0)
     if port_intent:
         definition = deepcopy(item('ports'))
         fields = definition['properties']
@@ -457,6 +485,46 @@ def _reference_expand_port_intents(existing_ports, intents, device_ids):
     return result
 
 
+def _reference_expand_port_groups(existing_ports, groups, device_ids, complete):
+    """Expand only a complete native physical demand; never deduplicate ports."""
+    from copy import deepcopy
+    from backend.nis.agent.orchestration.project_intake import ReferenceDesignProposal
+    if isinstance(groups, dict) and set(groups) - set(device_ids):
+        raise ValueError('Die IO-Stufe enthält Daten eines nicht ausgewählten Teilnehmers.')
+    if (complete is not True or not 1 <= len(device_ids) <= 4
+            or len(set(device_ids)) != len(device_ids) or not isinstance(groups, dict)
+            or set(groups) != set(device_ids)):
+        raise ValueError('Anschlussbedarf muss alle ausgewählten Teilnehmer genau einmal vollständig abschließen.')
+    public = ReferenceDesignProposal.model_json_schema()
+    limit = public['properties']['ports']['maxItems']
+    fields = set(public['$defs']['ReferencePort']['properties']) - {'id', 'device_id'}
+    required = set(public['$defs']['ReferencePort']['required']) - {'id', 'device_id'}
+    decisions, total = [], len(existing_ports)
+    for owner in device_ids:
+        record = groups[owner]
+        if (not isinstance(record, dict) or set(record) != {'connections', 'rationale'}
+                or not isinstance(record['rationale'], str) or not record['rationale'].strip()
+                or len(record['rationale']) > 240 or not isinstance(record['connections'], list)):
+            raise ValueError('Jeder Teilnehmer benötigt seinen vollständigen begründeten physischen Anschlussbedarf.')
+        for group in record['connections']:
+            if (not isinstance(group, dict) or 'count' not in group
+                    or set(group) - {'count'} - fields or not required <= set(group)
+                    or group.get('parameters') != {} or type(group['count']) is not int
+                    or not 1 <= group['count'] <= limit):
+                raise ValueError('Anschlussgruppen benötigen vollständige technische Entscheidungen, leere parameters '
+                                 'und eine positive ganzzahlige Stückzahl; Identität und Teilnehmer bindet NIS.')
+            total += group['count']
+            if total > limit:
+                raise ValueError('Der vollständige Anschlussbedarf überschreitet die öffentliche Gesamtgrenze.')
+            decisions.append((owner, group['count'], {key: deepcopy(value)
+                for key, value in group.items() if key != 'count'}))
+    intents = [{'device_id': owner, **deepcopy(fields)}
+               for owner, count, fields in decisions for _ in range(count)]
+    result = _reference_expand_port_intents(existing_ports, intents, device_ids)
+    ReferenceDesignProposal.model_validate({'ports': result})
+    return result
+
+
 def _reference_expand_inventory_bindings(devices, proposed, bindings, *, inventory_target=None):
     """Resolve an existing-ID choice without asking inference to rewrite identity."""
     from copy import deepcopy
@@ -711,31 +779,70 @@ def _reference_context_snapshot(current):
     def pointer(path, key):
         return path + '/' + str(key).replace('~', '~0').replace('/', '~1')
 
-    seen, copies, tables = {}, [], []
-
-    def share(value, path):
-        literal = serialized(value)
-        if path and len(literal.encode('utf8')) > 160:
-            if literal in seen:
-                operation = {'op': 'copy', 'from': seen[literal], 'path': path}
-                if len(serialized(operation).encode('utf8')) + 4 < len(literal.encode('utf8')):
-                    copies.append(operation)
-                    return None
-            else:
-                seen[literal] = path
-        if isinstance(value, dict):
-            return {key: share(item, pointer(path, key)) for key, item in value.items()}
-        if isinstance(value, list):
-            return [share(item, pointer(path, index)) for index, item in enumerate(value)]
-        return deepcopy(value)
-
-    def tabulate(value, path=''):
+    def record_rows(value):
         rows = list(value.values()) if isinstance(value, dict) else value if isinstance(value, list) else []
-        if path and len(rows) >= 3 and all(isinstance(row, dict) for row in rows):
-            columns = list(rows[0])
-            if columns and all(set(row) == set(columns) for row in rows):
-                # Compare serialized values so False, 0, 0.0 and null never
-                # collapse into each other under Python's numeric equality.
+        return (len(rows) >= 3 and all(isinstance(row, dict) for row in rows)
+                and bool(rows[0]) and all(set(row) == set(rows[0]) for row in rows))
+
+    def pack(allow_delta):
+        seen, copies, tables, candidates = {}, [], [], {}
+
+        def share(value, path, *, record=False):
+            literal = serialized(value)
+            literal_bytes = len(literal.encode('utf8'))
+            if path and literal_bytes > 160:
+                if literal in seen:
+                    operation = {'op': 'copy', 'from': seen[literal], 'path': path}
+                    if len(serialized(operation).encode('utf8')) + 4 < literal_bytes:
+                        copies.append(operation)
+                        return None
+                else:
+                    seen[literal] = path
+            # Leave homogeneous record rows available for the existing table
+            # representation. Their nested flat configuration dictionaries can
+            # still share a complete earlier dictionary plus explicit changes.
+            eligible = (allow_delta and path and not record and literal_bytes > 160
+                        and isinstance(value, dict)
+                        and all(not isinstance(item, dict)
+                                and (not isinstance(item, list)
+                                     or all(not isinstance(child, (dict, list)) for child in item))
+                                for item in value.values()))
+            if eligible:
+                shape = frozenset(value)
+                best, best_size = None, literal_bytes
+                for previous, source_path in candidates.get(shape, ()):
+                    operations = [
+                        {'op': 'copy', 'from': source_path, 'path': path},
+                        *({'op': 'replace', 'path': pointer(path, key), 'value': deepcopy(item)}
+                          for key, item in value.items() if serialized(item) != serialized(previous[key]))]
+                    size = len(serialized(operations).encode('utf8')) + 4
+                    if size < best_size:
+                        best, best_size = operations, size
+                if best is not None:
+                    copies.extend(best)
+                    candidates.setdefault(shape, []).append((value, path))
+                    del candidates[shape][:-8]  # Search bound only; no source/record count limit.
+                    return None
+            if isinstance(value, dict):
+                records = record_rows(value)
+                result = {key: share(item, pointer(path, key), record=records) for key, item in value.items()}
+            elif isinstance(value, list):
+                records = record_rows(value)
+                result = [share(item, pointer(path, index), record=records) for index, item in enumerate(value)]
+            else:
+                result = deepcopy(value)
+            if eligible:
+                # Only fully visited bases are eligible: their reconstruction
+                # operations must precede any later copy of the same base.
+                candidates.setdefault(shape, []).append((value, path))
+                del candidates[shape][:-8]
+            return result
+
+        def tabulate(value, path=''):
+            rows = list(value.values()) if isinstance(value, dict) else value if isinstance(value, list) else []
+            if path and record_rows(value):
+                columns = list(rows[0])
+                # Serialized equality preserves False/0/0.0/-0.0/null exactly.
                 constants = {key: deepcopy(rows[0][key]) for key in columns
                              if all(serialized(row[key]) == serialized(rows[0][key]) for row in rows)}
                 variable = [key for key in columns if key not in constants]
@@ -746,15 +853,19 @@ def _reference_context_snapshot(current):
                 if len(serialized(table).encode('utf8')) + len(path.encode('utf8')) + 4 < len(serialized(value).encode('utf8')):
                     tables.append(path)
                     return table
-        if isinstance(value, dict):
-            return {key: tabulate(item, pointer(path, key)) for key, item in value.items()}
-        if isinstance(value, list):
-            return [tabulate(item, pointer(path, index)) for index, item in enumerate(value)]
-        return value
+            if isinstance(value, dict):
+                return {key: tabulate(item, pointer(path, key)) for key, item in value.items()}
+            if isinstance(value, list):
+                return [tabulate(item, pointer(path, index)) for index, item in enumerate(value)]
+            return value
 
-    packed = {'nis_context_snapshot': tabulate(share(current, '')),
-              'nis_context_tables': tables, 'nis_context_copies': copies}
-    return packed if len(serialized(packed).encode('utf8')) < len(serialized(current).encode('utf8')) else deepcopy(current)
+        return {'nis_context_snapshot': tabulate(share(current, '')),
+                'nis_context_tables': tables, 'nis_context_copies': copies}
+
+    # A local sharing choice can defeat a better outer record table. Keep the
+    # unchanged baseline as a complete alternative, never force a larger wire.
+    return min((deepcopy(current), pack(False), pack(True)),
+               key=lambda value: len(serialized(value).encode('utf8')))
 
 
 async def _reference_stream_response(client, url, payload, report):
@@ -829,8 +940,10 @@ def _reference_context_messages(history, previous, current, system, maximum, *, 
         'jede rows-Zeile enthält deren Werte in derselben Reihenfolge. constants gelten '
         'unverändert für jede Zeile. Mit keys entsteht ein Objekt keys[i] -> Zeile[i], '
         'sonst eine Liste von Datensätzen. Zuerst alle Tabellen rekonstruieren, danach '
-        'nis_context_copies der Reihe nach als RFC6902-copy ausführen: der vollständige '
-        'Wert von from ersetzt den Platzhalter an path. Das ist keine Kürzung; sämtliche '
+        'nis_context_copies der Reihe nach als RFC6902-Operationen ausführen: copy setzt '
+        'eine vollständige tiefe Kopie von from an path ein; ein folgendes replace ersetzt '
+        'das vorhandene Feld an path exakt durch value. Frühere Kopien und Änderungen '
+        'gelten für spätere Kopien als Basis. Das ist keine Kürzung; sämtliche '
         'Quellen, Felder und Werte bleiben exakt erhalten. Enthält die rekonstruierte Nachricht '
         'nis_context_patch, diese Operationen anschließend auf den aktuellen Planungskontext '
         'anwenden, nicht auf die Tabellendarstellung. Bei einem Anker-Neustand gilt der '
@@ -859,10 +972,28 @@ def _reference_context_messages(history, previous, current, system, maximum, *, 
 
     full = [{'role': 'system', 'content': system + protocol},
             {'role': 'user', 'content': wire(current)}]
-    # An older complete native anchor may fit when the latest anchor plus
-    # its exact reply does not. Retain its cacheable prefix before rebasing
-    # to a fresh snapshot; every alternative passes the same byte guard.
-    anchored_size = None
+    # Reusing the exact preceding native wire avoids processing its accepted
+    # candidate again. Total serialized size is not the new provider work:
+    # a smaller old-anchor patch can discard a much longer reusable prefix.
+    # This comparison measures identical wire bytes, not observed KV tokens.
+    history_wire = json.dumps(history, ensure_ascii=False, separators=(',', ':')).encode('utf8')
+
+    def cache_order(candidate):
+        candidate_wire = json.dumps(candidate, ensure_ascii=False, separators=(',', ':')).encode('utf8')
+        common = next((index for index, (left, right) in enumerate(zip(history_wire, candidate_wire))
+                       if left != right), min(len(history_wire), len(candidate_wire)))
+        return common, -sum(len(row['content'].encode('utf8')) for row in candidate)
+
+    # Only complete alternatives passing the unchanged guard may be used at
+    # a real overflow boundary. A fresh snapshot can also share more prefix
+    # than an old anchor; never select by the anchor's age or total size alone.
+    alternatives = []
+    try:
+        _reference_context_window(full, maximum)
+    except ValueError:
+        pass
+    else:
+        alternatives.append(full)
     for candidate_anchor in (anchor, *reversed(anchors)):
         if candidate_anchor is None:
             continue
@@ -876,9 +1007,9 @@ def _reference_context_messages(history, previous, current, system, maximum, *, 
         except ValueError:
             pass  # Complete fresh snapshot still has to pass the same guard.
         else:
-            size = sum(len(row['content'].encode('utf8')) for row in anchored)
-            if anchored_size is None or size < anchored_size:
-                full, anchored_size = anchored, size
+            alternatives.append(anchored)
+    if alternatives:
+        full = max(alternatives, key=cache_order)
     if history and previous is not None:
         appended = [*history, {'role': 'user', 'content': wire(
             {'nis_context_patch': _reference_context_patch(previous, current)})}]
@@ -887,14 +1018,28 @@ def _reference_context_messages(history, previous, current, system, maximum, *, 
         except ValueError:
             pass  # The full snapshot below must still pass the unchanged guard.
         else:
-            if anchored_size is not None and anchored_size < sum(
-                    len(row['content'].encode('utf8')) for row in appended):
-                # Accepted intermediate replies are already represented in
-                # the exact current patch. Avoid replaying their duplicates
-                # merely because the larger history still fits the window.
-                return full, full, True
             return appended, full, False
-    _reference_context_window(full, maximum)
+    try:
+        _reference_context_window(full, maximum)
+    except ValueError:
+        import hashlib
+        input_bytes = sum(len(row['content'].encode('utf8')) for row in full)
+        candidate = current.get('current_candidate') or {}
+        logging.getLogger(__name__).warning('Native reference context guard rejected complete input: %s',
+            json.dumps({'planning_stage': current.get('planning_stage'), 'maximum': maximum,
+                'input_utf8_bytes': input_bytes, 'required_utf8_upper_bound': input_bytes + 8192 + 2048,
+                'complete_context_sha256': hashlib.sha256(json.dumps(current, ensure_ascii=False,
+                    sort_keys=True, separators=(',', ':')).encode('utf8')).hexdigest(),
+                'candidate_counts': {key: len(value) for key, value in candidate.items()
+                    if key in ('devices', 'ports', 'functions', 'measurements', 'commands',
+                               'communication', 'functional_dependencies', 'unresolved') and isinstance(value, list)},
+                'serialized_component_utf8_bytes': {key: len(json.dumps(current.get(key), ensure_ascii=False,
+                    separators=(',', ':')).encode('utf8')) for key in ('original_source', 'original_facts',
+                        'reference_sources', 'registered_catalogs', 'current_candidate', 'known_communication')},
+                'selection_ids': {key: current[key][:8] for key in ('port_ids_for_this_stage',
+                    'device_ids_for_this_stage', 'function_fact_ids_for_this_stage')
+                    if isinstance(current.get(key), list)}}, ensure_ascii=False))
+        raise
     return full, full, bool(history)
 
 
@@ -1360,7 +1505,7 @@ class LocalEngineeringReasoner:
                 if blocking:
                     raise ValueError('Ungültige Teilnehmerbindung: ' + json.dumps(blocking, ensure_ascii=False))
 
-            async def infer(stage, allowed, producer_ids=(), feedback=None, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None):
+            async def infer(stage, allowed, producer_ids=(), feedback=None, *, port_ids=(), function_ids=(), port_intent=False, port_groups=False, device_ids=(), inventory_target=None, derivation_fact_ids=None):
                 nonlocal reference_messages, reference_prompt, reference_anchor, reference_anchors
                 inventory_stage = inventory_target is not None or derivation_fact_ids is not None
                 if device_ids:
@@ -1398,6 +1543,25 @@ class LocalEngineeringReasoner:
                               'Quellenbindungen und technische Entscheidungen vollständig in ihren eigenen Feldern erhalten. '
                               'Echte offene Auslegung explizit unresolved halten. '
                               + ('Zunächst ausschließlich konkrete Portabsicht über port_intents statt ports planen: Teilnehmer und alle technischen Felder vollständig wählen, aber keine id vorgeben. Je Antwort höchstens EINEN noch fehlenden physischen Anschluss planen. Vorhandene Anschlüsse in current_candidate.ports erhalten; weitere notwendige Anschlüsse mit port_intents_complete=false für die normale nächste Antwort offenhalten. port_intents_complete bewertet alle ausgewählten Teilnehmer und ist erst true, wenn sämtliche benötigten Anschlüsse geplant sind. Leeres port_intents ist nur mit true zulässig. Die Gesamtzahl benötigter Anschlüsse ist durch diese Antwortaufteilung nicht begrenzt. Keine bereits geplanten Anschlüsse erneut deklarieren; technisch identische parallele Anschlüsse nur bei tatsächlich weiterem physischem Bedarf. Die Begründung kurz und fachlich konkret formulieren. NIS vergibt anschließend eindeutige neue Port-IDs; bestehende Ports bleiben unverändert. parameters bleibt {}. Die folgende eigene Parameterstufe legt jeden Anschluss aus; diese Zwischenstufe ist keine vollständige Prüfung. ' if port_intent else '')
+                              + ('Jetzt EINEN vollständigen physischen Anschlussbedarf für ALLE ausgewählten Teilnehmer '
+                                 'über port_groups_by_device liefern; ports und alle anderen Modelllisten bleiben leer. '
+                                 'Jeder vorgegebene Teilnehmer-ID-Schlüssel hat connections und eine kurze rationale. '
+                                 'connections gruppiert nur vollständig gleiche technische Anschlussentscheidungen: '
+                                 'technology, role, network_scope, leere parameters, rationale, field_references und count '
+                                 'als ausdrücklich gewählte positive Stückzahl. Alle tatsächlich benötigten Gruppen und '
+                                 'ihre vollständigen Stückzahlen JETZT festlegen, keine spätere Erweiterung oder laufende '
+                                 'Ordnungszahl. NIS erzeugt genau diese Anzahl individueller Portidentitäten; echte parallele '
+                                 'Anschlüsse bleiben vollständig erhalten. Keine bestätigten Hardware-/Kanalgrenzen erhöhen. '
+                                 'VLANs, logische Segmentierung, Funktionsanzahl oder unterstützte Knotenkapazität begründen '
+                                 'keine zusätzlichen physischen Anschlüsse. Jede Stückzahl anhand tatsächlich verschiedener '
+                                 'physischer Verbindungen oder expliziten parallelen Bedarfs begründen; reine Umnummerierung '
+                                 'ist kein neuer Bedarf. Quellen und feldgebundene Referenzen vollständig erhalten. '
+                                 'Geplante Stückzahlen sind zu prüfende Auslegungsannahmen, niemals Hardwarequalifikationsbelege. '
+                                 'Eine leere connections-Liste ist nur bei ausdrücklich begründetem fehlendem Anschlussbedarf '
+                                 'dieses Teilnehmers zulässig. Echte offene Fachentscheidungen in unresolved nennen. '
+                                 'port_plan_complete=true schließt diesen gesamten ausgewählten Bedarf; die folgende '
+                                 'Parameterstufe legt JEDEN erzeugten Anschluss aus. Kein fertiges Modell oder Timing-/Safety-PASS. '
+                                 if port_groups else '')
                               + ('Ausschließlich IO für alle angeforderten vorhandenen Teilnehmer-IDs liefern; keine anderen Geräte, Anschlüsse, Messgrößen oder Befehle überschreiben. Teilnehmer und ihre IO getrennt erhalten. Alle Nachbarteilnehmer bleiben als Planungskontext sichtbar. ' if device_ids else '')
                               + ('Jeder inventory_choices-Eintrag beginnt mit choice_kind: EXISTING für eine vorhandene ID-Bindung, NEW_<Geräteart> für wirklich neue Hardware (z.B. NEW_SENSOR passend zu kind=SENSOR). Bei EXISTING danach ausschließlich device_id, source_fact_ids, rationale und field_references auswählen; niemals id/name/kind eines alten Geräts neu schreiben. NIS erhält sämtliche unveränderlichen Gerätedaten und ergänzt nur die Quellen-/Typ-/Referenzbindung. Bei NEW_<Geräteart> danach die vollständigen neuen Gerätedaten liefern, niemals eine vorhandene ID. choice_kind wird nur intern geprüft und nicht als Modellfeld gespeichert. Die gemeinsame Stufengrenze gilt für alle Einträge zusammen. ' if inventory_stage and derivation_fact_ids is None else '')
                               + ('Nur ein echtes Gerät oder eine vorhandene Gerätebindung für den angeforderten Quellenbefund/das Typmitglied liefern, keine zweite Platzhalterzeile. source_fact_ids enthält ausschließlich diese eine FactID; source_member_bindings neuer Geräte ausschließlich das angeforderte wörtliche Mitglied. Bei vorhandenen Geräten setzt NIS die angeforderte Typbindung selbst. Funktional zusätzlich notwendige Hardware wird danach in einem eigenen Schritt geplant. ' if inventory_target else '')
@@ -1446,12 +1610,16 @@ class LocalEngineeringReasoner:
                         validated = sum(row.get('validation_status') == 'VALIDATED' for row in calls)
                         rejected = sum(row.get('validation_status') == 'REJECTED' for row in calls)
                         detail = 'Antwort abgelehnt: ' + str(error) if error is not None else 'Stufenantwort intern validiert'
+                        closed_ports = ({'port_plan_complete': True, 'planned_port_count': len(result['ports'])}
+                                        if error is None and port_groups else {})
+                        if closed_ports:
+                            detail += f'; vollständiger ausgewählter Bedarf mit {len(result["ports"])} geplanten physischen Anschlüssen'
                         progress({'type': 'PROGRESS', 'status': 'RUNNING',
                             'text': f'Lokaler Qwen · {stage}{selection_text}: {detail}. {validated} intern validierte und {rejected} abgelehnte Antworten; kein freigegebenes Modell.',
                             'metadata': {**deepcopy(progress_details), 'source': 'document_reference_validation',
                                 'completed_calls': len(calls), 'validated_calls': validated, 'rejected_calls': rejected,
                                 'validation_status': status, 'validation_error': str(error) if error is not None else None,
-                                'canonical_writes': False}})
+                                'canonical_writes': False, **closed_ports}})
                 def report_progress(attempt):
                     progress = sink.get()
                     if progress:
@@ -1482,7 +1650,7 @@ class LocalEngineeringReasoner:
                                   'status': 'RUNNING', 'metadata': metadata})
                 payload = {'model': self.model, 'messages': messages,
                            'format': _reference_schema_for_stage(prepared, allowed, port_ids=port_ids,
-                               function_ids=function_ids, port_intent=port_intent, device_ids=device_ids,
+                               function_ids=function_ids, port_intent=port_intent, port_groups=port_groups, device_ids=device_ids,
                                inventory_target=inventory_target, derivation_fact_ids=derivation_fact_ids,
                                existing_devices=current['devices'] if inventory_stage else ()),
                             'think': False, 'stream': True, 'keep_alive': self.keep_alive,
@@ -1548,6 +1716,7 @@ class LocalEngineeringReasoner:
                         raise ValueError(error)
                     try:
                         decoded = document_response_json(raw)
+                        native_port_groups = None
                         port_page_complete = None
                         inventory_complete = decoded.pop('inventory_complete', None) if inventory_stage else None
                         if inventory_stage:
@@ -1564,6 +1733,13 @@ class LocalEngineeringReasoner:
                                 current['ports'], native_intents, device_ids)
                             port_page_complete = _reference_port_page_complete(
                                 native_intents, decoded.pop('port_intents_complete', None))
+                        if port_groups:
+                            if decoded.get('ports', []) != []:
+                                raise ValueError('Die Anschlussplanung darf keine neue oder bereits geplante Port-ID vorgeben; '
+                                                 'ausschließlich port_groups_by_device liefern, NIS vergibt die Identitäten.')
+                            native_port_groups = decoded.pop('port_groups_by_device')
+                            decoded['ports'] = _reference_expand_port_groups(current['ports'], native_port_groups,
+                                device_ids, decoded.pop('port_plan_complete', None))
                         if port_ids:
                             if decoded.get('ports', []) != []:
                                 raise ValueError('Die Parameterstufe darf Portidentität, Teilnehmer, Technologie, Rolle '
@@ -1599,7 +1775,7 @@ class LocalEngineeringReasoner:
                                 check_inventory(merged)
                                 if not inventory_complete and not _reference_inventory_progress(current['devices'], merged):
                                     raise ValueError('Inventarergänzung hat keine fehlende ursprüngliche Geräteabdeckung ergänzt. Ist der angeforderte Bereich bereits vollständig, inventory_complete=true liefern; andere noch offene Stufen sind kein fehlendes Inventar dieses Bereichs.')
-                        if port_intent:
+                        if port_intent or port_groups:
                             ids = [row['id'] for row in result['ports']]
                             electronic_ids = {row['id'] for row in current['devices'] if row['kind'] != 'PHYSICAL_CONTEXT'}
                             if (len(ids) != len(set(ids)) or any(row['parameters'] or row['device_id'] not in electronic_ids for row in result['ports'])):
@@ -1619,6 +1795,9 @@ class LocalEngineeringReasoner:
                         if port_intent:
                             result['port_intents_complete'] = port_page_complete if port_page_complete is not None else True
                             calls[-1]['port_intents_complete'] = result['port_intents_complete']
+                        if port_groups:
+                            calls[-1].update(port_plan_complete=True, planned_port_count=len(result['ports']),
+                                             port_groups_by_device=deepcopy(native_port_groups))
                         reference_messages = [*deepcopy(payload['messages']), {'role': 'assistant', 'content': native_content}]
                         reference_prompt = deepcopy(prompt)
                         if reference_anchor is None or (context_rebased and len(full_messages) == 2):
@@ -1724,13 +1903,10 @@ class LocalEngineeringReasoner:
                         io_groups.setdefault(device['kind'], []).append(device['id'])
                 for ids in io_groups.values():
                     for start in range(0, len(ids), 4):
-                        while True:
-                            intents = await infer('Portabsicht der ausgewählten Teilnehmer', {'ports'},
-                                feedback=feedback, port_intent=True, device_ids=tuple(ids[start:start + 4]))
-                            for field in ('ports', 'unresolved'):
-                                current[field].extend(intents[field])
-                            if intents['port_intents_complete']:
-                                break
+                        demand = await infer('Vollständiger Anschlussbedarf der ausgewählten Teilnehmer', {'ports'},
+                            feedback=feedback, port_groups=True, device_ids=tuple(ids[start:start + 4]))
+                        for field in ('ports', 'unresolved'):
+                            current[field].extend(demand[field])
                 parameter_groups = {}
                 for port in current['ports']:
                     parameter_groups.setdefault(port['technology'], []).append(port['id'])

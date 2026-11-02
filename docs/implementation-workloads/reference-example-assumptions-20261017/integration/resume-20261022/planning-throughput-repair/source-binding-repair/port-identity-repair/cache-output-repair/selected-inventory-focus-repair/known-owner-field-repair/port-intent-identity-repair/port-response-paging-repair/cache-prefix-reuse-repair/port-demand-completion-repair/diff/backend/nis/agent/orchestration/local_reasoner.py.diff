@@ -1,0 +1,218 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -148,10 +148,10 @@
+     return candidate
+ 
+ 
+-def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None, existing_devices=()):
++def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, port_groups=False, device_ids=(), inventory_target=None, derivation_fact_ids=None, existing_devices=()):
+     """Narrow the native decoder, without changing public proposal validation."""
+     from copy import deepcopy
+-    from backend.nis.agent.orchestration.project_intake import reference_model_output_schema
++    from backend.nis.agent.orchestration.project_intake import reference_model_output_schema, ReferenceDesignProposal
+     schema = reference_model_output_schema(prepared)
+     for field, definition in schema['properties'].items():
+         if field not in allowed and field != 'unresolved':
+@@ -189,6 +189,34 @@
+     if device_ids:
+         for field in allowed & {'ports', 'measurements', 'commands'}:
+             item(field)['properties']['device_id']['enum'] = list(device_ids)
++    if port_groups:
++        if port_intent or port_ids or not device_ids or len(set(device_ids)) != len(device_ids):
++            raise ValueError('Vollständiger Anschlussbedarf benötigt eine eindeutige bestehende Teilnehmerauswahl.')
++        definition = deepcopy(item('ports'))
++        definition['properties'] = {key: value for key, value in definition['properties'].items()
++                                    if key not in {'id', 'device_id'}}
++        definition['required'] = [key for key in definition.get('required', [])
++                                  if key not in {'id', 'device_id'}]
++        limit = ReferenceDesignProposal.model_json_schema()['properties']['ports']['maxItems']
++        definition['properties']['count'] = {'type': 'integer', 'minimum': 1, 'maximum': limit}
++        definition['properties']['parameters'] = {
++            'type': 'object', 'properties': {}, 'additionalProperties': False}
++        definition['properties']['rationale']['maxLength'] = 240
++        references = definition['properties']['field_references']
++        definition['properties']['field_references'] = {'type': 'object',
++            'properties': {'ports': deepcopy(references['additionalProperties'])},
++            'additionalProperties': False}
++        definition['required'] = list(dict.fromkeys([*definition['required'], 'count', 'parameters']))
++        record = {'type': 'object', 'properties': {
++            'connections': {'type': 'array', 'items': definition, 'maxItems': limit},
++            'rationale': {'type': 'string', 'minLength': 1, 'maxLength': 240}},
++            'required': ['connections', 'rationale'], 'additionalProperties': False}
++        schema['properties']['port_groups_by_device'] = {'type': 'object',
++            'properties': {identity: deepcopy(record) for identity in device_ids},
++            'required': list(device_ids), 'additionalProperties': False}
++        schema['properties']['port_plan_complete'] = {'type': 'boolean', 'enum': [True]}
++        schema.setdefault('required', []).extend(['port_groups_by_device', 'port_plan_complete'])
++        schema['properties']['ports'].update(minItems=0, maxItems=0)
+     if port_intent:
+         definition = deepcopy(item('ports'))
+         fields = definition['properties']
+@@ -457,6 +485,46 @@
+     return result
+ 
+ 
++def _reference_expand_port_groups(existing_ports, groups, device_ids, complete):
++    """Expand only a complete native physical demand; never deduplicate ports."""
++    from copy import deepcopy
++    from backend.nis.agent.orchestration.project_intake import ReferenceDesignProposal
++    if isinstance(groups, dict) and set(groups) - set(device_ids):
++        raise ValueError('Die IO-Stufe enthält Daten eines nicht ausgewählten Teilnehmers.')
++    if (complete is not True or not 1 <= len(device_ids) <= 4
++            or len(set(device_ids)) != len(device_ids) or not isinstance(groups, dict)
++            or set(groups) != set(device_ids)):
++        raise ValueError('Anschlussbedarf muss alle ausgewählten Teilnehmer genau einmal vollständig abschließen.')
++    public = ReferenceDesignProposal.model_json_schema()
++    limit = public['properties']['ports']['maxItems']
++    fields = set(public['$defs']['ReferencePort']['properties']) - {'id', 'device_id'}
++    required = set(public['$defs']['ReferencePort']['required']) - {'id', 'device_id'}
++    decisions, total = [], len(existing_ports)
++    for owner in device_ids:
++        record = groups[owner]
++        if (not isinstance(record, dict) or set(record) != {'connections', 'rationale'}
++                or not isinstance(record['rationale'], str) or not record['rationale'].strip()
++                or len(record['rationale']) > 240 or not isinstance(record['connections'], list)):
++            raise ValueError('Jeder Teilnehmer benötigt seinen vollständigen begründeten physischen Anschlussbedarf.')
++        for group in record['connections']:
++            if (not isinstance(group, dict) or 'count' not in group
++                    or set(group) - {'count'} - fields or not required <= set(group)
++                    or group.get('parameters') != {} or type(group['count']) is not int
++                    or not 1 <= group['count'] <= limit):
++                raise ValueError('Anschlussgruppen benötigen vollständige technische Entscheidungen, leere parameters '
++                                 'und eine positive ganzzahlige Stückzahl; Identität und Teilnehmer bindet NIS.')
++            total += group['count']
++            if total > limit:
++                raise ValueError('Der vollständige Anschlussbedarf überschreitet die öffentliche Gesamtgrenze.')
++            decisions.append((owner, group['count'], {key: deepcopy(value)
++                for key, value in group.items() if key != 'count'}))
++    intents = [{'device_id': owner, **deepcopy(fields)}
++               for owner, count, fields in decisions for _ in range(count)]
++    result = _reference_expand_port_intents(existing_ports, intents, device_ids)
++    ReferenceDesignProposal.model_validate({'ports': result})
++    return result
++
++
+ def _reference_expand_inventory_bindings(devices, proposed, bindings, *, inventory_target=None):
+     """Resolve an existing-ID choice without asking inference to rewrite identity."""
+     from copy import deepcopy
+@@ -1372,7 +1440,7 @@
+                 if blocking:
+                     raise ValueError('Ungültige Teilnehmerbindung: ' + json.dumps(blocking, ensure_ascii=False))
+ 
+-            async def infer(stage, allowed, producer_ids=(), feedback=None, *, port_ids=(), function_ids=(), port_intent=False, device_ids=(), inventory_target=None, derivation_fact_ids=None):
++            async def infer(stage, allowed, producer_ids=(), feedback=None, *, port_ids=(), function_ids=(), port_intent=False, port_groups=False, device_ids=(), inventory_target=None, derivation_fact_ids=None):
+                 nonlocal reference_messages, reference_prompt, reference_anchor, reference_anchors
+                 inventory_stage = inventory_target is not None or derivation_fact_ids is not None
+                 if device_ids:
+@@ -1410,6 +1478,25 @@
+                               'Quellenbindungen und technische Entscheidungen vollständig in ihren eigenen Feldern erhalten. '
+                               'Echte offene Auslegung explizit unresolved halten. '
+                               + ('Zunächst ausschließlich konkrete Portabsicht über port_intents statt ports planen: Teilnehmer und alle technischen Felder vollständig wählen, aber keine id vorgeben. Je Antwort höchstens EINEN noch fehlenden physischen Anschluss planen. Vorhandene Anschlüsse in current_candidate.ports erhalten; weitere notwendige Anschlüsse mit port_intents_complete=false für die normale nächste Antwort offenhalten. port_intents_complete bewertet alle ausgewählten Teilnehmer und ist erst true, wenn sämtliche benötigten Anschlüsse geplant sind. Leeres port_intents ist nur mit true zulässig. Die Gesamtzahl benötigter Anschlüsse ist durch diese Antwortaufteilung nicht begrenzt. Keine bereits geplanten Anschlüsse erneut deklarieren; technisch identische parallele Anschlüsse nur bei tatsächlich weiterem physischem Bedarf. Die Begründung kurz und fachlich konkret formulieren. NIS vergibt anschließend eindeutige neue Port-IDs; bestehende Ports bleiben unverändert. parameters bleibt {}. Die folgende eigene Parameterstufe legt jeden Anschluss aus; diese Zwischenstufe ist keine vollständige Prüfung. ' if port_intent else '')
++                              + ('Jetzt EINEN vollständigen physischen Anschlussbedarf für ALLE ausgewählten Teilnehmer '
++                                 'über port_groups_by_device liefern; ports und alle anderen Modelllisten bleiben leer. '
++                                 'Jeder vorgegebene Teilnehmer-ID-Schlüssel hat connections und eine kurze rationale. '
++                                 'connections gruppiert nur vollständig gleiche technische Anschlussentscheidungen: '
++                                 'technology, role, network_scope, leere parameters, rationale, field_references und count '
++                                 'als ausdrücklich gewählte positive Stückzahl. Alle tatsächlich benötigten Gruppen und '
++                                 'ihre vollständigen Stückzahlen JETZT festlegen, keine spätere Erweiterung oder laufende '
++                                 'Ordnungszahl. NIS erzeugt genau diese Anzahl individueller Portidentitäten; echte parallele '
++                                 'Anschlüsse bleiben vollständig erhalten. Keine bestätigten Hardware-/Kanalgrenzen erhöhen. '
++                                 'VLANs, logische Segmentierung, Funktionsanzahl oder unterstützte Knotenkapazität begründen '
++                                 'keine zusätzlichen physischen Anschlüsse. Jede Stückzahl anhand tatsächlich verschiedener '
++                                 'physischer Verbindungen oder expliziten parallelen Bedarfs begründen; reine Umnummerierung '
++                                 'ist kein neuer Bedarf. Quellen und feldgebundene Referenzen vollständig erhalten. '
++                                 'Geplante Stückzahlen sind zu prüfende Auslegungsannahmen, niemals Hardwarequalifikationsbelege. '
++                                 'Eine leere connections-Liste ist nur bei ausdrücklich begründetem fehlendem Anschlussbedarf '
++                                 'dieses Teilnehmers zulässig. Echte offene Fachentscheidungen in unresolved nennen. '
++                                 'port_plan_complete=true schließt diesen gesamten ausgewählten Bedarf; die folgende '
++                                 'Parameterstufe legt JEDEN erzeugten Anschluss aus. Kein fertiges Modell oder Timing-/Safety-PASS. '
++                                 if port_groups else '')
+                               + ('Ausschließlich IO für alle angeforderten vorhandenen Teilnehmer-IDs liefern; keine anderen Geräte, Anschlüsse, Messgrößen oder Befehle überschreiben. Teilnehmer und ihre IO getrennt erhalten. Alle Nachbarteilnehmer bleiben als Planungskontext sichtbar. ' if device_ids else '')
+                               + ('Jeder inventory_choices-Eintrag beginnt mit choice_kind: EXISTING für eine vorhandene ID-Bindung, NEW_<Geräteart> für wirklich neue Hardware (z.B. NEW_SENSOR passend zu kind=SENSOR). Bei EXISTING danach ausschließlich device_id, source_fact_ids, rationale und field_references auswählen; niemals id/name/kind eines alten Geräts neu schreiben. NIS erhält sämtliche unveränderlichen Gerätedaten und ergänzt nur die Quellen-/Typ-/Referenzbindung. Bei NEW_<Geräteart> danach die vollständigen neuen Gerätedaten liefern, niemals eine vorhandene ID. choice_kind wird nur intern geprüft und nicht als Modellfeld gespeichert. Die gemeinsame Stufengrenze gilt für alle Einträge zusammen. ' if inventory_stage and derivation_fact_ids is None else '')
+                               + ('Nur ein echtes Gerät oder eine vorhandene Gerätebindung für den angeforderten Quellenbefund/das Typmitglied liefern, keine zweite Platzhalterzeile. source_fact_ids enthält ausschließlich diese eine FactID; source_member_bindings neuer Geräte ausschließlich das angeforderte wörtliche Mitglied. Bei vorhandenen Geräten setzt NIS die angeforderte Typbindung selbst. Funktional zusätzlich notwendige Hardware wird danach in einem eigenen Schritt geplant. ' if inventory_target else '')
+@@ -1458,12 +1545,16 @@
+                         validated = sum(row.get('validation_status') == 'VALIDATED' for row in calls)
+                         rejected = sum(row.get('validation_status') == 'REJECTED' for row in calls)
+                         detail = 'Antwort abgelehnt: ' + str(error) if error is not None else 'Stufenantwort intern validiert'
++                        closed_ports = ({'port_plan_complete': True, 'planned_port_count': len(result['ports'])}
++                                        if error is None and port_groups else {})
++                        if closed_ports:
++                            detail += f'; vollständiger ausgewählter Bedarf mit {len(result["ports"])} geplanten physischen Anschlüssen'
+                         progress({'type': 'PROGRESS', 'status': 'RUNNING',
+                             'text': f'Lokaler Qwen · {stage}{selection_text}: {detail}. {validated} intern validierte und {rejected} abgelehnte Antworten; kein freigegebenes Modell.',
+                             'metadata': {**deepcopy(progress_details), 'source': 'document_reference_validation',
+                                 'completed_calls': len(calls), 'validated_calls': validated, 'rejected_calls': rejected,
+                                 'validation_status': status, 'validation_error': str(error) if error is not None else None,
+-                                'canonical_writes': False}})
++                                'canonical_writes': False, **closed_ports}})
+                 def report_progress(attempt):
+                     progress = sink.get()
+                     if progress:
+@@ -1494,7 +1585,7 @@
+                                   'status': 'RUNNING', 'metadata': metadata})
+                 payload = {'model': self.model, 'messages': messages,
+                            'format': _reference_schema_for_stage(prepared, allowed, port_ids=port_ids,
+-                               function_ids=function_ids, port_intent=port_intent, device_ids=device_ids,
++                               function_ids=function_ids, port_intent=port_intent, port_groups=port_groups, device_ids=device_ids,
+                                inventory_target=inventory_target, derivation_fact_ids=derivation_fact_ids,
+                                existing_devices=current['devices'] if inventory_stage else ()),
+                             'think': False, 'stream': True, 'keep_alive': self.keep_alive,
+@@ -1560,6 +1651,7 @@
+                         raise ValueError(error)
+                     try:
+                         decoded = document_response_json(raw)
++                        native_port_groups = None
+                         port_page_complete = None
+                         inventory_complete = decoded.pop('inventory_complete', None) if inventory_stage else None
+                         if inventory_stage:
+@@ -1576,6 +1668,13 @@
+                                 current['ports'], native_intents, device_ids)
+                             port_page_complete = _reference_port_page_complete(
+                                 native_intents, decoded.pop('port_intents_complete', None))
++                        if port_groups:
++                            if decoded.get('ports', []) != []:
++                                raise ValueError('Die Anschlussplanung darf keine neue oder bereits geplante Port-ID vorgeben; '
++                                                 'ausschließlich port_groups_by_device liefern, NIS vergibt die Identitäten.')
++                            native_port_groups = decoded.pop('port_groups_by_device')
++                            decoded['ports'] = _reference_expand_port_groups(current['ports'], native_port_groups,
++                                device_ids, decoded.pop('port_plan_complete', None))
+                         if port_ids:
+                             if decoded.get('ports', []) != []:
+                                 raise ValueError('Die Parameterstufe darf Portidentität, Teilnehmer, Technologie, Rolle '
+@@ -1611,7 +1710,7 @@
+                                 check_inventory(merged)
+                                 if not inventory_complete and not _reference_inventory_progress(current['devices'], merged):
+                                     raise ValueError('Inventarergänzung hat keine fehlende ursprüngliche Geräteabdeckung ergänzt. Ist der angeforderte Bereich bereits vollständig, inventory_complete=true liefern; andere noch offene Stufen sind kein fehlendes Inventar dieses Bereichs.')
+-                        if port_intent:
++                        if port_intent or port_groups:
+                             ids = [row['id'] for row in result['ports']]
+                             electronic_ids = {row['id'] for row in current['devices'] if row['kind'] != 'PHYSICAL_CONTEXT'}
+                             if (len(ids) != len(set(ids)) or any(row['parameters'] or row['device_id'] not in electronic_ids for row in result['ports'])):
+@@ -1631,6 +1730,9 @@
+                         if port_intent:
+                             result['port_intents_complete'] = port_page_complete if port_page_complete is not None else True
+                             calls[-1]['port_intents_complete'] = result['port_intents_complete']
++                        if port_groups:
++                            calls[-1].update(port_plan_complete=True, planned_port_count=len(result['ports']),
++                                             port_groups_by_device=deepcopy(native_port_groups))
+                         reference_messages = [*deepcopy(payload['messages']), {'role': 'assistant', 'content': native_content}]
+                         reference_prompt = deepcopy(prompt)
+                         if reference_anchor is None or (context_rebased and len(full_messages) == 2):
+@@ -1736,13 +1838,10 @@
+                         io_groups.setdefault(device['kind'], []).append(device['id'])
+                 for ids in io_groups.values():
+                     for start in range(0, len(ids), 4):
+-                        while True:
+-                            intents = await infer('Portabsicht der ausgewählten Teilnehmer', {'ports'},
+-                                feedback=feedback, port_intent=True, device_ids=tuple(ids[start:start + 4]))
+-                            for field in ('ports', 'unresolved'):
+-                                current[field].extend(intents[field])
+-                            if intents['port_intents_complete']:
+-                                break
++                        demand = await infer('Vollständiger Anschlussbedarf der ausgewählten Teilnehmer', {'ports'},
++                            feedback=feedback, port_groups=True, device_ids=tuple(ids[start:start + 4]))
++                        for field in ('ports', 'unresolved'):
++                            current[field].extend(demand[field])
+                 parameter_groups = {}
+                 for port in current['ports']:
+                     parameter_groups.setdefault(port['technology'], []).append(port['id'])

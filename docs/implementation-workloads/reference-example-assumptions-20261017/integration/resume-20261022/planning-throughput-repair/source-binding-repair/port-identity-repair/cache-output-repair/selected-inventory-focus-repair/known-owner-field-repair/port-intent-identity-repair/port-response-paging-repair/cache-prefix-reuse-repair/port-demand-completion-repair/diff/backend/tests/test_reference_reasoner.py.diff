@@ -1,0 +1,44 @@
+--- before/backend/tests/test_reference_reasoner.py
++++ after/backend/tests/test_reference_reasoner.py
+@@ -147,13 +147,15 @@
+         for field in ('ports', 'measurements', 'commands'):
+             for row in active[field]:
+                 row['device_id'] = mapping.get(row['device_id'], row['device_id'])
+-        port_mapping = {}
++        port_mapping, claimed_ports = {}, set()
+         for row in active['ports']:
+             matches = [item for item in content['current_candidate']['ports']
++                       if item['id'] not in claimed_ports
+                        if all(item[key] == row[key] for key in ('device_id', 'technology', 'role', 'network_scope'))]
+-            if len(matches) == 1:
++            if matches:
+                 port_mapping[row['id']] = matches[0]['id']
+                 row['id'] = matches[0]['id']
++                claimed_ports.add(row['id'])
+         for row in active['functions']:
+             row['executor_device_ids'] = [mapping.get(key, key) for key in row['executor_device_ids']]
+         for row in active['communication']:
+@@ -254,6 +256,23 @@
+                     *[row for row in candidate['inventory_choices'] if row['choice_kind'] != 'EXISTING'],
+                     native_existing_bindings(existing)]
+             candidate['devices'] = []
++        if 'port_groups_by_device' in payload['format']['properties'] and not duplicate_port_ids:
++            # Entire authored demand, including deliberately invalid foreign
++            # owners/parameters; group only equal literal decisions, not IDs.
++            selected = content['device_ids_for_this_stage']
++            grouped = {owner: {'connections': [], 'rationale': 'Complete authored physical connection demand.'}
++                       for owner in selected}
++            for row in candidate.get('ports', []):
++                owner = row['device_id']
++                record = grouped.setdefault(owner, {'connections': [], 'rationale': 'Authored foreign owner.'})
++                fields = {key: deepcopy(value) for key, value in row.items() if key not in {'id', 'device_id'}}
++                equal = next((group for group in record['connections']
++                              if {key: value for key, value in group.items() if key != 'count'} == fields), None)
++                if equal is None:
++                    record['connections'].append({**fields, 'count': 1})
++                else:
++                    equal['count'] += 1
++            candidate.update(port_groups_by_device=grouped, port_plan_complete=True, ports=[])
+         if 'port_intents' in payload['format']['properties'] and not duplicate_port_ids:
+             # Model native technical choices, not a fabricated identity answer.
+             # The explicit duplicate-ID bypass fixture remains unchanged.

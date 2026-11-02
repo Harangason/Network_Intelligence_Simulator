@@ -1,0 +1,121 @@
+--- before/docs/implementation-workloads/reference-example-assumptions-20261017/integration/resume-20261022/planning-throughput-repair/source-binding-repair/port-identity-repair/cache-output-repair/selected-inventory-focus-repair/known-owner-field-repair/port-intent-identity-repair/probe_native_port_grammar.py
++++ after/docs/implementation-workloads/reference-example-assumptions-20261017/integration/resume-20261022/planning-throughput-repair/source-binding-repair/port-identity-repair/cache-output-repair/selected-inventory-focus-repair/known-owner-field-repair/port-intent-identity-repair/probe_native_port_grammar.py
+@@ -21,12 +21,14 @@
+ parser.add_argument('--repeat-original-prompt', action='store_true')
+ parser.add_argument('--port-pages', action='store_true')
+ parser.add_argument('--prefix-cache', action='store_true')
++parser.add_argument('--port-groups', action='store_true')
+ parser.add_argument('--evidence-dir', type=Path)
+ args=parser.parse_args()
++assert not (args.port_groups and (args.port_pages or args.prefix_cache))
+ assert args.attempt.replace('-', '').isalnum()
+ OUT = (args.evidence_dir.resolve() if args.evidence_dir else Path(__file__).resolve().parent) / args.attempt
+ OUT.mkdir(exist_ok=False)
+-from backend.nis.agent.orchestration.local_reasoner import _reference_schema_for_stage, _reference_context_window, _reference_expand_port_intents, _reference_port_page_complete, _reference_context_messages
++from backend.nis.agent.orchestration.local_reasoner import _reference_schema_for_stage, _reference_context_window, _reference_expand_port_intents, _reference_port_page_complete, _reference_context_messages, _reference_expand_port_groups
+ from backend.nis.agent.orchestration import project_intake as intake
+ from backend.tests.test_reference_design import fixture_request, reference
+ from jsonschema import Draft202012Validator
+@@ -41,10 +43,10 @@
+ 
+ source = ROOT / 'backend/nis/agent/orchestration/local_reasoner.py'
+ source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+-nonce = secrets.token_hex(16) if args.prefix_cache else None
++nonce = secrets.token_hex(16) if args.prefix_cache or args.port_groups else None
+ write('waiting.json', {'pid':os.getpid(), 'at_utc':datetime.now(timezone.utc).isoformat(),
+                       'source_sha256':source_hash, 'actual_model_requests':0,
+-                      **({'nonce':nonce} if args.prefix_cache else {})})
++                      **({'nonce':nonce} if args.prefix_cache or args.port_groups else {})})
+ print(json.dumps({'status':'WAITING_FOR_EXACT_PROCESS_GUARD','pid':os.getpid()}), flush=True)
+ deadline = time.monotonic() + 120
+ while not (OUT / 'go.json').exists():
+@@ -52,9 +54,9 @@
+     time.sleep(0.5)
+ go = json.loads((OUT / 'go.json').read_text())
+ assert go['pid'] == os.getpid() and go['source_sha256'] == source_hash
+-if args.prefix_cache:
++if args.prefix_cache or args.port_groups:
+     assert go['nonce'] == nonce, 'A fresh exact-process nonce is required.'
+-command = "$mainId=@(Get-NetTCPConnection -LocalPort 11434 -State Listen | Select-Object -ExpandProperty OwningProcess -Unique);if($mainId.Count -ne 1){throw 'Ambiguous main provider'};[ordered]@{main_owner=$mainId[0];workers=@(Get-CimInstance Win32_Process | Where-Object {$_.ParentProcessId -eq $mainId[0] -and $_.Name -eq 'llama-server.exe'} | Select-Object ProcessId,CommandLine)} | ConvertTo-Json -Depth 5 -Compress"
++command = "$mainId=@(Get-NetTCPConnection -LocalPort 11434 | Where-Object {$_.OwningProcess -gt 0} | Select-Object -ExpandProperty OwningProcess -Unique);if($mainId.Count -ne 1){throw 'Ambiguous main provider'};$main=Get-CimInstance Win32_Process -Filter ('ProcessId='+$mainId[0]);if($main.Name -ne 'ollama.exe' -or $main.CommandLine -notmatch '(?:^|\\s)serve(?:\\s|$)'){throw 'Unexpected main provider identity'};[ordered]@{main_owner=$mainId[0];workers=@(Get-CimInstance Win32_Process | Where-Object {$_.ParentProcessId -eq $mainId[0] -and $_.Name -eq 'llama-server.exe'} | Select-Object ProcessId,CommandLine)} | ConvertTo-Json -Depth 5 -Compress"
+ provider = json.loads(subprocess.check_output(['powershell','-NoProfile','-Command',command],text=True))
+ for worker in provider['workers']:
+     port = re.search(r'--port\s+(\d+)', worker['CommandLine']).group(1)
+@@ -75,7 +77,8 @@
+                         'product_observation_is_not_global_queue_enumeration':True})
+ prepared = intake.prepare_reference_design(fixture_request(references=[reference(('ports',))]))
+ owners=('owner-a','owner-b','owner-c') if args.prefix_cache else ('owner-a','owner-b')
+-schema = _reference_schema_for_stage(prepared, {'ports'}, port_intent=True, device_ids=owners)
++schema = _reference_schema_for_stage(prepared, {'ports'}, port_intent=not args.port_groups,
++                                    port_groups=args.port_groups, device_ids=owners)
+ known=[{'id':'port-'+hashlib.sha256(b'owner-a').hexdigest()[:24]+'-1','device_id':'earlier-owner'},
+        {'id':'port-idc-eth-01','device_id':'another-earlier-owner'}]
+ known_before=json.loads(json.dumps(known))
+@@ -92,12 +95,67 @@
+         'because owner-b remains for the next reply. Technology '+technology+', role LOCAL, '
+         'network_scope authored-network, parameters {}, a short rationale, empty field_references. '
+         'Do not supply id. Every ordinary model array, including ports, remains empty. /no_think'}]
++if args.port_groups:
++    technology = 'ethernet'
++    assert technology in prepared['catalog']['technology_ids']
++    messages = [{'role': 'user', 'content':
++        'Authored finite physical-demand counterexample only: no Original model or hardware qualification. '
++        'There are exactly SEVENTEEN separate physical ethernet BACKBONE connectors for owner-a and '
++        'exactly TWO for owner-b. These deliberately identical parallel physical connections are explicitly '
++        'required by this authored scenario, not inferred from VLANs or logical functions. '
++        'Produce ONE COMPLETE port_groups_by_device object with exactly both literal owner keys. '
++        'Each owner has connections containing exactly one group: technology ethernet, role BACKBONE, '
++        'network_scope authored-backbone, parameters {}, a short rationale, empty field_references, '
++        'and count exactly17 for owner-a or exactly2 for owner-b. Each owner also has a short rationale. '
++        'Set port_plan_complete=true. NIS expands these exact finite counts into individual IDs; '
++        'do not supply IDs, device_id fields, ordinary ports or a never-ending next connector. '
++        'All ordinary arrays including devices/ports/unresolved remain empty. /no_think'}]
+ payload={'model':'qwen3.8:27b','messages':messages,'format':schema,'think':False,'stream':False,
+          'keep_alive':'10m','options':{'temperature':0,'num_predict':8192,
+                                       'num_ctx':_reference_context_window(messages,131072)}}
+ if not args.prefix_cache:
+     write('request.json',payload)
+ write('started.json',{'at_utc':datetime.now(timezone.utc).isoformat(),'pid':os.getpid(),'actual_model_requests':1})
++if args.port_groups:
++    response = get('http://127.0.0.1:11434/api/chat', payload)
++    write('response.json', response)
++    assert response.get('done_reason') == 'stop'
++    value = json.loads(response['message']['content'])
++    Draft202012Validator(schema).validate(value)
++    native_groups = value.pop('port_groups_by_device')
++    complete = value.pop('port_plan_complete')
++    assert complete is True and set(native_groups) == set(owners)
++    for owner, count in (('owner-a', 17), ('owner-b', 2)):
++        decisions = native_groups[owner]['connections']
++        assert len(decisions) == 1 and decisions[0]['count'] == count
++        assert decisions[0]['technology'] == technology and decisions[0]['role'] == 'BACKBONE'
++        assert decisions[0]['network_scope'] == 'authored-backbone' and decisions[0]['parameters'] == {}
++    assert all(value.get(field, []) == [] for field in
++        ('devices', 'ports', 'measurements', 'commands', 'functions', 'communication', 'functional_dependencies', 'unresolved'))
++    value['ports'] = _reference_expand_port_groups(known, native_groups, owners, complete)
++    public = intake.ReferenceDesignProposal.model_validate(value).model_dump(mode='json')
++    Draft202012Validator(intake.reference_design_schema(prepared)).validate(public)
++    assert len(public['ports']) == len({row['id'] for row in public['ports']}) == 19
++    assert not {row['id'] for row in public['ports']} & {row['id'] for row in known}
++    for owner, count in (('owner-a', 17), ('owner-b', 2)):
++        native = {key: v for key, v in native_groups[owner]['connections'][0].items() if key != 'count'}
++        expected = intake.ReferencePort.model_validate({'id': 'comparison', 'device_id': owner, **native}).model_dump(mode='json')
++        rows = [row for row in public['ports'] if row['device_id'] == owner]
++        assert len(rows) == count
++        assert all({key: v for key, v in row.items() if key != 'id'} ==
++                   {key: v for key, v in expected.items() if key != 'id'} for row in rows)
++    assert known == known_before and hashlib.sha256(source.read_bytes()).hexdigest() == source_hash
++    write('normal-public-port-records.json', public['ports'])
++    result = {'status': 'PASSED', 'at_utc': datetime.now(timezone.utc).isoformat(),
++        'actual_model_requests': 1, 'complete_native_demand': True,
++        'explicit_native_counts': {'owner-a': 17, 'owner-b': 2}, 'individual_ports_preserved': 19,
++        'all_native_technical_choices_preserved': True, 'existing_ports_unmodified': True,
++        'source_sha256': source_hash, 'eval_count': response.get('eval_count'),
++        'canonical_writes': False, 'original_model_acceptance': False,
++        'provider_model_context_output_timeout_unchanged': True}
++    write('result.json', result)
++    print(json.dumps(result), flush=True)
++    sys.exit(0)
+ if args.port_pages or args.prefix_cache:
+     all_intents=[]
+     rows=[]

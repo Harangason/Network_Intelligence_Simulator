@@ -13,7 +13,7 @@ from backend.tests.test_reference_design import fixture_request
 
 
 def unpack_context_message(value):
-    """Independent receiver for the documented table/copy wire representation."""
+    """Independent receiver for the documented table/copy/replace wire."""
     if 'nis_context_snapshot' not in value:
         return value
     document = deepcopy(value['nis_context_snapshot'])
@@ -32,10 +32,15 @@ def unpack_context_message(value):
                    for row in table['rows']]
         parent[key] = dict(zip(table['keys'], records, strict=True)) if 'keys' in table else records
     for operation in value['nis_context_copies']:
-        assert operation['op'] == 'copy'
-        source, source_key = location(operation['from'])
         parent, key = location(operation['path'])
-        parent[key] = deepcopy(source[source_key])
+        if operation['op'] == 'copy':
+            source, source_key = location(operation['from'])
+            parent[key] = deepcopy(source[source_key])
+        elif operation['op'] == 'replace':
+            parent[key]  # Only existing fields may be replaced.
+            parent[key] = deepcopy(operation['value'])
+        else:
+            raise AssertionError('Undocumented private reconstruction operation')
     return document
 
 

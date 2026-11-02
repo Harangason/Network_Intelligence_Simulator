@@ -1,0 +1,61 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -859,10 +859,28 @@
+ 
+     full = [{'role': 'system', 'content': system + protocol},
+             {'role': 'user', 'content': wire(current)}]
+-    # An older complete native anchor may fit when the latest anchor plus
+-    # its exact reply does not. Retain its cacheable prefix before rebasing
+-    # to a fresh snapshot; every alternative passes the same byte guard.
+-    anchored_size = None
++    # Reusing the exact preceding native wire avoids processing its accepted
++    # candidate again. Total serialized size is not the new provider work:
++    # a smaller old-anchor patch can discard a much longer reusable prefix.
++    # This comparison measures identical wire bytes, not observed KV tokens.
++    history_wire = json.dumps(history, ensure_ascii=False, separators=(',', ':')).encode('utf8')
++
++    def cache_order(candidate):
++        candidate_wire = json.dumps(candidate, ensure_ascii=False, separators=(',', ':')).encode('utf8')
++        common = next((index for index, (left, right) in enumerate(zip(history_wire, candidate_wire))
++                       if left != right), min(len(history_wire), len(candidate_wire)))
++        return common, -sum(len(row['content'].encode('utf8')) for row in candidate)
++
++    # Only complete alternatives passing the unchanged guard may be used at
++    # a real overflow boundary. A fresh snapshot can also share more prefix
++    # than an old anchor; never select by the anchor's age or total size alone.
++    alternatives = []
++    try:
++        _reference_context_window(full, maximum)
++    except ValueError:
++        pass
++    else:
++        alternatives.append(full)
+     for candidate_anchor in (anchor, *reversed(anchors)):
+         if candidate_anchor is None:
+             continue
+@@ -876,9 +894,9 @@
+         except ValueError:
+             pass  # Complete fresh snapshot still has to pass the same guard.
+         else:
+-            size = sum(len(row['content'].encode('utf8')) for row in anchored)
+-            if anchored_size is None or size < anchored_size:
+-                full, anchored_size = anchored, size
++            alternatives.append(anchored)
++    if alternatives:
++        full = max(alternatives, key=cache_order)
+     if history and previous is not None:
+         appended = [*history, {'role': 'user', 'content': wire(
+             {'nis_context_patch': _reference_context_patch(previous, current)})}]
+@@ -887,12 +905,6 @@
+         except ValueError:
+             pass  # The full snapshot below must still pass the unchanged guard.
+         else:
+-            if anchored_size is not None and anchored_size < sum(
+-                    len(row['content'].encode('utf8')) for row in appended):
+-                # Accepted intermediate replies are already represented in
+-                # the exact current patch. Avoid replaying their duplicates
+-                # merely because the larger history still fits the window.
+-                return full, full, True
+             return appended, full, False
+     _reference_context_window(full, maximum)
+     return full, full, bool(history)

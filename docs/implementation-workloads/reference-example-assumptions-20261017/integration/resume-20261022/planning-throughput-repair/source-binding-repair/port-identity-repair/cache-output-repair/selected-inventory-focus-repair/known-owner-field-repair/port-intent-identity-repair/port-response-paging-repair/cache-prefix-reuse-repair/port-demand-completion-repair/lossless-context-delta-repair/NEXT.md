@@ -1,0 +1,31 @@
+# Active: complete-context delta capacity repair, no app fix yet
+Native whole37410 is REGULARLY TERMINAL: INVALID_INPUT from unchanged complete-input byte-safe guard after40VALIDATED/0REJECTED/functionscope7of10. Driver27184/72184 ended/Exit1; guard25652Exit0/SIGCONT17:44:09UTC; prod3792healthy/PID1S; canonical model lists empty/referenceNone/jobs0. Exact parent native-terminal-37410.json and independent normal GET capture preserved. Never resume internal inventory/restart the old whole unchanged.
+
+EIP attempt2 owns the agreed quiet model-free test window: actualstart17:59:29UTC/launcher69968/pytest78116/venv77088; plannedwarning18:21/boundary18:31UTC, not automatic end or abort. NO NIS tests/build/inference until actual exit/allchildren/Cleanup return. Light local drafting only. Initial EIPattempt1 was2FAIL in Windows-FFI helper before S24; separate from NIS. Fresh admitted hash1b60c9...; source/build original assertions/product limits unchanged per peer evidence. Coordinate existing authorized chat01a16386-9aeb-7e11-bc4f-65fcf2d4293e only, no new chats/agents/automation.
+
+16 authored cases drafted backend/tests/test_reference_context_delta_capacity.py, UNEXECUTED. Existing Q/probe_native_port_grammar.py extended --context-delta with same exactPID/nonce guard, provider/product preflight and unchanged localQwen27/131072/8192/read1200. One authored read-only context reconstruction call, random hidden channel/address values not encoded in output schema, no canonical/Original acceptance. DO NOT RUN old encoder with this new mode.
+
+FIRST after actual EIP return: canonical isolated RED against UNCHANGED app9512dd944fb46e0e967807fc76de3b304a85dd91d34173b69aa679c615993a48:
+backend/.venv/Scripts/python.exe -X utf8 -u scripts/run-isolated-tests.py -- backend/tests/test_reference_context_delta_capacity.py -q --junitxml=<THIS>/red.xml
+Preserve actual XML/log/process end/DBcleanup; do not overwrite attempts. No app edits until RED. Draft fixtures compare canonical JSON value/type/list/source identity, not irrelevant object-key insertion order.
+
+Planned narrow app change: ONLY _reference_context_snapshot and protocol/guard-diagnostic lines inside _reference_context_messages. Keep _reference_context_window, _reference_context_patch, schemas, allocator, Reasoner class/planner/provider/limits EXACT AST.
+- Existing exact-sharing/table pass remains baseline.
+- Add second optional encoding pass: for profitable flat dictionaries with identical key sets, use existing ordered nis_context_copies with RFC6902 copy followed by direct-field replace for serialized-value differences. Serialize comparisons preserveFalse/0/0.0/-0.0/null distinctly. Preserve every field/key/value.
+- Do not partially factor direct homogeneous record rows eligible for existing tabulation; allow their nested flat parameters. Otherwise greedy row copies can destroy the more efficient record table.
+- Remember fully traversed original flat dictionaries only, bounded recent8 candidates per key shape (optimization search only, never a source/device/port cap).
+- Compare complete candidate wire sizes and choose minimum of original literal, existing baseline, delta encoding. Always retain existing representation if equally small; never force a bigger wire.
+- Independent existing receiver test_reference_planning_throughput.unpack_context_message gains only strict copy/replace interpretation, unknown ops remain rejected.
+- Document ordered deep copy then replacement in actual native protocol.
+- Log only bounded structural sizes/counts/hash/stage/selectionIDs on actual input-guard failure, never raw source text; label UTF8 upper bound, not measured tokens. Source-bound rejection remains unchanged.
+Before each apply refresh current revision_before and run actual implementation_guard before-apply; preserve initial snapshots/before/after/diff.
+
+Then targetedGREEN +existing throughput/cache cases, real guarded --context-delta native counter (actual response/Exit/workeridle/guardrestore), complete existing429+new16=EXPECTED445 isolated regression (read actual count/XML, never assume), AST/alllimits/source proof. App may not change while tests/inference active. Nativecounter source/test fixture hashes frozen.
+
+After settled local/native proof: extend EXISTING source-only transfer operator T with explicit child evidence-dir option. Preserve original parent hash/proof chain: Lbefore containsJcurrent95 source; parent Jproof must be checked against Lbefore, not relabeled as today's app. Add explicit child identity/source-map/AST/native/validation evidence checks; ordinary API tail from def empty onward byte-identical. Do NOT overwrite old J proofs/receipts/statefiles.
+Freeze new app source/HEAD/verification, use canonical recoverable archive+retire exact retained a09 stack BEFORE new normal preparation; keepa09image/PREPAREDreceipt/prod3792/rollback. No image deletion/prune. New image required only because appsource changed; no manual builds/devbase.
+Prepare normal candidate with BOTH primary+fastQwen27 and mainhost endpoint, verify actual2313imagefiles/limits, normal source-only transfer to fresh native-context-delta-{vehicle,robot} states/independent16responses+2requests+emptytables+DBDNSidentity. No fabricated fresh intake; actual36f provenance retained.
+
+Then BOTH unchanged fullOriginals through fresh normal whole/document/reference/hashreview/wizard/apply, complete saved canonical models/ALL jobs/snapshots/PASS0failed/fulltracepages. Required battery/HMI/camera-consumer/fullfeedback chains and all10robotprofiles/110REQ preserved. Source allowed-fields filtering hypothesis was NOT proved (parent read-only-reference-source-inspection).
+Full final exact-image releasegate, archive/retire final prepared diagnostic stack before prod image change if helper requires old3792 protection, scripts/release-and-deploy.py --receipt complete matchingPASS, actualimage/source/health/affected UI. Raw35MedicalGateway currentimage/prod preview proof stillneeded; historical old-image proof alone insufficient.
+All parent15outcomes/15validations remain. No totalcompletion yet. Actual weekly10percentUSED18:17UTC; hardstop75USED(saveandstopCodex, no automaticnativeabort), no shutdown/newagents/chats/automations/worktrees.
