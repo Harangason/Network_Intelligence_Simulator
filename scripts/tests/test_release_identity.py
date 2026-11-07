@@ -10,6 +10,21 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 class ReleaseIdentityTests(unittest.TestCase):
+    def test_host_bridge_transport_changes_require_retest_without_rebuilding_app(self):
+        spec = importlib.util.spec_from_file_location('host_bridge_gate', Path(__file__).resolve().parents[1] / 'run-release-gate.py')
+        gate = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(gate)
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            bridge = root / 'host_metrics_bridge.py'
+            bridge.write_text('host_transport = 1', encoding='utf8')
+            source = MODULE.build_manifest(root)['source_sha256']
+            with patch.object(gate, 'ROOT', root):
+                verification = gate.verification_manifest()
+                bridge.write_text('host_transport = 2', encoding='utf8')
+                self.assertNotEqual(verification, gate.verification_manifest())
+            self.assertEqual(source, MODULE.build_manifest(root)['source_sha256'])
+
     def test_frontend_test_changes_retest_without_changing_the_application_image(self):
         gate_spec = importlib.util.spec_from_file_location('gate_identity', Path(__file__).resolve().parents[1] / 'run-release-gate.py')
         gate = importlib.util.module_from_spec(gate_spec)

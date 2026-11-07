@@ -44,6 +44,18 @@ sichtbar, wo Fachwissen und Transportverhalten implementiert sind.
 
 ## Lokale KI und kontrollierte Erfahrung
 
+Die ausdrücklich aktivierte lokale LLM wird unabhängig vom Markennamen verwendet.
+Gemeinsame lokale Identitätsprüfung verlangt GGUF-Metadaten, eine positive endliche
+Parameterzahl und für weitere Familien/Aliase eine explizite Textausgabe-Fähigkeit.
+Cloud-Modelle, reine Embeddingmodelle und unbestätigte Ausführungswege werden
+abgewiesen; fehlende Fähigkeit löst keinen automatischen Modellwechsel aus.
+Quellenbindung, fachliche Validierung und Review bleiben vom Modell unabhängig.
+Lehnt das Modell ausdrücklich natives Tool-Calling ab, nutzt der Planer dasselbe
+Modell für eine schema-gebundene Werkzeugentscheidung. Der vollständige präsentierte
+Verlauf und die vorhandenen Argumentverträge bleiben erhalten. Modellwechsel,
+Quellkürzung, zusätzliche Rechte und automatische Freigaben sind damit nicht verbunden.
+Andere Providerfehler lösen diese Protokollanpassung nicht aus.
+
 Der Engineering-Agent nutzt den lokalen Ollama-Reasoner. Das Hauptmodell
 (`LOCAL_AI_MODEL`, standardmäßig Qwen) plant komplexe Engineering-Aufträge; das
 schnelle Modell (`LOCAL_AI_FAST_MODEL`, standardmäßig Llama 3.1) unterstützt

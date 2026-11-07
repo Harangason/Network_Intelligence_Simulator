@@ -1,0 +1,208 @@
+{
+  "goal_id": "nis-loop-diagnosis-20261105",
+  "goal_type": "repair",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "project_scope": "NIS reference planning retries",
+  "requested_change": "Prevent a profile repair from retaining stale downstream stage outputs and overflowing the complete source context. Preserve validation and original evidence.",
+  "kind": "repair",
+  "modify_code": true,
+  "allow_repair": true,
+  "required_outcomes": [
+    "diagnose_current_process",
+    "remove_stale_profile_retry_context",
+    "verify_regression",
+    "production_delivery"
+  ],
+  "validation_requirements": [
+    "regression",
+    "complete_release_gate",
+    "running_image_and_health"
+  ],
+  "revision_before": {
+    "backend/nis/agent/orchestration/local_reasoner.py": "ff083f527d948cf7bee28da5138c5af79433b6ac0a7b0b2e116c04a07e64215c",
+    "backend/tests/test_reference_reasoner.py": "e710ae52dcf5cd462166701a44eeb88da604adc66d475b8742add6fdcc21deba"
+  },
+  "files_inspected": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_reasoner.py"
+  ],
+  "repair": {
+    "root_cause": "plan_profile resets compiled devices and history before a profile retry, but clears prior ports/functions/commands/measurements/dependencies only after all inventory calls. Last actual run rebuilt inventory at call 53 with downstream state from its first 52 calls and overflowed at call 65.",
+    "owner": "PROJECT_PRODUCT",
+    "first_failing_layer": "local_reasoner.plan_profile state transition",
+    "reproduction": "Actual unchanged full original vehicle run: 64 validated calls then INVALID_INPUT context guard. Existing test_reference_profile_replan_discards_stale_downstream_stage_outputs covers this transition.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-loop-diagnosis-20261105\\diagnosis.json",
+        "sha256": "96970cbb75eeb446375ea8458aa33ae3a4260519ade45658e5df6b1071e04001"
+      }
+    ],
+    "weaken_assertions_to_pass": false,
+    "affected_files": [
+      "backend/nis/agent/orchestration/local_reasoner.py",
+      "backend/tests/test_reference_reasoner.py"
+    ],
+    "acceptance_criteria": [
+      "A retry enters its first inventory call with only newly compiled devices and empty downstream fields.",
+      "Original source and reference source content remain exact.",
+      "Canonical write/review controls remain unchanged."
+    ],
+    "targeted_tests": [
+      "backend/tests/test_reference_reasoner.py::test_reference_profile_replan_discards_stale_downstream_stage_outputs"
+    ]
+  },
+  "implementation_plan": [
+    "Clear every prior-stage output before compiling a new profile attempt.",
+    "Keep original source, references, review protection and final validator unchanged.",
+    "Reuse the other active chat regression fixture without modifying its test.",
+    "Bundle with the existing delivery work; no second candidate or native run.",
+    "Inject an invalid actual sender-port binding in the regression. Omitting all communication does not itself force this validator to retry and would not exercise the repaired transition."
+  ],
+  "completion_status": "SOURCE_FIX_DELIVERED_USER_STOPPED_ORIGINAL",
+  "remaining_findings": [
+    "Current 27B model has only 6/66 GPU layers on 8GiB; under-10-minute original acceptance is not established.",
+    "Repeated full-profile repair still needs explicit stage ownership or a terminal diagnostic; no silent long reruns."
+  ],
+  "delivery": {
+    "decision": "YES",
+    "authorization": "AGENTS.md standing verified production delivery",
+    "target": "canonical NetworkIS stack",
+    "checks": {},
+    "running_version": "sha256:3792d2e086e43af616d9fb63fd371c352fe101db5136b84f381cd9999363785b",
+    "status": "NOT_DEPLOYED",
+    "blocker": "The canonical NIS starten flow is concurrently validating the same profile repair against its retained candidate and still has pending complete Original/model/simulation acceptance and a complete exact-source release gate. No current complete PASS exists. A second candidate/restart was not launched in parallel.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-loop-diagnosis-20261105\\delivery-state.json",
+        "sha256": "7e8505db71c32f14e767579a86bd3fe6d8c1ce81228bb0739654f6883fb92e04"
+      }
+    ]
+  },
+  "files_changed": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_reasoner.py"
+  ],
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-loop-diagnosis-20261105\\before\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "ff083f527d948cf7bee28da5138c5af79433b6ac0a7b0b2e116c04a07e64215c"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-loop-diagnosis-20261105\\before\\backend\\tests\\test_reference_reasoner.py",
+      "sha256": "e710ae52dcf5cd462166701a44eeb88da604adc66d475b8742add6fdcc21deba"
+    }
+  ],
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-loop-diagnosis-20261105\\after\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "f37b595d9fa8dcd5735ce4c228391da043ee9c23871a0acd9714a037cc80bfec"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-loop-diagnosis-20261105\\after\\backend\\tests\\test_reference_reasoner.py",
+      "sha256": "35744cbe8da5da2593e42b66acad394c67c944be4523612746cb88d50b82f938"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-loop-diagnosis-20261105\\repair.diff",
+      "sha256": "b9be0ff3e8411f31e514253394fc487a69987c512b945f64e2d3c45b074f3ad2"
+    }
+  ],
+  "tests": {
+    "at_utc": "2026-11-05T05:24:49.885353+00:00",
+    "counts": {
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "source_files_unchanged_since_snapshot": {
+      "backend/nis/agent/orchestration/local_reasoner.py": true,
+      "backend/tests/test_reference_reasoner.py": true
+    },
+    "scope": "Four current-source mocked-wire regression cases and one counterprobe verifying the preserved before source fails at the stale downstream rows assertion. No native-model, full-original, full-release or production acceptance.",
+    "runner": "backend/.venv/Scripts/python.exe scripts/run-isolated-tests.py",
+    "exit_code": 0,
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-loop-diagnosis-20261105\\regression.log",
+        "sha256": "6b7c4dbd67280036b7577021859f8d05ad55fd9780e0e3be93644d887c4d70a5"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-loop-diagnosis-20261105\\regression.xml",
+        "sha256": "37e0557db3bfab1433d199d8eab9f79592e1dc0f1fe0d2aa28677a4e34fd0cf4"
+      }
+    ]
+  },
+  "validation": {
+    "syntax": "PASSED",
+    "diff_check": "PASSED",
+    "targeted_regression": "PASSED",
+    "complete_release": "NOT_RUN"
+  },
+  "outcomes": {
+    "diagnose_current_process": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-loop-diagnosis-20261105\\diagnosis.json",
+          "sha256": "96970cbb75eeb446375ea8458aa33ae3a4260519ade45658e5df6b1071e04001"
+        }
+      ]
+    },
+    "remove_stale_profile_retry_context": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-loop-diagnosis-20261105\\targeted-verification.json",
+          "sha256": "4ce107937a0e79ca1a0538509847828986983ffcdc64fb140f27e4990be701bd"
+        }
+      ]
+    },
+    "verify_regression": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-loop-diagnosis-20261105\\targeted-verification.json",
+          "sha256": "4ce107937a0e79ca1a0538509847828986983ffcdc64fb140f27e4990be701bd"
+        }
+      ]
+    },
+    "production_delivery": {
+      "status": "BLOCKED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-loop-diagnosis-20261105\\delivery-state.json",
+          "sha256": "7e8505db71c32f14e767579a86bd3fe6d8c1ce81228bb0739654f6883fb92e04"
+        }
+      ]
+    }
+  },
+  "validations": {
+    "regression": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-loop-diagnosis-20261105\\targeted-verification.json",
+          "sha256": "4ce107937a0e79ca1a0538509847828986983ffcdc64fb140f27e4990be701bd"
+        }
+      ]
+    }
+  },
+  "production_source_fix": {
+    "status": "DELIVERED_VERIFIED_IN_CHILD_SCOPE",
+    "image_id": "sha256:6a129fb75cb1f1a1fc48766afe9ea7ea088ff7478ae8edf6cd27a3ad934543b5",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-loop-diagnosis-20261105\\stop-and-llama-switch\\production-final-verification.json",
+        "sha256": "5856951b392ebd8d84cb04d50ac9e849d3fe99177c7032be84ecd53409c644be"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-aa8acdd7d897\\fbdb769e5e63\\receipt.json",
+        "sha256": "c4ed39f5d30d32d48e5bc4ca715ba38e8a4b5e75f5a4915e881a8e5822aa918c"
+      }
+    ]
+  },
+  "full_original_acceptance_claimed": false,
+  "original_execution_disposition": "Explicit user stop; no automatic restart or under-ten-minute full Original acceptance claim."
+}

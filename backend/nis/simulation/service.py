@@ -144,6 +144,7 @@ class SimulationService:
                 technology.setdefault("native_formats", [])
                 technology["parameter_schema"] = self._parameter_schema(technology_id, technology)
                 technology['parameter_defaults_review'] = COMMUNICATION_TECHNOLOGY_REGISTRY.parameter_defaults_review(technology_id)
+                technology['parameter_value_review'] = COMMUNICATION_TECHNOLOGY_REGISTRY.parameter_value_review(technology_id)
                 for device_field in technology.get('local_timing_schema') or []:
                     if device_field['key'] == 'bitrate_bps' and technology['parameter_defaults_review']['values'].get('bitrate_bps'):
                         device_field['default'] = technology['parameter_defaults_review']['values']['bitrate_bps']

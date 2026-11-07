@@ -1,3 +1,4 @@
+import { expectIntakeStartReady, startReviewedIntake } from './support/wizard-intake';
 import { test, expect } from 'playwright/test';
 import { randomUUID } from 'node:crypto';
 
@@ -91,9 +92,9 @@ test('generic sensors expose separate measurement and connection choices without
   for (const name of ['Sensor1', 'Sensor3']) await dialog.getByLabel(`${name}: Anschluss`, { exact: true }).selectOption('I2C');
   await expect(dialog.getByRole('row', { name: /Sensoren Konkrete Geräte 3 Verbindlich 3/ })).toBeVisible();
   await expect(dialog.getByRole('region', { name: 'Intelligente Systemcluster' }).getByRole('listitem').filter({ hasText: 'Sensor2' })).toBeVisible();
-  await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+  await expectIntakeStartReady(dialog, false);
   await dialog.getByLabel('RaspberryPi: Anschluss', { exact: true }).selectOption('I2C');
-  await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeEnabled();
+  await expectIntakeStartReady(dialog, true);
 });
 
 test('temperature purpose inventory permits review without a spurious controller repair', async ({ page }) => {
@@ -107,7 +108,7 @@ test('temperature purpose inventory permits review without a spurious controller
   await expect(dialog.getByRole('alert').filter({ hasText: 'Geräteumfang noch unvollständig' })).toHaveCount(0);
   await expect(dialog.getByRole('region', { name: 'Controller ergänzen', exact: true })).toHaveCount(0);
   await expect(dialog.locator('.agent-equipment-clusters').getByRole('listitem').filter({ hasText: /Temperatursensor/ })).toHaveCount(4);
-  await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+  await expectIntakeStartReady(dialog, false);
   for (let index = 1; index <= 4; index++) {
     await expect(dialog.getByLabel(`Sensor ${index}: Messgröße`, { exact: true })).toHaveValue('temperature');
   }
@@ -117,12 +118,12 @@ test('temperature purpose inventory permits review without a spurious controller
   await dialog.getByTitle('Projektname', { exact: true }).click();
   await expect(dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true })).toHaveValue('2 Aktoren für Ventile, 4 Sensoren für Temperaturen, und ein RaspberryPi');
   await dialog.getByTitle('Geräteumfang', { exact: true }).click();
-  await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+  await expectIntakeStartReady(dialog, false);
   await dialog.getByLabel('Ventilaktor1: Stellbefehl', { exact: true }).selectOption('OPEN_CLOSE');
   await expect(dialog.getByLabel('Ventilaktor2: Stellbefehl', { exact: true })).toHaveValue('');
-  await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+  await expectIntakeStartReady(dialog, false);
   await dialog.getByLabel('Ventilaktor2: Stellbefehl', { exact: true }).selectOption('POSITION');
-  await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeEnabled();
+  await expectIntakeStartReady(dialog, true);
 });
 
 test('equipment inventory distinguishes requested sensors from identified devices and recovers after clarification', async ({ page }) => {
@@ -145,4 +146,37 @@ test('equipment inventory distinguishes requested sensors from identified device
   const cluster = dialog.locator('.agent-equipment-clusters');
   await expect(cluster.getByRole('listitem').filter({ hasText: /Temperatursensor/ })).toHaveCount(3);
   for (let index = 1; index <= 3; index++) await expect(cluster.getByRole('listitem').filter({ hasText: `Temperatursensor${index}` })).toBeVisible();
+});
+
+
+test('system reviews and manual counts survive connection edits and step five remains reachable @review-persistence', async ({ page }) => {
+  await page.goto(`/studio/engineering?assistant=project&project=nis-e2e-review-persistence-${randomUUID()}`);
+  const dialog = page.locator('.engineering-agent-wizard-dialog');
+  await dialog.locator('#engineering-project-name').fill('Systemprüfung erhalten');
+  await dialog.getByRole('textbox', {name:'Projektbeschreibung',exact:true}).fill('Automotive CAN-FD\n- Motor-ECU\n- Klima-ECU\n- MotorTemperature-Sensor\n- AmbientTemperature-Sensor');
+  await dialog.getByTitle('Geräteumfang',{exact:true}).click();
+  const clusters = dialog.locator('.agent-cluster-selector select');
+  await expect(clusters).toBeVisible();
+  await expect.poll(() => clusters.locator('option').count()).toBeGreaterThanOrEqual(2);
+  const options = await clusters.locator('option').evaluateAll(items => items.map(item => ({value:item.value,label:item.textContent})));
+  expect(options.length).toBeGreaterThanOrEqual(2);
+  await clusters.selectOption(options[0].value);
+  const bus = dialog.locator('.agent-cluster-bus-grid input');
+  await dialog.getByLabel('Sensoren: verbindliche Anzahl',{exact:true}).fill('3');
+  await bus.fill('Erstes_System_geprüft');
+  const connection = dialog.locator('.agent-cluster-tree').getByRole('combobox', {name:'Klima: Anschluss',exact:true});
+  await expect(connection).toBeEnabled();
+  const connectionLabel = await connection.getAttribute('aria-label');
+  expect(connectionLabel).toMatch(/Anschluss/);
+  await connection.selectOption('I2C');
+  await expect(bus).toHaveValue('Erstes_System_geprüft');
+  await expect(dialog.getByLabel('Sensoren: verbindliche Anzahl',{exact:true})).toHaveValue('3');
+  await clusters.selectOption(options[1].value);
+  await bus.fill('Zweites_System_geprüft');
+  await clusters.selectOption(options[0].value);
+  await expect(bus).toHaveValue('Erstes_System_geprüft');
+  await expectIntakeStartReady(dialog,false);
+  await expect(bus).toHaveValue('Erstes_System_geprüft');
+  await clusters.selectOption(options[1].value);
+  await expect(bus).toHaveValue('Zweites_System_geprüft');
 });

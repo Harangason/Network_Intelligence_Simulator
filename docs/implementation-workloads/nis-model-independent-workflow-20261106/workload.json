@@ -1,0 +1,752 @@
+{
+  "schema_version": 1,
+  "goal_id": "nis-model-independent-workflow-20261106",
+  "kind": "repair",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "modify_code": true,
+  "allow_repair": true,
+  "status": "COMPLETED",
+  "revision_before": {
+    "backend/nis/agent/orchestration/local_reasoner.py": "29c8fa7c3fbf5df3e33fc676dd95c5a27d7987e20bdc017633800aa54bf38c75",
+    "backend/nis/agent/tools/function_blocks.py": "1be73e17f5b3be65164485d7b44113a06acd7fe1e8112ec69c372783fdd1ff97",
+    "backend/nis/simulation/signals/core/function_block.py": "824b0c33eb6f9e4dc44d2d6266e6ee4ff2a3a655cc33a3dafec85e68fee56901",
+    "backend/nis/infrastructure/local_model_identity.py": "9ee0af3c7da6305de07cb8853b5608ed1b0368f4d039db5947445db9807acdd5",
+    "backend/tests/test_local_model_selection.py": "de1d816dda038d736a687f0b32b7222b9692ac3f41faf2b8ea54b59f3ad4d9d0",
+    "docs/QWEN_FUNCTION_BLOCKS_PROJECT_REVISION_CONTRACT.md": "8f4c65d1a4a89a4445530c561cf8dabf7e67ac22f69653d475317df0f3afe00e",
+    "docs/GENERATION_RULE_MANAGER.md": "e1076e849a298481b3035585b1762c412000f1b3ddc4649b8fc7ab1b52a4f1a7",
+    "docs/migrations/structure_mapping.csv": "dc9f1b94a73735b5a3b87206beb723bbfae1bb392165697ffb2127ad1ef5ea1c"
+  },
+  "requested_change": "Continue with explicitly enabled small Llama and remove family-name dependence while preserving local-only identity, source fidelity, validation, review and exact tested-image production delivery. Prior Original requests remain canceled.",
+  "constraints": [
+    "Only llama3.1:8b enabled for real inference",
+    "No cloud or model fallback",
+    "No reduction of source, schema, context or review checks",
+    "Existing QWEN and LLAMA artifacts preserve provenance",
+    "75 percent weekly usage stop",
+    "No old original campaign restart"
+  ],
+  "required_outcomes": [
+    "model_independent_local_identity",
+    "strict_provenance_and_function_validation",
+    "small_model_native_evidence",
+    "complete_matching_release_gate",
+    "exact_tested_image_production"
+  ],
+  "validation_requirements": [
+    "red_green_identity_regressions",
+    "adjacent_isolated_regressions",
+    "real_llama_document_and_function_checks",
+    "full_release_gate",
+    "live_identity_health_function_check"
+  ],
+  "unresolved_decisions": [],
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "root_cause": "Brand prefix whitelist in document/reference identity and function generator/preflight rejects other valid selected local completion models and aliases before semantic or function validation. Independent expected-case admission also hardcodes Qwen and accepts cases attributed to the newly selected Llama or another generating model. The normal tool planner also assumes native Ollama tool-calling and terminates on a capability-specific HTTP 400 even for a selected completion-capable model. Full gate found two integration omissions: capability status is queried on successful transport responses although no adaptation is needed; the newly shared validator was absent from the required canonical structure mapping.",
+    "first_failing_layer": "Local model identity admission",
+    "reproduction": {
+      "selected_model": "local-gemma:4b",
+      "metadata": {
+        "details": {
+          "family": "gemma",
+          "format": "gguf"
+        },
+        "model_info": {
+          "general.parameter_count": 4000000000
+        },
+        "capabilities": [
+          "completion"
+        ]
+      },
+      "actual_error": "Das konfigurierte Modell muss ein nachweislich lokal installiertes Qwen- oder Llama-Modell mit passender Familie sein. Cloud-Modelle und unbekannte Ausführungswege sind gesperrt.",
+      "expected": "Accept explicitly selected installed local completion-capable model without family fallback",
+      "method": "Pure existing identity validator; no inference or project writes"
+    },
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\reproduction.json",
+        "sha256": "73448057db2e1c35600b8d342ed505c63373c679e5b27d12c422278c8326a6b9"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\independent-case-reproduction.json",
+        "sha256": "2f27fb1909dc896ff0af70fcd5e21c47e1ef9a3ef4295de16e9c7a25825acd85"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\tool-capability-reproduction.json",
+        "sha256": "4211e65d48f877f0af173b7c708dc36e51ec50025666313ad339ae0c8b5ab1b2"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-5601ce60d76b\\63888d55ef55\\receipt.json",
+        "sha256": "87dd04baf3cb96546565f5c6c9aa5f15872c005c1590026ae8f708b4903682ff"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-5601ce60d76b\\63888d55ef55\\backend-tests.log",
+        "sha256": "615cc824a523e981663b24da40071c26b6434396279efc13b5e3725433ed2234"
+      }
+    ],
+    "affected_files": [
+      "backend/nis/agent/orchestration/local_reasoner.py",
+      "backend/nis/agent/tools/function_blocks.py",
+      "backend/nis/simulation/signals/core/function_block.py",
+      "backend/nis/infrastructure/local_model_identity.py",
+      "backend/tests/test_local_model_selection.py",
+      "docs/QWEN_FUNCTION_BLOCKS_PROJECT_REVISION_CONTRACT.md",
+      "docs/GENERATION_RULE_MANAGER.md",
+      "docs/migrations/structure_mapping.csv"
+    ],
+    "acceptance_criteria": [
+      "Validate actual local GGUF metadata, positive finite parameter count and completion capability, with no substitution",
+      "Generic provenance binds exact selected model and saved verified metadata; legacy family artifacts stay accepted",
+      "Remote/embedding-only/malformed/mismatched identity and function code remain rejected",
+      "A native-tool capability rejection uses a schema-bound decision on the same selected model, preserving history, tool arguments, normal permission/review gates and context limits; unrelated errors never trigger it."
+    ],
+    "targeted_tests": [
+      "backend/tests/test_local_model_selection.py",
+      "backend/tests/test_qwen_function_blocks.py",
+      "backend/tests/test_qwen_document_intake.py",
+      "backend/tests/test_reference_reasoner.py",
+      "backend/tests/test_spatial_architecture.py",
+      "backend/tests/test_structure_completion.py",
+      "backend/tests/test_structure_architecture.py"
+    ],
+    "weaken_assertions_to_pass": false
+  },
+  "files_inspected": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/nis/agent/tools/function_blocks.py",
+    "backend/nis/simulation/signals/core/function_block.py",
+    "backend/nis/infrastructure/local_model_identity.py",
+    "backend/tests/test_local_model_selection.py",
+    "docs/QWEN_FUNCTION_BLOCKS_PROJECT_REVISION_CONTRACT.md",
+    "docs/GENERATION_RULE_MANAGER.md",
+    "docs/migrations/structure_mapping.csv",
+    "backend/tests/test_spatial_architecture.py",
+    "backend/tests/test_structure_completion.py",
+    "backend/tests/test_structure_architecture.py"
+  ],
+  "tests": [
+    {
+      "scope": "model selection RED",
+      "result": "5 FAILED / 36 PASSED",
+      "evidence": {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\red.xml",
+        "sha256": "c5f0e6e8b476aedae080d86aa9513e375c0f2d7a83b0e2f0fdf31cc12dcccd23"
+      }
+    },
+    {
+      "scope": "first adjacent run",
+      "result": "335 PASSED / 48 FAILED; all failures contain new GGUF admission before intended mocked behavior",
+      "evidence": {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\green-adjacent.xml",
+        "sha256": "b3368e8f37628b82cdafcfbac26e1d942b411d90911e950c1fd33eaad80033bd"
+      }
+    },
+    {
+      "scope": "tool adapter and adjacent chat decisions",
+      "result": "101 PASSED; real isolated PostgreSQL",
+      "evidence": {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\tool-protocol-green.xml",
+        "sha256": "b7852c6d547bbe5a7802a1ae6634469880d3c77ba7169b3315250f235d50b04c"
+      }
+    },
+    {
+      "scope": "complete affected document/reference/function and logic regressions before tool adapter final full gate",
+      "result": "431 PASSED; 934.01 seconds; overlap with separate 101-case orchestration check",
+      "evidence": {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\green-final.xml",
+        "sha256": "a3025d88868ebad5b1c87faabf41ef358c9352a6cb293e8f1e66008212c73a3a"
+      }
+    },
+    {
+      "scope": "both exact full gate regressions and adjacent structure/spatial/model/chat contracts",
+      "result": "139 PASSED; all original assertions retained",
+      "evidence": {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\full-gate-regression-green.xml",
+        "sha256": "5ede71f282d826e4920ba545ad22fd3b9d0afa0848659a2a197d2eda045430fe"
+      }
+    },
+    {
+      "scope": "complete backend suite at final frozen source c375c4eef57b",
+      "result": "22670 PASS / 0 FAIL / 2 SKIP / 56 subtests PASS",
+      "evidence": {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\backend-tests.log",
+        "sha256": "92f8bf85979e3fef3880c6b306748807789bedd2ba1e5f50b31ece2233ef0a41"
+      }
+    }
+  ],
+  "outcomes": {
+    "model_independent_local_identity": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\red.xml",
+          "sha256": "c5f0e6e8b476aedae080d86aa9513e375c0f2d7a83b0e2f0fdf31cc12dcccd23"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\green-final.xml",
+          "sha256": "a3025d88868ebad5b1c87faabf41ef358c9352a6cb293e8f1e66008212c73a3a"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\full-gate-regression-green.xml",
+          "sha256": "5ede71f282d826e4920ba545ad22fd3b9d0afa0848659a2a197d2eda045430fe"
+        }
+      ]
+    },
+    "strict_provenance_and_function_validation": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\source-scope-proof.json",
+          "sha256": "db2f45b942c0af93a517fd022f8e24bf8378fbf5af965cae50386df7c9e45aa5"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\green-final.xml",
+          "sha256": "a3025d88868ebad5b1c87faabf41ef358c9352a6cb293e8f1e66008212c73a3a"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\full-gate-regression-green.xml",
+          "sha256": "5ede71f282d826e4920ba545ad22fd3b9d0afa0848659a2a197d2eda045430fe"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\tool-catalog-protocol-integrity.json",
+          "sha256": "cb7dbc8c34f890f9af5118b949e9525dc68cb2c10b11dc19b51ba3ea69a1c409"
+        }
+      ]
+    },
+    "small_model_native_evidence": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\native-llama-host.json",
+          "sha256": "91f8cd15df83346addd6f2ab412e97ce92480228803d3d9fb9b330e3916f7254"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\native-host-source-binding.json",
+          "sha256": "95c9fe0eeae206e43070eb9097a41078ec464528f747bb4323b69113f333f3eb"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\native-llama-orchestration.json",
+          "sha256": "2612350abdb4a3e59248da96802760295e78c4a6b83d7902365da0428febfe89"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\native-llama-final-tools.json",
+          "sha256": "32692d6232c789874440b4660bd832b2ccfb64fe52bf6e0758fbfef1edc44853"
+        }
+      ]
+    },
+    "complete_matching_release_gate": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\receipt.json",
+          "sha256": "57e5c65ae558e115f69338dd3d30bab1c2521698f62ecd6ddda6ad716e6759e2"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\delivery-terminal.json",
+          "sha256": "db41adf8c215fbb28f62ee47e5db1466160609d4ce05fb6c94d7296af2b00704"
+        }
+      ]
+    },
+    "exact_tested_image_production": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\live-delivery-before.json",
+          "sha256": "c556c69095fcec06465350bd7394747520d9eb7964705395f4cfe34b9b5511b9"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\production-probe-process.json",
+          "sha256": "e798f2ae4cc0c0afcd7e5229ca19bacc580a470afcbdafb208ec4e2e4dac854c"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\live-delivery-after.json",
+          "sha256": "9ff0fa0b3e2ba43f7ad3f86667d77120292032312fa48fa50d7973fd8a56eea1"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\final-delivered-source-proof.json",
+          "sha256": "83eb9de500a839116fae2c2a8c99a2aec98989d8c1fb6e13e0b420e037ae744f"
+        }
+      ]
+    }
+  },
+  "validations": {
+    "red_green_identity_regressions": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\red.xml",
+          "sha256": "c5f0e6e8b476aedae080d86aa9513e375c0f2d7a83b0e2f0fdf31cc12dcccd23"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\independence-red.xml",
+          "sha256": "9451064e1cb4d3584ebc0ab6d9c8c518d8a23c0a2a8e78a5a5132347c098c257"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\tool-protocol-red.xml",
+          "sha256": "e769e26a2242ecd1d346d87d8e602c6c9fbafb64d915a973a82c9368a32aaf08"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\green-final.xml",
+          "sha256": "a3025d88868ebad5b1c87faabf41ef358c9352a6cb293e8f1e66008212c73a3a"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\full-gate-regression-green.xml",
+          "sha256": "5ede71f282d826e4920ba545ad22fd3b9d0afa0848659a2a197d2eda045430fe"
+        }
+      ]
+    },
+    "adjacent_isolated_regressions": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\green-final.xml",
+          "sha256": "a3025d88868ebad5b1c87faabf41ef358c9352a6cb293e8f1e66008212c73a3a"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\tool-protocol-green.xml",
+          "sha256": "b7852c6d547bbe5a7802a1ae6634469880d3c77ba7169b3315250f235d50b04c"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\full-gate-regression-green.xml",
+          "sha256": "5ede71f282d826e4920ba545ad22fd3b9d0afa0848659a2a197d2eda045430fe"
+        }
+      ]
+    },
+    "real_llama_document_and_function_checks": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\native-llama-host.json",
+          "sha256": "91f8cd15df83346addd6f2ab412e97ce92480228803d3d9fb9b330e3916f7254"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\native-host-source-binding.json",
+          "sha256": "95c9fe0eeae206e43070eb9097a41078ec464528f747bb4323b69113f333f3eb"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\native-llama-final-tools.json",
+          "sha256": "32692d6232c789874440b4660bd832b2ccfb64fe52bf6e0758fbfef1edc44853"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\production-probe-process.json",
+          "sha256": "e798f2ae4cc0c0afcd7e5229ca19bacc580a470afcbdafb208ec4e2e4dac854c"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\production-probe.stdout.json",
+          "sha256": "8b263dde1237d0f71fbfe2c6b2fef6ce59e7baf9d2be9564bfd6be8441528e32"
+        }
+      ]
+    },
+    "full_release_gate": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\receipt.json",
+          "sha256": "57e5c65ae558e115f69338dd3d30bab1c2521698f62ecd6ddda6ad716e6759e2"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\backend-tests.log",
+          "sha256": "92f8bf85979e3fef3880c6b306748807789bedd2ba1e5f50b31ece2233ef0a41"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\browser-e2e.log",
+          "sha256": "9adbf711f9238e0864e3bdc82115e9d6775afb0018dc637d100cb3723a09cefe"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\small-http.json",
+          "sha256": "4cfca2f36071ae0917e63abd603e949bfe255aae451c1d09ad1b8816eb8ca02b"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\large-http.json",
+          "sha256": "35cbf850da40c5c2784937e02e5e7e79b38773957bedde412dddf6ab7d6f9e5d"
+        }
+      ]
+    },
+    "live_identity_health_function_check": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\live-delivery-after.json",
+          "sha256": "9ff0fa0b3e2ba43f7ad3f86667d77120292032312fa48fa50d7973fd8a56eea1"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\production-probe-process.json",
+          "sha256": "e798f2ae4cc0c0afcd7e5229ca19bacc580a470afcbdafb208ec4e2e4dac854c"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\production-probe.stdout.json",
+          "sha256": "8b263dde1237d0f71fbfe2c6b2fef6ce59e7baf9d2be9564bfd6be8441528e32"
+        }
+      ]
+    }
+  },
+  "files_changed": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/nis/agent/tools/function_blocks.py",
+    "backend/nis/simulation/signals/core/function_block.py",
+    "backend/nis/infrastructure/local_model_identity.py",
+    "backend/tests/test_local_model_selection.py",
+    "docs/QWEN_FUNCTION_BLOCKS_PROJECT_REVISION_CONTRACT.md",
+    "docs/GENERATION_RULE_MANAGER.md",
+    "docs/migrations/structure_mapping.csv"
+  ],
+  "completion_status": "COMPLETED",
+  "implementation_plan": [
+    "Shared local model identity admission; preserve legacy provenance",
+    "Model-independent independent-case admission",
+    "Same-model structured tool decisions only on explicit native-tool capability rejection",
+    "Targeted isolated checks and real selected Llama probes",
+    "Complete matching release gate and exact-image production delivery"
+  ],
+  "frozen_at": "2026-11-06T06:50:53.468289+00:00",
+  "frozen_files": {
+    "backend/nis/agent/orchestration/local_reasoner.py": "710fa0b0a5fc4c7293850392f540167f4722158677776fc2d1f1f1c8afdff058",
+    "backend/nis/agent/tools/function_blocks.py": "1be73e17f5b3be65164485d7b44113a06acd7fe1e8112ec69c372783fdd1ff97",
+    "backend/nis/simulation/signals/core/function_block.py": "824b0c33eb6f9e4dc44d2d6266e6ee4ff2a3a655cc33a3dafec85e68fee56901",
+    "backend/nis/infrastructure/local_model_identity.py": "9ee0af3c7da6305de07cb8853b5608ed1b0368f4d039db5947445db9807acdd5",
+    "backend/tests/test_local_model_selection.py": "0f2cddaa8517452f0518c9cc6c5018e519363f560527c12b61d8d437bb247549",
+    "docs/QWEN_FUNCTION_BLOCKS_PROJECT_REVISION_CONTRACT.md": "8f4c65d1a4a89a4445530c561cf8dabf7e67ac22f69653d475317df0f3afe00e",
+    "docs/GENERATION_RULE_MANAGER.md": "e1076e849a298481b3035585b1762c412000f1b3ddc4649b8fc7ab1b52a4f1a7",
+    "docs/migrations/structure_mapping.csv": "759722878a078f467c8661bfeac59a1e8c28e3d85f6e45af1f83119a3186a3ba"
+  },
+  "production_status": "Exact complete-PASS image deployed and independently verified, including actual configured Llama 3.1 8B component checks and LAN availability",
+  "delivery": {
+    "session": 44777,
+    "receipt": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\receipt.json",
+    "source_sha256": "c375c4eef57b0a202369f2b354737a8d4f705a38a9868228322c4d619a80fb8f",
+    "verification_sha256": "b338f30edeb7e9f13f87fd1e47fc686895b2f36701b669382b3e26d3be266dc1",
+    "status": "DEPLOYED_VERIFIED",
+    "passed_checks": [
+      {
+        "name": "storage-tests",
+        "exit_code": 0
+      },
+      {
+        "name": "typecheck",
+        "exit_code": 0
+      },
+      {
+        "name": "frontend-tests",
+        "exit_code": 0
+      },
+      {
+        "name": "backend-tests",
+        "exit_code": 0
+      },
+      {
+        "name": "production-build",
+        "exit_code": 0
+      },
+      {
+        "name": "browser-e2e",
+        "exit_code": 0
+      },
+      {
+        "name": "small-http",
+        "exit_code": 0
+      },
+      {
+        "name": "large-http",
+        "exit_code": 0
+      }
+    ],
+    "backend_result": {
+      "passed": 22670,
+      "failed": 0,
+      "skipped": 2,
+      "subtests_passed": 56,
+      "seconds": 3352.68
+    },
+    "image_id_observed": "sha256:3c7d7baac3403bdfa63cf02c7c0245551738ee570fb1d59fd2cb27439e36478c",
+    "isolated_base_url": "http://127.0.0.1:61376",
+    "browser_last_ok_observed": 121,
+    "frontend_result": {
+      "passed": 721,
+      "failed": 0
+    },
+    "decision": "YES",
+    "authorization": "Explicit standing production authorization in canonical AGENTS.md and direct user requests; complete required gate, no approval bypass.",
+    "target": "Canonical NetworkIS production stack, port 13500",
+    "tested_version": "sha256:3c7d7baac3403bdfa63cf02c7c0245551738ee570fb1d59fd2cb27439e36478c",
+    "running_version": "sha256:3c7d7baac3403bdfa63cf02c7c0245551738ee570fb1d59fd2cb27439e36478c",
+    "normal_exit_code": 0,
+    "checks": {
+      "release": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\receipt.json",
+            "sha256": "57e5c65ae558e115f69338dd3d30bab1c2521698f62ecd6ddda6ad716e6759e2"
+          }
+        ]
+      },
+      "deployment": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\delivery-terminal.json",
+            "sha256": "db41adf8c215fbb28f62ee47e5db1466160609d4ce05fb6c94d7296af2b00704"
+          },
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\live-delivery-before.json",
+            "sha256": "c556c69095fcec06465350bd7394747520d9eb7964705395f4cfe34b9b5511b9"
+          }
+        ]
+      },
+      "health": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\live-delivery-after.json",
+            "sha256": "9ff0fa0b3e2ba43f7ad3f86667d77120292032312fa48fa50d7973fd8a56eea1"
+          }
+        ]
+      },
+      "functional": {
+        "status": "PASSED",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\production-probe-process.json",
+            "sha256": "e798f2ae4cc0c0afcd7e5229ca19bacc580a470afcbdafb208ec4e2e4dac854c"
+          },
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\production-probe.stdout.json",
+            "sha256": "8b263dde1237d0f71fbfe2c6b2fef6ce59e7baf9d2be9564bfd6be8441528e32"
+          }
+        ]
+      }
+    }
+  },
+  "native_evidence": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\native-llama-host.json",
+      "sha256": "91f8cd15df83346addd6f2ab412e97ce92480228803d3d9fb9b330e3916f7254"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\native-host-source-binding.json",
+      "sha256": "95c9fe0eeae206e43070eb9097a41078ec464528f747bb4323b69113f333f3eb"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\native-llama-orchestration.json",
+      "sha256": "2612350abdb4a3e59248da96802760295e78c4a6b83d7902365da0428febfe89"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\native-llama-structured-tools.json",
+      "sha256": "3fbb7a6665fccae30c282cf458e5b6c18667ffea671bc64ed0a453fdc12f8de4"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\native-llama-final-tools.json",
+      "sha256": "32692d6232c789874440b4660bd832b2ccfb64fe52bf6e0758fbfef1edc44853"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\production-probe-process.json",
+      "sha256": "e798f2ae4cc0c0afcd7e5229ca19bacc580a470afcbdafb208ec4e2e4dac854c"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\production-probe.stdout.json",
+      "sha256": "8b263dde1237d0f71fbfe2c6b2fef6ce59e7baf9d2be9564bfd6be8441528e32"
+    }
+  ],
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\before\\absent-files.json",
+      "sha256": "c037618339ced280ce1e5492b979421a955a5a50fb63ef1668c8e629609a9cd3"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\before\\docs\\GENERATION_RULE_MANAGER.md",
+      "sha256": "3d5bb903d191532650fb323bae5e4d56e16deb83b9b54c053eaf3f0fbb0a6e3d"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\before\\docs\\QWEN_FUNCTION_BLOCKS_PROJECT_REVISION_CONTRACT.md",
+      "sha256": "21abb49cbc950d5d7881132fdeea28231a7515df45bc1ee883937387868b282b"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\before\\docs\\migrations\\structure_mapping.csv",
+      "sha256": "dc9f1b94a73735b5a3b87206beb723bbfae1bb392165697ffb2127ad1ef5ea1c"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\before\\backend\\tests\\test_local_model_selection.py",
+      "sha256": "271325978f64593f6b84acf6ac9b237c774f7e60195e184f8211e5d7694f8a16"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\before\\backend\\nis\\simulation\\signals\\core\\function_block.py",
+      "sha256": "0110cdfc41537ded0e31ea034934f5bbbf4a67f6bd55caa2e8b515056ef94779"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\before\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "1f1ebe8d0620fbc014ec384bd7ce316eb955c161a173df7788116da21b606bd4"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\before\\backend\\nis\\agent\\tools\\function_blocks.py",
+      "sha256": "adf96e4101ade0efaddd7b6e8beb38e1ccb8b55b51a482e893c09e3a5b726800"
+    }
+  ],
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\after\\docs\\GENERATION_RULE_MANAGER.md",
+      "sha256": "e1076e849a298481b3035585b1762c412000f1b3ddc4649b8fc7ab1b52a4f1a7"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\after\\docs\\QWEN_FUNCTION_BLOCKS_PROJECT_REVISION_CONTRACT.md",
+      "sha256": "8f4c65d1a4a89a4445530c561cf8dabf7e67ac22f69653d475317df0f3afe00e"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\after\\docs\\migrations\\structure_mapping.csv",
+      "sha256": "759722878a078f467c8661bfeac59a1e8c28e3d85f6e45af1f83119a3186a3ba"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\after\\backend\\tests\\test_local_model_selection.py",
+      "sha256": "0f2cddaa8517452f0518c9cc6c5018e519363f560527c12b61d8d437bb247549"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\after\\backend\\nis\\infrastructure\\local_model_identity.py",
+      "sha256": "9ee0af3c7da6305de07cb8853b5608ed1b0368f4d039db5947445db9807acdd5"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\after\\backend\\nis\\simulation\\signals\\core\\function_block.py",
+      "sha256": "824b0c33eb6f9e4dc44d2d6266e6ee4ff2a3a655cc33a3dafec85e68fee56901"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\after\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "710fa0b0a5fc4c7293850392f540167f4722158677776fc2d1f1f1c8afdff058"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\after\\backend\\nis\\agent\\tools\\function_blocks.py",
+      "sha256": "1be73e17f5b3be65164485d7b44113a06acd7fe1e8112ec69c372783fdd1ff97"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\change.diff",
+      "sha256": "7ff6fac988e2990eff6505e36235803dd0d09230285612d122540367742d5959"
+    }
+  ],
+  "source_scope_proof": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\source-scope-proof.json",
+    "sha256": "db2f45b942c0af93a517fd022f8e24bf8378fbf5af965cae50386df7c9e45aa5"
+  },
+  "delivery_attempts": [
+    {
+      "session": 98138,
+      "command": "backend/.venv/Scripts/python.exe scripts/release-and-deploy.py",
+      "receipt": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-5601ce60d76b\\63888d55ef55\\receipt.json",
+      "status": "TERMINAL_FAIL_BACKEND",
+      "source_sha256": "764b18f768639abfbf0cdc32e088383af2fef4a2a51cc5f482942658c34b47a3",
+      "verification_sha256": "ec332d272d2767ebf8b62e8868d0df4659e0637b257f2a536a768b018a0e29af",
+      "commit": "99f89a1eb177e6135c4a420a6f16c97bd751d40a",
+      "passed_checks": [
+        "storage-tests",
+        "typecheck",
+        "frontend-tests"
+      ],
+      "observed_failure_markers": 2,
+      "image_built": false,
+      "normal_exit_code": 1,
+      "backend_result": {
+        "passed": 22667,
+        "failed": 2,
+        "skipped": 2,
+        "subtests_passed": 56,
+        "seconds": 3354.23
+      }
+    }
+  ],
+  "catalog_protocol_integrity": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\tool-catalog-protocol-integrity.json",
+    "sha256": "cb7dbc8c34f890f9af5118b949e9525dc68cb2c10b11dc19b51ba3ea69a1c409"
+  },
+  "weekly_limit": {
+    "last_observed_used_percent": 14,
+    "stop_used_percent": 75
+  },
+  "remaining_findings": [],
+  "completed_at": "2026-11-06T09:01:11.719395+00:00",
+  "scope_limits": [
+    "Real model inference was performed only with the explicitly activated llama3.1:8b; other families were verified with controlled metadata/provider responses, not activated.",
+    "Post-delivery checks execute no project tools and create no canonical project models. No full historical vehicle/robot Original acceptance is claimed.",
+    "Full release HTTP cases use their unchanged isolated structured specifications and normal review/apply/simulation paths; this is not a real-hardware qualification."
+  ],
+  "resource_end": {
+    "status": "PASSED",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\post-production-provider-identity.json",
+        "sha256": "db476d3c9dc379578886d7e91f9c6a8186bae87ca5df0337032afeab08b75df4"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\post-production-worker-slots.json",
+        "sha256": "fc41d00b49c321bee25f6034b94a19bef7e7d9962ef26940c2a53612e11d7554"
+      }
+    ]
+  },
+  "final_source_proof": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\final-delivered-source-proof.json",
+    "sha256": "83eb9de500a839116fae2c2a8c99a2aec98989d8c1fb6e13e0b420e037ae744f"
+  },
+  "gate_log_manifest": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\backend-tests.log",
+      "sha256": "92f8bf85979e3fef3880c6b306748807789bedd2ba1e5f50b31ece2233ef0a41"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\browser-e2e.log",
+      "sha256": "9adbf711f9238e0864e3bdc82115e9d6775afb0018dc637d100cb3723a09cefe"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\browser.json",
+      "sha256": "7e5303276c485536b9fd93b0b0d5ff5bc22f70bc55674d5b95f6aabddd107d93"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\frontend-tests.log",
+      "sha256": "5d0e020dd54989ffa714f6fbab968004d038e43b565f33a7cbc48fb74a08bb2d"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\large-http.json",
+      "sha256": "35cbf850da40c5c2784937e02e5e7e79b38773957bedde412dddf6ab7d6f9e5d"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\large-http.log",
+      "sha256": "4944893b4957eb923b89cc4b2e7540ff3c407ef57f1a105a1996d27f2b61c117"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\nis-e2e-app-cd21261e671d.log",
+      "sha256": "e84f89829dc533c0a57b80f20bcffc535f8cf0859eb60efaa1e2604e4780af8f"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\nis-e2e-db-cd21261e671d.log",
+      "sha256": "093f8ee933ea3e9b476899c93e5141cea4958172270b7062f78008b71b0c2f1a"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\production-build.log",
+      "sha256": "34ac99b6a1b51dc94308ae441a02639e2b8cfe210d28f2c2aa51ded908f618ea"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\receipt.json",
+      "sha256": "57e5c65ae558e115f69338dd3d30bab1c2521698f62ecd6ddda6ad716e6759e2"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\small-http.json",
+      "sha256": "4cfca2f36071ae0917e63abd603e949bfe255aae451c1d09ad1b8816eb8ca02b"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\small-http.log",
+      "sha256": "a91b2baddf5e5020a5c8df565e88e6b884b6ebabe7e94208e2225b0037273049"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\storage-tests.log",
+      "sha256": "2e617858237dc341e715de836529709710b84c389317c36f7b6f4bc920f8c916"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-9ba63de4dd43\\cd21261e671d\\typecheck.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "final_report": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\REPORT.md",
+    "sha256": "af578dcf869ee559c65e623dc91de779ea97c616c6dbb55ae0b663016bacc521"
+  },
+  "current_handoff": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-model-independent-workflow-20261106\\NEXT.md",
+    "sha256": "ec2fd0f8a7e4f7a8d55e146e3b7a79f39eee5814652ced7eca3274c00abd7af5"
+  }
+}

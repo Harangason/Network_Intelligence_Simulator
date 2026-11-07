@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="5" time="4.075" timestamp="2026-11-06T06:22:46.266202+01:00" hostname="Haranga"><testcase classname="tests.test_local_model_selection" name="test_historical_local_identity_metadata_remains_compatible[qwen3.8:27b-qwen35-QWEN]" time="0.002"><failure message="ValueError: Das konfigurierte Modell muss ein nachweislich lokal installiertes GGUF-Sprachmodell mit gültiger Identität und Textausgabe sein. Cloud-Modelle und unbekannte Ausführungswege sind gesperrt.">model = 'qwen3.8:27b', family = 'qwen35', author = 'QWEN'
+
+    @pytest.mark.parametrize('model,family,author', [
+        ('qwen3.8:27b', 'qwen35', 'QWEN'), ('llama3.1:8b', 'llama', 'LLAMA')])
+    def test_historical_local_identity_metadata_remains_compatible(model, family, author):
+        info = metadata(family)
+        del info['details']['format']
+&gt;       assert _local_model_author(model, info) == author
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_local_model_selection.py:229: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+model = 'qwen3.8:27b'
+info = {'details': {'family': 'qwen35'}, 'model_info': {'general.parameter_count': 8000000000}}
+
+    def local_model_author(model, info):
+        """Admit the selected local completion model, never select a replacement."""
+        invalid = ValueError(
+            'Das konfigurierte Modell muss ein nachweislich lokal installiertes '
+            'GGUF-Sprachmodell mit gültiger Identität und Textausgabe sein. '
+            'Cloud-Modelle und unbekannte Ausführungswege sind gesperrt.')
+        if not isinstance(model, str) or not model.strip() or not isinstance(info, dict):
+            raise invalid
+        name = model.lower()
+        details, model_info = info.get('details'), info.get('model_info')
+        if not isinstance(details, dict) or not isinstance(model_info, dict):
+            raise invalid
+        family = details.get('family')
+        count = model_info.get('general.parameter_count')
+        if (info.get('remote_host') or info.get('remote_model') or ':cloud' in name
+                or details.get('format') != 'gguf' or not isinstance(family, str) or not family.strip()
+                or type(count) not in (int, float) or not math.isfinite(count) or count &lt;= 0):
+&gt;           raise invalid
+E           ValueError: Das konfigurierte Modell muss ein nachweislich lokal installiertes GGUF-Sprachmodell mit gültiger Identität und Textausgabe sein. Cloud-Modelle und unbekannte Ausführungswege sind gesperrt.
+
+backend\nis\infrastructure\local_model_identity.py:24: ValueError</failure></testcase><testcase classname="tests.test_local_model_selection" name="test_historical_local_identity_metadata_remains_compatible[llama3.1:8b-llama-LLAMA]" time="0.001"><failure message="ValueError: Das konfigurierte Modell muss ein nachweislich lokal installiertes GGUF-Sprachmodell mit gültiger Identität und Textausgabe sein. Cloud-Modelle und unbekannte Ausführungswege sind gesperrt.">model = 'llama3.1:8b', family = 'llama', author = 'LLAMA'
+
+    @pytest.mark.parametrize('model,family,author', [
+        ('qwen3.8:27b', 'qwen35', 'QWEN'), ('llama3.1:8b', 'llama', 'LLAMA')])
+    def test_historical_local_identity_metadata_remains_compatible(model, family, author):
+        info = metadata(family)
+        del info['details']['format']
+&gt;       assert _local_model_author(model, info) == author
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_local_model_selection.py:229: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+model = 'llama3.1:8b'
+info = {'details': {'family': 'llama'}, 'model_info': {'general.parameter_count': 8000000000}}
+
+    def local_model_author(model, info):
+        """Admit the selected local completion model, never select a replacement."""
+        invalid = ValueError(
+            'Das konfigurierte Modell muss ein nachweislich lokal installiertes '
+            'GGUF-Sprachmodell mit gültiger Identität und Textausgabe sein. '
+            'Cloud-Modelle und unbekannte Ausführungswege sind gesperrt.')
+        if not isinstance(model, str) or not model.strip() or not isinstance(info, dict):
+            raise invalid
+        name = model.lower()
+        details, model_info = info.get('details'), info.get('model_info')
+        if not isinstance(details, dict) or not isinstance(model_info, dict):
+            raise invalid
+        family = details.get('family')
+        count = model_info.get('general.parameter_count')
+        if (info.get('remote_host') or info.get('remote_model') or ':cloud' in name
+                or details.get('format') != 'gguf' or not isinstance(family, str) or not family.strip()
+                or type(count) not in (int, float) or not math.isfinite(count) or count &lt;= 0):
+&gt;           raise invalid
+E           ValueError: Das konfigurierte Modell muss ein nachweislich lokal installiertes GGUF-Sprachmodell mit gültiger Identität und Textausgabe sein. Cloud-Modelle und unbekannte Ausführungswege sind gesperrt.
+
+backend\nis\infrastructure\local_model_identity.py:24: ValueError</failure></testcase><testcase classname="tests.test_local_model_selection" name="test_expected_values_cannot_be_attributed_to_the_generating_model[llama3.1:8b-LLAMA-LLAMA generated expected output]" time="0.010"><failure message="Failed: DID NOT RAISE ValueError">model = 'llama3.1:8b', author = 'LLAMA'
+source = 'LLAMA generated expected output'
+
+    @pytest.mark.parametrize('model,author,source', [
+        ('llama3.1:8b', 'LLAMA', 'LLAMA generated expected output'),
+        ('local-gemma:4b', 'LOCAL_LLM', 'local-gemma generated expected output'),
+        ('local-gemma:4b', 'LOCAL_LLM', 'LOCAL_LLM generated expected output'),
+    ])
+    def test_expected_values_cannot_be_attributed_to_the_generating_model(model, author, source):
+        from backend.tests.test_qwen_function_blocks import specification
+        from backend.nis.simulation.signals.core.function_block import verify_function_cases
+        spec = specification()
+        definition = spec['function_block']
+        definition['provenance'].update(model=model, generated_by=author)
+        definition['verification_cases'] = [{'source': source, 'steps': [
+            {'inputs': {'value': 18.}, 'dt_s': 0., 'expected': True}]}]
+&gt;       with pytest.raises(ValueError, match='independent source'):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+backend\tests\test_local_model_selection.py:245: Failed</failure></testcase><testcase classname="tests.test_local_model_selection" name="test_expected_values_cannot_be_attributed_to_the_generating_model[local-gemma:4b-LOCAL_LLM-local-gemma generated expected output]" time="0.003"><failure message="Failed: DID NOT RAISE ValueError">model = 'local-gemma:4b', author = 'LOCAL_LLM'
+source = 'local-gemma generated expected output'
+
+    @pytest.mark.parametrize('model,author,source', [
+        ('llama3.1:8b', 'LLAMA', 'LLAMA generated expected output'),
+        ('local-gemma:4b', 'LOCAL_LLM', 'local-gemma generated expected output'),
+        ('local-gemma:4b', 'LOCAL_LLM', 'LOCAL_LLM generated expected output'),
+    ])
+    def test_expected_values_cannot_be_attributed_to_the_generating_model(model, author, source):
+        from backend.tests.test_qwen_function_blocks import specification
+        from backend.nis.simulation.signals.core.function_block import verify_function_cases
+        spec = specification()
+        definition = spec['function_block']
+        definition['provenance'].update(model=model, generated_by=author)
+        definition['verification_cases'] = [{'source': source, 'steps': [
+            {'inputs': {'value': 18.}, 'dt_s': 0., 'expected': True}]}]
+&gt;       with pytest.raises(ValueError, match='independent source'):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+backend\tests\test_local_model_selection.py:245: Failed</failure></testcase><testcase classname="tests.test_local_model_selection" name="test_expected_values_cannot_be_attributed_to_the_generating_model[local-gemma:4b-LOCAL_LLM-LOCAL_LLM generated expected output]" time="0.003"><failure message="Failed: DID NOT RAISE ValueError">model = 'local-gemma:4b', author = 'LOCAL_LLM'
+source = 'LOCAL_LLM generated expected output'
+
+    @pytest.mark.parametrize('model,author,source', [
+        ('llama3.1:8b', 'LLAMA', 'LLAMA generated expected output'),
+        ('local-gemma:4b', 'LOCAL_LLM', 'local-gemma generated expected output'),
+        ('local-gemma:4b', 'LOCAL_LLM', 'LOCAL_LLM generated expected output'),
+    ])
+    def test_expected_values_cannot_be_attributed_to_the_generating_model(model, author, source):
+        from backend.tests.test_qwen_function_blocks import specification
+        from backend.nis.simulation.signals.core.function_block import verify_function_cases
+        spec = specification()
+        definition = spec['function_block']
+        definition['provenance'].update(model=model, generated_by=author)
+        definition['verification_cases'] = [{'source': source, 'steps': [
+            {'inputs': {'value': 18.}, 'dt_s': 0., 'expected': True}]}]
+&gt;       with pytest.raises(ValueError, match='independent source'):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+backend\tests\test_local_model_selection.py:245: Failed</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="1.316" timestamp="2026-11-06T18:29:24.939636+01:00" hostname="Haranga"><testcase classname="tests.test_qwen_document_intake" name="test_illustration_caption_does_not_override_an_explicit_monitoring_function" time="0.020"><failure message="assert False&#10; +  where False = any(&lt;generator object test_illustration_caption_does_not_override_an_explicit_monitoring_function.&lt;locals&gt;.&lt;genexpr&gt; at 0x00000259EF04D220&gt;)">def test_illustration_caption_does_not_override_an_explicit_monitoring_function():
+        from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+        source = '## Beispiel Stromsensor\nVerwendung:\n- Motorstromüberwachung\nBeispiel:\nMotorCurrent &gt; 5 A\n'
+        units = document_component_sources(document_source_references(source))
+&gt;       assert any('Motorstromüberwachung' in unit['text'] and unit['policy']['kind'] == 'FUNCTION' for unit in units)
+E       assert False
+E        +  where False = any(&lt;generator object test_illustration_caption_does_not_override_an_explicit_monitoring_function.&lt;locals&gt;.&lt;genexpr&gt; at 0x00000259EF04D220&gt;)
+
+backend\tests\test_qwen_document_intake.py:1919: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_code_fence_markers_are_not_executable_functions_or_standalone_requirements" time="0.003"><failure message="assert not True&#10; +  where True = any(&lt;generator object test_code_fence_markers_are_not_executable_functions_or_standalone_requirements.&lt;locals&gt;.&lt;genexpr&gt; at 0x00000259EF04E740&gt;)">def test_code_fence_markers_are_not_executable_functions_or_standalone_requirements():
+        from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+        source = '## Funktionen\nRouting\n```text\nMotorCurrent &gt; 5 A\n```\n'
+        units = document_component_sources(document_source_references(source))
+&gt;       assert not any(unit['text'].strip().startswith('```') for unit in units)
+E       assert not True
+E        +  where True = any(&lt;generator object test_code_fence_markers_are_not_executable_functions_or_standalone_requirements.&lt;locals&gt;.&lt;genexpr&gt; at 0x00000259EF04E740&gt;)
+
+backend\tests\test_qwen_document_intake.py:1927: AssertionError</failure></testcase></testsuite></testsuites>

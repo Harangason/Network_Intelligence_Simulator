@@ -217,11 +217,15 @@ export function confirmTechnologyParameters(parameters: Parameters, technology: 
     .map(field => [field.key, values[field.key]]).filter(([, value]) => value !== undefined && value !== null && value !== ''));
   const assumptionState = { ...record(parameters.simulation_parameter_assumptions), [technology.id]: {
     values: assumptions, provenance: Object.fromEntries(Object.entries(assumptions).map(([key, value]) =>
-      [key, {source:'NIS_SIMULATION_ASSUMPTION', status:'ASSUMED', technology:technology.id, hardware_evidence:false, value}])) }};
+      [key, {source:'NIS_SIMULATION_ASSUMPTION', status:'ASSUMED', technology:technology.id, hardware_evidence:false, value,
+        parameter_review:{source:'EXPLICIT_USER_PARAMETER_REVIEW',status:'CONFIRMED',value,
+          revision_sha256:technology.parameter_value_review?.revision_sha256}}])) }};
   const selected = Object.fromEntries((technology.parameter_schema ?? []).filter(field => !assumptionFields.has(field.key) && technologyParameterApplicable(field, values)).map(field => [field.key, values[field.key]])
     .filter(([, value]) => value !== undefined && value !== null && value !== ''));
   if (selected.bitrate === undefined && selected.data_bitrate !== undefined) selected.bitrate = selected.data_bitrate;
-  const provenance = Object.fromEntries(Object.entries(selected).map(([key, value]) => [key, { source: 'USER_CONFIRMED', status: 'CONFIRMED', value }]));
+  const provenance = Object.fromEntries(Object.entries(selected).map(([key, value]) => [key, { source: 'USER_CONFIRMED', status: 'CONFIRMED', value,
+    parameter_review:{source:'EXPLICIT_USER_PARAMETER_REVIEW',status:'CONFIRMED',value,
+      revision_sha256:technology.parameter_value_review?.revision_sha256} }]));
   const scoped = { ...record(parameters.technology_parameters), [technology.id]: { values: selected, provenance,
     ...(Object.keys(retired).length ? { retired_parameters: retired } : {}) } };
   // Mixed projects retain their primary technology and every declared network.
@@ -270,7 +274,9 @@ export function confirmNetworkParameters(parameters: Parameters, technology: Tec
     && values[field.key] !== undefined && values[field.key] !== null && values[field.key] !== '');
   const confirmed = Object.fromEntries(fields.map(field => [field.key, values[field.key]]));
   return { ...parameters, networks: networks.map(item => selected.has(item.id) ? { ...item, ...confirmed,
-    parameter_provenance: { ...record(item.parameter_provenance), ...Object.fromEntries(Object.entries(confirmed).map(([key, value]) => [key, { source: 'USER_CONFIRMED', status: 'CONFIRMED', value }])) } } : item) };
+    parameter_provenance: { ...record(item.parameter_provenance), ...Object.fromEntries(Object.entries(confirmed).map(([key, value]) => [key, { source: 'USER_CONFIRMED', status: 'CONFIRMED', value,
+      parameter_review:{source:'EXPLICIT_USER_PARAMETER_REVIEW',status:'CONFIRMED',value,
+        revision_sha256:technology.parameter_value_review?.revision_sha256} }])) } } : item) };
 }
 
 export type ReviewFinding = { code?: string; message?: string; object_type?: string; object_id?: string; recommendation?: string };
@@ -311,6 +317,16 @@ export function networkRateReviewTargets(parameters: Parameters, technology: Tec
 export function parameterValueStatus(parameters: Parameters, key: string, technologyId: string) {
   if (!technologyParameterUnverified(parameters, key, technologyId)) return 'CONFIRMED';
   const assumed = record(record(record(parameters.simulation_parameter_assumptions)[technologyId]).values);
+  const review = record(record(parameters.technology_parameter_reviews)[technologyId]);
+  const scoped = record(record(record(parameters.technology_parameters)[technologyId]).values);
+  const current = scoped[key] ?? assumed[key] ?? (technologyKey(parameters.technology) === technologyKey(technologyId) ? parameters[key] : undefined);
+  const proof = record(record(record(record(parameters.simulation_parameter_assumptions)[technologyId]).provenance)[key]);
+  const savedReview = record(proof.parameter_review);
+  const reviewedSetting = proof.value === current && savedReview.source === 'EXPLICIT_USER_PARAMETER_REVIEW'
+    && savedReview.status === 'CONFIRMED' && savedReview.value === current && typeof review.revision_sha256 === 'string'
+    && savedReview.revision_sha256 === review.revision_sha256;
+  if (review.status === 'CONFIRMED' && current != null && current !== ''
+      && (JSON.stringify(record(review.values)[key]) === JSON.stringify(current) || reviewedSetting)) return 'REVIEWED_CATALOG';
   return present(assumed[key]) !== undefined ? 'SAVED_ASSUMPTION' : 'PROPOSAL';
 }
 

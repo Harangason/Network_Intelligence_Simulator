@@ -1,0 +1,99 @@
+--- before
++++ after
+@@ -1,5 +1,6 @@
+ """One real 8B decoder probe with an authored251-device inventory; no model writes."""
+ import asyncio
++import argparse
+ from copy import deepcopy
+ from datetime import datetime, timezone
+ import hashlib
+@@ -19,7 +20,12 @@
+ 
+ DIR = Path(__file__).resolve().parent
+ GOAL = DIR.parent
+-OUT = DIR / 'native-251'
++parser = argparse.ArgumentParser()
++parser.add_argument('--shared-fields-counter', action='store_true')
++parser.add_argument('--output-name', default='native-251')
++args = parser.parse_args()
++OUT = DIR / args.output_name
++assert OUT.resolve().parent == DIR.resolve()
+ 
+ 
+ def save(name, value):
+@@ -41,6 +47,35 @@
+         facts.append(key)
+     expected = [known[i]['id'] for i in (0, 1, 17, 63, 127, 200, 249, 250)]
+     schema = r._reference_schema_for_stage(prepared, {'devices'}, derivation_fact_ids=facts, existing_devices=known)
++    original_schema = deepcopy(schema)
++    if args.shared_fields_counter:
++        # Independent diagnostic transformation, not an application repair.
++        definitions, by_value = {}, {}
++        for name, node in schema['$defs'].items():
++            if not name.startswith('NativeReferenceBinding_'):
++                continue
++            for alternative in node['anyOf']:
++                fields = next(iter(alternative['properties'].values()))['properties']
++                for field in ('source_fact_ids', 'rationale', 'field_references'):
++                    value = json.dumps(fields[field], sort_keys=True, separators=(',', ':'))
++                    if value not in by_value:
++                        key = 'IndependentBindingField_' + str(len(by_value))
++                        by_value[value] = key
++                        definitions[key] = deepcopy(fields[field])
++                    fields[field] = {'$ref': '#/$defs/' + by_value[value]}
++        restored = deepcopy(schema)
++        def restore(value):
++            if isinstance(value, dict):
++                reference = value.get('$ref', '').removeprefix('#/$defs/')
++                if reference in definitions:
++                    return deepcopy(definitions[reference])
++                return {key: restore(item) for key, item in value.items()}
++            return [restore(item) for item in value] if isinstance(value, list) else value
++        assert restore(restored) == original_schema
++        assert not set(definitions) & schema['$defs'].keys()
++        schema['$defs'].update(definitions)
++        save('independent-field-sharing-proof.json', dict(unique_fields=len(definitions),
++            expanded_schema_exactly_equal_to_unchanged_product=True, product_code_changed=False))
+     current = {'original_source': 'Independent synthetic binding counter only. No hardware or safety qualification.',
+                'planning_stage': 'Authored functional binding counter',
+                'inventory_target_for_this_stage': None,
+@@ -63,12 +98,29 @@
+         def report(value):
+             events.write(json.dumps(dict(at=datetime.now(timezone.utc).isoformat(), **value))+'\n')
+             events.flush()
+-        async with httpx.AsyncClient(timeout=1200, trust_env=False) as client:
+-            body = await r._reference_stream_response(client, 'http://127.0.0.1:11434/api/chat', payload, report)
++        with (OUT / 'raw-provider-stream.ndjson').open('wb') as raw:
++            class Capture(httpx.AsyncByteStream):
++                def __init__(self, stream): self.stream = stream
++                async def __aiter__(self):
++                    async for chunk in self.stream:
++                        raw.write(chunk); raw.flush()
++                        yield chunk
++                async def aclose(self): await self.stream.aclose()
++            async def capture(response):
++                save('response-headers.json', dict(status=response.status_code, headers=dict(response.headers)))
++                response.stream = Capture(response.stream)
++            try:
++                async with httpx.AsyncClient(timeout=1200, trust_env=False, event_hooks={'response': [capture]}) as client:
++                    body = await r._reference_stream_response(client, 'http://127.0.0.1:11434/api/chat', payload, report)
++            except Exception as error:
++                save('result.json', dict(status='FAIL', error=str(error),
++                    independent_shared_fields_counter=args.shared_fields_counter, original_acceptance=False))
++                raise
+     save('response.json', body)
+     assert body['done'] is True and body.get('done_reason') != 'length' and body['model'] == 'llama3.1:8b'
+     value = document_response_json(body['message']['content'])
+     Draft202012Validator(schema).validate(value)
++    Draft202012Validator(original_schema).validate(value)
+     rows = r._reference_expand_inventory_choices(known, value['inventory_choices'])
+     rows = ReferenceDesignProposal.model_validate({'devices': rows}).model_dump(mode='json')['devices']
+     rows = r._reference_scoped_inventory_delta(known, rows, derivation_fact_ids=facts)
+@@ -86,6 +138,7 @@
+         schema_bytes=len(json.dumps(schema, ensure_ascii=False, separators=(',', ':')).encode()),
+         public_validation_scoped_merge_preserved=True, original_acceptance=False, simulation_acceptance=False,
+         source_sha256=hashlib.sha256((ROOT / 'backend/nis/agent/orchestration/local_reasoner.py').read_bytes()).hexdigest(),
++        independent_shared_fields_counter=args.shared_fields_counter,
+         metrics={key: body.get(key) for key in ('prompt_eval_count','eval_count','prompt_eval_duration','eval_duration','total_duration')})
+     save('result.json', result)
+     print(json.dumps(result), flush=True)

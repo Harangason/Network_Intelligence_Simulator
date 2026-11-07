@@ -196,7 +196,7 @@ def simulation_parameter_values(technology_id: str, profile: dict[str, Any]) -> 
     for _ in range(len(schema)):
         changed = False
         for name, spec in schema.items():
-            if name in preset:
+            if name in preset or parameter_value_role(name, spec) != 'CONFIGURATION':
                 continue
             matches = [item for item in spec.get('conditional_defaults') or []
                        if all(proposals.get(key, {}).get('value') == value for key, value in item['when'].items())]
@@ -231,7 +231,8 @@ def _constrained_simulation_proposals(technology_id, profile, proposals, fixed):
         changed = False
         for rule in profile.get('parameter_constraints') or []:
             key = rule['parameter']
-            if key not in values or key in fixed or 'confirmed' in key.lower():
+            if (key not in values or key in fixed
+                    or parameter_value_role(key, schema.get(key, {})) != 'CONFIGURATION'):
                 continue
             if not all(_condition_equal(values.get(k), v) for k, v in rule.get('when', {}).items()):
                 continue

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="3" time="1.210" timestamp="2026-11-07T19:23:42.108510+01:00" hostname="Haranga"><testcase classname="tests.test_reference_inventory_context_capacity" name="test_noncontiguous_column_values_share_once_and_roundtrip_exactly" time="0.190"><failure message="assert False&#10; +  where False = any(&lt;generator object test_noncontiguous_column_values_share_once_and_roundtrip_exactly.&lt;locals&gt;.&lt;genexpr&gt; at 0x000002DB4FC14C70&gt;)">def test_noncontiguous_column_values_share_once_and_roundtrip_exactly():
+        from backend.tests.test_reference_context_delta_capacity import decode_wire
+        from backend.tests.test_reference_planning_throughput import unpack_context_message
+        current = authored_interleaved_context()
+        before = encoded(current)
+        packed = reasoner._reference_context_snapshot(current)
+        table = packed['nis_context_snapshot']['a/b~c']['']
+&gt;       assert any('dictionaries' in part for part in table.get('segments', [table]))
+E       assert False
+E        +  where False = any(&lt;generator object test_noncontiguous_column_values_share_once_and_roundtrip_exactly.&lt;locals&gt;.&lt;genexpr&gt; at 0x000002DB4FC14C70&gt;)
+
+backend\tests\test_reference_inventory_context_capacity.py:35: AssertionError</failure></testcase><testcase classname="tests.test_reference_inventory_context_capacity" name="test_interleaved_columns_preserve_complete_large_source_and_strict_bound" time="0.051"><failure message="ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.">def test_interleaved_columns_preserve_complete_large_source_and_strict_bound():
+        from backend.tests.test_reference_reasoner import effective_reference_context
+        current = authored_interleaved_context()
+        current['original_source'] = 'Complete independently authored literal source line.\n' * 1600
+        before = encoded(current)
+&gt;       messages, _, _ = reasoner._reference_context_messages([], None, current, 'Authored counter', 131072)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_inventory_context_capacity.py:49: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\nis\agent\orchestration\local_reasoner.py:1296: in _reference_context_messages
+    _reference_context_window(full, maximum)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+messages = [{'role': 'system', 'content': 'Authored counter NIS-Kontextfortsetzung: Die erste Nutzernachricht enthält den vollstä...e":"authored-reference-0","literal":false},null,250]]}}},"nis_context_tables":["/a~1b~0c/"],"nis_context_copies":[]}'}]
+maximum = 131072
+
+    def _reference_context_window(messages, maximum):
+        """Reserve complete UTF-8 input plus output; never shorten a source to fit."""
+        # Byte fallback tokenization cannot need more content tokens than UTF-8
+        # bytes. The provider tokenizes decoded message content, not the HTTP JSON
+        # wrapper and its additional string escaping. Include every retry message;
+        # the existing framing reserve also covers roles and chat-template tokens.
+        required = sum(len(message['content'].encode('utf-8')) for message in messages) + 8192 + 2048
+        if required &gt; maximum:
+&gt;           raise ValueError('Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten '
+                             'das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.')
+E           ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.
+
+backend\nis\agent\orchestration\local_reasoner.py:956: ValueError</failure></testcase><testcase classname="tests.test_reference_inventory_context_capacity" name="test_interleaved_column_dictionaries_survive_cached_patch_and_literal_key_order" time="0.084" /></testsuite></testsuites>

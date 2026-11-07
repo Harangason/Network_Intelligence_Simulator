@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="5.968" timestamp="2026-11-07T11:37:44.809598+01:00" hostname="Haranga"><testcase classname="tests.test_reference_inventory_closure" name="test_native_completed_exact_instances_accept_only_empty_complete_delta" time="4.803"><failure message="Failed: DID NOT RAISE ValidationError">def test_native_completed_exact_instances_accept_only_empty_complete_delta():
+        prepared, known, target = closure_case()
+        schema = r._reference_schema_for_stage(prepared, {'devices'}, inventory_target=target,
+                                             existing_devices=known)
+        validator = Draft202012Validator(schema)
+        empty = {'devices': [], 'unresolved': [], 'inventory_choices': [], 'inventory_complete': True}
+        validator.validate(empty)
+        # A fresh ID does not justify redeclaring an already covered original name.
+        variant = schema['properties']['inventory_choices']['items']
+        variant = next(row for row in variant.get('anyOf', [variant])
+                       if row['properties']['choice_kind']['enum'] == ['NEW_SENSOR'])
+        duplicate = {**deepcopy(known[0]), 'choice_kind': 'NEW_SENSOR',
+                     'id': variant['properties']['id']['enum'][0]}
+        for complete in (True, False):
+&gt;           with pytest.raises(ValidationError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE ValidationError
+
+backend\tests\test_reference_inventory_closure.py:48: Failed</failure></testcase></testsuite></testsuites>

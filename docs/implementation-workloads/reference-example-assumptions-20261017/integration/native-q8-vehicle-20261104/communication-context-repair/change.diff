@@ -1,0 +1,37 @@
+--- a/backend/nis/agent/orchestration/local_reasoner.py
++++ b/backend/nis/agent/orchestration/local_reasoner.py
+@@ -1544,7 +1544,14 @@
+                 if port_ids:
+                     stage_catalog['technology_parameters'] = technology_schemas_for(
+                         row['technology'] for row in current['ports'] if row['id'] in port_ids)
+-                prompt = {**content, 'current_candidate': {field: value for field, value in current.items() if field != 'communication'},
++                stage_candidate = {field: rows for field, rows in current.items() if field != 'communication'}
++                if allowed == {'communication'}:
++                    # Later senders need the structured decisions and their source
++                    # bindings. The earlier justifications stay on the full draft
++                    # for review and validation without consuming this stage's budget.
++                    stage_candidate = {field: [{key: value for key, value in row.items() if key != 'rationale'}
++                                               for row in rows] for field, rows in stage_candidate.items()}
++                prompt = {**content, 'current_candidate': stage_candidate,
+                           'registered_catalogs': stage_catalog,
+                           'known_communication': [
+                               {key: row.get(key) for key in ('id', 'producer_device_id', 'consumer_device_ids', 'scope', 'source_port_id', 'consumer_port_ids', 'transmission_mode', 'request_source', 'request_communication_id', 'cycle_ms', 'min_interval_ms')}
+--- a/backend/tests/test_reference_reasoner.py
++++ b/backend/tests/test_reference_reasoner.py
+@@ -339,6 +339,16 @@
+     batches = [row for row in observed if row['planning_stage'] == 'Fachliche Kommunikation']
+     assert len(batches) >= 2
+     assert any(row['known_communication'] for row in batches[1:])
++    assert all(batch['original_source'] == prepared['source_evidence']['source_text'] for batch in batches)
++    assert all(batch['reference_sources'] == prepared['reference_sources'] for batch in batches)
++    for batch in batches:
++        for field, rows in batch['current_candidate'].items():
++            if field == 'unresolved':
++                continue
++            assert all('rationale' not in row for row in rows)
++            assert all('field_references' in row for row in rows)
++            assert all(row['rationale'].strip() for row in result['proposal'][field])
++    assert all(row['parameters'] for row in batches[0]['current_candidate']['ports'])
+     assert result['source_evidence']['source_text'] == prepared['source_evidence']['source_text']
+     assert result['canonical_writes'] is False
+ 

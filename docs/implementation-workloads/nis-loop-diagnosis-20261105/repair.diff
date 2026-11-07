@@ -1,0 +1,49 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -1873,7 +1873,11 @@
+                 reference_messages, reference_prompt, reference_anchor, reference_anchors = [], None, None, []
+                 # Intermediate results remain internal native choices. No
+                 # incomplete profile can reach draft review or canonical apply.
+-                current['unresolved'] = []
++                # Reset downstream state before the first inventory request.
++                # Prior ports, functions and communication belong to the old
++                # device identities and otherwise inflate every repair prompt.
++                for field in fields:
++                    current[field] = []
+ 
+                 current['devices'], compiled = _reference_declared_instances(prepared, profile_facts)
+                 check_inventory(current['devices'])
+@@ -1935,11 +1939,6 @@
+                 inventory_findings = _validate_reference_inventory({'devices': current['devices']}, prepared, profile)
+                 if inventory_findings:
+                     raise ValueError('Inventar vor Anschlussplanung unvollständig: ' + json.dumps(inventory_findings, ensure_ascii=False))
+-                # A participant repair can change identities. Rebuild its IO
+-                # and later functions rather than exposing stale prior links.
+-                for field in fields:
+-                    if field not in {'devices', 'unresolved'}:
+-                        current[field] = []
+                 io_groups = {}
+                 for device in current['devices']:
+                     if device['kind'] != 'PHYSICAL_CONTEXT':
+--- before/backend/tests/test_reference_reasoner.py
++++ after/backend/tests/test_reference_reasoner.py
+@@ -1341,7 +1341,10 @@
+                 body = response.json()
+                 choice = json.loads(body['message']['content'])
+                 assert choice['communication']
+-                choice['communication'] = []
++                communication = choice['communication'][0]
++                communication['source_port_id'] = next(
++                    port['id'] for port in context['current_candidate']['ports']
++                    if port['device_id'] != communication['producer_device_id'])
+                 return httpx.Response(200, json={**body, 'message': {'content': json.dumps(choice)}})
+         return response
+ 
+@@ -1352,6 +1355,7 @@
+     replanned_inventory = next(context for context in observed[first_communication + 1:]
+                                if context['planning_stage'] == 'Physisches Quelleninventar')
+     assert replanned_inventory['validation_feedback']
++    assert 'tatsächlichen Senderanschluss' in replanned_inventory['validation_feedback']['validation_error']
+     assert replanned_inventory['original_source'] == prepared['source_evidence']['source_text']
+     assert replanned_inventory['reference_sources'] == prepared['reference_sources']
+     assert replanned_inventory['current_candidate']['devices']

@@ -1,0 +1,113 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -1374,12 +1374,14 @@
+                 # not copied into messages. Bound the actual transmitted prompt.
+                 budget = len(json.dumps(sample, ensure_ascii=False).encode()) + 4096 + 1800
+                 if (budget <= context_window and len(component_grounding['required_components']) <= 24
++                        and len(output_schema['properties']['components']['properties']) <= 24
+                         and sum(len(values) for values in technology_grounding.values()) <= 16):
+                     segments.append(segment)
+                     prepared.append({'rows': rows, 'schema': output_schema, 'content': user_content})
+                     continue
+-                max_bytes = len(segment['text'].encode()) - 500
+-                if max_bytes < 500:
++                segment_bytes = len(segment['text'].encode())
++                max_bytes = max(segment_bytes - 500, segment_bytes // 2)
++                if max_bytes < 1 or len(segment['text']) < 2:
+                     raise ValueError('Ein Quellenabschnitt überschreitet trotz automatischer Aufteilung das lokale KI-Kontextfenster. Die Quelle wurde nicht gekürzt.')
+                 smaller = document_segments(segment['text'], max_bytes=max_bytes)
+                 pending.extend({'start': segment['start'] + part['start'],
+@@ -1415,6 +1417,13 @@
+                     break
+                 except (ValueError, TypeError) as error:
+                     if attempt:
++                        body = response.json()
++                        logging.getLogger(__name__).warning('Native document validation failed: %s', json.dumps({
++                            'model': self.model, 'segment': index + 1, 'segment_count': len(segments),
++                            'attempt': attempt + 1, 'error': str(error), 'response': content,
++                            'response_sha256': hashlib.sha256(content.encode()).hexdigest(),
++                            **{key: body.get(key) for key in ('done_reason', 'eval_count', 'prompt_eval_count')},
++                        }, ensure_ascii=False))
+                         raise ValueError(f'Der lokale KI-Vorschlag für Abschnitt {index + 1} ist nicht quellenkonform: {error}') from error
+                     messages[1]['content'] = json.dumps({'source_name': source_name, 'source_lines': source_lines(references),
+                         'known_device_aliases': sorted(context_aliases),
+--- before/backend/tests/test_qwen_document_intake.py
++++ after/backend/tests/test_qwen_document_intake.py
+@@ -1582,3 +1582,77 @@
+         '7. Regulatory Requirements', '7.1 Machinery standards']
+     with pytest.raises(ValueError, match='Abschnittskontext|Quellenangabe fehlt'):
+         validate_document_interpretation(wrong_context, source, aggregate=True)
++
++
++@pytest.mark.parametrize('source_kind', ['independent_optional_lines', 'complete_preserved_example'])
++def test_document_decoder_cardinality_is_bounded_even_if_provider_ignores_max_properties(source_kind, monkeypatch):
++    from pathlib import Path
++    monkeypatch.setenv('LOCAL_AI_MODEL', 'llama3.1:8b')
++    source = ('\n'.join(f'Sensor: Messfuehler{i:02d}' for i in range(23))
++              + '\nBeobachtung: Zusatz A\nBeobachtung: Zusatz B\n')
++    if source_kind == 'complete_preserved_example':
++        raw = (Path(__file__).resolve().parents[2] / 'frontend/e2e/fixtures/document-preview-example.txt').read_bytes()
++        assert hashlib.sha256(raw).hexdigest() == '32c864c91ac85c2884ef0c3c9e62456e6ade59cc2a22cae384bdfe5a2e2eff60'
++        source = raw.decode('utf-8')
++    observed = []
++    class PayloadCaptured(Exception):
++        pass
++    async def run():
++        reasoner = LocalEngineeringReasoner()
++        await reasoner.client.aclose()
++        def transport(request):
++            if request.url.path == '/api/show':
++                return httpx.Response(200, json={'details': {'family': 'llama', 'format': 'gguf'},
++                    'model_info': {'general.parameter_count': 8030261312}, 'capabilities': ['completion', 'tools']})
++            payload = json.loads(request.content)
++            observed.append(payload)
++            components = payload['format']['properties']['components']
++            assert len(components['properties']) <= components['maxProperties'] == 24
++            # Choosing every permitted key cannot overflow, even when a provider
++            # does not enforce the maxProperties keyword itself.
++            assert len(dict.fromkeys(components['properties'])) <= 24
++            raise PayloadCaptured()
++        reasoner.client = httpx.AsyncClient(transport=httpx.MockTransport(transport))
++        try:
++            with pytest.raises(PayloadCaptured):
++                await reasoner.interpret_document(source, 'bounded-complete-source.txt')
++        finally:
++            await reasoner.client.aclose()
++    asyncio.run(run())
++    payload, = observed
++    fragment = ''.join(json.loads(payload['messages'][1]['content'])['source_lines'].values())
++    assert fragment and source.startswith(fragment) and len(fragment) < len(source)
++    assert payload['model'] == 'llama3.1:8b'
++    assert payload['options']['num_predict'] == 3000
++    assert payload['options']['num_ctx'] == 16384
++    assert payload['format']['properties']['technologies']['maxProperties'] == 16
++
++
++def test_terminal_invalid_document_answer_has_local_raw_response_and_hash_diagnostic(caplog, monkeypatch):
++    monkeypatch.setenv('LOCAL_AI_MODEL', 'llama3.1:8b')
++    invalid = json.dumps({'components': {'NO_SUCH_SOURCE': {'kind': 'INSTANCE', 'role': 'CONTROLLER', 'quantity': 1}},
++                          'technologies': {}, 'summary': 'Untrusted counterprobe', 'proposed_task': 'Do not adopt',
++                          'assumptions': [], 'open_questions': []})
++    async def run():
++        reasoner = LocalEngineeringReasoner()
++        await reasoner.client.aclose()
++        def transport(request):
++            if request.url.path == '/api/show':
++                return httpx.Response(200, json={'details': {'family': 'llama', 'format': 'gguf'},
++                    'model_info': {'general.parameter_count': 8030261312}, 'capabilities': ['completion', 'tools']})
++            return httpx.Response(200, json={'message': {'content': invalid}, 'done_reason': 'stop',
++                                           'eval_count': 73, 'prompt_eval_count': 121})
++        reasoner.client = httpx.AsyncClient(transport=httpx.MockTransport(transport))
++        try:
++            with pytest.raises(ValueError, match='nicht quellenkonform'):
++                await reasoner.interpret_document(SOURCE, 'invalid-counterprobe.txt')
++        finally:
++            await reasoner.client.aclose()
++    asyncio.run(run())
++    diagnostics = [row.message for row in caplog.records if row.message.startswith('Native document validation failed: ')]
++    assert len(diagnostics) == 1
++    diagnostic = json.loads(diagnostics[0].split(': ', 1)[1])
++    assert diagnostic['response'] == invalid
++    assert diagnostic['response_sha256'] == hashlib.sha256(invalid.encode()).hexdigest()
++    assert diagnostic['model'] == 'llama3.1:8b' and diagnostic['attempt'] == 2 and diagnostic['segment'] == 1
++    assert diagnostic['done_reason'] == 'stop' and diagnostic['eval_count'] == 73

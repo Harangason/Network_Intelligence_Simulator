@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="8.112" timestamp="2026-11-07T00:46:13.101028+01:00" hostname="Haranga"><testcase classname="tests.test_reference_inventory_codec" name="test_normal_planner_sends_only_open_decisions_and_preserves_complete_model" time="6.947"><failure message="AssertionError: assert 'id' not in {'choice_kind': {'type': 'string', 'enum': ['NEW_SENSOR']}, 'rationale': {'minLength': 1, 'title': 'Rationale', 'type'...ems': 0}}, 'additionalProperties': False}, 'id': {'type': 'string', 'enum': ['derived-10207b35ff81000da815fd99']}, ...}">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x00000206621C9BA0&gt;
+
+    def test_normal_planner_sends_only_open_decisions_and_preserves_complete_model(monkeypatch):
+        from backend.tests.test_reference_inventory_batch import (
+            test_normal_planner_batches_seventeen_literal_sensors_without_scope_loss)
+        original = r._reference_stream_response
+        seen = []
+    
+        async def observe(client, url, payload, report):
+            choices = payload['format']['properties'].get('inventory_choices', {})
+            if choices.get('type') == 'object':
+                for slot in choices['properties'].values():
+                    for variant in slot.get('anyOf', [slot]):
+                        if variant['properties']['choice_kind']['enum'] == ['NEW_SENSOR']:
+                            assert 'id' not in variant['properties']
+                            assert 'source_fact_ids' not in variant['properties']
+                seen.append(len(choices['properties']))
+            return await original(client, url, payload, report)
+    
+        monkeypatch.setattr(r, '_reference_stream_response', observe)
+&gt;       test_normal_planner_batches_seventeen_literal_sensors_without_scope_loss(monkeypatch)
+
+backend\tests\test_reference_inventory_codec.py:93: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_inventory_batch.py:113: in test_normal_planner_batches_seventeen_literal_sensors_without_scope_loss
+    result = run_reference(engine, prepared)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\tests\test_reference_reasoner.py:395: in run_reference
+    return asyncio.run(run())
+           ^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:196: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:119: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\base_events.py:725: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+backend\tests\test_reference_reasoner.py:392: in run
+    return await reasoner.plan_reference_design(prepared)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\local_reasoner.py:2095: in plan_reference_design
+    await plan_profile()
+backend\nis\agent\orchestration\local_reasoner.py:2016: in plan_profile
+    devices = await infer('Physisches Quelleninventar', {'devices'}, feedback=feedback, inventory_target=target)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\local_reasoner.py:1835: in infer
+    body = await _reference_stream_response(self.client, self.chat_url, payload, report_output)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+client = &lt;httpx.AsyncClient object at 0x0000020669EDF890&gt;
+url = 'http://127.0.0.1:11434/api/chat'
+payload = {'model': 'qwen3.8:27b', 'messages': [{'role': 'system', 'content': 'Du bist der lokale NIS-Referenzplaner für ausdrüc...: 'Measurements', 'type': 'array', 'maxItems': 0}, ...}, 'title': 'ReferenceDesignProposal', ...}, 'think': False, ...}
+report = &lt;function LocalEngineeringReasoner.plan_reference_design.&lt;locals&gt;.infer.&lt;locals&gt;.report_output at 0x000002066A88A020&gt;
+
+    async def observe(client, url, payload, report):
+        choices = payload['format']['properties'].get('inventory_choices', {})
+        if choices.get('type') == 'object':
+            for slot in choices['properties'].values():
+                for variant in slot.get('anyOf', [slot]):
+                    if variant['properties']['choice_kind']['enum'] == ['NEW_SENSOR']:
+&gt;                       assert 'id' not in variant['properties']
+E                       AssertionError: assert 'id' not in {'choice_kind': {'type': 'string', 'enum': ['NEW_SENSOR']}, 'rationale': {'minLength': 1, 'title': 'Rationale', 'type'...ems': 0}}, 'additionalProperties': False}, 'id': {'type': 'string', 'enum': ['derived-10207b35ff81000da815fd99']}, ...}
+
+backend\tests\test_reference_inventory_codec.py:87: AssertionError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="4" time="1.238" timestamp="2026-11-07T03:10:43.484829+01:00" hostname="Haranga"><testcase classname="tests.test_reference_inventory_context_capacity" name="test_complete_large_inventory_and_direct_view_fit_without_relaxing_context[147-800]" time="0.045"><failure message="ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.">size = 147, source_lines = 800
+
+    @pytest.mark.parametrize(('size', 'source_lines'), [(147, 800), (251, 500)])
+    def test_complete_large_inventory_and_direct_view_fit_without_relaxing_context(size, source_lines):
+        current = authored_context(size, source_lines)
+        before = encoded(current)
+&gt;       messages, _, _ = reasoner._reference_context_messages(
+            [], None, current, 'Independent counter only', 131072)
+
+backend\tests\test_reference_inventory_context_capacity.py:64: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\nis\agent\orchestration\local_reasoner.py:1198: in _reference_context_messages
+    _reference_context_window(full, maximum)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+messages = [{'role': 'system', 'content': 'Independent counter only NIS-Kontextfortsetzung: Die erste Nutzernachricht enthält den...nt device 146 µ","kind":"SENSOR","source_fact_ids":["F2"],"source_member_bindings":{"F2":"independent member 3"}}]}}'}]
+maximum = 131072
+
+    def _reference_context_window(messages, maximum):
+        """Reserve complete UTF-8 input plus output; never shorten a source to fit."""
+        # Byte fallback tokenization cannot need more content tokens than UTF-8
+        # bytes. The provider tokenizes decoded message content, not the HTTP JSON
+        # wrapper and its additional string escaping. Include every retry message;
+        # the existing framing reserve also covers roles and chat-template tokens.
+        required = sum(len(message['content'].encode('utf-8')) for message in messages) + 8192 + 2048
+        if required &gt; maximum:
+&gt;           raise ValueError('Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten '
+                             'das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.')
+E           ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.
+
+backend\nis\agent\orchestration\local_reasoner.py:891: ValueError</failure></testcase><testcase classname="tests.test_reference_inventory_context_capacity" name="test_complete_large_inventory_and_direct_view_fit_without_relaxing_context[251-500]" time="0.078"><failure message="ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.">size = 251, source_lines = 500
+
+    @pytest.mark.parametrize(('size', 'source_lines'), [(147, 800), (251, 500)])
+    def test_complete_large_inventory_and_direct_view_fit_without_relaxing_context(size, source_lines):
+        current = authored_context(size, source_lines)
+        before = encoded(current)
+&gt;       messages, _, _ = reasoner._reference_context_messages(
+            [], None, current, 'Independent counter only', 131072)
+
+backend\tests\test_reference_inventory_context_capacity.py:64: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\nis\agent\orchestration\local_reasoner.py:1198: in _reference_context_messages
+    _reference_context_window(full, maximum)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+messages = [{'role': 'system', 'content': 'Independent counter only NIS-Kontextfortsetzung: Die erste Nutzernachricht enthält den... device 250 µ","kind":"ACTUATOR","source_fact_ids":["F1"],"source_member_bindings":{"F1":"independent member 3"}}]}}'}]
+maximum = 131072
+
+    def _reference_context_window(messages, maximum):
+        """Reserve complete UTF-8 input plus output; never shorten a source to fit."""
+        # Byte fallback tokenization cannot need more content tokens than UTF-8
+        # bytes. The provider tokenizes decoded message content, not the HTTP JSON
+        # wrapper and its additional string escaping. Include every retry message;
+        # the existing framing reserve also covers roles and chat-template tokens.
+        required = sum(len(message['content'].encode('utf-8')) for message in messages) + 8192 + 2048
+        if required &gt; maximum:
+&gt;           raise ValueError('Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten '
+                             'das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.')
+E           ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.
+
+backend\nis\agent\orchestration\local_reasoner.py:891: ValueError</failure></testcase><testcase classname="tests.test_reference_inventory_context_capacity" name="test_latest_selection_preserves_every_binding_order_and_literal_after_cached_prefix" time="0.119"><failure message="AssertionError: assert False&#10; +  where False = isinstance([{'id': 'authored-device-000', 'name': 'Independent device 000 µ', 'kind': 'CONTROLLER', 'source_fact_ids': ['F0'], ..... 'authored-device-005', 'name': 'Independent device 005 µ', 'kind': 'CONTROLLER', 'source_fact_ids': ['F2'], ...}, ...], dict)">def test_latest_selection_preserves_every_binding_order_and_literal_after_cached_prefix():
+        first = authored_context(20, 5)
+        messages, _, _ = reasoner._reference_context_messages([], None, first, 'Independent', 131072)
+        history = [*messages, {'role': 'assistant', 'content': '{"authored_counter":true}'}]
+        current = deepcopy(first)
+        current['inventory_target_for_this_stage']['member'] = 'next member µ /~'
+        # Private transport must preserve all JSON values; these are serializer
+        # adversarial data, not a claim that typed hardware bindings accept numbers.
+        current['current_candidate']['devices'][7]['source_member_bindings'] = {
+            'a/b~c': [False, 0, 0.0, -0.0, None, '0'], '': 'literal'}
+        wire, _, _ = reasoner._reference_context_messages(
+            history, first, current, 'Independent', 131072, anchor=(history, first))
+        assert wire[:2] == messages
+        assert encoded(effective_reference_context(wire)) == encoded(current)
+        selection = json.loads(wire[-1]['content'])['nis_current_selection']
+        assert selection['inventory_target'] == current['inventory_target_for_this_stage']
+        assert encoded(read_selection(selection)) == encoded(expected_selection(current))
+&gt;       assert isinstance(selection['existing_inventory'], dict)
+E       AssertionError: assert False
+E        +  where False = isinstance([{'id': 'authored-device-000', 'name': 'Independent device 000 µ', 'kind': 'CONTROLLER', 'source_fact_ids': ['F0'], ..... 'authored-device-005', 'name': 'Independent device 005 µ', 'kind': 'CONTROLLER', 'source_fact_ids': ['F2'], ...}, ...], dict)
+
+backend\tests\test_reference_inventory_context_capacity.py:96: AssertionError</failure></testcase><testcase classname="tests.test_reference_inventory_context_capacity" name="test_oversized_complete_input_is_still_rejected_and_exact_context_is_diagnosable" time="0.067"><failure message="KeyError: 'complete_context'">caplog = &lt;_pytest.logging.LogCaptureFixture object at 0x000001F628C5A270&gt;
+
+    def test_oversized_complete_input_is_still_rejected_and_exact_context_is_diagnosable(caplog):
+        current = authored_context(251, 800)
+        before = encoded(current)
+        with pytest.raises(ValueError, match='keine Quelle gekürzt'):
+            reasoner._reference_context_messages([], None, current, 'Independent counter only', 131072)
+        diagnostic = next(json.loads(row.message.split('Native reference context guard rejected complete input: ', 1)[1])
+                          for row in caplog.records if 'Native reference context guard rejected complete input: ' in row.message)
+&gt;       assert encoded(diagnostic['complete_context']) == before
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'complete_context'
+
+backend\tests\test_reference_inventory_context_capacity.py:106: KeyError</failure></testcase></testsuite></testsuites>

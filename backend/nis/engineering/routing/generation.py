@@ -25,6 +25,7 @@ INTERFACE_TO_PROTOCOL = {
     "LIN": "LIN",
     "FlexRay": "FLEXRAY",
     "Ethernet": "ETHERNET",
+    "SOME_IP": "SOME_IP",
     "EtherCAT": "ETHERCAT",
     "ProfiNET": "PROFINET",
     "ModbusTCP": "MODBUS_TCP",

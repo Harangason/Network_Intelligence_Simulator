@@ -85,6 +85,7 @@ INTERFACE_TYPES = (
     "OPCUA",
     "WiFi",
     "BLE",
+    "SOME_IP",
     "DDS",
     "ROS2",
     "ARINC",

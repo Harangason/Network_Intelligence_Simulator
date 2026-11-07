@@ -55,6 +55,7 @@ INTERFACE_PROTOCOLS = {
     "LIN": {"LIN"},
     "FlexRay": {"FLEXRAY"},
     "Ethernet": {"ETHERNET", "SOME_IP", "TCP", "UDP", "DDS", "ROS_2", "OPC_UA"},
+    "SOME_IP": {"SOME_IP"},
     "EtherCAT": {"ETHERCAT"},
     "ProfiNET": {"PROFINET"},
     "ModbusTCP": {"MODBUS_TCP", "MODBUS", "TCP"},

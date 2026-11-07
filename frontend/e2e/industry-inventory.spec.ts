@@ -1,3 +1,4 @@
+import { expectIntakeStartReady, startReviewedIntake } from './support/wizard-intake';
 import { test, expect } from 'playwright/test';
 import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
@@ -20,7 +21,7 @@ for (const scenario of cases) {
       if (count !== null) await expect(dialog.getByLabel(`${labels[key]}: verbindliche Anzahl`, { exact: true })).toHaveValue(String(count));
     }
     if (await dialog.getByRole('alert').filter({ hasText: 'Geräteumfang noch unvollständig' }).count()) {
-      await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+      await expectIntakeStartReady(dialog, false);
     }
   });
 }

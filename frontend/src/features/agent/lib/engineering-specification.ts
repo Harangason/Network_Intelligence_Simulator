@@ -107,6 +107,7 @@ export type ExtractedEngineeringSpecification = {
   networkArchitecture: NetworkArchitectureMode;
   targetCounts: EngineeringTargetCounts;
   unresolvedInventoryGroups: string[];
+  documentReviewRequired?: boolean;
   reference_design?: Record<string, unknown>;
 };
 
@@ -2120,6 +2121,7 @@ export function extractEngineeringSpecification(
   overrides: Partial<EngineeringHardwareCounts> = {},
   domainOverride?: string,
   completenessFirst = false,
+  options: { preview?: boolean } = {},
 ): ExtractedEngineeringSpecification {
   const reference = readDocumentReferenceDesign(text);
   if (reference) return extractReferenceDesignSpecification(text, reference, overrides, domainOverride);
@@ -2130,6 +2132,22 @@ export function extractEngineeringSpecification(
   const explicitMode = text.match(/^- Generierungsmodus:\s*(REAL_PROJECT|EXAMPLE_PROJECT)\s*$/mi)?.[1]?.toUpperCase();
   const legacyConfirmed = !explicitMode && /per Wizard-Uebernehmen bestaetigt/.test(text);
   const exampleRequested = engineeringGenerationMode(text) === 'EXAMPLE_PROJECT';
+  // A source document is not an approved instance inventory. In the wizard,
+  // keep its stated scope separate until typed source facts have been reviewed.
+  // Confirmed generation and short, explicit structured requests retain their
+  // existing path; accepted reference designs were resolved above.
+  if (options.preview && exampleRequested && !documentEquipment?.facts
+      && originalLines.some(line => /^\s*(?:#{1,6}\s+|\d+(?:\.\d+)*[.)]\s+)\S/u.test(line))) {
+    const domain = domainOverride || domainFrom(text);
+    return {
+      chains: [], domain, modelType: domainOverride || extractProjectModelType(text, domain),
+      interfaceType: 'Other', communicationSystems: extractCommunicationSystems(text),
+      communicationSystemCounts: extractCommunicationSystemCounts(text),
+      networkArchitecture: extractNetworkArchitectureMode(text),
+      targetCounts: { ...extractEngineeringTargetCounts(text), ...confirmedHardwareCounts(text), ...overrides },
+      unresolvedInventoryGroups: [], documentReviewRequired: true,
+    };
+  }
   const measurements = sensorMeasurementSelections(text);
   // Structured review selections are metadata, not natural-language hardware
   // inventory. Their JSON numbers and role names must not create extra nodes.
@@ -2498,11 +2516,14 @@ export function reconcileConfirmedGraphDevices(spec: ExtractedEngineeringSpecifi
   const importedConfirmed = /per Wizard-Uebernehmen bestaetigt/.test(prompt)
     && !/^- Generierungsmodus:\s*EXAMPLE_PROJECT\s*$/m.test(prompt);
   const catalog = architectureTemplates(spec.domain, importedConfirmed);
+  const used = new Set<string>();
+  const result: ExtractedEngineeringChain[] = [];
   const confirmedCoverageTemplate = (device: { name: string; role: ArchitectureTemplate["deviceType"]; owner?: string }) => {
     if (!device.owner || (device.role !== "SensorController" && device.role !== "ActuatorController")) return undefined;
     const ownerKey = keyOf(device.owner);
     const ownerRole = desired.get(ownerKey)?.role;
-    const knownOwner = spec.chains.find((chain) => keyOf(chain.hardware_name) === ownerKey && chain.device_type === ownerRole);
+    const knownOwner = spec.chains.find((chain) => keyOf(chain.hardware_name) === ownerKey && chain.device_type === ownerRole)
+      ?? result.find((chain) => keyOf(chain.hardware_name) === ownerKey && chain.device_type === ownerRole);
     const ownerTemplate = catalog.find((item) => keyOf(item.hardwareName) === ownerKey && item.deviceType === ownerRole);
     const owner = knownOwner ?? (ownerTemplate ? chainFromTemplate(ownerTemplate, 0, spec.domain) : undefined);
     if (!owner) return undefined;
@@ -2519,8 +2540,6 @@ export function reconcileConfirmedGraphDevices(spec: ExtractedEngineeringSpecifi
     }
     return undefined;
   };
-  const used = new Set<string>();
-  const result: ExtractedEngineeringChain[] = [];
   for (const [key, device] of desired) {
     const matches = spec.chains.filter((chain) => keyOf(chain.hardware_name) === key && chain.device_type === device.role);
     const explicitConnection = confirmedConnections[key];

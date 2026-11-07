@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="17" time="33.977" timestamp="2026-11-06T21:59:56.364136+01:00" hostname="Haranga"><testcase classname="tests.test_reference_inventory_batch" name="test_named_batch_grammar_and_runtime_preserve_all_distinct_identities" time="4.087" /><testcase classname="tests.test_reference_inventory_batch" name="test_batch_schema_rejects_missing_foreign_or_colliding_choices[missing]" time="1.499" /><testcase classname="tests.test_reference_inventory_batch" name="test_batch_schema_rejects_missing_foreign_or_colliding_choices[foreign_slot]" time="1.501" /><testcase classname="tests.test_reference_inventory_batch" name="test_batch_schema_rejects_missing_foreign_or_colliding_choices[wrong_name]" time="1.449" /><testcase classname="tests.test_reference_inventory_batch" name="test_batch_schema_rejects_missing_foreign_or_colliding_choices[wrong_kind]" time="1.484" /><testcase classname="tests.test_reference_inventory_batch" name="test_batch_schema_rejects_missing_foreign_or_colliding_choices[foreign_source]" time="1.586" /><testcase classname="tests.test_reference_inventory_batch" name="test_batch_schema_rejects_missing_foreign_or_colliding_choices[duplicate_id]" time="1.455" /><testcase classname="tests.test_reference_inventory_batch" name="test_runtime_rejects_missing_or_misbound_batch_even_without_schema" time="1.459" /><testcase classname="tests.test_reference_inventory_batch" name="test_batch_target_cannot_bypass_shared_eight_identity_bound" time="1.513" /><testcase classname="tests.test_reference_inventory_batch" name="test_normal_planner_batches_seventeen_literal_sensors_without_scope_loss" time="16.972"><failure message="KeyError: 'selected_inventory_required_count'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000016A11A1F820&gt;
+
+    def test_normal_planner_batches_seventeen_literal_sensors_without_scope_loss(monkeypatch):
+        import json
+        from backend.tests.test_reference_reasoner import reasoner_with_transport, run_reference, complete_design
+        request = fixture_request(sensor_group='17 Sensoren')
+        source, raw = request['prompt'].split('\n- Dokument-Geräte: ', 1)
+        envelope = json.loads(raw)
+        fact = next(row for row in envelope['facts'] if row['role'] == 'SENSOR')
+        fact.update(kind='INSTANCE', quantity=17)
+        envelope['devices'].append({**fact, 'minimum': False})
+        request['prompt'] = source + '\n- Dokument-Geräte: ' + json.dumps(envelope, ensure_ascii=False)
+    
+        def authored_design(prepared):
+            design = complete_design(prepared)
+            first = next(row for row in design['devices'] if row['kind'] == 'SENSOR')
+            names = [row['name'] for row in prepared['catalog']['source_devices']
+                     if row['evidence']['source_quote'] == '17 Sensoren']
+            assert len(names) == 17
+            first['name'] = names[0]
+            port = next(row for row in design['ports'] if row['device_id'] == first['id'])
+            measurement = next(row for row in design['measurements'] if row['device_id'] == first['id'])
+            communication = next(row for row in design['communication'] if row['producer_device_id'] == first['id'])
+            for index, name in enumerate(names[1:], 1):
+                identity, port_id = f'authored-sensor-{index}', f'authored-port-{index}'
+                design['devices'].append({**deepcopy(first), 'id': identity, 'name': name})
+                design['ports'].append({**deepcopy(port), 'id': port_id, 'device_id': identity})
+                design['measurements'].append({**deepcopy(measurement), 'device_id': identity})
+                design['communication'].append({**deepcopy(communication), 'id': f'authored-signal-{index}',
+                    'signal_name': f'authored-signal-{index}', 'producer_device_id': identity, 'source_port_id': port_id})
+            return design
+    
+        engine, prepared, observed = reasoner_with_transport(monkeypatch, request=request, design_factory=authored_design)
+        from backend.nis.engineering.goal_execution.progress import sink
+        events = []
+        token = sink.set(events.append)
+        try:
+            result = run_reference(engine, prepared)
+        finally:
+            sink.reset(token)
+        targets = [row['inventory_target_for_this_stage'] for row in observed
+                   if row.get('inventory_target_for_this_stage') and
+                   prepared['facts'][row['inventory_target_for_this_stage']['fact_id']]['role'] == 'SENSOR']
+        assert [len(target['names']) for target in targets] == [8, 8, 1]
+        assert len({row['id'] for row in result['proposal']['devices']}) == 19
+        assert len(result['proposal']['measurements']) == 17
+        assert result['source_evidence'] == prepared['source_evidence']
+        assert result['proposal']['unresolved'] == []
+        outputs = [event for event in events if event.get('metadata', {}).get('source') == 'document_reference_output'
+                   and (event['metadata'].get('inventory_target') or {}).get('fact_id') == targets[0]['fact_id']]
+        assert outputs
+        assert {event['metadata']['selected_inventory_bound_count'] for event in outputs} == {0, 8, 16}
+        for event in outputs:
+            meta = event['metadata']
+&gt;           assert meta['selected_inventory_required_count'] == 17
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'selected_inventory_required_count'
+
+backend\tests\test_reference_inventory_batch.py:130: KeyError</failure></testcase><testcase classname="tests.test_reference_inventory_batch" name="test_explicit_type_list_role_matches_member_contract[Sensortypen-SENSOR]" time="0.002"><failure message="AssertionError: assert None == {'kind': 'CATEGORY', 'role': 'SENSOR', 'quantity': None}&#10; +  where None = &lt;function document_component_policy at 0x0000016A09DA9580&gt;('Sensortypen (Links, Rechts)')&#10; +    where &lt;function document_component_policy at 0x0000016A09DA9580&gt; = intake.document_component_policy">label = 'Sensortypen', role = 'SENSOR'
+
+    @pytest.mark.parametrize('label,role', [('Sensortypen', 'SENSOR'), ('Sensor types', 'SENSOR'),
+                                           ('Aktortypen', 'ACTUATOR'), ('Actuator types', 'ACTUATOR')])
+    def test_explicit_type_list_role_matches_member_contract(label, role):
+        text = label + ' (Links, Rechts)'
+&gt;       assert intake.document_component_policy(text) == {'kind': 'CATEGORY', 'role': role, 'quantity': None}
+E       AssertionError: assert None == {'kind': 'CATEGORY', 'role': 'SENSOR', 'quantity': None}
+E        +  where None = &lt;function document_component_policy at 0x0000016A09DA9580&gt;('Sensortypen (Links, Rechts)')
+E        +    where &lt;function document_component_policy at 0x0000016A09DA9580&gt; = intake.document_component_policy
+
+backend\tests\test_reference_inventory_batch.py:140: AssertionError</failure></testcase><testcase classname="tests.test_reference_inventory_batch" name="test_explicit_type_list_role_matches_member_contract[Sensor types-SENSOR]" time="0.001" /><testcase classname="tests.test_reference_inventory_batch" name="test_explicit_type_list_role_matches_member_contract[Aktortypen-ACTUATOR]" time="0.001" /><testcase classname="tests.test_reference_inventory_batch" name="test_explicit_type_list_role_matches_member_contract[Actuator types-ACTUATOR]" time="0.001" /><testcase classname="tests.test_reference_inventory_batch" name="test_mentions_and_requirements_are_not_promoted_to_type_list_hardware[Sensortypen m\xfcssen gepr\xfcft werden.-REQUIREMENT]" time="0.001" /><testcase classname="tests.test_reference_inventory_batch" name="test_mentions_and_requirements_are_not_promoted_to_type_list_hardware[Das System verarbeitet Sensortypen (Links, Rechts).-FUNCTION]" time="0.001" /><testcase classname="tests.test_reference_inventory_batch" name="test_mentions_and_requirements_are_not_promoted_to_type_list_hardware[Unbekannte Typen (Links, Rechts)-None]" time="0.001" /></testsuite></testsuites>

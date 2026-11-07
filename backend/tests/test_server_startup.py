@@ -215,7 +215,7 @@ def test_backend_runtime_root_falls_back_when_project_runtime_is_blocked(
     assert environment["SIMULATOR_RUNTIME_ROOT"] == str(fallback)
 
 
-def test_runtime_environment_uses_hybrid_demand_ai_and_thread_workers(
+def test_runtime_environment_uses_selected_local_ai_and_thread_workers(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     for name in (
@@ -243,10 +243,10 @@ def test_runtime_environment_uses_hybrid_demand_ai_and_thread_workers(
 
     environment = LAUNCHER._runtime_environment()
 
-    assert environment["AI_PROVIDER"] == "hybrid-demand"
-    assert environment["LOCAL_AI_MODEL"] == "qwen3.8:27b"
+    assert environment["AI_PROVIDER"] == "local"
+    assert environment["LOCAL_AI_MODEL"] == "llama3.1:8b"
     assert environment["LOCAL_AI_FAST_MODEL"] == "llama3.1:8b"
-    assert environment["CLOUD_ESCALATION"] == "on_failure"
+    assert environment["CLOUD_ESCALATION"] == "never"
     assert environment["OLLAMA_CONTEXT_LENGTH"] == "8192"
     assert environment["OLLAMA_FAST_KEEP_ALIVE"] == "30m"
     assert environment["NUMERIC_ACCELERATOR"] == "auto"

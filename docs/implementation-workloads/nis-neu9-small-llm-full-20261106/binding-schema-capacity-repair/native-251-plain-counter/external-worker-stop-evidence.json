@@ -1,0 +1,21 @@
+{
+  "source_thread": "01a1a88e-d7e6-7520-8260-b8fd7fb74dc2",
+  "read_at": "2026-11-07T09:12:24.231Z",
+  "scope": "Read-only existing chat evidence; no files outside NIS accessed",
+  "commands": [
+    {
+      "turn": "01a1b538-e4a2-71f3-859f-21878e28a515",
+      "command": "\"C:\\\\Program Files\\\\WindowsApps\\\\OpenAI.CodexPrimaryRuntime.v26-1103-91-0_26.1103.91.0_x64__3k8sg7r9htsxt\\\\dependencies\\\\native\\\\powershell\\\\pwsh.exe\" -Command '$env:OLLAMA_HOST='\"'127.0.0.1:11434'\n@'\nfrom subprocess import run,TimeoutExpired\ntry:\n p=run(['ollama','stop','llama3.1:8b'],timeout=8,capture_output=True,text=True)\n print('Stop exit',p.returncode,p.stderr.strip())\nexcept TimeoutExpired:\n print('Stop command timed out')\n'@ | python -B -\nollama ps\"",
+      "status": "completed",
+      "exitCode": 0
+    },
+    {
+      "turn": "01a1b538-e4a2-71f3-859f-21878e28a515",
+      "command": "\"C:\\\\Program Files\\\\WindowsApps\\\\OpenAI.CodexPrimaryRuntime.v26-1103-91-0_26.1103.91.0_x64__3k8sg7r9htsxt\\\\dependencies\\\\native\\\\powershell\\\\pwsh.exe\" -Command '$ErrorActionPreference='\"'Stop'\n\"'$env:OLLAMA_HOST='\"'127.0.0.1:11434'\n\"'$stalledState=ollama ps\nif(($stalledState -join \"`n\") -notmatch '\"'llama3\\\\.1:8b[\"'^'\"\\\\r\\\\n]*Stopping\\\\.\\\\.\\\\.'){throw 'Ollama meldet das Modell nicht mehr als hängend im Stoppvorgang.'}\n\"'$stalledRunner=Get-CimInstance Win32_Process -Filter '\"'ProcessId=8292'\n\"'$ollamaOwner=Get-CimInstance Win32_Process -Filter '\"'ProcessId=46668'\nif(-not \"'$stalledRunner -or $stalledRunner.Name -ne '\"'llama-server.exe' -or \"'$stalledRunner.ParentProcessId -ne $ollamaOwner.ProcessId -or $ollamaOwner.ExecutablePath -ne (Get-Command ollama).Source -or $stalledRunner.CommandLine -notmatch '\"'sha256-667b0c1932bc6ffc593ed1d03f895bf2dc8dc6df21db3042284a6f4416b06a29'){throw 'Der hängende Ollama-Runner konnte nicht eindeutig bestätigt werden.'}\nStop-Process -Id \"'$stalledRunner.ProcessId\nWait-Process -Id $stalledRunner.ProcessId -Timeout 5 -ErrorAction SilentlyContinue\nollama ps'",
+      "status": "completed",
+      "exitCode": 0
+    }
+  ],
+  "conclusion": "Lieferklar issued ollama stop llama3.1:8b and Stop-Process against main child8292 during NIS counter63652. Original counter is interrupted/not semantically evaluable; no NIS model switch was requested by NIS.",
+  "human_model_decision": "human-small-model-decision-20261107.json"
+}

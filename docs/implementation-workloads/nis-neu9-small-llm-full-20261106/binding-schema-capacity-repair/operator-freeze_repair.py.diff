@@ -1,0 +1,103 @@
+--- before
++++ after
+@@ -11,11 +11,11 @@
+ out=Path(__file__).resolve().parent
+ root=out.parents[2]
+ parser=argparse.ArgumentParser(description=__doc__)
+-parser.add_argument('--phase',choices=['source-reference','source-semantics','function-coverage','inventory-batch','inventory-codec','inventory-context','inventory-cohort'],required=True)
++parser.add_argument('--phase',choices=['source-reference','source-semantics','function-coverage','inventory-batch','inventory-codec','inventory-context','inventory-cohort','inventory-bindings'],required=True)
+ args=parser.parse_args()
+ semantic_phase=args.phase in {'source-semantics','function-coverage'}
+ coverage_phase=args.phase=='function-coverage'
+-directory=out/({'source-reference':'intake-source-reference-repair','source-semantics':'source-semantics-repair','function-coverage':'function-coverage-repair','inventory-batch':'inventory-batch-repair','inventory-codec':'inventory-output-codec-repair','inventory-context':'inventory-context-capacity-repair','inventory-cohort':'inventory-context-capacity-repair/cohort-table-repair'}[args.phase])
++directory=out/({'source-reference':'intake-source-reference-repair','source-semantics':'source-semantics-repair','function-coverage':'function-coverage-repair','inventory-batch':'inventory-batch-repair','inventory-codec':'inventory-output-codec-repair','inventory-context':'inventory-context-capacity-repair','inventory-cohort':'inventory-context-capacity-repair/cohort-table-repair','inventory-bindings':'binding-schema-capacity-repair'}[args.phase])
+ baseline=out/'intake-cardinality-repair'/'before'
+ def baseline_file(name):
+     if (baseline/name).exists():return baseline/name
+@@ -33,32 +33,41 @@
+ def parse(path):
+     return ast.parse(path.read_text(encoding='utf-8'))
+ 
+-if args.phase in {'inventory-context', 'inventory-cohort'}:
++if args.phase in {'inventory-context', 'inventory-cohort', 'inventory-bindings'}:
+     cohort_phase = args.phase == 'inventory-cohort'
++    binding_phase = args.phase == 'inventory-bindings'
+     import xml.etree.ElementTree as ET
+     checks = {}
+-    for name in ('green.xml' if cohort_phase else 'green-confirmed.xml', 'regression-final.xml'):
++    regression_file = 'regression.xml' if binding_phase else 'regression-final.xml'
++    for name in ('green.xml' if cohort_phase or binding_phase else 'green-confirmed.xml', regression_file):
+         result = next(ET.parse(directory/name).getroot().iter('testsuite')).attrib
+         assert result['failures'] == result['errors'] == result['skipped'] == '0', (name, result)
+         checks[name] = result
+     assert work['active_local_regression']['status'] == 'PASS'
+     assert work['active_local_regression']['exit_code'] == 0
+-    native_path = directory/('native-nis-cohort-purpose/result.json' if cohort_phase else 'native-nis-inventory/result.json')
++    native_path = directory/('native-251/result.json' if binding_phase else 'native-nis-cohort-purpose/result.json' if cohort_phase else 'native-nis-inventory/result.json')
+     native = json.loads(native_path.read_text(encoding='utf8'))
+     assert native['status'] == 'PASS' and native['actual_inference_requests'] == 1
+-    assert native['native_devices'] == 8 and native['preserved_existing_devices'] == 12
+-    assert native['packed_context'] and native['schema_and_public_validation_and_scoped_merge']
++    if binding_phase:
++        assert native['existing_devices'] == 251 and native['native_bindings'] == 8 and native['available_facts'] == 16
++        assert native['public_validation_scoped_merge_preserved']
++    else:
++        assert native['native_devices'] == 8 and native['preserved_existing_devices'] == 12
++        assert native['packed_context'] and native['schema_and_public_validation_and_scoped_merge']
+     if cohort_phase:
+         assert native['segmented_tables'] > 0 and native['native_owner_selection']
+         assert native['native_owner_selection_basis'] == 'purpose_only_in_complete_context'
+     reasoner = 'backend/nis/agent/orchestration/local_reasoner.py'
+-    new_test = 'backend/tests/test_reference_inventory_context_capacity.py'
++    new_test = 'backend/tests/test_reference_binding_schema_capacity.py' if binding_phase else 'backend/tests/test_reference_inventory_context_capacity.py'
+     extra_files = (['backend/tests/test_reference_planning_throughput.py',
+                     'backend/tests/test_reference_context_delta_capacity.py',
+                     str((out/'inventory-output-codec-repair/probe_native_codec.py').relative_to(root)).replace('\\', '/')]
+                    if cohort_phase else [])
+-    changed_nodes = {'_reference_context_messages', *({'_reference_context_snapshot'} if cohort_phase else set())}
+-    assert ref(root/reasoner)['sha256'] == native['source_code_sha256']
++    if binding_phase:
++        extra_files = [str((directory/'probe_native_bindings.py').relative_to(root)).replace('\\', '/')]
++    changed_nodes = ({'_reference_schema_for_stage'} if binding_phase else
++                     {'_reference_context_messages', *({'_reference_context_snapshot'} if cohort_phase else set())})
++    assert ref(root/reasoner)['sha256'] == native['source_sha256' if binding_phase else 'source_code_sha256']
+     def protected(tree):
+         return ast.dump(ast.Module(body=[node for node in tree.body
+             if getattr(node, 'name', None) not in changed_nodes], type_ignores=[]), include_attributes=False)
+@@ -92,7 +101,7 @@
+         'context_output_timeout_public_validation_merge_and_original_source_unchanged': True,
+         'native_semantic_selection_diagnostics': ref(out/'inventory-context-capacity-repair/native-selection-diagnostic-summary.json'),
+         'remaining_findings': work.get('remaining_findings', []),
+-        'qualification': ('Normal NIS inventory counter and unforced existing-owner selection from segmented context PASS. ' if cohort_phase else 'Normal constrained NIS inventory counter PASS. ') + 'Earlier unconstrained semantic selection FAIL also on raw baseline; not represented as comprehensively repaired or accepted. Full ordinary Original and simulation gates remain mandatory.',
++        'qualification': ('Native small-model counter on251 existing authored devices/16facts/eight bindings PASS. ' if binding_phase else 'Normal NIS inventory counter and unforced existing-owner selection from segmented context PASS. ' if cohort_phase else 'Normal constrained NIS inventory counter PASS. ') + 'Earlier unconstrained semantic selection FAIL also on raw baseline; not represented as comprehensively repaired or accepted. Full ordinary Original and simulation gates remain mandatory.',
+         'original_acceptance': False, 'simulation_acceptance': False,
+         'files': {name: ref(root/name)['sha256'] for name in work['files_changed']}}
+     (directory/'source-scope-proof.json').write_text(json.dumps(proof, ensure_ascii=False, indent=2)+'\n', encoding='utf8')
+@@ -100,21 +109,21 @@
+         work.setdefault(key, []).extend(values)
+     work.update(frozen_source=source, frozen_files=proof['files'], frozen_verification_sha256=verification)
+     work['tests'].append({'scope': 'Current-source combined reference/inventory/context/source/intake/cancellation regression',
+-        'result': checks['regression-final.xml'], 'evidence': [ref(directory/'regression-final.xml')]})
++        'result': checks[regression_file], 'evidence': [ref(directory/regression_file)]})
+     work['repair']['evidence'].extend([ref(directory/'source-scope-proof.json'), ref(native_path)])
+     (out/'workload.json').write_text(json.dumps(work, ensure_ascii=False, indent=2)+'\n', encoding='utf8')
+-    state_path = out/('attempt-08/state.json' if cohort_phase else 'attempt-07/state.json')
++    state_path = out/('attempt-10/state.json' if binding_phase else 'attempt-08/state.json' if cohort_phase else 'attempt-07/state.json')
+     state = json.loads(state_path.read_text(encoding='utf8'))
+     assert state['status'] == 'NATIVE_PLAN_REFERENCE_FAILED'
+-    terminal_path = out/('attempt-08/terminal-49354-verified/manifest.json' if cohort_phase else 'attempt-07/terminal-86039-verified/manifest.json')
++    terminal_path = out/('attempt-10/terminal-22291-verified/manifest.json' if binding_phase else 'attempt-08/terminal-49354-verified/manifest.json' if cohort_phase else 'attempt-07/terminal-86039-verified/manifest.json')
+     terminal = json.loads(terminal_path.read_text(encoding='utf8'))
+-    assert terminal['exit_code'] == 1 and terminal['session'] == (49354 if cohort_phase else 86039)
+-    if cohort_phase:
++    assert terminal['exit_code'] == 1 and terminal['session'] == (22291 if binding_phase else 49354 if cohort_phase else 86039)
++    if cohort_phase or binding_phase:
+         assert terminal['normal_terminal_result']['success'] is False
+         assert terminal['state_status'] == state['status']
+     else:
+         assert terminal['classification'] == 'NATIVE_TERMINAL_CONTEXT_BOUND_FAILURE_NOT_CANCELLATION'
+-    retire_name = 'retire-c069' if cohort_phase else 'retire-74c6'
++    retire_name = 'retire-cbb' if binding_phase else 'retire-c069' if cohort_phase else 'retire-74c6'
+     plan = {'receipt': state['receipt'], 'image_id': state['image_id'], 'resources': state['containers'],
+         'state': str(state_path), 'terminal_evidence': ref(terminal_path),
+         'expected_production_image': work['current_image'], 'output': str(out/retire_name),

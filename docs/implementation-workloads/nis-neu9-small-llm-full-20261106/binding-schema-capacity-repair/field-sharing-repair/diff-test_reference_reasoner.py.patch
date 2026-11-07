@@ -1,0 +1,16 @@
+--- before/backend/tests/test_reference_reasoner.py
++++ after/backend/tests/test_reference_reasoner.py
+@@ -49,6 +49,13 @@
+             assert node['additionalProperties'] is False
+             assert len(node['properties']) == 1 and node['required'] == list(node['properties'])
+             identity, record = next(iter(node['properties'].items()))
++            record = deepcopy(record)
++            for field, constraint in record['properties'].items():
++                if '$ref' in constraint:
++                    assert set(constraint) == {'$ref'}
++                    target = constraint['$ref'].removeprefix('#/$defs/')
++                    assert target.startswith('NativeReferenceBindingField_')
++                    record['properties'][field] = deepcopy(schema['$defs'][target])
+             records.setdefault(identity, []).append(record)
+     return records
+ 

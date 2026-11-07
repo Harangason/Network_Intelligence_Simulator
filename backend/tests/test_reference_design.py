@@ -952,10 +952,11 @@ def test_decoder_projection_does_not_accept_oversized_server_candidates(field):
     assert any(row['loc'] == location and row['type'] == error_type for row in error.value.errors())
 
 
-def test_local_reference_planner_uses_decoder_projection_but_rejects_oversized_response(prepared):
+def test_local_reference_planner_uses_decoder_projection_but_rejects_oversized_response(prepared, monkeypatch):
     import asyncio
     from contextlib import asynccontextmanager
     from backend.nis.agent.orchestration.local_reasoner import LocalEngineeringReasoner
+    monkeypatch.setenv('LOCAL_AI_MODEL', 'qwen3.8:27b')
     candidate = {'devices': [{**fixture_design(prepared)['devices'][0], 'rationale': 'x' * 2001}]}
     encoded_candidate = json.dumps({'devices': [], 'inventory_complete': True,
                                     'inventory_choices': [{'choice_kind': 'NEW_CONTROLLER', **row} for row in candidate['devices']]})

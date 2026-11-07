@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="1.114" timestamp="2026-11-07T15:19:05.805541+01:00" hostname="Haranga"><testcase classname="tests.test_reference_inventory_context_capacity" name="test_inventory_focus_references_complete_state_without_repeating_all_rows[191]" time="0.210"><failure message="AssertionError: assert {'columns': ['id', 'name', 'kind', 'source_fact_ids', 'source_member_bindings'], 'constants': {}, 'rows': [['authored-...ONTROLLER'], {}], ['authored-device-005', 'Independent device 005 µ', 'CONTROLLER', ['Authored-CONTROLLER'], {}], ...]} == '/current_candidate/devices'">size = 191
+
+    @pytest.mark.parametrize('size', [191, 251])
+    def test_inventory_focus_references_complete_state_without_repeating_all_rows(size):
+        current = authored_many_cohort_context(size)
+        current['existing_inventory_for_this_stage'] = '/current_candidate/devices'
+        current['original_source'] = ''.join(
+            f'Complete authored source line {i:04}: preserve all quantities, source bindings and units.\n'
+            for i in range(750))
+        before = encoded(current)
+        messages, _, _ = reasoner._reference_context_messages([], None, current, 'Independent capacity counter', 131072)
+        decoded = effective_reference_context(messages)
+        assert encoded(decoded) == before
+        focus = json.loads(messages[-1]['content'])['nis_current_selection']
+&gt;       assert focus['existing_inventory'] == '/current_candidate/devices'
+E       AssertionError: assert {'columns': ['id', 'name', 'kind', 'source_fact_ids', 'source_member_bindings'], 'constants': {}, 'rows': [['authored-...ONTROLLER'], {}], ['authored-device-005', 'Independent device 005 µ', 'CONTROLLER', ['Authored-CONTROLLER'], {}], ...]} == '/current_candidate/devices'
+
+backend\tests\test_reference_inventory_context_capacity.py:237: AssertionError</failure></testcase><testcase classname="tests.test_reference_inventory_context_capacity" name="test_inventory_focus_references_complete_state_without_repeating_all_rows[251]" time="0.070"><failure message="ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.">size = 251
+
+    @pytest.mark.parametrize('size', [191, 251])
+    def test_inventory_focus_references_complete_state_without_repeating_all_rows(size):
+        current = authored_many_cohort_context(size)
+        current['existing_inventory_for_this_stage'] = '/current_candidate/devices'
+        current['original_source'] = ''.join(
+            f'Complete authored source line {i:04}: preserve all quantities, source bindings and units.\n'
+            for i in range(750))
+        before = encoded(current)
+&gt;       messages, _, _ = reasoner._reference_context_messages([], None, current, 'Independent capacity counter', 131072)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_inventory_context_capacity.py:233: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\nis\agent\orchestration\local_reasoner.py:1302: in _reference_context_messages
+    _reference_context_window(full, maximum)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+messages = [{'role': 'system', 'content': 'Independent capacity counter NIS-Kontextfortsetzung: Die erste Nutzernachricht enthält...["Authored-ACTUATOR"],{}],["authored-device-250","Independent device 250 µ","ACTUATOR",["Authored-ACTUATOR"],{}]]}}}'}]
+maximum = 131072
+
+    def _reference_context_window(messages, maximum):
+        """Reserve complete UTF-8 input plus output; never shorten a source to fit."""
+        # Byte fallback tokenization cannot need more content tokens than UTF-8
+        # bytes. The provider tokenizes decoded message content, not the HTTP JSON
+        # wrapper and its additional string escaping. Include every retry message;
+        # the existing framing reserve also covers roles and chat-template tokens.
+        required = sum(len(message['content'].encode('utf-8')) for message in messages) + 8192 + 2048
+        if required &gt; maximum:
+&gt;           raise ValueError('Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten '
+                             'das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.')
+E           ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.
+
+backend\nis\agent\orchestration\local_reasoner.py:956: ValueError</failure></testcase></testsuite></testsuites>

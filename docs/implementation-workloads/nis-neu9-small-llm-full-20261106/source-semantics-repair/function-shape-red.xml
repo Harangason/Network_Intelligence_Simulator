@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="8" time="1.215" timestamp="2026-11-06T17:51:36.665707+01:00" hostname="Haranga"><testcase classname="tests.test_qwen_document_intake" name="test_compound_ellipsis_remains_one_complete_function_claim[Verbindung der LIN-, CAN-FD- und Ethernet-Segmente]" time="0.018"><failure message="AssertionError: assert 3 == 1&#10; +  where 3 = len([{'source_ref': 'R0002.F01', 'text': 'Verbindung der LIN-', 'source_quote': '- Verbindung der LIN-, CAN-FD- und Ethern...dung der LIN-, CAN-FD- und Ethernet-Segmente', 'policy': {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}, ...}])">clause = 'Verbindung der LIN-, CAN-FD- und Ethernet-Segmente'
+
+    @pytest.mark.parametrize('clause', ['Verbindung der LIN-, CAN-FD- und Ethernet-Segmente',
+                                      'Temperatur-, Druck- und Feuchtemessung'])
+    def test_compound_ellipsis_remains_one_complete_function_claim(clause):
+        from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+        source = '## Funktionen\n- ' + clause + '\n'
+        units = document_component_sources(document_source_references(source))
+        functions = [unit for unit in units if unit['policy'] and unit['policy']['kind'] == 'FUNCTION']
+&gt;       assert len(functions) == 1
+E       AssertionError: assert 3 == 1
+E        +  where 3 = len([{'source_ref': 'R0002.F01', 'text': 'Verbindung der LIN-', 'source_quote': '- Verbindung der LIN-, CAN-FD- und Ethern...dung der LIN-, CAN-FD- und Ethernet-Segmente', 'policy': {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}, ...}])
+
+backend\tests\test_qwen_document_intake.py:1843: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_compound_ellipsis_remains_one_complete_function_claim[Temperatur-, Druck- und Feuchtemessung]" time="0.002"><failure message="AssertionError: assert 3 == 1&#10; +  where 3 = len([{'source_ref': 'R0002.F01', 'text': 'Temperatur-', 'source_quote': '- Temperatur-, Druck- und Feuchtemessung', 'polic...': '- Temperatur-, Druck- und Feuchtemessung', 'policy': {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}, ...}])">clause = 'Temperatur-, Druck- und Feuchtemessung'
+
+    @pytest.mark.parametrize('clause', ['Verbindung der LIN-, CAN-FD- und Ethernet-Segmente',
+                                      'Temperatur-, Druck- und Feuchtemessung'])
+    def test_compound_ellipsis_remains_one_complete_function_claim(clause):
+        from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+        source = '## Funktionen\n- ' + clause + '\n'
+        units = document_component_sources(document_source_references(source))
+        functions = [unit for unit in units if unit['policy'] and unit['policy']['kind'] == 'FUNCTION']
+&gt;       assert len(functions) == 1
+E       AssertionError: assert 3 == 1
+E        +  where 3 = len([{'source_ref': 'R0002.F01', 'text': 'Temperatur-', 'source_quote': '- Temperatur-, Druck- und Feuchtemessung', 'polic...': '- Temperatur-, Druck- und Feuchtemessung', 'policy': {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}, ...}])
+
+backend\tests\test_qwen_document_intake.py:1843: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_compound_hardware_list_preserves_the_shared_head_noun" time="0.002"><failure message="AssertionError: assert 2 == 1&#10; +  where 2 = len([{'source_ref': 'R0001.C01', 'text': 'Temperatur-', 'policy': None, 'required': True, ...}, {'source_ref': 'R0001.C02'...ruck- und Feuchtesensoren', 'policy': {'kind': 'CATEGORY', 'role': 'SENSOR', 'quantity': None}, 'required': True, ...}])">def test_compound_hardware_list_preserves_the_shared_head_noun():
+        from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+        source = 'Architektur: Temperatur-, Druck- und Feuchtesensoren'
+        units = document_component_sources(document_source_references(source))
+&gt;       assert len(units) == 1
+E       AssertionError: assert 2 == 1
+E        +  where 2 = len([{'source_ref': 'R0001.C01', 'text': 'Temperatur-', 'policy': None, 'required': True, ...}, {'source_ref': 'R0001.C02'...ruck- und Feuchtesensoren', 'policy': {'kind': 'CATEGORY', 'role': 'SENSOR', 'quantity': None}, 'required': True, ...}])
+
+backend\tests\test_qwen_document_intake.py:1852: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_ordinary_complete_function_list_still_has_distinct_claims" time="0.001" /><testcase classname="tests.test_qwen_document_intake" name="test_explanatory_input_list_caption_and_members_are_constraints[Die ECU verarbeitet daraus beispielsweise:]" time="0.002"><failure message="AssertionError: assert ([{'source_ref': 'R0002', 'text': 'Die ECU verarbeitet daraus beispielsweise:', 'policy': {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}, 'required': True, ...}] and False)&#10; +  where False = all(&lt;generator object test_explanatory_input_list_caption_and_members_are_constraints.&lt;locals&gt;.&lt;genexpr&gt; at 0x000001B255D4C5F0&gt;)">caption = 'Die ECU verarbeitet daraus beispielsweise:'
+
+    @pytest.mark.parametrize('caption', ['Die ECU verarbeitet daraus beispielsweise:',
+                                       'Die 8 Sensoren erfassen Messgrößen, zum Beispiel:',
+                                       'The controller processes the following inputs:'])
+    def test_explanatory_input_list_caption_and_members_are_constraints(caption):
+        from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+        source = '## Signalmodell\n' + caption + '\n- TemperatureCurrent\n- TemperatureStatus\n'
+        units = document_component_sources(document_source_references(source))
+&gt;       assert units and all(unit['policy'] and unit['policy']['kind'] == 'REQUIREMENT' for unit in units)
+E       AssertionError: assert ([{'source_ref': 'R0002', 'text': 'Die ECU verarbeitet daraus beispielsweise:', 'policy': {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}, 'required': True, ...}] and False)
+E        +  where False = all(&lt;generator object test_explanatory_input_list_caption_and_members_are_constraints.&lt;locals&gt;.&lt;genexpr&gt; at 0x000001B255D4C5F0&gt;)
+
+backend\tests\test_qwen_document_intake.py:1870: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_explanatory_input_list_caption_and_members_are_constraints[Die 8 Sensoren erfassen Messgr\xf6\xdfen, zum Beispiel:]" time="0.002"><failure message="AssertionError: assert ([{'source_ref': 'R0002', 'text': 'Die 8 Sensoren erfassen Messgrößen, zum Beispiel:', 'policy': {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}, 'required': True, ...}] and False)&#10; +  where False = all(&lt;generator object test_explanatory_input_list_caption_and_members_are_constraints.&lt;locals&gt;.&lt;genexpr&gt; at 0x000001B255C29700&gt;)">caption = 'Die 8 Sensoren erfassen Messgrößen, zum Beispiel:'
+
+    @pytest.mark.parametrize('caption', ['Die ECU verarbeitet daraus beispielsweise:',
+                                       'Die 8 Sensoren erfassen Messgrößen, zum Beispiel:',
+                                       'The controller processes the following inputs:'])
+    def test_explanatory_input_list_caption_and_members_are_constraints(caption):
+        from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+        source = '## Signalmodell\n' + caption + '\n- TemperatureCurrent\n- TemperatureStatus\n'
+        units = document_component_sources(document_source_references(source))
+&gt;       assert units and all(unit['policy'] and unit['policy']['kind'] == 'REQUIREMENT' for unit in units)
+E       AssertionError: assert ([{'source_ref': 'R0002', 'text': 'Die 8 Sensoren erfassen Messgrößen, zum Beispiel:', 'policy': {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}, 'required': True, ...}] and False)
+E        +  where False = all(&lt;generator object test_explanatory_input_list_caption_and_members_are_constraints.&lt;locals&gt;.&lt;genexpr&gt; at 0x000001B255C29700&gt;)
+
+backend\tests\test_qwen_document_intake.py:1870: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_explanatory_input_list_caption_and_members_are_constraints[The controller processes the following inputs:]" time="0.002"><failure message="AssertionError: assert ([{'source_ref': 'R0002', 'text': 'The controller processes the following inputs:', 'policy': {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}, 'required': True, ...}] and False)&#10; +  where False = all(&lt;generator object test_explanatory_input_list_caption_and_members_are_constraints.&lt;locals&gt;.&lt;genexpr&gt; at 0x000001B255D4D630&gt;)">caption = 'The controller processes the following inputs:'
+
+    @pytest.mark.parametrize('caption', ['Die ECU verarbeitet daraus beispielsweise:',
+                                       'Die 8 Sensoren erfassen Messgrößen, zum Beispiel:',
+                                       'The controller processes the following inputs:'])
+    def test_explanatory_input_list_caption_and_members_are_constraints(caption):
+        from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+        source = '## Signalmodell\n' + caption + '\n- TemperatureCurrent\n- TemperatureStatus\n'
+        units = document_component_sources(document_source_references(source))
+&gt;       assert units and all(unit['policy'] and unit['policy']['kind'] == 'REQUIREMENT' for unit in units)
+E       AssertionError: assert ([{'source_ref': 'R0002', 'text': 'The controller processes the following inputs:', 'policy': {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}, 'required': True, ...}] and False)
+E        +  where False = all(&lt;generator object test_explanatory_input_list_caption_and_members_are_constraints.&lt;locals&gt;.&lt;genexpr&gt; at 0x000001B255D4D630&gt;)
+
+backend\tests\test_qwen_document_intake.py:1870: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_normative_gateway_list_is_not_a_set_of_new_executable_functions" time="0.002"><failure message="assert False&#10; +  where False = any(&lt;generator object test_normative_gateway_list_is_not_a_set_of_new_executable_functions.&lt;locals&gt;.&lt;genexpr&gt; at 0x000001B255C37840&gt;)">def test_normative_gateway_list_is_not_a_set_of_new_executable_functions():
+        from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+        source = '## Gateway\nAufgaben:\nRouting\nDas Gateway muss zeigen:\n- welche Messages es passieren,\n- welche Verzögerung entsteht.\n'
+        units = document_component_sources(document_source_references(source))
+        assert any(unit['policy']['kind'] == 'FUNCTION' and unit['text'] == 'Routing' for unit in units)
+        for phrase in ['welche Messages', 'welche Verzögerung']:
+&gt;           assert any(phrase in unit['text'] and unit['policy']['kind'] == 'REQUIREMENT' for unit in units)
+E           assert False
+E            +  where False = any(&lt;generator object test_normative_gateway_list_is_not_a_set_of_new_executable_functions.&lt;locals&gt;.&lt;genexpr&gt; at 0x000001B255C37840&gt;)
+
+backend\tests\test_qwen_document_intake.py:1880: AssertionError</failure></testcase></testsuite></testsuites>

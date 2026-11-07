@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="4" time="5.964" timestamp="2026-11-06T18:57:20.481293+01:00" hostname="Haranga"><testcase classname="tests.test_qwen_document_intake" name="test_known_function_nouns_are_required_in_minimal_decoder_output[Motorstrom\xfcberwachung]" time="2.249"><failure message="AssertionError: assert 'R0002' in []">function = 'Motorstromüberwachung'
+
+    @pytest.mark.parametrize('function', ['Motorstromüberwachung', 'Pfadplanung', 'Gateway Load Monitoring'])
+    def test_known_function_nouns_are_required_in_minimal_decoder_output(function):
+        from backend.nis.agent.orchestration.project_intake import (
+            DocumentInterpretation, document_component_sources, document_source_references,
+            document_model_output_schema, document_output_schema,
+        )
+        source = '## Fachlicher Umfang\n' + function + '\n'
+        rows = document_source_references(source)
+        units = document_component_sources(rows)
+        functions = [unit for unit in units if unit['policy'] and unit['policy']['kind'] == 'FUNCTION']
+        assert len(functions) == 1
+        schema = document_model_output_schema(document_output_schema(source, DocumentInterpretation.model_json_schema()), rows)
+&gt;       assert functions[0]['source_ref'] in schema['properties']['components']['required']
+E       AssertionError: assert 'R0002' in []
+
+backend\tests\test_qwen_document_intake.py:1945: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_known_function_nouns_are_required_in_minimal_decoder_output[Pfadplanung]" time="0.795"><failure message="AssertionError: assert 'R0002' in []">function = 'Pfadplanung'
+
+    @pytest.mark.parametrize('function', ['Motorstromüberwachung', 'Pfadplanung', 'Gateway Load Monitoring'])
+    def test_known_function_nouns_are_required_in_minimal_decoder_output(function):
+        from backend.nis.agent.orchestration.project_intake import (
+            DocumentInterpretation, document_component_sources, document_source_references,
+            document_model_output_schema, document_output_schema,
+        )
+        source = '## Fachlicher Umfang\n' + function + '\n'
+        rows = document_source_references(source)
+        units = document_component_sources(rows)
+        functions = [unit for unit in units if unit['policy'] and unit['policy']['kind'] == 'FUNCTION']
+        assert len(functions) == 1
+        schema = document_model_output_schema(document_output_schema(source, DocumentInterpretation.model_json_schema()), rows)
+&gt;       assert functions[0]['source_ref'] in schema['properties']['components']['required']
+E       AssertionError: assert 'R0002' in []
+
+backend\tests\test_qwen_document_intake.py:1945: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_known_function_nouns_are_required_in_minimal_decoder_output[Gateway Load Monitoring]" time="0.750"><failure message="AssertionError: assert 'R0002' in []">function = 'Gateway Load Monitoring'
+
+    @pytest.mark.parametrize('function', ['Motorstromüberwachung', 'Pfadplanung', 'Gateway Load Monitoring'])
+    def test_known_function_nouns_are_required_in_minimal_decoder_output(function):
+        from backend.nis.agent.orchestration.project_intake import (
+            DocumentInterpretation, document_component_sources, document_source_references,
+            document_model_output_schema, document_output_schema,
+        )
+        source = '## Fachlicher Umfang\n' + function + '\n'
+        rows = document_source_references(source)
+        units = document_component_sources(rows)
+        functions = [unit for unit in units if unit['policy'] and unit['policy']['kind'] == 'FUNCTION']
+        assert len(functions) == 1
+        schema = document_model_output_schema(document_output_schema(source, DocumentInterpretation.model_json_schema()), rows)
+&gt;       assert functions[0]['source_ref'] in schema['properties']['components']['required']
+E       AssertionError: assert 'R0002' in []
+
+backend\tests\test_qwen_document_intake.py:1945: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_public_source_coverage_rejects_missing_known_function_noun" time="1.167"><failure message="Failed: DID NOT RAISE ValueError">def test_public_source_coverage_rejects_missing_known_function_noun():
+        from backend.nis.agent.orchestration.project_intake import (
+            DocumentInterpretation, document_component_sources, document_source_references,
+            document_model_output_schema, document_output_schema, resolve_document_references,
+        )
+        source = '## Systemumfang\n1 Gateway\n## Fachlicher Umfang\nMotorstromüberwachung\n'
+        rows = document_source_references(source)
+        units = document_component_sources(rows)
+        schema = document_model_output_schema(document_output_schema(source, DocumentInterpretation.model_json_schema()), rows)
+        claims = {unit['source_ref']: unit['policy'] for unit in units
+                  if unit['policy'] and unit['policy']['kind'] == 'INSTANCE'}
+        assert claims
+        projected = resolve_document_references({'components': claims, 'technologies': {}}, rows, model_schema=schema)
+&gt;       with pytest.raises(ValueError) as rejected:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+backend\tests\test_qwen_document_intake.py:1961: Failed</failure></testcase></testsuite></testsuites>

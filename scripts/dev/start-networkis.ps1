@@ -147,6 +147,8 @@ if (Test-ReadablePath $Ollama) {
       Write-Warning "Ollama ist erreichbar; Metadaten fehlen. Der bestehende Dienst bleibt unverändert."
     } else {
       Write-Host "Ollama wird gestartet..."
+      if ([string]::IsNullOrWhiteSpace($env:OLLAMA_KV_CACHE_TYPE)) { $env:OLLAMA_KV_CACHE_TYPE = "q8_0" }
+      if ([string]::IsNullOrWhiteSpace($env:OLLAMA_FLASH_ATTENTION)) { $env:OLLAMA_FLASH_ATTENTION = "1" }
       Start-Process -FilePath $Ollama -ArgumentList "serve" -WindowStyle Hidden
       Start-Sleep -Seconds 3
     }

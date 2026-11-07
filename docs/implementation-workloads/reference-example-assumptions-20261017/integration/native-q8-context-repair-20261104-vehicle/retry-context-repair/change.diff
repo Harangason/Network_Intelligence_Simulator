@@ -1,0 +1,79 @@
+--- a/backend/nis/agent/orchestration/local_reasoner.py
++++ b/backend/nis/agent/orchestration/local_reasoner.py
+@@ -1691,10 +1691,21 @@
+                     try:
+                         payload['options']['num_ctx'] = _reference_context_window(payload['messages'], self.context_tokens)
+                     except ValueError:
+-                        if not reference_messages:
++                        if not attempt and not reference_messages:
+                             raise
+-                        # Preserve actual invalid reply and exact validation feedback on retry.
+-                        payload['messages'] = [*full_messages, *payload['messages'][-2:]] if attempt else full_messages
++                        if attempt:
++                            invalid_reply, feedback_message = payload['messages'][-2:]
++                            retry = [*full_messages, invalid_reply, feedback_message]
++                            try:
++                                _reference_context_window(retry, self.context_tokens)
++                            except ValueError:
++                                # The complete rejected reply stays in the
++                                # diagnostic log. Regenerate from the unchanged
++                                # current context and the exact validation error.
++                                retry = [*full_messages, feedback_message]
++                            payload['messages'] = retry
++                        else:
++                            payload['messages'] = full_messages
+                         payload['options']['num_ctx'] = _reference_context_window(payload['messages'], self.context_tokens)
+                         messages = full_messages
+                         context_rebased = True
+--- a/backend/tests/test_reference_reasoner.py
++++ b/backend/tests/test_reference_reasoner.py
+@@ -1283,6 +1283,49 @@
+     assert retry['format'] == previous['format']
+ 
+ 
++def test_reference_retry_uses_full_context_and_exact_error_when_raw_reply_would_overflow(monkeypatch, caplog):
++    from backend.nis.agent.orchestration import local_reasoner
++
++    build_messages = local_reasoner._reference_context_messages
++    captured = []
++    instance, prepared, _ = reasoner_with_transport(monkeypatch, capture=captured)
++    provider = instance.client._transport.handler
++    invalid = '{"lin_bitrate_bps":19200,"lin_bitrate_bps":19200,"padding":"' + 'x' * 4600 + '"}'
++    rejected = False
++
++    def near_limit(history, previous, current, system, maximum, **kwargs):
++        if current['port_ids_for_this_stage'] and not rejected:
++            _, full, _ = build_messages([], None, current, system, maximum)
++            content_bytes = sum(len(row['content'].encode('utf8')) for row in full)
++            padding = maximum - 8192 - 2048 - content_bytes - 350
++            assert padding > 0
++            current = {**current, 'original_source': current['original_source'] + 'x' * padding}
++            return build_messages([], None, current, system, maximum)
++        return build_messages(history, previous, current, system, maximum, **kwargs)
++
++    def respond(request):
++        nonlocal rejected
++        response = provider(request)
++        if not request.url.path.endswith('/show') and 'port_parameters' in captured[-1]['format']['properties'] and not rejected:
++            rejected = True
++            return httpx.Response(200, json={**response.json(), 'message': {'content': invalid}})
++        return response
++
++    monkeypatch.setattr(local_reasoner, '_reference_context_messages', near_limit)
++    monkeypatch.setattr(instance.client._transport, 'handler', respond)
++    result = run_reference(instance, prepared)
++    first = next(index for index, payload in enumerate(captured) if 'port_parameters' in payload['format']['properties'])
++    initial, retry = captured[first:first + 2]
++    assert initial['messages'] == retry['messages'][:-1]
++    assert 'Doppelter Schlüssel in der Qwen-Antwort: lin_bitrate_bps' in retry['messages'][-1]['content']
++    assert retry['format'] == initial['format']
++    assert retry['options'] == initial['options']
++    assert effective_reference_context(retry['messages']) == effective_reference_context(initial['messages'])
++    assert any(json.loads(row.message.split('Native reference validation failed: ', 1)[1])['response'] == invalid
++               for row in caplog.records if row.message.startswith('Native reference validation failed: '))
++    assert result['canonical_writes'] is False
++
++
+ @pytest.mark.parametrize('bad', ['missing', 'unknown', 'mismatched_role', 'existing_with_new_fields', 'new_with_existing_id', 'unregistered_role'])
+ def test_private_choice_tag_cannot_hide_or_reinterpret_a_device(bad):
+     prepared = intake.prepare_reference_design(fixture_request())

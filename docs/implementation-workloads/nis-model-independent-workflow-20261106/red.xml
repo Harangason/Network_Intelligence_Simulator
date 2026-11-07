@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="41" time="24.756" timestamp="2026-11-06T06:12:51.256978+01:00" hostname="Haranga"><testcase classname="tests.test_local_model_selection" name="test_selected_local_family_is_verified_without_changing_model[llama3.1:8b-llama-LLAMA]" time="0.002" /><testcase classname="tests.test_local_model_selection" name="test_selected_local_family_is_verified_without_changing_model[qwen3.8:27b-qwen35-QWEN]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_remote_unknown_missing_or_mismatched_identity_cannot_become_a_fallback[llama3.1:8b-updates0]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_remote_unknown_missing_or_mismatched_identity_cannot_become_a_fallback[llama3.1:8b-updates1]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_remote_unknown_missing_or_mismatched_identity_cannot_become_a_fallback[llama3.1:cloud-updates2]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_remote_unknown_missing_or_mismatched_identity_cannot_become_a_fallback[unknown:8b-updates3]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_remote_unknown_missing_or_mismatched_identity_cannot_become_a_fallback[qwen3.8:27b-updates4]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_remote_unknown_missing_or_mismatched_identity_cannot_become_a_fallback[llama3.1:8b-updates5]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_remote_unknown_missing_or_mismatched_identity_cannot_become_a_fallback[llama3.1:8b-updates6]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_remote_unknown_missing_or_mismatched_identity_cannot_become_a_fallback[llama3.1:8b-updates7]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_remote_unknown_missing_or_mismatched_identity_cannot_become_a_fallback[llama3.1:8b-updates8]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_nis_config_and_unconfigured_defaults_select_only_llama" time="0.677" /><testcase classname="tests.test_local_model_selection" name="test_llama_reference_plan_preserves_full_sources_and_configured_model" time="16.405" /><testcase classname="tests.test_local_model_selection" name="test_llama_document_intake_preserves_review_and_source_contract" time="2.108" /><testcase classname="tests.test_local_model_selection" name="test_llama_generated_function_retains_its_actual_author_and_exact_model" time="0.034" /><testcase classname="tests.test_local_model_selection" name="test_function_preflight_keeps_author_and_model_consistent[QWEN-qwen3:8b-True]" time="0.009" /><testcase classname="tests.test_local_model_selection" name="test_function_preflight_keeps_author_and_model_consistent[LLAMA-llama3.1:8b-True]" time="0.002" /><testcase classname="tests.test_local_model_selection" name="test_function_preflight_keeps_author_and_model_consistent[LLAMA-qwen3:8b-False]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_function_preflight_keeps_author_and_model_consistent[QWEN-llama3.1:8b-False]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_function_preflight_keeps_author_and_model_consistent[LLAMA-llama3.1:cloud-False]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_function_preflight_keeps_author_and_model_consistent[UNKNOWN-llama3.1:8b-False]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_selected_local_completion_models_and_aliases_do_not_require_a_brand_prefix[local-gemma:4b-gemma]" time="0.001"><failure message="ValueError: Das konfigurierte Modell muss ein nachweislich lokal installiertes Qwen- oder Llama-Modell mit passender Familie sein. Cloud-Modelle und unbekannte Ausführungswege sind gesperrt.">model = 'local-gemma:4b', family = 'gemma'
+
+    @pytest.mark.parametrize('model,family', [
+        ('local-gemma:4b', 'gemma'), ('mistral:7b', 'llama'),
+        ('reviewed-model:latest', 'qwen35')])
+    def test_selected_local_completion_models_and_aliases_do_not_require_a_brand_prefix(model, family):
+        info = {**metadata(family), 'capabilities': ['completion']}
+&gt;       assert _local_model_author(model, info) == 'LOCAL_LLM'
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_local_model_selection.py:149: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+model = 'local-gemma:4b'
+info = {'details': {'family': 'gemma', 'format': 'gguf'}, 'model_info': {'general.parameter_count': 8000000000}, 'capabilities': ['completion']}
+
+    def _local_model_author(model, info):
+        """Verify the explicitly selected local model without a family fallback."""
+        name = str(model).lower()
+        family = str((info.get('details') or {}).get('family') or '').lower()
+        count = (info.get('model_info') or {}).get('general.parameter_count')
+        author = ('QWEN' if name.startswith('qwen') and family.startswith('qwen') else
+                  'LLAMA' if name.startswith('llama') and family == 'llama' else None)
+        if (info.get('remote_host') or info.get('remote_model') or ':cloud' in name
+                or author is None or type(count) not in (int, float) or count &lt;= 0):
+&gt;           raise ValueError('Das konfigurierte Modell muss ein nachweislich lokal installiertes '
+                             'Qwen- oder Llama-Modell mit passender Familie sein. '
+                             'Cloud-Modelle und unbekannte Ausführungswege sind gesperrt.')
+E           ValueError: Das konfigurierte Modell muss ein nachweislich lokal installiertes Qwen- oder Llama-Modell mit passender Familie sein. Cloud-Modelle und unbekannte Ausführungswege sind gesperrt.
+
+backend\nis\agent\orchestration\local_reasoner.py:23: ValueError</failure></testcase><testcase classname="tests.test_local_model_selection" name="test_selected_local_completion_models_and_aliases_do_not_require_a_brand_prefix[mistral:7b-llama]" time="0.001"><failure message="ValueError: Das konfigurierte Modell muss ein nachweislich lokal installiertes Qwen- oder Llama-Modell mit passender Familie sein. Cloud-Modelle und unbekannte Ausführungswege sind gesperrt.">model = 'mistral:7b', family = 'llama'
+
+    @pytest.mark.parametrize('model,family', [
+        ('local-gemma:4b', 'gemma'), ('mistral:7b', 'llama'),
+        ('reviewed-model:latest', 'qwen35')])
+    def test_selected_local_completion_models_and_aliases_do_not_require_a_brand_prefix(model, family):
+        info = {**metadata(family), 'capabilities': ['completion']}
+&gt;       assert _local_model_author(model, info) == 'LOCAL_LLM'
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_local_model_selection.py:149: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+model = 'mistral:7b'
+info = {'details': {'family': 'llama', 'format': 'gguf'}, 'model_info': {'general.parameter_count': 8000000000}, 'capabilities': ['completion']}
+
+    def _local_model_author(model, info):
+        """Verify the explicitly selected local model without a family fallback."""
+        name = str(model).lower()
+        family = str((info.get('details') or {}).get('family') or '').lower()
+        count = (info.get('model_info') or {}).get('general.parameter_count')
+        author = ('QWEN' if name.startswith('qwen') and family.startswith('qwen') else
+                  'LLAMA' if name.startswith('llama') and family == 'llama' else None)
+        if (info.get('remote_host') or info.get('remote_model') or ':cloud' in name
+                or author is None or type(count) not in (int, float) or count &lt;= 0):
+&gt;           raise ValueError('Das konfigurierte Modell muss ein nachweislich lokal installiertes '
+                             'Qwen- oder Llama-Modell mit passender Familie sein. '
+                             'Cloud-Modelle und unbekannte Ausführungswege sind gesperrt.')
+E           ValueError: Das konfigurierte Modell muss ein nachweislich lokal installiertes Qwen- oder Llama-Modell mit passender Familie sein. Cloud-Modelle und unbekannte Ausführungswege sind gesperrt.
+
+backend\nis\agent\orchestration\local_reasoner.py:23: ValueError</failure></testcase><testcase classname="tests.test_local_model_selection" name="test_selected_local_completion_models_and_aliases_do_not_require_a_brand_prefix[reviewed-model:latest-qwen35]" time="0.001"><failure message="ValueError: Das konfigurierte Modell muss ein nachweislich lokal installiertes Qwen- oder Llama-Modell mit passender Familie sein. Cloud-Modelle und unbekannte Ausführungswege sind gesperrt.">model = 'reviewed-model:latest', family = 'qwen35'
+
+    @pytest.mark.parametrize('model,family', [
+        ('local-gemma:4b', 'gemma'), ('mistral:7b', 'llama'),
+        ('reviewed-model:latest', 'qwen35')])
+    def test_selected_local_completion_models_and_aliases_do_not_require_a_brand_prefix(model, family):
+        info = {**metadata(family), 'capabilities': ['completion']}
+&gt;       assert _local_model_author(model, info) == 'LOCAL_LLM'
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_local_model_selection.py:149: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+model = 'reviewed-model:latest'
+info = {'details': {'family': 'qwen35', 'format': 'gguf'}, 'model_info': {'general.parameter_count': 8000000000}, 'capabilities': ['completion']}
+
+    def _local_model_author(model, info):
+        """Verify the explicitly selected local model without a family fallback."""
+        name = str(model).lower()
+        family = str((info.get('details') or {}).get('family') or '').lower()
+        count = (info.get('model_info') or {}).get('general.parameter_count')
+        author = ('QWEN' if name.startswith('qwen') and family.startswith('qwen') else
+                  'LLAMA' if name.startswith('llama') and family == 'llama' else None)
+        if (info.get('remote_host') or info.get('remote_model') or ':cloud' in name
+                or author is None or type(count) not in (int, float) or count &lt;= 0):
+&gt;           raise ValueError('Das konfigurierte Modell muss ein nachweislich lokal installiertes '
+                             'Qwen- oder Llama-Modell mit passender Familie sein. '
+                             'Cloud-Modelle und unbekannte Ausführungswege sind gesperrt.')
+E           ValueError: Das konfigurierte Modell muss ein nachweislich lokal installiertes Qwen- oder Llama-Modell mit passender Familie sein. Cloud-Modelle und unbekannte Ausführungswege sind gesperrt.
+
+backend\nis\agent\orchestration\local_reasoner.py:23: ValueError</failure></testcase><testcase classname="tests.test_local_model_selection" name="test_generic_identity_still_rejects_remote_noncompletion_and_unverifiable_models[updates0]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_generic_identity_still_rejects_remote_noncompletion_and_unverifiable_models[updates1]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_generic_identity_still_rejects_remote_noncompletion_and_unverifiable_models[updates2]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_generic_identity_still_rejects_remote_noncompletion_and_unverifiable_models[updates3]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_generic_identity_still_rejects_remote_noncompletion_and_unverifiable_models[updates4]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_generic_identity_still_rejects_remote_noncompletion_and_unverifiable_models[updates5]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_generic_identity_still_rejects_remote_noncompletion_and_unverifiable_models[updates6]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_generic_identity_still_rejects_remote_noncompletion_and_unverifiable_models[updates7]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_generic_function_preflight_keeps_bounded_execution_and_independent_cases" time="0.001"><failure message="ValueError: Local model authorship and exact source revision are required.">def test_generic_function_preflight_keeps_bounded_execution_and_independent_cases():
+        spec = generic_function_specification()
+&gt;       block = validate_function_spec(spec)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_local_model_selection.py:177: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+parameters = {'function_block': {'name': 'Hysteresis', 'description': 'A hysteresis block that maintains a boolean state based on i...gnal_id': 'temperature', 'type': 'number', 'unit': 'degC', 'max_age_ms': 25.0, ...}}, 'on_invalid': 'hold_output', ...}
+signals = None
+
+    def validate_function_spec(parameters: dict, signals: dict | None = None) -&gt; QwenFunctionBlock:
+        """One contract shared by proposal review, preflight and frozen execution."""
+        definition = parameters.get('function_block')
+        if not isinstance(definition, dict):
+            raise ValueError('Local model function definition is missing.')
+        provenance = definition.get('provenance') or {}
+        model = str(provenance.get('model', '')).lower()
+        expected_prefix = {'QWEN': 'qwen', 'LLAMA': 'llama'}.get(provenance.get('generated_by'))
+        if (expected_prefix is None or provenance.get('provider') != 'ollama-local'
+                or not model.startswith(expected_prefix) or ':cloud' in model
+                or not provenance.get('model_digest') or not provenance.get('request_sha256')
+                or not definition.get('source_sha256')):
+&gt;           raise ValueError('Local model authorship and exact source revision are required.')
+E           ValueError: Local model authorship and exact source revision are required.
+
+backend\nis\simulation\signals\core\function_block.py:396: ValueError</failure></testcase><testcase classname="tests.test_local_model_selection" name="test_generic_function_provenance_requires_verified_identity_and_exact_complete_response[updates0]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_generic_function_provenance_requires_verified_identity_and_exact_complete_response[updates1]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_generic_function_provenance_requires_verified_identity_and_exact_complete_response[updates2]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_generic_function_provenance_requires_verified_identity_and_exact_complete_response[updates3]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_generic_function_provenance_requires_verified_identity_and_exact_complete_response[updates4]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_generic_function_provenance_requires_verified_identity_and_exact_complete_response[updates5]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_generic_function_provenance_requires_verified_identity_and_exact_complete_response[updates6]" time="0.001" /><testcase classname="tests.test_local_model_selection" name="test_generic_generator_uses_only_selected_model_and_records_identity" time="0.001"><failure message="ValueError: Function code requires the configured local Qwen or Llama model; no fallback is permitted.">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001F83ADB0E20&gt;
+
+    def test_generic_generator_uses_only_selected_model_and_records_identity(monkeypatch):
+        monkeypatch.setenv('LOCAL_AI_MODEL', 'local-gemma:4b')
+&gt;       generator = QwenBlockGenerator()
+                    ^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_local_model_selection.py:203: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;backend.nis.agent.tools.function_blocks.QwenBlockGenerator object at 0x000001F83AE69BD0&gt;
+
+    def __init__(self):
+        base = os.environ.get('LOCAL_AI_BASE_URL', 'http://127.0.0.1:11434/v1').rstrip('/')
+        parsed = urlsplit(base)
+        if parsed.scheme != 'http' or parsed.hostname not in {'127.0.0.1', 'localhost', 'host.docker.internal', 'ollama'} or parsed.username:
+            raise ValueError('Local code generation requires the configured local Ollama endpoint.')
+        self.base = base[:-3] if base.endswith('/v1') else base
+        self.model = os.environ.get('LOCAL_AI_MODEL', 'llama3.1:8b')
+        if not self.model.lower().startswith(('qwen', 'llama')) or ':cloud' in self.model.lower():
+&gt;           raise ValueError('Function code requires the configured local Qwen or Llama model; no fallback is permitted.')
+E           ValueError: Function code requires the configured local Qwen or Llama model; no fallback is permitted.
+
+backend\nis\agent\tools\function_blocks.py:52: ValueError</failure></testcase></testsuite></testsuites>

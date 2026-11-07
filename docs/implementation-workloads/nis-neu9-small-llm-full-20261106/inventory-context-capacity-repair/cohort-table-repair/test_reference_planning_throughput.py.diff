@@ -1,0 +1,14 @@
+--- before/backend/tests/test_reference_planning_throughput.py
++++ after/backend/tests/test_reference_planning_throughput.py
+@@ -28,8 +28,9 @@
+     for path in value['nis_context_tables']:
+         parent, key = location(path)
+         table = parent[key]
+-        records = [{**deepcopy(table['constants']), **dict(zip(table['columns'], row, strict=True))}
+-                   for row in table['rows']]
++        parts = table['segments'] if 'segments' in table else [table]
++        records = [{**deepcopy(part['constants']), **dict(zip(part['columns'], row, strict=True))}
++                   for part in parts for row in part['rows']]
+         parent[key] = dict(zip(table['keys'], records, strict=True)) if 'keys' in table else records
+     for operation in value['nis_context_copies']:
+         parent, key = location(operation['path'])

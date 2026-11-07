@@ -1,0 +1,372 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -941,7 +941,7 @@
+         return (len(rows) >= 3 and all(isinstance(row, dict) for row in rows)
+                 and bool(rows[0]) and all(set(row) == set(rows[0]) for row in rows))
+ 
+-    def pack(allow_delta):
++    def pack(allow_delta, *, share_duplicates=True):
+         seen, copies, tables, candidates = {}, [], [], {}
+ 
+         def share(value, path, *, record=False):
+@@ -1004,12 +1004,32 @@
+             rows = list(value.values()) if isinstance(value, dict) else value if isinstance(value, list) else []
+             if path and record_rows(value):
+                 columns = list(rows[0])
+-                # Serialized equality preserves False/0/0.0/-0.0/null exactly.
+-                constants = {key: deepcopy(rows[0][key]) for key in columns
+-                             if all(serialized(row[key]) == serialized(rows[0][key]) for row in rows)}
+-                variable = [key for key in columns if key not in constants]
+-                table = {'columns': variable, 'constants': constants,
+-                         'rows': [[deepcopy(row[key]) for key in variable] for row in rows]}
++                # Compare exact JSON literals, including False/0/0.0/-0.0/null.
++                literals = [{key: serialized(row[key]) for key in columns} for row in rows]
++
++                def record_table(start, end):
++                    constants = {key: deepcopy(rows[start][key]) for key in columns
++                                 if all(row[key] == literals[start][key] for row in literals[start:end])}
++                    variable = [key for key in columns if key not in constants]
++                    return {'columns': variable, 'constants': constants,
++                            'rows': [[deepcopy(row[key]) for key in variable] for row in rows[start:end]]}
++
++                table = record_table(0, len(rows))
++                best_size = len(serialized(table).encode('utf8'))
++                partitions = set()
++                for key in columns:
++                    boundaries = (0, *(index for index in range(1, len(rows))
++                                      if literals[index][key] != literals[index - 1][key]), len(rows))
++                    # Bound the optimization search, never the number of records.
++                    # Each alternative retains every row in its original order.
++                    if not 2 < len(boundaries) <= 17 or boundaries in partitions:
++                        continue
++                    partitions.add(boundaries)
++                    segmented = {'segments': [record_table(start, end)
++                                             for start, end in zip(boundaries, boundaries[1:])]}
++                    size = len(serialized(segmented).encode('utf8'))
++                    if size < best_size:
++                        table, best_size = segmented, size
+                 if isinstance(value, dict):
+                     table['keys'] = list(value)
+                 if len(serialized(table).encode('utf8')) + len(path.encode('utf8')) + 4 < len(serialized(value).encode('utf8')):
+@@ -1021,12 +1041,12 @@
+                 return [tabulate(item, pointer(path, index)) for index, item in enumerate(value)]
+             return value
+ 
+-        return {'nis_context_snapshot': tabulate(share(current, '')),
++        return {'nis_context_snapshot': tabulate(share(current, '') if share_duplicates else deepcopy(current)),
+                 'nis_context_tables': tables, 'nis_context_copies': copies}
+ 
+     # A local sharing choice can defeat a better outer record table. Keep the
+     # unchanged baseline as a complete alternative, never force a larger wire.
+-    return min((deepcopy(current), pack(False), pack(True)),
++    return min((deepcopy(current), pack(False), pack(True), pack(False, share_duplicates=False)),
+                key=lambda value: len(serialized(value).encode('utf8')))
+ 
+ 
+@@ -1101,7 +1121,12 @@
+         'in nis_context_tables steht eine Tabelle: columns benennt die variablen Felder; '
+         'jede rows-Zeile enthält deren Werte in derselben Reihenfolge. constants gelten '
+         'unverändert für jede Zeile. Mit keys entsteht ein Objekt keys[i] -> Zeile[i], '
+-        'sonst eine Liste von Datensätzen. Zuerst alle Tabellen rekonstruieren, danach '
++        'sonst eine Liste von Datensätzen. Eine Tabelle mit segments enthält stattdessen '
++        'mehrere solche columns/constants/rows-Tabellen: ihre vollständig rekonstruierten '
++        'Zeilen in der angegebenen Reihenfolge aneinanderhängen, ohne Sortierung oder '
++        'Auslassung. Ein äußeres keys ordnet erst danach allen Zeilen ihre Schlüssel zu. '
++        'Konstanten eines Segments gelten ausschließlich für seine eigenen Zeilen. '
++        'Zuerst alle Tabellen rekonstruieren, danach '
+         'nis_context_copies der Reihe nach als RFC6902-Operationen ausführen: copy setzt '
+         'eine vollständige tiefe Kopie von from an path ein; ein folgendes replace ersetzt '
+         'das vorhandene Feld an path exakt durch value. Frühere Kopien und Änderungen '
+--- before/backend/tests/test_reference_inventory_context_capacity.py
++++ after/backend/tests/test_reference_inventory_context_capacity.py
+@@ -109,3 +109,64 @@
+     assert current['original_source'][:60] not in caplog.text
+     assert diagnostic['required_utf8_upper_bound'] > diagnostic['maximum'] == 131072
+     assert encoded(current) == before
++
++
++def authored_cohort_context(size=251, source_lines=500):
++    """Mixed authored cohorts, not recovered native decisions or a source model."""
++    current = authored_context(size, source_lines)
++    for row in current['current_candidate']['devices']:
++        cohort = row['kind']
++        row['source_fact_ids'] = ['Authored-' + cohort]
++        row['source_member_bindings'] = {}
++        row['purpose'] = 'Independently authored ' + cohort + ' task without technical assumptions.'
++        row['rationale'] = ('This independent authored ' + cohort
++                            + ' record preserves its declared quantity and distinct physical identity.')
++    return current
++
++
++@pytest.mark.parametrize('size', [175, 251])
++def test_mixed_cohort_inventory_preserves_full_source_within_unchanged_capacity(size):
++    current = authored_cohort_context(size)
++    original = encoded(current)
++    messages, _, _ = reasoner._reference_context_messages([], None, current, 'Authored counter', 131072)
++    assert encoded(effective_reference_context(messages)) == original
++    assert encoded(current) == original
++    selection = json.loads(messages[-1]['content'])['nis_current_selection']
++    assert encoded(read_selection(selection)) == encoded(expected_selection(current))
++    required = sum(len(row['content'].encode('utf-8')) for row in messages) + 8192 + 2048
++    assert required <= 131072
++    with pytest.raises(ValueError, match='keine Quelle gekürzt'):
++        reasoner._reference_context_window(messages, required - 1)
++
++
++def test_cohort_tables_keep_key_order_scalar_spellings_and_nested_pointers():
++    from backend.tests.test_reference_context_delta_capacity import decode_wire
++    from backend.tests.test_reference_planning_throughput import unpack_context_message
++    keys = ['', 'a/b~c', 'µ 🦾', *[f'key-{i}' for i in range(29)]]
++    original = {'a/b~c': {'': {key: {
++        'id': f'row-{i}', 'physical_literal': [-0.0, 0.0, False, None][i // 8],
++        'complete_literal': ('Unchanged independently authored group ' + str(i // 8) + ' µ ') * 12,
++        'members': ['exact', i // 8],
++    } for i, key in enumerate(keys)}}}
++    wire = reasoner._reference_context_snapshot(original)
++    assert encoded(decode_wire(wire)) == encoded(original)
++    assert encoded(unpack_context_message(wire)) == encoded(original)
++    assert list(decode_wire(wire)['a/b~c']['']) == keys
++    # Long repeated cohort fields should be recorded once per contiguous cohort,
++    # not repeated literals or one reconstruction operation per repeated field.
++    assert len(encoded(wire).encode('utf-8')) < len(encoded(original).encode('utf-8')) // 3
++
++
++def test_cached_cohort_context_retains_later_binding_change_without_mutation():
++    first = authored_cohort_context(175, 20)
++    messages, _, _ = reasoner._reference_context_messages([], None, first, 'Authored counter', 131072)
++    current = deepcopy(first)
++    current['current_candidate']['devices'][80]['source_member_bindings'] = {'a/b~c': 'new literal µ'}
++    current['inventory_target_for_this_stage']['names'] = ['different requested identity']
++    history = [*messages, {'role': 'assistant', 'content': '{"authored_only":true}'}]
++    result, _, _ = reasoner._reference_context_messages(
++        history, first, current, 'Authored counter', 131072, anchor=(messages, first))
++    assert encoded(effective_reference_context(result)) == encoded(current)
++    assert first['current_candidate']['devices'][80]['source_member_bindings'] == {}
++    selection = json.loads(result[-1]['content'])['nis_current_selection']
++    assert encoded(read_selection(selection)) == encoded(expected_selection(current))
+--- before/backend/tests/test_reference_planning_throughput.py
++++ after/backend/tests/test_reference_planning_throughput.py
+@@ -28,8 +28,9 @@
+     for path in value['nis_context_tables']:
+         parent, key = location(path)
+         table = parent[key]
+-        records = [{**deepcopy(table['constants']), **dict(zip(table['columns'], row, strict=True))}
+-                   for row in table['rows']]
++        parts = table['segments'] if 'segments' in table else [table]
++        records = [{**deepcopy(part['constants']), **dict(zip(part['columns'], row, strict=True))}
++                   for part in parts for row in part['rows']]
+         parent[key] = dict(zip(table['keys'], records, strict=True)) if 'keys' in table else records
+     for operation in value['nis_context_copies']:
+         parent, key = location(operation['path'])
+--- before/backend/tests/test_reference_context_delta_capacity.py
++++ after/backend/tests/test_reference_context_delta_capacity.py
+@@ -33,8 +33,12 @@
+     for pointer in value['nis_context_tables']:
+         parent, key = location(pointer)
+         table = parent[key]
+-        rows = [{**deepcopy(table['constants']), **dict(zip(table['columns'], row, strict=True))}
+-                for row in table['rows']]
++        rows = []
++        for part in table.get('segments', [table]):
++            for values in part['rows']:
++                assert len(part['columns']) == len(values)
++                rows.append({**deepcopy(part['constants']),
++                             **dict(zip(part['columns'], values, strict=True))})
+         parent[key] = dict(zip(table['keys'], rows, strict=True)) if 'keys' in table else rows
+     for operation in value['nis_context_copies']:
+         parent, key = location(operation['path'])
+--- before/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/inventory-output-codec-repair/probe_native_codec.py
++++ after/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/inventory-output-codec-repair/probe_native_codec.py
+@@ -20,7 +20,9 @@
+ parser = argparse.ArgumentParser()
+ parser.add_argument('--output', type=Path)
+ parser.add_argument('--packed-context', action='store_true')
++parser.add_argument('--cohort-context', action='store_true')
+ args = parser.parse_args()
++args.packed_context = args.packed_context or args.cohort_context
+ OUT = (args.output or Path(__file__).resolve().parent / 'native-grammar').resolve()
+ GOAL = Path(__file__).resolve().parents[1]
+ assert OUT.is_relative_to(GOAL)
+@@ -45,19 +47,45 @@
+     messages = [{'role': 'system', 'content': 'This is a synthetic grammar counterprobe, never a real hardware design. Return only JSON matching the supplied schema.'},
+                 {'role': 'user', 'content': json.dumps({'instruction':
+                     'Produce each of these eight independent synthetic sensor decisions in inventory_choices under its exact name. '
+-                    'The schema omits fixed identity, quantity and source fields; NIS restores those exact offered constants. Use empty field_references, '
+-                    'null owner and purpose. Short rationale. All eight slots required. '
++                    'The schema omits fixed identity, quantity and source fields; NIS restores those exact offered constants. Use empty field_references. '
++                    + ('Use the owner specified below and null purpose. ' if args.cohort_context else 'Use null owner and purpose. ')
++                    + 'Short rationale. All eight slots required. '
+                     'devices=[], unresolved=[], inventory_complete=true. No physical or safety qualification is claimed.',
+                     'target': target, 'synthetic_source_fact': prepared['facts'][target['fact_id']]}, ensure_ascii=False)}]
+     existing = []
++    expected_owner = None
++    segment_tables = 0
+     if args.packed_context:
+         from backend.tests.test_reference_inventory_context_capacity import authored_context, read_selection
+         current = authored_context(12, 2)
+         existing = current['current_candidate']['devices']
++        if args.cohort_context:
++            for index, row in enumerate(existing):
++                kind = ['CONTROLLER', 'SENSOR', 'ACTUATOR'][index // 4]
++                row.update(kind=kind, source_fact_ids=['Authored-' + kind], source_member_bindings={},
++                           purpose=('Existing independently authored ' + kind + ' cohort; no real hardware qualification. ') * 4,
++                           rationale=('Preserve every existing ' + kind + ' identity and source binding in this synthetic counter. ') * 4)
++            existing[1]['purpose'] = 'Responsible for the authored temperature measurement chain.'
++            expected_owner = existing[1]['id']
++            current['existing_inventory_for_this_stage'] = [
++                {key: row[key] for key in ('id', 'name', 'kind')} for row in existing]
+         current['inventory_target_for_this_stage'] = target
+         current.update(json.loads(messages[-1]['content']))
+-        current['instruction'] += ' The twelve authored existing controllers remain present and unchanged. They are not the eight requested new sensors.'
++        current['instruction'] += (' The twelve authored existing devices remain present and unchanged. '
++            'They belong to other source groups, not the eight requested new sensors. '
++            'For each new sensor use as owner the existing CONTROLLER whose purpose is '
++            'Responsible for the authored temperature measurement chain. '
++            'Read its exact ID and purpose from the complete context; names alone do not identify it. '
++            'Do not select another controller, sensor or actuator.' if args.cohort_context else
++            ' The twelve authored existing controllers remain present and unchanged. They are not the eight requested new sensors.')
+         messages, _, _ = r._reference_context_messages([], None, current, messages[0]['content'], 131072)
++        if args.cohort_context:
++            def count_segments(value):
++                if isinstance(value, dict):
++                    return int('segments' in value) + sum(count_segments(item) for item in value.values())
++                return sum(count_segments(item) for item in value) if isinstance(value, list) else 0
++            segment_tables = count_segments(json.loads(messages[-1]['content']))
++            assert segment_tables > 0, 'The native probe must actually exercise segmented tables.'
+         selection = json.loads(messages[-1]['content'])['nis_current_selection']
+         assert isinstance(selection['existing_inventory'], dict) and len(read_selection(selection)) == 12
+         full_schema = r._reference_schema_for_stage(prepared, {'devices'}, inventory_target=target, existing_devices=existing)
+@@ -83,9 +111,13 @@
+     assert len(merged) == len({row['id'] for row in merged}) == len(existing) + 8
+     assert merged[:len(existing)] == existing
+     assert [row['name'] for row in merged[len(existing):]] == target['names']
++    if args.cohort_context:
++        assert all(row['owner_device_id'] == expected_owner for row in merged[len(existing):])
+     assert value['inventory_complete'] is True and r._reference_inventory_progress(existing, merged)
+     result = {'status': 'PASS', 'model': model, 'actual_inference_requests': 1, 'native_devices': len(merged) - len(existing),
+               'preserved_existing_devices': len(existing), 'packed_context': args.packed_context,
++              'segmented_tables': segment_tables, 'native_owner_selection': args.cohort_context,
++              'native_owner_selection_basis': 'purpose_only_in_complete_context' if args.cohort_context else None,
+               'schema_and_public_validation_and_scoped_merge': True,
+               'source_code_sha256': hashlib.sha256((ROOT / 'backend/nis/agent/orchestration/local_reasoner.py').read_bytes()).hexdigest(),
+               'original_acceptance': False, 'simulation_acceptance': False,
+--- before/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/freeze_repair.py
++++ after/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/freeze_repair.py
+@@ -11,11 +11,11 @@
+ out=Path(__file__).resolve().parent
+ root=out.parents[2]
+ parser=argparse.ArgumentParser(description=__doc__)
+-parser.add_argument('--phase',choices=['source-reference','source-semantics','function-coverage','inventory-batch','inventory-codec','inventory-context'],required=True)
++parser.add_argument('--phase',choices=['source-reference','source-semantics','function-coverage','inventory-batch','inventory-codec','inventory-context','inventory-cohort'],required=True)
+ args=parser.parse_args()
+ semantic_phase=args.phase in {'source-semantics','function-coverage'}
+ coverage_phase=args.phase=='function-coverage'
+-directory=out/({'source-reference':'intake-source-reference-repair','source-semantics':'source-semantics-repair','function-coverage':'function-coverage-repair','inventory-batch':'inventory-batch-repair','inventory-codec':'inventory-output-codec-repair','inventory-context':'inventory-context-capacity-repair'}[args.phase])
++directory=out/({'source-reference':'intake-source-reference-repair','source-semantics':'source-semantics-repair','function-coverage':'function-coverage-repair','inventory-batch':'inventory-batch-repair','inventory-codec':'inventory-output-codec-repair','inventory-context':'inventory-context-capacity-repair','inventory-cohort':'inventory-context-capacity-repair/cohort-table-repair'}[args.phase])
+ baseline=out/'intake-cardinality-repair'/'before'
+ def baseline_file(name):
+     if (baseline/name).exists():return baseline/name
+@@ -33,35 +33,44 @@
+ def parse(path):
+     return ast.parse(path.read_text(encoding='utf-8'))
+ 
+-if args.phase == 'inventory-context':
++if args.phase in {'inventory-context', 'inventory-cohort'}:
++    cohort_phase = args.phase == 'inventory-cohort'
+     import xml.etree.ElementTree as ET
+     checks = {}
+-    for name in ('green-confirmed.xml', 'regression-final.xml'):
++    for name in ('green.xml' if cohort_phase else 'green-confirmed.xml', 'regression-final.xml'):
+         result = next(ET.parse(directory/name).getroot().iter('testsuite')).attrib
+         assert result['failures'] == result['errors'] == result['skipped'] == '0', (name, result)
+         checks[name] = result
+     assert work['active_local_regression']['status'] == 'PASS'
+     assert work['active_local_regression']['exit_code'] == 0
+-    native_path = directory/'native-nis-inventory/result.json'
++    native_path = directory/('native-nis-cohort-purpose/result.json' if cohort_phase else 'native-nis-inventory/result.json')
+     native = json.loads(native_path.read_text(encoding='utf8'))
+     assert native['status'] == 'PASS' and native['actual_inference_requests'] == 1
+     assert native['native_devices'] == 8 and native['preserved_existing_devices'] == 12
+     assert native['packed_context'] and native['schema_and_public_validation_and_scoped_merge']
++    if cohort_phase:
++        assert native['segmented_tables'] > 0 and native['native_owner_selection']
++        assert native['native_owner_selection_basis'] == 'purpose_only_in_complete_context'
+     reasoner = 'backend/nis/agent/orchestration/local_reasoner.py'
+     new_test = 'backend/tests/test_reference_inventory_context_capacity.py'
++    extra_files = (['backend/tests/test_reference_planning_throughput.py',
++                    'backend/tests/test_reference_context_delta_capacity.py',
++                    str((out/'inventory-output-codec-repair/probe_native_codec.py').relative_to(root)).replace('\\', '/')]
++                   if cohort_phase else [])
++    changed_nodes = {'_reference_context_messages', *({'_reference_context_snapshot'} if cohort_phase else set())}
+     assert ref(root/reasoner)['sha256'] == native['source_code_sha256']
+     def protected(tree):
+         return ast.dump(ast.Module(body=[node for node in tree.body
+-            if getattr(node, 'name', None) != '_reference_context_messages'], type_ignores=[]), include_attributes=False)
++            if getattr(node, 'name', None) not in changed_nodes], type_ignores=[]), include_attributes=False)
+     assert protected(parse(directory/'before'/reasoner)) == protected(parse(root/reasoner))
+     for name, digest in work['frozen_files'].items():
+-        if name != reasoner:
++        if name not in {reasoner, new_test, *extra_files}:
+             assert ref(root/name)['sha256'] == digest, name
+     assert ref(Path(work['source']['path']))['sha256'] == work['source']['sha256']
+     assert len(work['required_outcomes']) == len(work['validation_requirements']) == 7
+     before_refs, after_refs, diff = [], [], []
+     operator = str((out/'freeze_repair.py').relative_to(root)).replace('\\', '/')
+-    for name in (reasoner, new_test, operator):
++    for name in (reasoner, new_test, *extra_files, operator):
+         old, new = directory/'before'/name, root/name
+         target = directory/'after'/name
+         target.parent.mkdir(parents=True, exist_ok=True)
+@@ -73,16 +82,17 @@
+     (directory/'change.diff').write_text(''.join(diff), encoding='utf8')
+     source = module_at('neu9_context_manifest', root/'scripts/write-build-info.py').build_manifest()
+     verification = module_at('neu9_context_gate', root/'scripts/run-release-gate.py').verification_manifest()
+-    if new_test not in work['files_changed']: work['files_changed'].append(new_test)
++    for name in (new_test, *extra_files):
++        if name not in work['files_changed']: work['files_changed'].append(name)
+     proof = {'at': datetime.now(timezone.utc).isoformat(),
+         'status': 'FROZEN_LOCAL_AND_NATIVE_NIS_INVENTORY_CHECKED_ORIGINAL_PENDING',
+         'source': source, 'verification_sha256': verification, 'checks': checks,
+-        'native_counter': ref(native_path), 'changed_application_nodes': ['_reference_context_messages'],
++        'native_counter': ref(native_path), 'changed_application_nodes': sorted(changed_nodes),
+         'all_other_functions_and_classes_identical': True,
+         'context_output_timeout_public_validation_merge_and_original_source_unchanged': True,
+-        'native_semantic_selection_diagnostics': ref(directory/'native-selection-diagnostic-summary.json'),
++        'native_semantic_selection_diagnostics': ref(out/'inventory-context-capacity-repair/native-selection-diagnostic-summary.json'),
+         'remaining_findings': work.get('remaining_findings', []),
+-        'qualification': 'Normal constrained NIS inventory counter PASS. Unconstrained semantic selection FAIL also on raw baseline; not represented as repaired or accepted. Full ordinary Original and simulation gates remain mandatory.',
++        'qualification': ('Normal NIS inventory counter and unforced existing-owner selection from segmented context PASS. ' if cohort_phase else 'Normal constrained NIS inventory counter PASS. ') + 'Earlier unconstrained semantic selection FAIL also on raw baseline; not represented as comprehensively repaired or accepted. Full ordinary Original and simulation gates remain mandatory.',
+         'original_acceptance': False, 'simulation_acceptance': False,
+         'files': {name: ref(root/name)['sha256'] for name in work['files_changed']}}
+     (directory/'source-scope-proof.json').write_text(json.dumps(proof, ensure_ascii=False, indent=2)+'\n', encoding='utf8')
+@@ -93,18 +103,23 @@
+         'result': checks['regression-final.xml'], 'evidence': [ref(directory/'regression-final.xml')]})
+     work['repair']['evidence'].extend([ref(directory/'source-scope-proof.json'), ref(native_path)])
+     (out/'workload.json').write_text(json.dumps(work, ensure_ascii=False, indent=2)+'\n', encoding='utf8')
+-    state_path = out/'attempt-07/state.json'
++    state_path = out/('attempt-08/state.json' if cohort_phase else 'attempt-07/state.json')
+     state = json.loads(state_path.read_text(encoding='utf8'))
+     assert state['status'] == 'NATIVE_PLAN_REFERENCE_FAILED'
+-    terminal_path = out/'attempt-07/terminal-86039-verified/manifest.json'
++    terminal_path = out/('attempt-08/terminal-49354-verified/manifest.json' if cohort_phase else 'attempt-07/terminal-86039-verified/manifest.json')
+     terminal = json.loads(terminal_path.read_text(encoding='utf8'))
+-    assert terminal['exit_code'] == 1 and terminal['session'] == 86039
+-    assert terminal['classification'] == 'NATIVE_TERMINAL_CONTEXT_BOUND_FAILURE_NOT_CANCELLATION'
++    assert terminal['exit_code'] == 1 and terminal['session'] == (49354 if cohort_phase else 86039)
++    if cohort_phase:
++        assert terminal['normal_terminal_result']['success'] is False
++        assert terminal['state_status'] == state['status']
++    else:
++        assert terminal['classification'] == 'NATIVE_TERMINAL_CONTEXT_BOUND_FAILURE_NOT_CANCELLATION'
++    retire_name = 'retire-c069' if cohort_phase else 'retire-74c6'
+     plan = {'receipt': state['receipt'], 'image_id': state['image_id'], 'resources': state['containers'],
+         'state': str(state_path), 'terminal_evidence': ref(terminal_path),
+-        'expected_production_image': work['current_image'], 'output': str(out/'retire-74c6'),
+-        'archive': 'F:/CodexOrdner/visualizations/2026/10/09/01a11f88-d6c9-7b63-bec3-26450a86e52c/nis-neu9-small-llm-20261106/retire-74c6'}
+-    plan_path = out/'retire-74c6-plan.json'
++        'expected_production_image': work['current_image'], 'output': str(out/retire_name),
++        'archive': 'F:/CodexOrdner/visualizations/2026/10/09/01a11f88-d6c9-7b63-bec3-26450a86e52c/nis-neu9-small-llm-20261106/' + retire_name}
++    plan_path = out/(retire_name+'-plan.json')
+     assert not plan_path.exists()
+     plan_path.write_text(json.dumps(plan, ensure_ascii=False, indent=2)+'\n', encoding='utf8')
+     print(json.dumps({'source_sha256': source['source_sha256'], 'verification_sha256': verification, 'checks': checks}))

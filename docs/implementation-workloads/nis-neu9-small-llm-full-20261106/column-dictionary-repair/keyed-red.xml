@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.790" timestamp="2026-11-07T19:40:07.180796+01:00" hostname="Haranga"><testcase classname="tests.test_reference_inventory_context_capacity" name="test_noncontiguous_column_values_share_once_and_roundtrip_exactly" time="0.134"><failure message="AssertionError: assert False&#10; +  where False = isinstance(['Authored function 0: Preserve the complete explicit measurement purpose. Preserve the complete explicit measurement ...tion 5: Preserve the complete explicit measurement purpose. Preserve the complete explicit measurement purpose. ', ...], dict)">def test_noncontiguous_column_values_share_once_and_roundtrip_exactly():
+        from backend.tests.test_reference_context_delta_capacity import decode_wire
+        from backend.tests.test_reference_planning_throughput import unpack_context_message
+        current = authored_interleaved_context()
+        before = encoded(current)
+        packed = reasoner._reference_context_snapshot(current)
+        table = packed['nis_context_snapshot']['a/b~c']['']
+        assert any('dictionaries' in part for part in table.get('segments', [table]))
+        # Lookup must not require counting implicit array offsets. Changing the
+        # presentation order of dictionary entries cannot change their references.
+        for part in table.get('segments', [table]):
+            for column, dictionary in part.get('dictionaries', {}).items():
+&gt;               assert isinstance(dictionary, dict)
+E               AssertionError: assert False
+E                +  where False = isinstance(['Authored function 0: Preserve the complete explicit measurement purpose. Preserve the complete explicit measurement ...tion 5: Preserve the complete explicit measurement purpose. Preserve the complete explicit measurement purpose. ', ...], dict)
+
+backend\tests\test_reference_inventory_context_capacity.py:40: AssertionError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,67 @@
+--- before/backend/tests/test_reference_inventory_context_capacity.py
++++ after/backend/tests/test_reference_inventory_context_capacity.py
+@@ -109,3 +109,64 @@
+     assert current['original_source'][:60] not in caplog.text
+     assert diagnostic['required_utf8_upper_bound'] > diagnostic['maximum'] == 131072
+     assert encoded(current) == before
++
++
++def authored_cohort_context(size=251, source_lines=500):
++    """Mixed authored cohorts, not recovered native decisions or a source model."""
++    current = authored_context(size, source_lines)
++    for row in current['current_candidate']['devices']:
++        cohort = row['kind']
++        row['source_fact_ids'] = ['Authored-' + cohort]
++        row['source_member_bindings'] = {}
++        row['purpose'] = 'Independently authored ' + cohort + ' task without technical assumptions.'
++        row['rationale'] = ('This independent authored ' + cohort
++                            + ' record preserves its declared quantity and distinct physical identity.')
++    return current
++
++
++@pytest.mark.parametrize('size', [175, 251])
++def test_mixed_cohort_inventory_preserves_full_source_within_unchanged_capacity(size):
++    current = authored_cohort_context(size)
++    original = encoded(current)
++    messages, _, _ = reasoner._reference_context_messages([], None, current, 'Authored counter', 131072)
++    assert encoded(effective_reference_context(messages)) == original
++    assert encoded(current) == original
++    selection = json.loads(messages[-1]['content'])['nis_current_selection']
++    assert encoded(read_selection(selection)) == encoded(expected_selection(current))
++    required = sum(len(row['content'].encode('utf-8')) for row in messages) + 8192 + 2048
++    assert required <= 131072
++    with pytest.raises(ValueError, match='keine Quelle gekürzt'):
++        reasoner._reference_context_window(messages, required - 1)
++
++
++def test_cohort_tables_keep_key_order_scalar_spellings_and_nested_pointers():
++    from backend.tests.test_reference_context_delta_capacity import decode_wire
++    from backend.tests.test_reference_planning_throughput import unpack_context_message
++    keys = ['', 'a/b~c', 'µ 🦾', *[f'key-{i}' for i in range(29)]]
++    original = {'a/b~c': {'': {key: {
++        'id': f'row-{i}', 'physical_literal': [-0.0, 0.0, False, None][i // 8],
++        'complete_literal': ('Unchanged independently authored group ' + str(i // 8) + ' µ ') * 12,
++        'members': ['exact', i // 8],
++    } for i, key in enumerate(keys)}}}
++    wire = reasoner._reference_context_snapshot(original)
++    assert encoded(decode_wire(wire)) == encoded(original)
++    assert encoded(unpack_context_message(wire)) == encoded(original)
++    assert list(decode_wire(wire)['a/b~c']['']) == keys
++    # Long repeated cohort fields should be recorded once per contiguous cohort,
++    # not repeated literals or one reconstruction operation per repeated field.
++    assert len(encoded(wire).encode('utf-8')) < len(encoded(original).encode('utf-8')) // 3
++
++
++def test_cached_cohort_context_retains_later_binding_change_without_mutation():
++    first = authored_cohort_context(175, 20)
++    messages, _, _ = reasoner._reference_context_messages([], None, first, 'Authored counter', 131072)
++    current = deepcopy(first)
++    current['current_candidate']['devices'][80]['source_member_bindings'] = {'a/b~c': 'new literal µ'}
++    current['inventory_target_for_this_stage']['names'] = ['different requested identity']
++    history = [*messages, {'role': 'assistant', 'content': '{"authored_only":true}'}]
++    result, _, _ = reasoner._reference_context_messages(
++        history, first, current, 'Authored counter', 131072, anchor=(messages, first))
++    assert encoded(effective_reference_context(result)) == encoded(current)
++    assert first['current_candidate']['devices'][80]['source_member_bindings'] == {}
++    selection = json.loads(result[-1]['content'])['nis_current_selection']
++    assert encoded(read_selection(selection)) == encoded(expected_selection(current))

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="1.127" timestamp="2026-11-07T13:26:16.167375+01:00" hostname="Haranga"><testcase classname="tests.test_reference_inventory_context_capacity" name="test_many_small_cohorts_fit_complete_context_without_source_or_guard_changes[191]" time="0.187"><failure message="ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.">size = 191
+
+    @pytest.mark.parametrize('size', [191, 251])
+    def test_many_small_cohorts_fit_complete_context_without_source_or_guard_changes(size):
+        from backend.tests.test_reference_context_delta_capacity import decode_wire
+        from backend.tests.test_reference_planning_throughput import unpack_context_message
+        current = authored_many_cohort_context(size)
+        before = encoded(current)
+        packed = reasoner._reference_context_snapshot(current)
+        assert encoded(decode_wire(packed)) == before
+        assert encoded(unpack_context_message(packed)) == before
+&gt;       messages, _, _ = reasoner._reference_context_messages(
+            [], None, current, 'Authored capacity counter', 131072)
+
+backend\tests\test_reference_inventory_context_capacity.py:195: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\nis\agent\orchestration\local_reasoner.py:1301: in _reference_context_messages
+    _reference_context_window(full, maximum)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+messages = [{'role': 'system', 'content': 'Authored capacity counter NIS-Kontextfortsetzung: Die erste Nutzernachricht enthält de...["Authored-ACTUATOR"],{}],["authored-device-190","Independent device 190 µ","ACTUATOR",["Authored-ACTUATOR"],{}]]}}}'}]
+maximum = 131072
+
+    def _reference_context_window(messages, maximum):
+        """Reserve complete UTF-8 input plus output; never shorten a source to fit."""
+        # Byte fallback tokenization cannot need more content tokens than UTF-8
+        # bytes. The provider tokenizes decoded message content, not the HTTP JSON
+        # wrapper and its additional string escaping. Include every retry message;
+        # the existing framing reserve also covers roles and chat-template tokens.
+        required = sum(len(message['content'].encode('utf-8')) for message in messages) + 8192 + 2048
+        if required &gt; maximum:
+&gt;           raise ValueError('Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten '
+                             'das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.')
+E           ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.
+
+backend\nis\agent\orchestration\local_reasoner.py:956: ValueError</failure></testcase><testcase classname="tests.test_reference_inventory_context_capacity" name="test_many_small_cohorts_fit_complete_context_without_source_or_guard_changes[251]" time="0.131"><failure message="ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.">size = 251
+
+    @pytest.mark.parametrize('size', [191, 251])
+    def test_many_small_cohorts_fit_complete_context_without_source_or_guard_changes(size):
+        from backend.tests.test_reference_context_delta_capacity import decode_wire
+        from backend.tests.test_reference_planning_throughput import unpack_context_message
+        current = authored_many_cohort_context(size)
+        before = encoded(current)
+        packed = reasoner._reference_context_snapshot(current)
+        assert encoded(decode_wire(packed)) == before
+        assert encoded(unpack_context_message(packed)) == before
+&gt;       messages, _, _ = reasoner._reference_context_messages(
+            [], None, current, 'Authored capacity counter', 131072)
+
+backend\tests\test_reference_inventory_context_capacity.py:195: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\nis\agent\orchestration\local_reasoner.py:1301: in _reference_context_messages
+    _reference_context_window(full, maximum)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+messages = [{'role': 'system', 'content': 'Authored capacity counter NIS-Kontextfortsetzung: Die erste Nutzernachricht enthält de...["Authored-ACTUATOR"],{}],["authored-device-250","Independent device 250 µ","ACTUATOR",["Authored-ACTUATOR"],{}]]}}}'}]
+maximum = 131072
+
+    def _reference_context_window(messages, maximum):
+        """Reserve complete UTF-8 input plus output; never shorten a source to fit."""
+        # Byte fallback tokenization cannot need more content tokens than UTF-8
+        # bytes. The provider tokenizes decoded message content, not the HTTP JSON
+        # wrapper and its additional string escaping. Include every retry message;
+        # the existing framing reserve also covers roles and chat-template tokens.
+        required = sum(len(message['content'].encode('utf-8')) for message in messages) + 8192 + 2048
+        if required &gt; maximum:
+&gt;           raise ValueError('Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten '
+                             'das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.')
+E           ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.
+
+backend\nis\agent\orchestration\local_reasoner.py:956: ValueError</failure></testcase></testsuite></testsuites>

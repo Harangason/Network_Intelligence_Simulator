@@ -425,7 +425,7 @@ test('the original large wizard specification retains one gateway instead of pro
 test('the confirmed original graph restores coverage signal identities and command encodings after catalogue redistribution', () => {
   const prompt = readFileSync(new URL('../../../../e2e/fixtures/wizard-large-50-250-250.txt', import.meta.url), 'utf8');
   const spec = extractEngineeringSpecification(prompt);
-  const owners = ['Allradsteuerung', 'Hinterachslenkung', 'Soundsystem'];
+  const owners = ['Allradsteuerung', 'Hinterachslenkung', 'Soundsystem', 'Licht'];
   const roles = [
     ['PrimaryFeedback', 'Rueckmeldung', 10, 0.1, 100, '%'],
     ['OperatingState', 'Betriebszustand', 4, 1, 15, 'code'],
@@ -436,7 +436,9 @@ test('the confirmed original graph restores coverage signal identities and comma
   const missing = new Set(owners.flatMap(owner => roles.map(([role]) => `${owner}${role}`)));
   for (const owner of ['Parkassistenz', 'Reifendruckkontrolle', 'Ultraschallverarbeitung']) missing.add(`${owner}HealthFeedback`);
   // Simulate a changed catalogue/count allocation without changing the reviewed graph.
-  spec.chains = spec.chains.filter(chain => !missing.has(chain.hardware_name));
+  // The reviewed controller can itself have disappeared from the catalogue.
+  // Its graph reconstruction must still own the original coverage encodings.
+  spec.chains = spec.chains.filter(chain => !missing.has(chain.hardware_name) && chain.hardware_name !== 'Licht');
   const restored = reconcileConfirmedGraphDevices(spec, prompt);
   for (const owner of owners) for (const [role, signal, bits, factor, maximum, unit] of roles) {
     const chain = restored.find(item => item.hardware_name === `${owner}${role}`);
@@ -447,7 +449,7 @@ test('the confirmed original graph restores coverage signal identities and comma
     assert.equal(chain.configuration.parameter_quality, 'DOMAIN_TEMPLATE');
     assert.deepEqual([chain.length_bits, chain.factor, chain.min_value, chain.max_value, chain.unit, chain.byte_order],
       [bits, factor, 0, maximum, unit, 'little_endian']);
-    assert.equal(chain.interface_type, owner === 'Soundsystem' ? 'LIN' : 'CAN_FD');
+    assert.equal(chain.interface_type, ['Soundsystem', 'Licht'].includes(owner) ? 'LIN' : 'CAN_FD');
     if (role.endsWith('Command')) {
       assert.deepEqual(chain.configuration.actuator_command_template.data, { minimum: 0, maximum, resolution: factor });
       assert.equal(chain.configuration.actuator_command_template.length_bits, bits);
@@ -1828,4 +1830,48 @@ test('reviewed declared controller retains only its own source duties and explic
   const first = JSON.stringify(spec.chains[0].configuration.source_scoped_functions);
   assert.match(first, /Perception/);
   assert.doesNotMatch(first, /Planning/);
+});
+
+test('raw sample document preview keeps source scope without inventing concrete devices', () => {
+  const source = readFileSync(new URL('../../../../e2e/fixtures/document-preview-example.txt', import.meta.url), 'utf8');
+  assert.equal(source.length, 11578);
+  for (const text of [source, '\n- Aufgaben-Anlage: neu 9.txt (text/plain, 11 KB)\n' + source]) {
+    const preview = extractEngineeringSpecification(text, {}, 'automotive', false, { preview: true });
+    assert.equal(preview.documentReviewRequired, true);
+    assert.deepEqual(preview.targetCounts, { sensors: 100, actuators: 100, ecus: 50, gateways: 1, explicit: true });
+    assert.deepEqual(new Set(preview.communicationSystems), new Set(['LIN', 'CAN_FD', 'Ethernet']));
+    assert.deepEqual(preview.chains, []);
+  }
+});
+
+test('legacy quantity review does not establish typed sample document inventory', () => {
+  const source = readFileSync(new URL('../../../../e2e/fixtures/document-preview-example.txt', import.meta.url), 'utf8');
+  const legacy = { questions: [], devices: [], answers: [] };
+  const preview = extractEngineeringSpecification(source + '\n- Dokument-Geräte: ' + JSON.stringify(legacy), {}, 'automotive', false, { preview: true });
+  assert.equal(preview.documentReviewRequired, true);
+  assert.deepEqual(preview.chains, []);
+});
+
+test('typed document preview uses reviewed instances without sample fillers', () => {
+  const source = '# Beispielprojekt Montage\n## Architektur\nController Alpha\nSensor S1\n## Anforderungen\nREQ-A: The controller shall read S1.';
+  const components = [
+    { name: 'Alpha', kind: 'INSTANCE', role: 'CONTROLLER', quantity: 1, source_quote: 'Controller Alpha', source_context: ['Beispielprojekt Montage', 'Architektur'] },
+    { name: 'S1', kind: 'INSTANCE', role: 'SENSOR', quantity: 1, source_quote: 'Sensor S1', source_context: ['Beispielprojekt Montage', 'Architektur'] },
+    { name: 'REQ-A', kind: 'REQUIREMENT', role: 'OTHER', quantity: null, source_quote: 'REQ-A: The controller shall read S1.', source_context: ['Beispielprojekt Montage', 'Anforderungen'] },
+  ];
+  const reviewed = reviewDocumentEquipment(source, { interpretation: { components, technologies: [] } }, {}, false);
+  const preview = extractEngineeringSpecification(source + '\n- Dokument-Geräte: ' + JSON.stringify(reviewed), {}, 'custom', false, { preview: true });
+  assert.notEqual(preview.documentReviewRequired, true);
+  assert.deepEqual([...new Set(preview.chains.map(chain => chain.hardware_name))].sort(), ['Alpha', 'S1']);
+  assert.equal(preview.targetCounts.ecus, 1);
+  assert.equal(preview.targetCounts.sensors, 1);
+  assert.equal(readReviewedDocumentEquipment(source + '\n- Dokument-Geräte: ' + JSON.stringify(reviewed)).facts.length, 3);
+});
+
+test('structured request preview still recognizes explicit nonautomotive devices', () => {
+  const source = 'Controller: PLC1\nSensor: Encoder1\n- Geräteanschlüsse: {"PLC1":"EtherCAT","Encoder1":"EtherCAT"}';
+  const preview = extractEngineeringSpecification(source, {}, 'industrial_automation', false, { preview: true });
+  assert.notEqual(preview.documentReviewRequired, true);
+  assert.deepEqual([...new Set(preview.chains.map(chain => chain.hardware_name))].sort(), ['Encoder1', 'PLC1']);
+  assert.ok(preview.chains.every(chain => chain.interface_type === 'EtherCAT'));
 });

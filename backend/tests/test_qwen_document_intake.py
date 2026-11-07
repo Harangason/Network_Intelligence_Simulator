@@ -9,6 +9,11 @@ from backend.nis.agent.orchestration.project_intake import validate_document_int
 from backend.nis.agent.orchestration.local_reasoner import LocalEngineeringReasoner
 
 
+@pytest.fixture(autouse=True)
+def explicit_legacy_qwen_model(monkeypatch):
+    monkeypatch.setenv('LOCAL_AI_MODEL', 'qwen3.8:27b')
+
+
 SOURCE = '1.1 ADAS Domain Controller (ADC)\nSensorik (Radar, Kamera)\nSensor: Probe\nAnschluss: ADC Eingang\nREQ-SAFE-14: Fusion MUSS bei Ausfall eines Sensors degradieren.'
 
 
@@ -1577,3 +1582,400 @@ def test_normative_window_results_compose_without_reassigning_subchapter_provena
         '7. Regulatory Requirements', '7.1 Machinery standards']
     with pytest.raises(ValueError, match='Abschnittskontext|Quellenangabe fehlt'):
         validate_document_interpretation(wrong_context, source, aggregate=True)
+
+
+@pytest.mark.parametrize('source_kind', ['independent_optional_lines', 'complete_preserved_example'])
+def test_document_decoder_cardinality_is_bounded_even_if_provider_ignores_max_properties(source_kind, monkeypatch):
+    from pathlib import Path
+    monkeypatch.setenv('LOCAL_AI_MODEL', 'llama3.1:8b')
+    source = ('\n'.join(f'Sensor: Messfuehler{i:02d}' for i in range(23))
+              + '\nBeobachtung: Zusatz A\nBeobachtung: Zusatz B\n')
+    if source_kind == 'complete_preserved_example':
+        raw = (Path(__file__).resolve().parents[2] / 'frontend/e2e/fixtures/document-preview-example.txt').read_bytes()
+        assert hashlib.sha256(raw).hexdigest() == '32c864c91ac85c2884ef0c3c9e62456e6ade59cc2a22cae384bdfe5a2e2eff60'
+        source = raw.decode('utf-8')
+    observed = []
+    class PayloadCaptured(Exception):
+        pass
+    async def run():
+        reasoner = LocalEngineeringReasoner()
+        await reasoner.client.aclose()
+        def transport(request):
+            if request.url.path == '/api/show':
+                return httpx.Response(200, json={'details': {'family': 'llama', 'format': 'gguf'},
+                    'model_info': {'general.parameter_count': 8030261312}, 'capabilities': ['completion', 'tools']})
+            payload = json.loads(request.content)
+            observed.append(payload)
+            components = payload['format']['properties']['components']
+            assert len(components['properties']) <= components['maxProperties'] == 24
+            # Choosing every permitted key cannot overflow, even when a provider
+            # does not enforce the maxProperties keyword itself.
+            assert len(dict.fromkeys(components['properties'])) <= 24
+            raise PayloadCaptured()
+        reasoner.client = httpx.AsyncClient(transport=httpx.MockTransport(transport))
+        try:
+            with pytest.raises(PayloadCaptured):
+                await reasoner.interpret_document(source, 'bounded-complete-source.txt')
+        finally:
+            await reasoner.client.aclose()
+    asyncio.run(run())
+    payload, = observed
+    fragment = ''.join(json.loads(payload['messages'][1]['content'])['source_lines'].values())
+    assert fragment and source.startswith(fragment) and len(fragment) < len(source)
+    assert payload['model'] == 'llama3.1:8b'
+    assert payload['options']['num_predict'] == 3000
+    assert payload['options']['num_ctx'] == 16384
+    assert payload['format']['properties']['technologies']['maxProperties'] == 16
+
+
+def test_terminal_invalid_document_answer_has_local_raw_response_and_hash_diagnostic(caplog, monkeypatch):
+    monkeypatch.setenv('LOCAL_AI_MODEL', 'llama3.1:8b')
+    invalid = json.dumps({'components': {'NO_SUCH_SOURCE': {'kind': 'INSTANCE', 'role': 'CONTROLLER', 'quantity': 1}},
+                          'technologies': {}, 'summary': 'Untrusted counterprobe', 'proposed_task': 'Do not adopt',
+                          'assumptions': [], 'open_questions': []})
+    async def run():
+        reasoner = LocalEngineeringReasoner()
+        await reasoner.client.aclose()
+        def transport(request):
+            if request.url.path == '/api/show':
+                return httpx.Response(200, json={'details': {'family': 'llama', 'format': 'gguf'},
+                    'model_info': {'general.parameter_count': 8030261312}, 'capabilities': ['completion', 'tools']})
+            return httpx.Response(200, json={'message': {'content': invalid}, 'done_reason': 'stop',
+                                           'eval_count': 73, 'prompt_eval_count': 121})
+        reasoner.client = httpx.AsyncClient(transport=httpx.MockTransport(transport))
+        try:
+            with pytest.raises(ValueError, match='nicht quellenkonform'):
+                await reasoner.interpret_document(SOURCE, 'invalid-counterprobe.txt')
+        finally:
+            await reasoner.client.aclose()
+    asyncio.run(run())
+    diagnostics = [row.message for row in caplog.records if row.message.startswith('Native document validation failed: ')]
+    assert len(diagnostics) == 1
+    diagnostic = json.loads(diagnostics[0].split(': ', 1)[1])
+    assert diagnostic['response'] == invalid
+    assert diagnostic['response_sha256'] == hashlib.sha256(invalid.encode()).hexdigest()
+    assert diagnostic['model'] == 'llama3.1:8b' and diagnostic['attempt'] == 2 and diagnostic['segment'] == 1
+    assert diagnostic['done_reason'] == 'stop' and diagnostic['eval_count'] == 73
+
+
+@pytest.mark.parametrize('source', [
+    '## Gateway\nAufgaben:\n- Messages weiterleiten,\n- Signale weiterleiten;\n- Last auswerten.\n',
+    '## Verarbeitung\nFunktionen:\n- , Messwerte auswerten,, Status erzeugen;\n',
+    'Architektur: Sensor, , Aktor;; Gateway\n',
+])
+def test_empty_list_delimiters_never_become_private_source_references(source):
+    from backend.nis.agent.orchestration.project_intake import (
+        DocumentInterpretation, document_component_sources, document_source_references,
+        document_output_schema, document_model_output_schema, resolve_document_references,
+    )
+    rows = document_source_references(source)
+    units = document_component_sources(rows)
+    assert units and all(unit['text'].strip() for unit in units)
+    assert all(unit['text'].strip() not in {'-', '*'} for unit in units)
+    schema = document_model_output_schema(document_output_schema(source, DocumentInterpretation.model_json_schema()), rows)
+    keys = schema['properties']['components']['properties']
+    projected = resolve_document_references({'components': {key: {} for key in keys}, 'technologies': {}}, rows, model_schema=schema)
+    assert projected['components']
+    assert all(item['name'].strip() and item['source_quote'].strip() and item['source_quote'] in source
+               for item in projected['components'])
+    assert ''.join(row['text'] for row in rows) == source
+
+
+def test_complete_preserved_source_every_permitted_key_projects_and_keeps_all_sections(monkeypatch):
+    from pathlib import Path
+    from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+    monkeypatch.setenv('LOCAL_AI_MODEL', 'llama3.1:8b')
+    raw = (Path(__file__).resolve().parents[2] / 'frontend/e2e/fixtures/document-preview-example.txt').read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == '32c864c91ac85c2884ef0c3c9e62456e6ade59cc2a22cae384bdfe5a2e2eff60'
+    source = raw.decode('utf-8')
+    observed, fragments = [], []
+    position, last_start = 0, 0
+    async def run():
+        reasoner = LocalEngineeringReasoner()
+        await reasoner.client.aclose()
+        def transport(request):
+            nonlocal position, last_start
+            if request.url.path == '/api/show':
+                return httpx.Response(200, json={'details': {'family': 'llama', 'format': 'gguf'},
+                    'model_info': {'general.parameter_count': 8030261312}, 'capabilities': ['completion', 'tools']})
+            payload = json.loads(request.content)
+            data = json.loads(payload['messages'][1]['content'])
+            fragment = ''.join(data['source_lines'].values())
+            if 'validation_feedback' in data:
+                assert fragments[-1] == fragment
+                start = last_start
+            else:
+                start = position
+                assert source[start:start + len(fragment)] == fragment
+                last_start = start
+                position += len(fragment)
+                fragments.append(fragment)
+            rows = document_source_references(fragment)
+            units = {unit['source_ref']: unit for unit in document_component_sources(rows, scope_prefix=source[:start])}
+            component_schema = payload['format']['properties']['components']
+            assert len(component_schema['properties']) <= 24
+            claims = {}
+            for key, branch in component_schema['properties'].items():
+                policy = units[key]['policy']
+                if policy is None:
+                    kinds = branch['properties']['kind']['enum']
+                    roles = branch['properties']['role']['enum']
+                    policy = {'kind': 'FUNCTION' if 'FUNCTION' in kinds else kinds[0],
+                              'role': 'OTHER' if 'OTHER' in roles else roles[0], 'quantity': None}
+                claims[key] = policy
+            # Exercise every advertised reference through the unchanged public
+            # projection and validator. This is a controlled consistency test,
+            # never a native-model or Original acceptance claim.
+            technology_schema = payload['format']['properties']['technologies']['properties']
+            wire = {'summary': 'Alle wortgetreuen Quellenbefunde prüfen.', 'components': claims,
+                    'technologies': {key: branch['enum'][0] for key, branch in technology_schema.items()},
+                    'proposed_task': 'Vollständige Quelle mit allen Anforderungen erhalten und prüfen.',
+                    'assumptions': [], 'open_questions': ['Welche konkreten Geräte decken die unquantifizierten Kategorien ab?']}
+            observed.append(payload)
+            return httpx.Response(200, json={'message': {'content': json.dumps(wire, ensure_ascii=False)}})
+        reasoner.client = httpx.AsyncClient(transport=httpx.MockTransport(transport))
+        try:
+            result = await reasoner.interpret_document(source, 'complete-source-consistency.txt')
+            assert result['source_complete'] is True and result['canonical_writes'] is False
+            assert result['source_sha256'] == hashlib.sha256(raw).hexdigest()
+            assert result['source_chars'] == len(source)
+            assert len(result['segments']) == len(observed)
+        finally:
+            await reasoner.client.aclose()
+    asyncio.run(run())
+    assert ''.join(fragments) == source and position == len(source)
+    assert all(payload['options']['num_predict'] == 3000 and payload['options']['num_ctx'] == 16384 for payload in observed)
+
+
+@pytest.mark.parametrize('label,count', [('50 Funktions-ECUs', 50), ('7 ECUs', 7), ('12 FunktionsECUs', 12)])
+def test_plural_function_ecu_quantity_is_inventory_not_a_numeric_heading(label, count):
+    from backend.nis.agent.tools.inventory_quantities import quantities
+    from backend.nis.agent.orchestration.project_intake import document_component_policy, _document_context_heading
+    assert quantities(label)['ecus'] == count
+    assert document_component_policy(label) == {'kind': 'INSTANCE', 'role': 'CONTROLLER', 'quantity': count}
+    assert _document_context_heading(label) is False
+
+
+@pytest.mark.parametrize('label', ['Signal: MotorRPM', 'MotorCurrent > 5 A', 'MotorRPM = 0',
+                                  'Gateway Load', 'Gateway Delay', 'Gateway-Auslastung', 'Motorstromüberwachung'])
+def test_signal_and_device_property_evidence_is_not_installed_hardware(label):
+    from backend.nis.agent.orchestration.project_intake import document_component_policy
+    policy = document_component_policy(label)
+    assert policy and policy['kind'] in {'FUNCTION', 'REQUIREMENT'}
+    assert policy['role'] == 'OTHER' and policy['quantity'] is None
+
+
+def test_device_nouns_and_independent_building_inventory_scopes_remain_separate():
+    from backend.nis.agent.orchestration.project_intake import document_component_sources, document_component_policy, document_source_references
+    for label, role in [('Body Control Module', 'CONTROLLER'), ('Motor mit Encoder', 'ACTUATOR'),
+                        ('Temperatursensor', 'SENSOR'), ('Gateway (GW)', 'GATEWAY')]:
+        assert document_component_policy(label)['role'] == role
+    source = '# Gebäude Nord\n## Systemumfang\n3 Sensoren\n1 Gateway\n# Gebäude Süd\n## Systemumfang\n3 Sensoren\n1 Gateway\n'
+    units = document_component_sources(document_source_references(source))
+    instances = [unit for unit in units if unit['policy'] and unit['policy']['kind'] == 'INSTANCE']
+    assert sum(unit['policy']['quantity'] for unit in instances) == 8
+    assert {tuple(unit['source_context'][:1]) for unit in instances} == {('Gebäude Nord',), ('Gebäude Süd',)}
+    assert ''.join(row['text'] for row in document_source_references(source)) == source
+
+
+def test_robot_scope_references_and_engineering_views_do_not_add_devices():
+    from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+    source = ('# Roboterzelle\n## Systemumfang\n- 8 Sensoren\n- 4 Aktoren\n- 2 ECUs\n- 1 Gateway\n'
+              '## Sensoren\nDie 8 Sensoren erfassen Messwerte.\nJeder Sensor erhält mindestens:\n- ID\n- Messgröße\n'
+              '## Zentrales Gateway\nEs existiert genau ein zentrales Gateway.\nAufgaben:\n- Daten übertragen\n---\n'
+              '## Netzwerk-Editor\nDarstellung von:\n- 8 Sensoren\n- 4 Aktoren\n- 2 ECUs\n- 1 Gateway\n'
+              '## Parameter\n- Gateway Delay\n## Signaldefinition\n- Signal: MotorRPM\nMotorCurrent > 5 A\n')
+    units = document_component_sources(document_source_references(source))
+    instances = [unit for unit in units if unit['policy'] and unit['policy']['kind'] == 'INSTANCE']
+    assert sum(unit['policy']['quantity'] for unit in instances) == 15
+    assert not any(unit['text'].strip() == '---' for unit in units)
+    assert any('Gateway Delay' in unit['text'] and unit['policy']['kind'] == 'REQUIREMENT' for unit in units)
+    assert any('Messgröße' in unit['text'] and unit['policy']['kind'] == 'REQUIREMENT' for unit in units)
+    assert ''.join(row['text'] for row in document_source_references(source)) == source
+
+
+def test_preserved_full_original_source_grammar_retains_declared_scope_without_view_inventory():
+    from pathlib import Path
+    from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+    raw = (Path(__file__).resolve().parents[2] / 'frontend/e2e/fixtures/document-preview-example.txt').read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == '32c864c91ac85c2884ef0c3c9e62456e6ade59cc2a22cae384bdfe5a2e2eff60'
+    source = raw.decode('utf-8')
+    units = document_component_sources(document_source_references(source))
+    instances = [unit for unit in units if unit['policy'] and unit['policy']['kind'] == 'INSTANCE']
+    totals = {role: sum(unit['policy']['quantity'] for unit in instances if unit['policy']['role'] == role)
+              for role in ['SENSOR', 'ACTUATOR', 'CONTROLLER', 'GATEWAY']}
+    assert totals == {'SENSOR': 100, 'ACTUATOR': 100, 'CONTROLLER': 50, 'GATEWAY': 1}
+    assert not any(unit['text'].strip() == '---' for unit in units)
+    assert not any(unit['policy'] and unit['policy']['kind'] in {'INSTANCE', 'CATEGORY'}
+                   and any(token in unit['text'] for token in ['MotorRPM', 'MotorCurrent', 'Gateway Load', 'Gateway Delay'])
+                   for unit in units)
+    assert ''.join(row['text'] for row in document_source_references(source)) == source
+
+
+@pytest.mark.parametrize('declaration', ['Es gibt weitere 3 Sensoren.', 'There are another 3 sensors.'])
+def test_explicitly_additional_inventory_is_not_a_repeated_scope_assertion(declaration):
+    from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+    source = '# Gebäude\n## Systemumfang\n3 Sensoren\n' + declaration
+    units = document_component_sources(document_source_references(source))
+    assert sum(unit['policy']['quantity'] for unit in units if unit['policy'] and unit['policy']['kind'] == 'INSTANCE') == 6
+    assert any(declaration in unit['text'] for unit in units)
+
+
+@pytest.mark.parametrize('row', ['25 LIN', '10 CAN-FD', '5 Automotive Ethernet'])
+def test_registered_transport_quantity_is_not_an_outline_heading(row):
+    from backend.nis.agent.orchestration.project_intake import _document_context_heading, document_source_contexts
+    assert _document_context_heading(row) is False
+    assert document_source_contexts('## Anforderungen\n' + row + '\nREQ-1: Das System muss gültig bleiben.')[1][-1] == ['Anforderungen']
+
+
+def test_generic_device_heading_is_retained_in_owner_scope():
+    from backend.nis.agent.orchestration.project_intake import document_source_scope
+    assert document_source_scope(['Roboterzelle', 'Zentrales Gateway']) == ['Roboterzelle', 'Zentrales Gateway']
+
+
+@pytest.mark.parametrize('clause', ['Verbindung der LIN-, CAN-FD- und Ethernet-Segmente',
+                                  'Temperatur-, Druck- und Feuchtemessung'])
+def test_compound_ellipsis_remains_one_complete_function_claim(clause):
+    from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+    source = '## Funktionen\n- ' + clause + '\n'
+    units = document_component_sources(document_source_references(source))
+    functions = [unit for unit in units if unit['policy'] and unit['policy']['kind'] == 'FUNCTION']
+    assert len(functions) == 1
+    assert clause in functions[0]['text']
+    assert not functions[0]['text'].rstrip().endswith('-')
+
+
+def test_compound_hardware_list_preserves_the_shared_head_noun():
+    from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+    source = 'Architektur: Temperatur-, Druck- und Feuchtesensoren'
+    units = document_component_sources(document_source_references(source))
+    assert len(units) == 1
+    assert units[0]['policy'] == {'kind': 'CATEGORY', 'role': 'SENSOR', 'quantity': None}
+    assert 'Temperatur-' in units[0]['text'] and 'Feuchtesensoren' in units[0]['text']
+
+
+def test_ordinary_complete_function_list_still_has_distinct_claims():
+    from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+    units = document_component_sources(document_source_references('## Funktionen\n- Messen, Regeln, Status senden\n'))
+    assert [unit['text'] for unit in units] == ['Messen', 'Regeln', 'Status senden']
+
+
+@pytest.mark.parametrize('caption', ['Die ECU verarbeitet daraus beispielsweise:',
+                                   'Die 8 Sensoren erfassen Messgrößen, zum Beispiel:',
+                                   'The controller processes the following inputs:'])
+def test_explanatory_input_list_caption_and_members_are_constraints(caption):
+    from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+    source = '## Signalmodell\n' + caption + '\n- TemperatureCurrent\n- TemperatureStatus\n'
+    units = document_component_sources(document_source_references(source))
+    assert units and all(unit['policy'] and unit['policy']['kind'] == 'REQUIREMENT' for unit in units)
+    assert any('TemperatureCurrent' in unit['text'] and 'TemperatureStatus' in unit['text'] for unit in units)
+
+
+def test_normative_gateway_list_is_not_a_set_of_new_executable_functions():
+    from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+    source = '## Gateway\nAufgaben:\nRouting\nDas Gateway muss zeigen:\n- welche Messages es passieren,\n- welche Verzögerung entsteht.\n'
+    units = document_component_sources(document_source_references(source))
+    assert any(unit['policy']['kind'] == 'FUNCTION' and unit['text'] == 'Routing' for unit in units)
+    for phrase in ['welche Messages', 'welche Verzögerung']:
+        assert any(phrase in unit['text'] and unit['policy']['kind'] == 'REQUIREMENT' for unit in units)
+
+
+def test_gateway_monitoring_function_is_not_only_a_load_parameter():
+    from backend.nis.agent.orchestration.project_intake import document_component_policy
+    assert document_component_policy('Gateway Load Monitoring') == {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}
+
+
+@pytest.mark.parametrize('caption', ['6. 50 Funktions-ECUs', '8. 20 ECUs', '5. Beispiel Stromsensor',
+                                   '8. Beispiel Batteriemanagement', '9. Beispiel Motion-/Antriebs-ECU',
+                                   '10. Kommunikationstechnologien'])
+def test_inventory_type_example_and_transport_captions_do_not_create_new_systems(caption):
+    from backend.nis.agent.orchestration.project_intake import document_system_scope
+    assert document_system_scope(['Fahrzeug A', caption]) == ['Fahrzeug A']
+
+
+@pytest.mark.parametrize('caption', ['001 PKW', '021 Rettungswagen', '054 Industrial Robotics',
+                                   'Beispiel 054 Robotercontroller', '2. Controller C1'])
+def test_named_or_numbered_real_source_profiles_remain_distinct(caption):
+    from backend.nis.agent.orchestration.project_intake import document_system_scope
+    assert document_system_scope(['Anlagen', caption]) == ['Anlagen', caption]
+
+
+def test_example_measurement_constraints_and_transport_use_are_not_extra_hardware():
+    from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+    source = ('# Fahrzeug A\n## Beispiel Stromsensor\n- Bereich: 0 bis 20 A\n- Auflösung: 0,1 A\n'
+              'Motorstromüberwachung\n## Kommunikationstechnologien\n### LIN\n- einfache Aktuatoren\n')
+    units = document_component_sources(document_source_references(source))
+    assert any('0 bis 20 A' in unit['text'] and unit['policy']['kind'] == 'REQUIREMENT' for unit in units)
+    assert any('0,1 A' in unit['text'] and unit['policy']['kind'] == 'REQUIREMENT' for unit in units)
+    assert any(unit['text'] == 'Motorstromüberwachung' and unit['policy']['kind'] == 'FUNCTION' for unit in units)
+    assert any('einfache Aktuatoren' in unit['text'] and unit['policy']['kind'] == 'REQUIREMENT' for unit in units)
+    assert not any(unit['policy'] and unit['policy']['kind'] in {'INSTANCE', 'CATEGORY'} for unit in units)
+
+
+def test_illustration_caption_does_not_override_an_explicit_monitoring_function():
+    from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+    source = '## Beispiel Stromsensor\nVerwendung:\n- Motorstromüberwachung\nBeispiel:\nMotorCurrent > 5 A\n'
+    units = document_component_sources(document_source_references(source))
+    assert any('Motorstromüberwachung' in unit['text'] and unit['policy']['kind'] == 'FUNCTION' for unit in units)
+    assert any('MotorCurrent > 5 A' in unit['text'] and unit['policy']['kind'] == 'REQUIREMENT' for unit in units)
+
+
+def test_code_fence_markers_are_not_executable_functions_or_standalone_requirements():
+    from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+    source = '## Funktionen\nRouting\n```text\nMotorCurrent > 5 A\n```\n'
+    units = document_component_sources(document_source_references(source))
+    assert not any(unit['text'].strip().startswith('```') for unit in units)
+    assert any(unit['text'] == 'Routing' and unit['policy']['kind'] == 'FUNCTION' for unit in units)
+    assert any('MotorCurrent > 5 A' in unit['text'] and unit['policy']['kind'] == 'REQUIREMENT' for unit in units)
+    assert ''.join(row['text'] for row in document_source_references(source)) == source
+
+
+@pytest.mark.parametrize('function', ['Motorstromüberwachung', 'Pfadplanung', 'Gateway Load Monitoring'])
+def test_known_function_nouns_are_required_in_minimal_decoder_output(function):
+    from backend.nis.agent.orchestration.project_intake import (
+        DocumentInterpretation, document_component_sources, document_source_references,
+        document_model_output_schema, document_output_schema,
+    )
+    source = '## Fachlicher Umfang\n' + function + '\n'
+    rows = document_source_references(source)
+    units = document_component_sources(rows)
+    functions = [unit for unit in units if unit['policy'] and unit['policy']['kind'] == 'FUNCTION']
+    assert len(functions) == 1
+    schema = document_model_output_schema(document_output_schema(source, DocumentInterpretation.model_json_schema()), rows)
+    assert functions[0]['source_ref'] in schema['properties']['components']['required']
+
+
+def test_public_source_coverage_rejects_missing_known_function_noun():
+    from backend.nis.agent.orchestration.project_intake import (
+        DocumentInterpretation, document_component_sources, document_source_references,
+        document_model_output_schema, document_output_schema, resolve_document_references,
+    )
+    source = '## Systemumfang\n1 Gateway\n## Fachlicher Umfang\nMotorstromüberwachung\n'
+    rows = document_source_references(source)
+    units = document_component_sources(rows)
+    schema = document_model_output_schema(document_output_schema(source, DocumentInterpretation.model_json_schema()), rows)
+    claims = {unit['source_ref']: unit['policy'] for unit in units
+              if unit['policy'] and unit['policy']['kind'] == 'INSTANCE'}
+    assert claims
+    projected = resolve_document_references({'components': claims, 'technologies': {}}, rows, model_schema=schema)
+    with pytest.raises(ValueError) as rejected:
+        validate_document_interpretation({'summary': 'Partial counterprobe', 'proposed_task': 'Never accept omission',
+            **projected, 'assumptions': [], 'open_questions': []}, source)
+    assert 'Motorstromüberwachung' in str(rejected.value)
+
+
+@pytest.mark.parametrize('declaration,field,identity', [
+    ('Schnittstelle: XYZ', 'unresolved_transports', 'XYZ'),
+    ('Unbekannte Schnittstelle: XYZ', 'unresolved_transports', 'XYZ'),
+    ('Anschluss: ADC Eingang', 'registered_transports', 'adc'),
+])
+def test_transport_declarations_remain_technology_evidence_not_functions(declaration, field, identity):
+    from backend.nis.agent.orchestration.project_intake import (
+        DocumentInterpretation, document_component_sources, document_source_references,
+        document_output_schema, document_technology_grounding,
+    )
+    rows = document_source_references(declaration)
+    assert not document_component_sources(rows)
+    grounding = document_technology_grounding(document_output_schema(declaration, DocumentInterpretation.model_json_schema()))
+    assert identity in grounding[field]
+    assert ''.join(row['text'] for row in rows) == declaration

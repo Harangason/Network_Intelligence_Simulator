@@ -1,0 +1,104 @@
+--- before/local_reasoner.py
++++ after/local_reasoner.py
+@@ -1215,13 +1215,16 @@
+         'anwenden, nicht auf die Tabellendarstellung. Bei einem Anker-Neustand gilt der '
+         'Patch ab dem ursprünglichen Kontext der ersten Nachricht; zwischenzeitliche '
+         'Vorschläge sind durch diesen vollständigen aktuellen Neustand ersetzt. '
+-        'nis_current_selection wiederholt die aktuelle Auswahl und die geprüften vorhandenen '
+-        'Gerätebindungen direkt lesbar außerhalb der Tabellen. Sie gehört zur jeweiligen Nachricht; '
+-        'Ihr existing_inventory ist entweder eine Liste von Datensätzen oder eine Tabelle mit '
+-        'columns, constants und rows nach denselben Tabellenregeln: jede Zeile ist ein Gerät, '
+-        'alle Identitäten und Quellenbindungen bleiben vollständig und in gleicher Reihenfolge. '
+-        'bei einer Fortsetzung zählt ausschließlich die Auswahl in der letzten Nutzernachricht. '
+-        'Diese Lesehilfe ersetzt weder den vollständigen Kontext noch seine Quellen oder Prüfungen.')
++        'nis_current_selection wiederholt die aktuelle Auswahl direkt lesbar außerhalb der Tabellen. '
++        'Ihr existing_inventory ist der JSON-Pointer /current_candidate/devices in den vollständig '
++        'rekonstruierten AKTUELLEN NIS-Kontext, nicht in den ursprünglichen Anker oder die rohe Tabelle. '
++        'Er bezeichnet die vollständige geordnete Geräteliste einschließlich aller Identitäten, '
++        'Namen, Arten, Quellenbindungen und technischen Felder; kein Gerät wird ausgelassen. '
++        'Auch existing_inventory_for_this_stage verweist auf diese eine vollständige Liste. '
++        'Bei einer Fortsetzung zuerst sämtliche Kontextpatches anwenden und danach diese Verweise '
++        'auflösen; nie eine alte Bestandsliste aus einer vorherigen Nachricht verwenden. '
++        'Die letzte Nutzernachricht bestimmt die Auswahl. Die Verweise ersetzen nur doppelte '
++        'Bestandskopien, niemals die vollständigen Quellen, Gerätedaten oder Prüfungen.')
+ 
+     def wire(context):
+         packed = _reference_context_snapshot(context)
+@@ -1233,20 +1236,11 @@
+                 'planning_stage': current['planning_stage'],
+                 'inventory_target': deepcopy(current.get('inventory_target_for_this_stage')),
+                 'derivation_fact_ids': deepcopy(current.get('derivation_fact_ids_for_this_stage')),
+-                'existing_inventory': [{key: deepcopy(row[key]) for key in
+-                    ('id', 'name', 'kind', 'source_fact_ids', 'source_member_bindings')}
+-                    for row in current['current_candidate']['devices']],
++                # One authoritative complete inventory already exists in the
++                # reconstructed context. Repeating a projection here consumes
++                # input on every continuation without adding any source fact.
++                'existing_inventory': '/current_candidate/devices',
+             }
+-            # The directly readable selection must not repeat field names for
+-            # every device after the complete context has already been packed.
+-            # Use the same exact table vocabulary, without copies or omissions.
+-            inventory = packed['nis_current_selection']['existing_inventory']
+-            columns = ['id', 'name', 'kind', 'source_fact_ids', 'source_member_bindings']
+-            table = {'columns': columns, 'constants': {},
+-                     'rows': [[row[key] for key in columns] for row in inventory]}
+-            if len(json.dumps(table, ensure_ascii=False, separators=(',', ':')).encode('utf8')) < len(
+-                    json.dumps(inventory, ensure_ascii=False, separators=(',', ':')).encode('utf8')):
+-                packed['nis_current_selection']['existing_inventory'] = table
+         return json.dumps(packed, ensure_ascii=False, separators=(',', ':'))
+ 
+     full = [{'role': 'system', 'content': system + protocol},
+@@ -1304,11 +1298,36 @@
+         import hashlib
+         input_bytes = sum(len(row['content'].encode('utf8')) for row in full)
+         candidate = current.get('current_candidate') or {}
++        context_bytes = json.dumps(current, ensure_ascii=False, sort_keys=True,
++                                   separators=(',', ':')).encode('utf8')
++        context_hash = hashlib.sha256(context_bytes).hexdigest()
++        artifact, artifact_status = None, 'SIZE_LIMIT'
++        # Terminal evidence only: bounded local runtime storage, never a model
++        # checkpoint or a source payload in ordinary logs. Preserve old evidence.
++        if len(context_bytes) <= 4 * 1024 * 1024:
++            try:
++                from backend.nis.infrastructure.paths import BACKEND_ROOT, runtime_root_for
++                runtime = runtime_root_for(BACKEND_ROOT)
++                directory = runtime / 'diagnostics' / 'reference-context'
++                directory.mkdir(parents=True, exist_ok=True)
++                target = directory / (context_hash + '.json')
++                artifact_status = 'COUNT_LIMIT'
++                if target.exists() or len(list(directory.glob('*.json'))) < 16:
++                    if not target.exists():
++                        with target.open('xb') as stream:
++                            stream.write(context_bytes)
++                    if hashlib.sha256(target.read_bytes()).hexdigest() == context_hash:
++                        artifact = target.relative_to(runtime).as_posix()
++                        artifact_status = 'SAVED'
++                    else:
++                        artifact_status = 'HASH_MISMATCH'
++            except OSError:
++                artifact_status = 'IO_ERROR'
+         logging.getLogger(__name__).warning('Native reference context guard rejected complete input: %s',
+             json.dumps({'planning_stage': current.get('planning_stage'), 'maximum': maximum,
+                 'input_utf8_bytes': input_bytes, 'required_utf8_upper_bound': input_bytes + 8192 + 2048,
+-                'complete_context_sha256': hashlib.sha256(json.dumps(current, ensure_ascii=False,
+-                    sort_keys=True, separators=(',', ':')).encode('utf8')).hexdigest(),
++                'complete_context_sha256': context_hash,
++                'context_artifact': artifact, 'context_artifact_status': artifact_status,
+                 'candidate_counts': {key: len(value) for key, value in candidate.items()
+                     if key in ('devices', 'ports', 'functions', 'measurements', 'commands',
+                                'communication', 'functional_dependencies', 'unresolved') and isinstance(value, list)},
+@@ -1823,11 +1842,9 @@
+                           'inventory_target_for_this_stage': inventory_target,
+                           'derivation_fact_ids_for_this_stage': list(derivation_fact_ids) if derivation_fact_ids is not None else None,
+                           'output_fields_for_this_stage': list(allowed),
+-                          'existing_inventory_for_this_stage': [
+-                              {key: row[key] for key in ('id', 'name', 'kind')}
+-                              for row in current['devices']] if inventory_stage else None,
++                          'existing_inventory_for_this_stage': '/current_candidate/devices' if inventory_stage else None,
+                           'instruction': ('Nur die genannten Outputfelder füllen; alle anderen Modellarrays leer. Echte offene Entscheidungen dürfen immer in unresolved stehen. '
+-                              + ('Inventarstufen liefern inventory_choices und inventory_complete; devices und alle anderen Modelllisten bleiben leer, echte Rückfragen bleiben in unresolved zulässig. inventory_choices enthält gemeinsam neue Geräte ODER Bindungen an vorhandene Geräte. existing_inventory_for_this_stage zeigt den tatsächlichen aktuellen Bestand einschließlich vorhandener Sensoren und Aktoren. Diese bleiben auch bei anderen Quellenbefunden physisch vorhanden; niemals unter NEW erneut definieren. Bereits vollständig gebundene Teilnehmer nicht wiederholen. Die Hardwareentscheidung knapp begründen. inventory_complete bewertet ausschließlich den Bedarf der aktuell ausgewählten Quellenbefunde; spätere Hardware-, IO-, Funktions- oder Kommunikationsstufen machen diese Auswahl nicht unvollständig. Diese späteren Stufen werden unabhängig vollständig ausgeführt und sind keine offenen Fachentscheidungen in unresolved. ' if inventory_stage else '')
++                              + ('Inventarstufen liefern inventory_choices und inventory_complete; devices und alle anderen Modelllisten bleiben leer, echte Rückfragen bleiben in unresolved zulässig. inventory_choices enthält gemeinsam neue Geräte ODER Bindungen an vorhandene Geräte. existing_inventory_for_this_stage verweist per JSON-Pointer auf current_candidate.devices mit dem vollständigen aktuellen Bestand einschließlich vorhandener Sensoren und Aktoren. Diese bleiben auch bei anderen Quellenbefunden physisch vorhanden; niemals unter NEW erneut definieren. Bereits vollständig gebundene Teilnehmer nicht wiederholen. Die Hardwareentscheidung knapp begründen. inventory_complete bewertet ausschließlich den Bedarf der aktuell ausgewählten Quellenbefunde; spätere Hardware-, IO-, Funktions- oder Kommunikationsstufen machen diese Auswahl nicht unvollständig. Diese späteren Stufen werden unabhängig vollständig ausgeführt und sind keine offenen Fachentscheidungen in unresolved. ' if inventory_stage else '')
+                               + 'Nur den ausdrücklich ausgewählten Stufenbereich vollständig liefern; vorhandene eindeutige IDs erhalten. '
+                               'Jede Auswahl in rationale mit einem kurzen fachlichen Satz und höchstens 240 Zeichen begründen; '
+                               'Quellenbindungen und technische Entscheidungen vollständig in ihren eigenen Feldern erhalten. '

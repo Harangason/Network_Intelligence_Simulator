@@ -1,0 +1,24 @@
+--- before/backend/tests/test_reference_binding_schema_capacity.py
++++ after/backend/tests/test_reference_binding_schema_capacity.py
+@@ -27,6 +27,21 @@
+     assert sizes[2] < 4 * 1024 * 1024
+ 
+ 
++def test_full_sixteen_fact_scope_keeps_large_decoder_below_observed_working_size():
++    prepared, known, fact, _, _, _ = large_binding_case()
++    facts = [fact]
++    for index in range(1, 16):
++        key = f'F-authored-function-{index:02}'
++        prepared['facts'][key] = deepcopy(prepared['facts'][fact])
++        prepared['fact_id_map'][key] = f'authored-source-function-{index:02}'
++        facts.append(key)
++    schema = r._reference_schema_for_stage(prepared, {'devices'}, derivation_fact_ids=facts, existing_devices=known)
++    # The independent native counter returned a normal terminal response with
++    # 1.73 MB, versus a stream-event-size failure with the redundant 2.97 MB.
++    # This tests the transport budget, not semantic selection or Original acceptance.
++    assert len(json.dumps(schema, ensure_ascii=False, separators=(',', ':')).encode()) < 2 * 1024 * 1024
++
++
+ def test_large_binding_schema_preserves_first_last_and_sparse_eight_choices():
+     _, known, _, choices, schema, base = large_binding_case()
+     validator = Draft202012Validator(schema)

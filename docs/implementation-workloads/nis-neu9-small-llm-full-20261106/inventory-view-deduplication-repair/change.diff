@@ -1,0 +1,396 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -1215,13 +1215,16 @@
+         'anwenden, nicht auf die Tabellendarstellung. Bei einem Anker-Neustand gilt der '
+         'Patch ab dem ursprünglichen Kontext der ersten Nachricht; zwischenzeitliche '
+         'Vorschläge sind durch diesen vollständigen aktuellen Neustand ersetzt. '
+-        'nis_current_selection wiederholt die aktuelle Auswahl und die geprüften vorhandenen '
+-        'Gerätebindungen direkt lesbar außerhalb der Tabellen. Sie gehört zur jeweiligen Nachricht; '
+-        'Ihr existing_inventory ist entweder eine Liste von Datensätzen oder eine Tabelle mit '
+-        'columns, constants und rows nach denselben Tabellenregeln: jede Zeile ist ein Gerät, '
+-        'alle Identitäten und Quellenbindungen bleiben vollständig und in gleicher Reihenfolge. '
+-        'bei einer Fortsetzung zählt ausschließlich die Auswahl in der letzten Nutzernachricht. '
+-        'Diese Lesehilfe ersetzt weder den vollständigen Kontext noch seine Quellen oder Prüfungen.')
++        'nis_current_selection wiederholt die aktuelle Auswahl direkt lesbar außerhalb der Tabellen. '
++        'Ihr existing_inventory ist der JSON-Pointer /current_candidate/devices in den vollständig '
++        'rekonstruierten AKTUELLEN NIS-Kontext, nicht in den ursprünglichen Anker oder die rohe Tabelle. '
++        'Er bezeichnet die vollständige geordnete Geräteliste einschließlich aller Identitäten, '
++        'Namen, Arten, Quellenbindungen und technischen Felder; kein Gerät wird ausgelassen. '
++        'Auch existing_inventory_for_this_stage verweist auf diese eine vollständige Liste. '
++        'Bei einer Fortsetzung zuerst sämtliche Kontextpatches anwenden und danach diese Verweise '
++        'auflösen; nie eine alte Bestandsliste aus einer vorherigen Nachricht verwenden. '
++        'Die letzte Nutzernachricht bestimmt die Auswahl. Die Verweise ersetzen nur doppelte '
++        'Bestandskopien, niemals die vollständigen Quellen, Gerätedaten oder Prüfungen.')
+ 
+     def wire(context):
+         packed = _reference_context_snapshot(context)
+@@ -1233,20 +1236,11 @@
+                 'planning_stage': current['planning_stage'],
+                 'inventory_target': deepcopy(current.get('inventory_target_for_this_stage')),
+                 'derivation_fact_ids': deepcopy(current.get('derivation_fact_ids_for_this_stage')),
+-                'existing_inventory': [{key: deepcopy(row[key]) for key in
+-                    ('id', 'name', 'kind', 'source_fact_ids', 'source_member_bindings')}
+-                    for row in current['current_candidate']['devices']],
++                # One authoritative complete inventory already exists in the
++                # reconstructed context. Repeating a projection here consumes
++                # input on every continuation without adding any source fact.
++                'existing_inventory': '/current_candidate/devices',
+             }
+-            # The directly readable selection must not repeat field names for
+-            # every device after the complete context has already been packed.
+-            # Use the same exact table vocabulary, without copies or omissions.
+-            inventory = packed['nis_current_selection']['existing_inventory']
+-            columns = ['id', 'name', 'kind', 'source_fact_ids', 'source_member_bindings']
+-            table = {'columns': columns, 'constants': {},
+-                     'rows': [[row[key] for key in columns] for row in inventory]}
+-            if len(json.dumps(table, ensure_ascii=False, separators=(',', ':')).encode('utf8')) < len(
+-                    json.dumps(inventory, ensure_ascii=False, separators=(',', ':')).encode('utf8')):
+-                packed['nis_current_selection']['existing_inventory'] = table
+         return json.dumps(packed, ensure_ascii=False, separators=(',', ':'))
+ 
+     full = [{'role': 'system', 'content': system + protocol},
+@@ -1304,11 +1298,36 @@
+         import hashlib
+         input_bytes = sum(len(row['content'].encode('utf8')) for row in full)
+         candidate = current.get('current_candidate') or {}
++        context_bytes = json.dumps(current, ensure_ascii=False, sort_keys=True,
++                                   separators=(',', ':')).encode('utf8')
++        context_hash = hashlib.sha256(context_bytes).hexdigest()
++        artifact, artifact_status = None, 'SIZE_LIMIT'
++        # Terminal evidence only: bounded local runtime storage, never a model
++        # checkpoint or a source payload in ordinary logs. Preserve old evidence.
++        if len(context_bytes) <= 4 * 1024 * 1024:
++            try:
++                from backend.nis.infrastructure.paths import BACKEND_ROOT, runtime_root_for
++                runtime = runtime_root_for(BACKEND_ROOT)
++                directory = runtime / 'diagnostics' / 'reference-context'
++                directory.mkdir(parents=True, exist_ok=True)
++                target = directory / (context_hash + '.json')
++                artifact_status = 'COUNT_LIMIT'
++                if target.exists() or len(list(directory.glob('*.json'))) < 16:
++                    if not target.exists():
++                        with target.open('xb') as stream:
++                            stream.write(context_bytes)
++                    if hashlib.sha256(target.read_bytes()).hexdigest() == context_hash:
++                        artifact = target.relative_to(runtime).as_posix()
++                        artifact_status = 'SAVED'
++                    else:
++                        artifact_status = 'HASH_MISMATCH'
++            except OSError:
++                artifact_status = 'IO_ERROR'
+         logging.getLogger(__name__).warning('Native reference context guard rejected complete input: %s',
+             json.dumps({'planning_stage': current.get('planning_stage'), 'maximum': maximum,
+                 'input_utf8_bytes': input_bytes, 'required_utf8_upper_bound': input_bytes + 8192 + 2048,
+-                'complete_context_sha256': hashlib.sha256(json.dumps(current, ensure_ascii=False,
+-                    sort_keys=True, separators=(',', ':')).encode('utf8')).hexdigest(),
++                'complete_context_sha256': context_hash,
++                'context_artifact': artifact, 'context_artifact_status': artifact_status,
+                 'candidate_counts': {key: len(value) for key, value in candidate.items()
+                     if key in ('devices', 'ports', 'functions', 'measurements', 'commands',
+                                'communication', 'functional_dependencies', 'unresolved') and isinstance(value, list)},
+@@ -1823,11 +1842,9 @@
+                           'inventory_target_for_this_stage': inventory_target,
+                           'derivation_fact_ids_for_this_stage': list(derivation_fact_ids) if derivation_fact_ids is not None else None,
+                           'output_fields_for_this_stage': list(allowed),
+-                          'existing_inventory_for_this_stage': [
+-                              {key: row[key] for key in ('id', 'name', 'kind')}
+-                              for row in current['devices']] if inventory_stage else None,
++                          'existing_inventory_for_this_stage': '/current_candidate/devices' if inventory_stage else None,
+                           'instruction': ('Nur die genannten Outputfelder füllen; alle anderen Modellarrays leer. Echte offene Entscheidungen dürfen immer in unresolved stehen. '
+-                              + ('Inventarstufen liefern inventory_choices und inventory_complete; devices und alle anderen Modelllisten bleiben leer, echte Rückfragen bleiben in unresolved zulässig. inventory_choices enthält gemeinsam neue Geräte ODER Bindungen an vorhandene Geräte. existing_inventory_for_this_stage zeigt den tatsächlichen aktuellen Bestand einschließlich vorhandener Sensoren und Aktoren. Diese bleiben auch bei anderen Quellenbefunden physisch vorhanden; niemals unter NEW erneut definieren. Bereits vollständig gebundene Teilnehmer nicht wiederholen. Die Hardwareentscheidung knapp begründen. inventory_complete bewertet ausschließlich den Bedarf der aktuell ausgewählten Quellenbefunde; spätere Hardware-, IO-, Funktions- oder Kommunikationsstufen machen diese Auswahl nicht unvollständig. Diese späteren Stufen werden unabhängig vollständig ausgeführt und sind keine offenen Fachentscheidungen in unresolved. ' if inventory_stage else '')
++                              + ('Inventarstufen liefern inventory_choices und inventory_complete; devices und alle anderen Modelllisten bleiben leer, echte Rückfragen bleiben in unresolved zulässig. inventory_choices enthält gemeinsam neue Geräte ODER Bindungen an vorhandene Geräte. existing_inventory_for_this_stage verweist per JSON-Pointer auf current_candidate.devices mit dem vollständigen aktuellen Bestand einschließlich vorhandener Sensoren und Aktoren. Diese bleiben auch bei anderen Quellenbefunden physisch vorhanden; niemals unter NEW erneut definieren. Bereits vollständig gebundene Teilnehmer nicht wiederholen. Die Hardwareentscheidung knapp begründen. inventory_complete bewertet ausschließlich den Bedarf der aktuell ausgewählten Quellenbefunde; spätere Hardware-, IO-, Funktions- oder Kommunikationsstufen machen diese Auswahl nicht unvollständig. Diese späteren Stufen werden unabhängig vollständig ausgeführt und sind keine offenen Fachentscheidungen in unresolved. ' if inventory_stage else '')
+                               + 'Nur den ausdrücklich ausgewählten Stufenbereich vollständig liefern; vorhandene eindeutige IDs erhalten. '
+                               'Jede Auswahl in rationale mit einem kurzen fachlichen Satz und höchstens 240 Zeichen begründen; '
+                               'Quellenbindungen und technische Entscheidungen vollständig in ihren eigenen Feldern erhalten. '
+--- before/backend/tests/test_reference_inventory_context_capacity.py
++++ after/backend/tests/test_reference_inventory_context_capacity.py
+@@ -40,9 +40,14 @@
+     }
+ 
+ 
+-def read_selection(value):
++def read_selection(value, current=None):
+     """Independent reader of the existing literal/table vocabulary."""
+     inventory = value['existing_inventory']
++    if isinstance(inventory, str):
++        assert inventory == '/current_candidate/devices' and current is not None
++        rows = current['current_candidate']['devices']
++        return [{key: deepcopy(row[key]) for key in
++                 ('id', 'name', 'kind', 'source_fact_ids', 'source_member_bindings')} for row in rows]
+     if isinstance(inventory, list):
+         return deepcopy(inventory)
+     assert set(inventory) == {'columns', 'constants', 'rows'}
+@@ -66,9 +71,9 @@
+         [], None, current, 'Independent counter only', 131072)
+     assert encoded(effective_reference_context(messages)) == before
+     selection = json.loads(messages[-1]['content'])['nis_current_selection']
+-    assert encoded(read_selection(selection)) == encoded(expected_selection(current))
+-    assert isinstance(selection['existing_inventory'], dict)
+-    assert len(read_selection(selection)) == size
++    assert encoded(read_selection(selection, effective_reference_context(messages))) == encoded(expected_selection(current))
++    assert selection['existing_inventory'] == '/current_candidate/devices'
++    assert len(read_selection(selection, effective_reference_context(messages))) == size
+     assert encoded(current) == before
+     required = sum(len(row['content'].encode('utf-8')) for row in messages) + 8192 + 2048
+     assert required <= 131072
+@@ -93,18 +98,24 @@
+     assert encoded(effective_reference_context(wire)) == encoded(current)
+     selection = json.loads(wire[-1]['content'])['nis_current_selection']
+     assert selection['inventory_target'] == current['inventory_target_for_this_stage']
+-    assert encoded(read_selection(selection)) == encoded(expected_selection(current))
+-    assert isinstance(selection['existing_inventory'], dict)
+-
+-
+-def test_oversized_complete_input_still_has_bounded_diagnostic_with_exact_context_hash(caplog):
+-    current = authored_context(251, 800)
++    assert encoded(read_selection(selection, effective_reference_context(wire))) == encoded(expected_selection(current))
++    assert selection['existing_inventory'] == '/current_candidate/devices'
++
++
++def test_oversized_complete_input_still_has_bounded_diagnostic_with_exact_context_hash(caplog, tmp_path, monkeypatch):
++    monkeypatch.setenv('NIS_RUNTIME_DIR', str(tmp_path))
++    current = authored_context(251, 1600)
++    assert len(current['original_source'].encode('utf8')) > 131072
+     before = encoded(current)
+     with pytest.raises(ValueError, match='keine Quelle gekürzt'):
+         reasoner._reference_context_messages([], None, current, 'Independent counter only', 131072)
+     diagnostic = next(json.loads(row.message.split('Native reference context guard rejected complete input: ', 1)[1])
+                       for row in caplog.records if 'Native reference context guard rejected complete input: ' in row.message)
+     assert diagnostic['complete_context_sha256'] == hashlib.sha256(before.encode('utf-8')).hexdigest()
++    artifact = tmp_path / diagnostic['context_artifact']
++    assert artifact.is_file()
++    assert artifact.read_text(encoding='utf8') == before
++    assert hashlib.sha256(artifact.read_bytes()).hexdigest() == diagnostic['complete_context_sha256']
+     assert 'complete_context' not in diagnostic
+     assert current['original_source'][:60] not in caplog.text
+     assert diagnostic['required_utf8_upper_bound'] > diagnostic['maximum'] == 131072
+@@ -132,7 +143,7 @@
+     assert encoded(effective_reference_context(messages)) == original
+     assert encoded(current) == original
+     selection = json.loads(messages[-1]['content'])['nis_current_selection']
+-    assert encoded(read_selection(selection)) == encoded(expected_selection(current))
++    assert encoded(read_selection(selection, effective_reference_context(messages))) == encoded(expected_selection(current))
+     required = sum(len(row['content'].encode('utf-8')) for row in messages) + 8192 + 2048
+     assert required <= 131072
+     with pytest.raises(ValueError, match='keine Quelle gekürzt'):
+@@ -169,7 +180,7 @@
+     assert encoded(effective_reference_context(result)) == encoded(current)
+     assert first['current_candidate']['devices'][80]['source_member_bindings'] == {}
+     selection = json.loads(result[-1]['content'])['nis_current_selection']
+-    assert encoded(read_selection(selection)) == encoded(expected_selection(current))
++    assert encoded(read_selection(selection, effective_reference_context(result))) == encoded(expected_selection(current))
+ 
+ 
+ def authored_many_cohort_context(size=251):
+@@ -195,7 +206,7 @@
+     messages, _, _ = reasoner._reference_context_messages(
+         [], None, current, 'Authored capacity counter', 131072)
+     assert encoded(effective_reference_context(messages)) == before
+-    assert encoded(read_selection(json.loads(messages[-1]['content'])['nis_current_selection'])) == encoded(expected_selection(current))
++    assert encoded(read_selection(json.loads(messages[-1]['content'])['nis_current_selection'], effective_reference_context(messages))) == encoded(expected_selection(current))
+     assert encoded(current) == before
+     required = sum(len(row['content'].encode('utf8')) for row in messages) + 8192 + 2048
+     assert required <= 131072
+@@ -220,3 +231,32 @@
+     assert len(decoded) == 251
+     assert decoded[248]['purpose'] != decoded[249]['purpose']
+     assert [row['id'] for row in decoded] == [row['id'] for row in rows]
++
++
++@pytest.mark.parametrize('size', [191, 251])
++def test_inventory_focus_references_complete_state_without_repeating_all_rows(size):
++    current = authored_many_cohort_context(size)
++    current['existing_inventory_for_this_stage'] = '/current_candidate/devices'
++    current['original_source'] = ''.join(
++        f'Complete authored source line {i:04}: preserve all quantities, source bindings and units.\n'
++        for i in range(750))
++    before = encoded(current)
++    messages, _, _ = reasoner._reference_context_messages([], None, current, 'Independent capacity counter', 131072)
++    decoded = effective_reference_context(messages)
++    assert encoded(decoded) == before
++    focus = json.loads(messages[-1]['content'])['nis_current_selection']
++    assert focus['existing_inventory'] == '/current_candidate/devices'
++    assert len(decoded['current_candidate']['devices']) == size
++    assert encoded(decoded['current_candidate']['devices']) == encoded(current['current_candidate']['devices'])
++    assert decoded['original_source'] == current['original_source']
++    assert encoded(current) == before
++    required = sum(len(row['content'].encode('utf8')) for row in messages) + 10240
++    assert required <= 131072
++    with pytest.raises(ValueError, match='keine Quelle gekürzt'):
++        reasoner._reference_context_window(messages, required - 1)
++
++
++def test_previous_boundary_input_now_fits_with_every_source_line_preserved():
++    current = authored_context(251, 800)
++    messages, _, _ = reasoner._reference_context_messages([], None, current, 'Independent counter only', 131072)
++    assert encoded(effective_reference_context(messages)) == encoded(current)
+--- before/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/inventory-output-codec-repair/probe_native_codec.py
++++ after/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/inventory-output-codec-repair/probe_native_codec.py
+@@ -85,8 +85,7 @@
+             selected = existing[248 if args.many_cohort_context else 1]
+             selected['purpose'] = 'Responsible for the authored temperature measurement chain.'
+             expected_owner = selected['id']
+-            current['existing_inventory_for_this_stage'] = [
+-                {key: row[key] for key in ('id', 'name', 'kind')} for row in existing]
++            current['existing_inventory_for_this_stage'] = '/current_candidate/devices'
+         current['inventory_target_for_this_stage'] = target
+         current.update(json.loads(messages[-1]['content']))
+         current['instruction'] += (f' All {len(existing)} authored existing devices remain present and unchanged. '
+@@ -117,7 +116,9 @@
+                     return max([0, *(largest_segment_count(v) for v in value)]) if isinstance(value, list) else 0
+                 assert largest_segment_count(json.loads(messages[-1]['content'])) > 16
+         selection = json.loads(messages[-1]['content'])['nis_current_selection']
+-        assert isinstance(selection['existing_inventory'], dict) and len(read_selection(selection)) == len(existing)
++        from backend.tests.test_reference_reasoner import effective_reference_context
++        assert selection['existing_inventory'] == '/current_candidate/devices'
++        assert len(read_selection(selection, effective_reference_context(messages))) == len(existing)
+         full_schema = r._reference_schema_for_stage(prepared, {'devices'}, inventory_target=target, existing_devices=existing)
+         schema, codec = r._reference_compact_inventory_schema(full_schema)
+         save('request-local-codec.json', codec)
+--- before/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/freeze_repair.py
++++ after/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/freeze_repair.py
+@@ -11,11 +11,11 @@
+ out=Path(__file__).resolve().parent
+ root=out.parents[2]
+ parser=argparse.ArgumentParser(description=__doc__)
+-parser.add_argument('--phase',choices=['source-reference','source-semantics','function-coverage','inventory-batch','inventory-codec','inventory-context','inventory-cohort','inventory-bindings','inventory-closure','inventory-segments'],required=True)
++parser.add_argument('--phase',choices=['source-reference','source-semantics','function-coverage','inventory-batch','inventory-codec','inventory-context','inventory-cohort','inventory-bindings','inventory-closure','inventory-segments','inventory-views'],required=True)
+ args=parser.parse_args()
+ semantic_phase=args.phase in {'source-semantics','function-coverage'}
+ coverage_phase=args.phase=='function-coverage'
+-directory=out/({'source-reference':'intake-source-reference-repair','source-semantics':'source-semantics-repair','function-coverage':'function-coverage-repair','inventory-batch':'inventory-batch-repair','inventory-codec':'inventory-output-codec-repair','inventory-context':'inventory-context-capacity-repair','inventory-cohort':'inventory-context-capacity-repair/cohort-table-repair','inventory-bindings':'binding-schema-capacity-repair','inventory-closure':'inventory-closure-repair','inventory-segments':'inventory-segment-capacity-repair'}[args.phase])
++directory=out/({'source-reference':'intake-source-reference-repair','source-semantics':'source-semantics-repair','function-coverage':'function-coverage-repair','inventory-batch':'inventory-batch-repair','inventory-codec':'inventory-output-codec-repair','inventory-context':'inventory-context-capacity-repair','inventory-cohort':'inventory-context-capacity-repair/cohort-table-repair','inventory-bindings':'binding-schema-capacity-repair','inventory-closure':'inventory-closure-repair','inventory-segments':'inventory-segment-capacity-repair','inventory-views':'inventory-view-deduplication-repair'}[args.phase])
+ baseline=out/'intake-cardinality-repair'/'before'
+ def baseline_file(name):
+     if (baseline/name).exists():return baseline/name
+@@ -33,13 +33,14 @@
+ def parse(path):
+     return ast.parse(path.read_text(encoding='utf-8'))
+ 
+-if args.phase in {'inventory-closure', 'inventory-segments'}:
+-    segment_phase = args.phase == 'inventory-segments'
++if args.phase in {'inventory-closure', 'inventory-segments', 'inventory-views'}:
++    view_phase = args.phase == 'inventory-views'
++    segment_phase = args.phase in {'inventory-segments', 'inventory-views'}
+     import xml.etree.ElementTree as ET
+     check = next(ET.parse(directory/'green-regression.xml').getroot().iter('testsuite')).attrib
+     assert check['failures'] == check['errors'] == check['skipped'] == '0'
+     assert work['active_local_regression']['status'] == 'PASS' and work['active_local_regression']['exit_code'] == 0
+-    native_path = directory/('native-many-cohorts-shared/result.json' if segment_phase else 'native-counter-02/result.json')
++    native_path = directory/('native-single-inventory/result.json' if view_phase else 'native-many-cohorts-shared/result.json' if segment_phase else 'native-counter-02/result.json')
+     native = json.loads(native_path.read_text(encoding='utf8'))
+     assert native['status'] == 'PASS' and native['model'] == 'qwen3.5:9b'
+     if segment_phase:
+@@ -49,9 +50,16 @@
+         assert native['expected_owner'] == 'authored-device-248'
+         assert native['shared_owner_clarification'] is True
+         reviewed = json.loads((directory/'native-independent-review.json').read_text(encoding='utf8'))
+-        assert reviewed['all_eight_owner_assertions_retained'] and reviewed['all251context_records_source_and_schema_identical']
+-        assert reviewed['expected_id_not_supplied_in_instruction'] and reviewed['purpose_absent_from_direct_selection']
+-        for name in ('first_request', 'first_response', 'second_request', 'second_response', 'passing_result'):
++        assert reviewed['all_eight_owner_assertions_retained']
++        assert reviewed['expected_id_not_supplied_in_instruction']
++        if view_phase:
++            assert reviewed['all251primary_context_records_source_and_schema_identical']
++            assert reviewed['latest_inventory_pointer'] == '/current_candidate/devices'
++            review_names = ('prior_request', 'prior_response', 'current_request', 'current_response', 'passing_result')
++        else:
++            assert reviewed['all251context_records_source_and_schema_identical'] and reviewed['purpose_absent_from_direct_selection']
++            review_names = ('first_request', 'first_response', 'second_request', 'second_response', 'passing_result')
++        for name in review_names:
+             assert ref(Path(reviewed[name]['path'])) == reviewed[name]
+     else:
+         assert native['actual_inference_requests'] == 2 and native['schema_public_validation_scoped_merge_preserved']
+@@ -62,6 +70,21 @@
+     # Compare all application declarations. Only the closure predicate, native
+     # schema and the infer instruction/predicate assignment may differ.
+     def normalize(tree):
++        if view_phase:
++            tree.body = [node for node in tree.body if getattr(node, 'name', None) != '_reference_context_messages']
++            before_sentence = 'existing_inventory_for_this_stage zeigt den tatsächlichen aktuellen Bestand einschließlich vorhandener Sensoren und Aktoren.'
++            after_sentence = 'existing_inventory_for_this_stage verweist per JSON-Pointer auf current_candidate.devices mit dem vollständigen aktuellen Bestand einschließlich vorhandener Sensoren und Aktoren.'
++            count = 0
++            for node in ast.walk(tree):
++                if isinstance(node, ast.Dict):
++                    for index, key in enumerate(node.keys):
++                        if isinstance(key, ast.Constant) and key.value == 'existing_inventory_for_this_stage':
++                            node.values[index] = ast.Constant(value='REVIEWED_DERIVED_VIEW')
++                            count += 1
++                if isinstance(node, ast.Constant) and isinstance(node.value, str):
++                    node.value = node.value.replace(after_sentence, before_sentence)
++            assert count == 1
++            return ast.dump(tree, include_attributes=False)
+         if segment_phase:
+             tree.body = [node for node in tree.body if getattr(node, 'name', None) != '_reference_context_snapshot']
+             return ast.dump(tree, include_attributes=False)
+@@ -85,6 +108,8 @@
+     names = [reasoner, 'backend/tests/test_reference_inventory_context_capacity.py' if segment_phase else 'backend/tests/test_reference_inventory_closure.py',
+              str(((out/'inventory-output-codec-repair/probe_native_codec.py') if segment_phase else (directory/'probe_native_closure.py')).relative_to(root)).replace(chr(92), '/'),
+              str((out/'freeze_repair.py').relative_to(root)).replace(chr(92), '/')]
++    if view_phase:
++        names += ['backend/tests/test_reference_inventory_focus.py', 'backend/tests/test_reference_reasoner.py']
+     for name, digest in work['frozen_files'].items():
+         if name not in names:
+             assert ref(root/name)['sha256'] == digest, name
+@@ -108,7 +133,7 @@
+     proof = {'status': 'FROZEN_LOCAL_AND_NATIVE_COUNTER_PASS_ORIGINAL_PENDING',
+         'at': datetime.now(timezone.utc).isoformat(), 'source': source, 'verification_sha256': verification,
+         'checks': {'green-regression.xml': check}, 'native_counter': ref(native_path),
+-        'application_change_scope': ['existing lossless serializer: all per-column contiguous run partitions'] if segment_phase else ['finite source-inventory closure predicate', 'native schema closure subset', 'matching stage instruction'],
++        'application_change_scope': ['two derived inventory projections reference the unchanged complete current inventory', 'terminal bounded local context evidence'] if view_phase else ['existing lossless serializer: all per-column contiguous run partitions'] if segment_phase else ['finite source-inventory closure predicate', 'native schema closure subset', 'matching stage instruction'],
+         'all_other_application_ast_identical': True,
+         'public_validation_merge_scheduler_context_output_timeout_original_unchanged': True,
+         'original_acceptance': False, 'simulation_acceptance': False,
+@@ -121,13 +146,13 @@
+         'result': check, 'evidence': [ref(directory/'green-regression.xml')]})
+     work['repair']['evidence'].extend([ref(directory/'source-scope-proof.json'), ref(native_path)])
+     (out/'workload.json').write_text(json.dumps(work, ensure_ascii=False, indent=2)+'\n', encoding='utf8')
+-    state_path = out/('attempt-12/state.json' if segment_phase else 'attempt-11/state.json')
++    state_path = out/('attempt-13/state.json' if view_phase else 'attempt-12/state.json' if segment_phase else 'attempt-11/state.json')
+     state = json.loads(state_path.read_text(encoding='utf8'))
+-    terminal_path = out/('attempt-12/terminal-19307-verified/manifest.json' if segment_phase else 'attempt-11/terminal-7711-verified/manifest.json')
++    terminal_path = out/('attempt-13/terminal-51532-verified/manifest.json' if view_phase else 'attempt-12/terminal-19307-verified/manifest.json' if segment_phase else 'attempt-11/terminal-7711-verified/manifest.json')
+     terminal = json.loads(terminal_path.read_text(encoding='utf8'))
+     assert state['status'] == terminal['state_status'] == 'NATIVE_PLAN_REFERENCE_FAILED'
+-    assert terminal['session'] == (19307 if segment_phase else 7711) and terminal['exit_code'] == 1 and terminal['normal_terminal_result']['success'] is False
+-    retire_name = 'retire-6d8' if segment_phase else 'retire-4c4'
++    assert terminal['session'] == (51532 if view_phase else 19307 if segment_phase else 7711) and terminal['exit_code'] == 1 and terminal['normal_terminal_result']['success'] is False
++    retire_name = 'retire-c3f' if view_phase else 'retire-6d8' if segment_phase else 'retire-4c4'
+     plan = {'receipt': state['receipt'], 'image_id': state['image_id'], 'resources': state['containers'],
+         'state': str(state_path), 'terminal_evidence': ref(terminal_path),
+         'expected_production_image': work['current_image'], 'output': str(out/retire_name),
+--- before/backend/tests/test_reference_inventory_focus.py
++++ after/backend/tests/test_reference_inventory_focus.py
+@@ -53,10 +53,12 @@
+     focus = json.loads(wire[-1]['content'])['nis_current_selection']
+     assert focus['inventory_target'] == current['inventory_target_for_this_stage']
+     assert focus['planning_stage'] == 'Physisches Quelleninventar'
+-    assert focus['existing_inventory'] == [{key: radar[key] for key in
+-        ('id', 'name', 'kind', 'source_fact_ids', 'source_member_bindings')}]
++    assert focus['existing_inventory'] == '/current_candidate/devices'
++    referenced = effective_reference_context(wire)['current_candidate']['devices']
++    assert referenced == [radar]
++    assert effective_reference_context(messages)['current_candidate']['devices'] == []
+     assert focus['derivation_fact_ids'] is None
+-    assert focus['inventory_target']['member'] != focus['existing_inventory'][0]['source_member_bindings'][fact]
++    assert focus['inventory_target']['member'] != referenced[0]['source_member_bindings'][fact]
+ 
+ 
+ def test_live_inventory_output_identifies_the_current_original_selection(monkeypatch):
+--- before/backend/tests/test_reference_reasoner.py
++++ after/backend/tests/test_reference_reasoner.py
+@@ -1737,7 +1737,13 @@
+                  or content['derivation_fact_ids_for_this_stage'] is not None]
+     assert inventory
+     for content in inventory:
+-        assert content['existing_inventory_for_this_stage'] == [
++        pointer = content['existing_inventory_for_this_stage']
++        assert pointer == '/current_candidate/devices'
++        referenced = content
++        for key in pointer[1:].split('/'):
++            referenced = referenced[key]
++        assert referenced == content['current_candidate']['devices']
++        assert [{key: row[key] for key in ('id', 'name', 'kind')} for row in referenced] == [
+             {key: row[key] for key in ('id', 'name', 'kind')}
+             for row in content['current_candidate']['devices']]
+ 

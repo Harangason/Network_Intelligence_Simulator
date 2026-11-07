@@ -1,0 +1,94 @@
+{
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "kind": "repair",
+  "modify_code": true,
+  "allow_repair": true,
+  "status": "FULL_VEHICLE_RUNNING",
+  "revision_before": {
+    "backend/nis/agent/orchestration/local_reasoner.py": "1ea928993f9efd8c0c5381313eb508c880aa09306d45bf50d5c1654b9ad65924",
+    "backend/tests/test_reference_reasoner.py": "8adcdaea09676f629c9d655463972666f0ddbc5917a8a26014f8fa322ff0b7c2"
+  },
+  "unresolved_decisions": [],
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-context-repair-20261104-vehicle\\retry-context-repair\\before\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "1ea928993f9efd8c0c5381313eb508c880aa09306d45bf50d5c1654b9ad65924"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-context-repair-20261104-vehicle\\retry-context-repair\\before\\backend\\tests\\test_reference_reasoner.py",
+      "sha256": "8adcdaea09676f629c9d655463972666f0ddbc5917a8a26014f8fa322ff0b7c2"
+    }
+  ],
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "first_failing_layer": "Private reference planning retry budget",
+    "root_cause": "The first LIN answer contained a duplicate key. It was correctly rejected. The correction required the previous invalid raw assistant text plus the full planning context and a new output reserve, exceeding the unchanged guard.",
+    "reproduction": "Whole request 70672. Complete first LIN wire was 119728 content bytes; the exact rejected duplicate-key answer alone added 4681. The next attempt did not reach the model.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-context-repair-20261104-vehicle\\terminal-evidence.json",
+        "sha256": "aa5f80a7fb9390208200c2c16af6a26296974187894fe8f1afc0896876f04d13"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-context-repair-20261104-vehicle\\rejected-lin-response.txt",
+        "sha256": "c865280264a59fd3d71ed72f750c6b476aaf22ecfb8a811110f46efd84435b03"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-context-repair-20261104-vehicle\\plan-reference\\response.json",
+        "sha256": "9518c0d05c99e105cd2f3ec2efe7785682d60fcb4e361e2ac3f4d0fc18752e29"
+      }
+    ],
+    "affected_files": [
+      "backend/nis/agent/orchestration/local_reasoner.py",
+      "backend/tests/test_reference_reasoner.py"
+    ],
+    "acceptance_criteria": [
+      "Preserve invalid bytes and exact failure in local diagnostic evidence. Preserve full source context and all typed design data during retry. Use the exact raw response in the model retry when it fits, otherwise use the exact validation message and full current context.",
+      "Keep strict duplicate-key rejection, sender scope, provider, model, capacity and validation."
+    ],
+    "targeted_tests": [
+      "Normal staged runner reaches a real second mocked provider call at the same fixed context budget; retry schema and complete context remain identical."
+    ],
+    "weaken_assertions_to_pass": false
+  },
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-context-repair-20261104-vehicle\\retry-context-repair\\after\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "ff083f527d948cf7bee28da5138c5af79433b6ac0a7b0b2e116c04a07e64215c"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-context-repair-20261104-vehicle\\retry-context-repair\\after\\backend\\tests\\test_reference_reasoner.py",
+      "sha256": "df2819605a9625dd266bfcf2685e4a34fd96611694ee8727aacf66694d873ee2"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-context-repair-20261104-vehicle\\retry-context-repair\\change.diff",
+      "sha256": "1cf551f0a1e1317ded83b8088c06e45b8682ae858529b4319ec4cdc07b76535f"
+    }
+  ],
+  "files_changed": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_reasoner.py"
+  ],
+  "red": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-context-repair-20261104-vehicle\\retry-context-repair\\red.xml",
+    "sha256": "f8047b00400cbae661f6f2b8f9a765fe8629eae88303e066a924e8cd4838e1b2"
+  },
+  "tests": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-context-repair-20261104-vehicle\\retry-context-repair\\green.xml",
+      "sha256": "49be951453f4f26500581b50ec007b02285e00b31514c97fa5460cb5249b4ff7"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-context-repair-20261104-vehicle\\retry-context-repair\\red.xml",
+      "sha256": "f8047b00400cbae661f6f2b8f9a765fe8629eae88303e066a924e8cd4838e1b2"
+    }
+  ],
+  "targeted_pass": 43,
+  "active_native_session": 78201,
+  "candidate_receipt": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\joint-context-retry-originals-20261104\\7d35f47bc994\\receipt.json",
+    "sha256": "1ebeaa67bb38adc8fd6ebfb95f7636e3985e1b47e26e9ef789c0437caba83966"
+  }
+}

@@ -126,7 +126,7 @@ async function performanceSample() {
   const totalMemory = host ? host.memory_total_mb * 1024 * 1024 : runtimeTotalMemory;
   const usedMemory = host ? host.memory_used_mb * 1024 * 1024 : runtimeUsedMemory;
   const aiProvider = process.env.AI_PROVIDER ?? "hybrid-demand";
-  const localAiModel = process.env.LOCAL_AI_MODEL ?? "qwen3.8:27b";
+  const localAiModel = process.env.LOCAL_AI_MODEL ?? "llama3.1:8b";
   const localAiFastModel = process.env.LOCAL_AI_FAST_MODEL ?? "llama3.1:8b";
   return {
     source: host ? "windows-host" : "container-runtime",

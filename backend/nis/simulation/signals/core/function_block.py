@@ -14,6 +14,7 @@ import json
 import math
 import operator
 from typing import Any
+from backend.nis.infrastructure.local_model_identity import local_model_author
 
 
 @dataclass(frozen=True)
@@ -385,13 +386,27 @@ def validate_function_spec(parameters: dict, signals: dict | None = None) -> Qwe
     """One contract shared by proposal review, preflight and frozen execution."""
     definition = parameters.get('function_block')
     if not isinstance(definition, dict):
-        raise ValueError('QWEN function definition is missing.')
+        raise ValueError('Local model function definition is missing.')
     provenance = definition.get('provenance') or {}
-    if (provenance.get('generated_by') != 'QWEN' or provenance.get('provider') != 'ollama-local'
-            or not str(provenance.get('model', '')).lower().startswith('qwen')
+    model = str(provenance.get('model', '')).lower()
+    expected_prefix = {'QWEN': 'qwen', 'LLAMA': 'llama'}.get(provenance.get('generated_by'))
+    author_valid = expected_prefix is not None and model.startswith(expected_prefix)
+    identity = provenance.get('model_identity')
+    if identity is not None or provenance.get('generated_by') == 'LOCAL_LLM':
+        try:
+            author_valid = local_model_author(provenance.get('model'), identity) == provenance.get('generated_by')
+        except ValueError:
+            author_valid = False
+    if provenance.get('generated_by') == 'LOCAL_LLM':
+        response = provenance.get('response') or {}
+        author_valid = (author_valid and isinstance(response, dict)
+                        and response.get('model') == provenance.get('model')
+                        and response.get('done') is True and response.get('done_reason') != 'length')
+    if (not author_valid or provenance.get('provider') != 'ollama-local'
+            or ':cloud' in model
             or not provenance.get('model_digest') or not provenance.get('request_sha256')
             or not definition.get('source_sha256')):
-        raise ValueError('Local QWEN authorship and exact source revision are required.')
+        raise ValueError('Local model authorship and exact source revision are required.')
     block = QwenFunctionBlock(definition)
     block.validate_parameters(parameters.get('block_parameters'))
     bindings = parameters.get('transport_inputs')
@@ -446,7 +461,7 @@ def validate_function_spec(parameters: dict, signals: dict | None = None) -> Qwe
 
 
 def verify_function_cases(definition, parameters, bindings):
-    """Expected values supplied separately from QWEN generation, preserved for review."""
+    """Expected values supplied independently of the generating model, preserved for review."""
     cases = definition.get('verification_cases')
     if cases is None:
         if definition.get('logic_rule'):
@@ -457,8 +472,15 @@ def verify_function_cases(definition, parameters, bindings):
     validate_logic_cases(definition, cases)
     QwenFunctionBlock(definition).validate_parameters(parameters)
     checks = []
+    provenance = definition.get('provenance') or {}
+    identity = provenance.get('model_identity') or {}
+    family = (identity.get('details') or {}).get('family', '')
+    model_sources = tuple({name.strip().lower() for name in (
+        'qwen', 'llama', 'local_llm', str(provenance.get('generated_by') or ''),
+        str(provenance.get('model') or '').split(':')[0], str(family)) if name.strip()})
     for case in cases:
-        if not isinstance(case, dict) or not case.get('source') or str(case['source']).lower().startswith('qwen'):
+        if (not isinstance(case, dict) or not case.get('source')
+                or str(case['source']).strip().lower().startswith(model_sources)):
             raise ValueError('Expected behavior needs an independent source.')
         sequence = case.get('steps')
         if not isinstance(sequence, list) or not 1 <= len(sequence) <= 256:

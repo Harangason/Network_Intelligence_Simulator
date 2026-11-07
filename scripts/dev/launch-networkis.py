@@ -33,7 +33,7 @@ FRONTEND_HOST = "127.0.0.1"
 FRONTEND_PORT = 13500
 SERVICE_LOG_ROOT = ROOT / "var" / "runtime" / "logs"
 DEFAULT_LOCAL_AI_URL = "http://127.0.0.1:11434/v1"
-DEFAULT_LOCAL_AI_MODEL = "qwen3.8:27b"
+DEFAULT_LOCAL_AI_MODEL = "llama3.1:8b"
 DEFAULT_LOCAL_AI_FAST_MODEL = "llama3.1:8b"
 DEFAULT_DATABASE_URL = (
     "postgresql+psycopg://eip_user:localDockerOnly7a1c9e4f2b8d6a3c5e0f"

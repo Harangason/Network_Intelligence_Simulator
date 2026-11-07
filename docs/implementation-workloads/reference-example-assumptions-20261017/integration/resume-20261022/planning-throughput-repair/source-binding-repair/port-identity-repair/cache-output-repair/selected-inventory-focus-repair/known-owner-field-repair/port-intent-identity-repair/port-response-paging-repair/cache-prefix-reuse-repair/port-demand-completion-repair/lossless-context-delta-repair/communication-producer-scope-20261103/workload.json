@@ -1,0 +1,45 @@
+{
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "campaign_project": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "campaign_id": "nis-ea-independent-20260924-run1",
+  "kind": "repair",
+  "modify_code": true,
+  "allow_repair": true,
+  "status": "OBSERVED_NATIVE_COMMUNICATION_SENDER_FAILURE",
+  "requested_change": "Bind private communication producer IDs to selected devices. Retain server/public validation and all context limits.",
+  "revision_before": {
+    "backend/nis/agent/orchestration/local_reasoner.py": "329b6673b6b3fbbac5132be77997782c3894fdbc95cd626bcb526304809db777",
+    "backend/tests/test_reference_selected_identity.py": "7a47fa6c39b4fefdbb11752981e1f2a74c05248b6cdf28b7f5e15ef2e52d88c2"
+  },
+  "required_outcomes": [
+    "selected_communication_senders_in_native_schema",
+    "public_validation_unchanged"
+  ],
+  "validation_requirements": [
+    "actual_failure_evidence",
+    "red_green_selected_identity_regression"
+  ],
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "root_cause": "The native communication grammar left producer_device_id unrestricted. The real rejected output contains a foreign producer; the existing exact retry then exceeded the unchanged window.",
+    "first_failing_layer": "Private communication response grammar",
+    "reproduction": "Actual vehicle28985: 46 validated replies, one out-of-selection sender rejection, then strict retry context overflow.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\resume-20261022\\planning-throughput-repair\\source-binding-repair\\port-identity-repair\\cache-output-repair\\selected-inventory-focus-repair\\known-owner-field-repair\\port-intent-identity-repair\\port-response-paging-repair\\cache-prefix-reuse-repair\\port-demand-completion-repair\\lossless-context-delta-repair\\communication-producer-scope-20261103\\observed-native-failure.json",
+        "sha256": "700ae9a2f17901baf7c317f49841ea5094e01b45ea7666aaaec41d07fe4265af"
+      }
+    ],
+    "affected_files": [
+      "backend/nis/agent/orchestration/local_reasoner.py",
+      "backend/tests/test_reference_selected_identity.py"
+    ],
+    "acceptance_criteria": [
+      "Sender enum exactly matches group; ordinary receivers and schema/public validators unchanged."
+    ],
+    "targeted_tests": [
+      "test_communication_decoder_restricts_only_selected_senders"
+    ],
+    "weaken_assertions_to_pass": false
+  }
+}

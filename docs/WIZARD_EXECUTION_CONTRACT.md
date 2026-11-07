@@ -91,3 +91,40 @@ Registeridentität aufgelöst. Bestätigte Geräteanzahlen und konkrete Gerätea
 
 Konkrete Testausführungen und Grenzen werden im jeweiligen Abnahmebericht
 festgehalten. Dieser Vertrag allein behauptet keine bestandene Prüfung.
+
+
+## Gespeicherte Parameterprüfung (Nutzerauftrag 2026-11-05)
+
+Alle 125 bestehenden Technologien und ihre aktuellen Katalogwerte wurden vom
+Nutzer ausdrücklich geprüft. Die jeweiligen `review.json` speichern diese Werte
+mit dem Fingerprint der nativen Parameterfelder und dem Prüfzeitpunkt. NIS übernimmt
+unveränderte Werte ohne erneute Parameterabfrage. Änderungen an Kommunikationswerten
+invalidieren nur die betroffene Technologie; eine explizite Bestätigung des neuen
+Werts bleibt über die vorhandene Parameter-API gespeichert. Neue oder geänderte
+Profile erben keine veraltete Freigabe. Unbekannte Referenzen werden nicht erfunden;
+die Katalogprüfung ist kein Geräte-, PHY- oder Konformitätsnachweis.
+
+Geräteanschluss-, Messgrößen- und Stellbefehlauswahl verändern die Metadaten des
+Entwurfs, nicht dessen Quellidentität. Bereits geprüfte Systemzuordnungen, Busnamen
+und manuelle Stückzahlen bleiben dabei erhalten. Der letzte Eingabeschritt führt
+mit „Weiter“ zur Statusübersicht. Nur „Auftrag starten“ prüft sämtliche Startsperren.
+
+Eine erneute Prüfung nach einer Profiländerung muss durch das reguläre Speichern
+der aktuellen Projektwerte abschließbar sein. Die Wertebestätigung enthält die
+aktuelle Profilrevision; alte Bestätigungen werden nicht als neue Prüfung gewertet.
+Eine solche Projektbestätigung erteilt keine globale Katalog- oder PHY-Freigabe.
+
+## Vorschau vollständiger Beispieldokumente
+
+Eine gegliederte Beispielquelle bleibt vor der Übernahme typisierter Dokumentbefunde
+eine Quelle mit genanntem Sollumfang. Die reine Wizard-Vorschau darf daraus weder
+lexikalische Textfunde noch ergänzte Branchentemplates als konkrete Geräte ausgeben
+und keine gerätebezogenen Anschlussfragen daraus ableiten. Sie führt stattdessen
+zur vorhandenen ausdrücklichen lokalen Dokumentauswertung und Quellenprüfung.
+Stückzahlantworten ohne typisierte Befunde ersetzen diese Prüfung nicht.
+
+Vollständiger Quelltext und ausdrücklich genannte Sollzahlen/Technologien bleiben
+erhalten. Geprüfte Dokumentbefunde und angenommene Referenzentwürfe verwenden ihre
+normalen vorhandenen Wege. Kurze eindeutige strukturierte Aufträge und bereits
+bestätigte Erzeugungsaufträge behalten ihren Ablauf. Die Quellenanzeige löst weder
+automatisch einen Modellrequest noch eine Projektmodelländerung aus.

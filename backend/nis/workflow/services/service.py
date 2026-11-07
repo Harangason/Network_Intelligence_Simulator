@@ -163,6 +163,9 @@ class WorkflowStatusService:
                        **stored['parameters']} if stored else cached_parameters)
         if parameters != cached_parameters:
             WorkflowStatusService._validate_parameter_reviews(parameters, cached_parameters)
+        if 'technology_parameter_reviews' in parameters:
+            from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
+            parameters = DEFAULT_TECHNOLOGY_REGISTRY.with_parameter_reviews(parameters)
         statuses = {**default_statuses(), **(row.get("statuses") or {})}
         stale_reasons = {
             step: reason
@@ -718,6 +721,15 @@ class WorkflowStatusService:
             0 <= float(thresholds[0]) < float(thresholds[1]) < float(thresholds[2]) <= 100
         )
         required["load_thresholds"] = thresholds_valid
+        if 'technology_parameter_reviews' in parameters:
+            reviews = registry.with_parameter_reviews(parameters)['technology_parameter_reviews']
+            required['parameter_reviews'] = all(review['status'] == 'CONFIRMED' for review in reviews.values())
+            for technology, review in reviews.items():
+                if review['status'] == 'REVIEW_REQUIRED':
+                    for changed in review['changed_parameters'] or [{'parameter': 'technology_profile'}]:
+                        profile_findings.append({'code': 'CATALOG_PARAMETER_REVIEW_REQUIRED', 'severity': 'REVIEW',
+                                                 'technology_id': technology, 'parameter': changed['parameter'],
+                                                 'message': f"{technology}: {changed['parameter']} wurde seit der gespeicherten Prüfung geändert; den aktuellen Wert bestätigen."})
         target_bus_load = parameters.get("target_bus_load_percent", 60)
         required["target_bus_load"] = (
             isinstance(target_bus_load, (int, float))
@@ -1065,6 +1077,9 @@ class WorkflowStatusService:
         return {'project_id': self.project_id, 'name': normalized}
 
     def save_parameters(self, parameters: dict[str, Any], actor: str | None = None) -> dict[str, Any]:
+        if isinstance(parameters, dict) and 'technology_parameter_reviews' in parameters:
+            from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
+            parameters = DEFAULT_TECHNOLOGY_REGISTRY.with_parameter_reviews(parameters)
         if isinstance(parameters, dict) and 'spatial_architecture' in parameters:
             from backend.nis.engineering.structure.spatial_architecture import architecture_from
             parameters = {**parameters, 'spatial_architecture': architecture_from(parameters)}

@@ -543,13 +543,13 @@ def register_tools():
     for name in ["generate_simulation_scenario","generate_fault_scenario_proposal"]:
         register(name,"Szenario als freizugebenden Vorschlag erzeugen.",P.GENERATE_PROPOSAL,generation.scenario,scenario=OBJECT,prompt=(str,"Szenario vorschlagen."))
     from backend.nis.agent.tools import function_blocks
-    register("inspect_function_block_standards", "Gemeinsamen QWEN-Baukasten aus dem bestehenden SignalBehaviorRegistry lesen. Standards werden mit expliziten Signalbindungen, vollständigen Wahrheitstabellen und Review übernommen.",
+    register("inspect_function_block_standards", "Gemeinsamen Funktionsbaukasten aus dem bestehenden SignalBehaviorRegistry lesen. Standards werden mit expliziten Signalbindungen, vollständigen Wahrheitstabellen und Review übernommen.",
              P.READ_MODEL, function_blocks.inspect_standards, standard_id=(str | None, None), include_source=(bool, False))
     register("inspect_logic_expression", "Geklammerte boolesche Entscheidung als Graph prüfen. UND/ODER/NICHT, XOR, NAND, NOR, XNOR, IMPLIES, SELECT und JOIN(N, A, B, ...): genau N wahre Operanden, N als ganzzahliger Modellparameter; keine Modelländerung.",
              P.READ_MODEL, function_blocks.inspect_logic, expression=TEXT)
-    register("inspect_function_block_context", "Aktuelle kanonische ECU-Funktion, Eingänge, Ausgang, Parameter und Modellrevision für QWEN-Code lesen.",
+    register("inspect_function_block_context", "Aktuelle kanonische ECU-Funktion, Eingänge, Ausgang, Parameter und Modellrevision für lokal generierten Code lesen.",
              P.READ_MODEL, function_blocks.inspect_context, signal_id=ID)
-    register("generate_function_block_proposal", "QWEN erzeugt selbst ausführbaren Simulationscode für eine Klasse-3/4-Funktion. Explizite Anforderungen, Signalbindungen, Parameter und Modellrevision erforderlich; bestehender Review-/Apply-Pfad bleibt verbindlich.",
+    register("generate_function_block_proposal", "Das konfigurierte lokale Modell erzeugt ausführbaren Simulationscode für eine Klasse-3/4-Funktion. Explizite Anforderungen, Signalbindungen, Parameter und Modellrevision erforderlich; bestehender Review-/Apply-Pfad bleibt verbindlich.",
              P.GENERATE_PROPOSAL, function_blocks.generate_proposal, signal_id=ID, model_revision=TEXT,
              requirements=TEXT, input_bindings=OBJECT, parameter_values=OBJECT, verification_cases=ITEMS,
              standard_id=(str | None, None), logic_expression=(str | None, None),
@@ -641,7 +641,7 @@ register('prepare_project_request', 'Projektanforderung als versionierten Entwur
          revision=(int | None, Field(default=None, ge=1)))
 from backend.nis.agent.tools import project_draft as project_draft
 from backend.nis.agent.orchestration.project_intake import DOCUMENT_SOURCE_MAX_CHARS, interpret_project_document
-register('interpret_project_document', 'Vollständige Projektquelle mit lokalem Qwen als quellengebundenen Prüfvorschlag auswerten: Instanzen, Kategorien, Funktionen, Anforderungen und Controller-Kürzel unterscheiden. Keine Modelländerung oder Freigabe.',
+register('interpret_project_document', 'Vollständige Projektquelle mit dem konfigurierten lokalen Modell als quellengebundenen Prüfvorschlag auswerten: Instanzen, Kategorien, Funktionen, Anforderungen und Controller-Kürzel unterscheiden. Keine Modelländerung oder Freigabe.',
          P.GENERATE_PROPOSAL, interpret_project_document,
          source=(str, Field(min_length=1, max_length=DOCUMENT_SOURCE_MAX_CHARS)),
          source_name=(str, Field(default='Projektbeschreibung', min_length=1, max_length=180)),
@@ -656,7 +656,7 @@ register('create_project_from_draft', 'Aus einer bestimmten Entwurfsrevision aus
          revision=(int, Field(ge=1)), name=(str, Field(min_length=1, max_length=120)))
 from backend.nis.agent.orchestration.project_intake import ReferenceSource
 from backend.nis.agent.context.limits import MAX_REQUIREMENT_LENGTH
-register('generate_reference_design', 'Für ausdrücklich gewählte Beispielprojekte fehlende Auslegungsdaten mit lokalem Qwen als getrennte REFERENCE_ASSUMPTION planen. Quellen erhalten; keine kanonische Änderung oder Freigabe.',
+register('generate_reference_design', 'Für ausdrücklich gewählte Beispielprojekte fehlende Auslegungsdaten mit dem konfigurierten lokalen Modell als getrennte REFERENCE_ASSUMPTION planen. Quellen erhalten; keine kanonische Änderung oder Freigabe.',
          P.GENERATE_PROPOSAL, project_draft.generate_reference_design,
          mode=(str, Field(pattern='^EXAMPLE_PROJECT$')),
          prompt=(str, Field(min_length=1, max_length=MAX_REQUIREMENT_LENGTH)),

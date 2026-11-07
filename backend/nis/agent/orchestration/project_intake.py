@@ -14,6 +14,7 @@ DOCUMENT_SOURCE_MAX_CHARS = MAX_DOCUMENT_SOURCE_CHARS
 DOCUMENT_REQUEST_MAX_BYTES = 12 * DOCUMENT_SOURCE_MAX_CHARS + 16_384
 
 _DOCUMENT_CONTROLLER_LABEL = r'(?:Controller|Computer|ECU|Steuergerät|Steuergeraet|Rechner|PLC|SPS|Gateway)'
+_DOCUMENT_TYPE_GROUP_LABEL = r'(?:Sensorik|Aktorik|Sensor\s+types|Sensortypen|Actuator\s+types|Aktortypen)'
 _DOCUMENT_TRANSPORT_QUALIFIER = r'\s*[- ]?(?:ähnlich\w*|aehnlich\w*|like|artig\w*|optional\w*|möglich\w*|moeglich\w*)\b'
 _DOCUMENT_ACTION = (
     r'(?<![\w\u2010-\u2014\u2212-])(?:erkennen|behandeln|verarbeitet|verarbeiten|steuert|steuern|erfasst|erfassen|'
@@ -86,7 +87,7 @@ def compose_document_proposal(parts: list[dict]):
     functions = [item for item in components if item['kind'] == 'FUNCTION']
     requirements = [item for item in components if item['kind'] == 'REQUIREMENT']
     unresolved = [item['name'] for item in technologies if item['kind'] == 'UNRESOLVED']
-    task = ['Engineering-Vorschlag anhand der vollständigen quellengebundenen Qwen-Befunde prüfen.']
+    task = ['Engineering-Vorschlag anhand der vollständigen quellengebundenen KI-Befunde prüfen.']
     if instances:
         if instance_count == len(instances):
             task.append(f'Die {instance_count} konkret benannten Geräte als Instanzen übernehmen und ihre Anschlüsse sowie Funktionszuordnungen bestätigen.')
@@ -118,7 +119,7 @@ def compose_document_proposal(parts: list[dict]):
     if instances or categories:
         questions.append('Welche Anschlüsse und Funktionspartner sind für die Geräte und Gruppen vorgesehen? Welche Kommunikationsvarianten gehören zu den noch ungeklärten Schnittstellen?')
     return {
-        'summary': f'Die vollständige Quelle wurde in {len(parts)} lokalen Qwen-Abschnitten ausgewertet: {instance_count} belegte Geräteinstanzen, {len(categories)} unquantifizierte Gerätegruppen. Der Prüfauftrag wird aus den zusammengeführten Quellenbefunden aufgebaut.',
+        'summary': f'Die vollständige Quelle wurde in {len(parts)} lokalen KI-Abschnitten ausgewertet: {instance_count} belegte Geräteinstanzen, {len(categories)} unquantifizierte Gerätegruppen. Der Prüfauftrag wird aus den zusammengeführten Quellenbefunden aufgebaut.',
         'components': components, 'technologies': technologies,
         'proposed_task': '\n'.join(task), 'assumptions': [], 'open_questions': questions,
     }
@@ -214,6 +215,15 @@ def document_component_policy(text: str):
     text = text.translate(str.maketrans({char: '-' for char in '\u2010\u2011\u2012\u2013\u2014\u2212'}))
     if re.search(r'^\s*(?:[\w-]*REQ[-_]|Anforderungen\s*:|Requirements\s*:)|\b(?:muss|müssen|must|shall|soll|sollen|should)\b', text, re.I):
         return {'kind': 'REQUIREMENT', 'role': 'OTHER', 'quantity': None}
+    label = re.sub(r'^\s*(?:[-*]\s+)?\*{0,2}', '', text).strip().rstrip('*')
+    if (re.match(r'^(?:je|jede[rsnm]?|each|every)\b.*\b(?:erhält|erhalten|receives?|signals?|signale)\b', label, re.I)
+            or re.match(r'^(?:Signal|Messgröße|Measurement|Einheit|Unit|Auflösung|Resolution)\s*:', label, re.I)
+            or re.match(r'^[A-Za-z_]\w*\s*(?:[<>]=?|==?|!=)', label)
+            or re.match(r'^Gateway[- ]+(?:Load|Delay|Drop|Auslastung|Überlast|Last|Latency|Latenz)(?:\s*[:=]|\s*$)', label, re.I)
+            or re.match(r'^(?:Verwendung durch|Usage by)\b', label, re.I)
+            or (label.endswith(':') and re.search(r'\b(?:beispielsweise|zum Beispiel|following|for example)\b', label, re.I)
+                and re.search(_DOCUMENT_ACTION, label, re.I))):
+        return {'kind': 'REQUIREMENT', 'role': 'OTHER', 'quantity': None}
     # Method requirements describe how to model a system, not its installed inventory.
     if re.match(r'^(?:Die Architektur wird (?:mindestens )?in\b.*\bzerlegt|The architecture (?:is to be|shall be) decomposed\b)|^(?:Jede[rsnm]?|Each|Every)\s+(?:Funktion|Function|Schnittstelle|Interface)\b.*\b(?:wird|werden|must|shall|is to be)\b', text, re.I):
         return {'kind': 'REQUIREMENT', 'role': 'OTHER', 'quantity': None}
@@ -221,28 +231,36 @@ def document_component_policy(text: str):
     # server/controller qualifiers retain their separately proven device role.
     if re.fullmatch(r'\s*(?:[-*]\s*)?(?:Fleet Manager|Map|Traffic Service|MES|WMS-Anbindung|Lagerverwaltung|Warehouse Management|Safety Zones|Rezept- und Batchsystem|Historian|Alarmmanagement|Materialfluss|Qualitätsmanagement|Werkerassistenz|Traceability|Energieplattform|Datenbank)\s*\.?\s*', text, re.I):
         return {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}
+    if re.fullmatch(r'(?:Body\s+)?Control Module', label, re.I):
+        return {'kind': 'CATEGORY', 'role': 'CONTROLLER', 'quantity': None}
     if re.search(r'\b(?:Funktionen?|Functions?|Aufgaben|Responsibilities)\s*:|software|algorithm|logik|processing|fusion|regelung|planung|kontrolle|zeitprogramme|schnittstell|interface|fronthaul|backhaul', text, re.I):
         return {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}
     # Actions describe behavior even when their objects contain hardware words.
     # Apply before lexical device detection, without treating noun declarations
     # such as "Motorcontroller (MC)" as capabilities.
-    if not any(quantities(text).values()) and not document_device_aliases(text) and re.search(_DOCUMENT_ACTION, text, re.I):
+    if ((not any(quantities(text).values()) and not document_device_aliases(text))
+            or re.match(r'^(?:Die|Der|Das|The|Diese|These)\b', label, re.I)) and re.search(_DOCUMENT_ACTION, text, re.I):
+        return {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}
+    if re.search(r'überwachung\b|\bMonitoring\b', label, re.I):
         return {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}
     if re.search(r'\b(?:Sensorlinks?|sensor links?|Punkt-zu-Punkt-Links|point-to-point links?)\b', text, re.I):
         return {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}
     # Composite cells are physical groupings, not a single PLC/robot role.
     if re.fullmatch(r'\s*[\w/ -]*(?:zellen|cells)\s*\.?\s*', text, re.I):
         return {'kind': 'CATEGORY', 'role': 'OTHER', 'quantity': None}
+    group = re.match(r'^\s*(?:[-*]\s*)?(' + _DOCUMENT_TYPE_GROUP_LABEL + r')\s*[:(]', text, re.I)
+    if group and not any(quantities(text).values()):
+        return {'kind': 'CATEGORY', 'role': 'SENSOR' if group[1].lower().startswith('sensor') else 'ACTUATOR', 'quantity': None}
     role = None
     if re.search(r'[\w-]*gateway\b', text, re.I):
         role = 'GATEWAY'
-    elif re.search(r'[\w-]*(?:controller|computer|rechner|steuergerät|steuerung|server|workstation)(?:s|n|en)?\b|\b(?:SPS|DCS|SIS|PLC|CNC|ECU|HMI|BMS)\b', text, re.I):
+    elif re.search(r'[\w-]*(?:controller|computer|rechner|steuergerät|steuerung|server|workstation)(?:s|n|en)?\b|\b(?:SPS|DCS|SIS|PLC|CNC|(?:Funktions-?)?ECUs?|HMI|BMS)\b', text, re.I):
         role = 'CONTROLLER'
     elif re.match(r'\s*(?:Greifer|Greifarm|Endeffektor|[\w-]*motor(?:en)?|[\w-]*(?:aktuator|aktor)(?:en)?)\b', text, re.I):
         role = 'ACTUATOR'  # Integrated feedback does not change the actuator's hardware role.
-    elif re.search(r'sensor|sensorik|\b(?:LiDAR|Radar|Kameras?|IMU|Encoder|Scanner|Waagen?|Messtaster)\b', text, re.I):
+    elif re.search(r'[\w-]*sensor(?:en|s)?\b|sensorik|\b(?:LiDAR|Radar|Kameras?|IMU|Encoder|Scanner|Waagen?|Messtaster)\b', text, re.I):
         role = 'SENSOR'
-    elif re.search(r'aktor|actuator|aktuator|motor|reaktionsräder|pumpenmechanik|greifer', text, re.I):
+    elif re.search(r'aktor|actuator|aktuator|[\w-]*motor(?:en|s)?\b|reaktionsräder|pumpenmechanik|greifer', text, re.I):
         role = 'ACTUATOR'
     if role is None:
         if re.search(r'[\w-]*(?:modul|mechanik|panel|wandler|akku|batterie|gehäuse|speicher|netzteil)\b|(?<![\w-])(?:chassis|räder)(?![\w-])', text, re.I):
@@ -268,6 +286,13 @@ def _document_context_heading(text: str) -> bool:
         policy = document_component_policy(text)
         if policy and policy['kind'] == 'INSTANCE':
             return False
+        from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
+        try:
+            DEFAULT_TECHNOLOGY_REGISTRY.profile(re.sub(r'^\d+\s+', '', text).strip())
+        except KeyError:
+            pass
+        else:
+            return False  # Registered transport counts are data, not outlines.
     return True
 
 
@@ -341,16 +366,21 @@ def document_component_sources(rows: list, *, scope_prefix=''):
     architecture_section = None
     interface_section = None
     assurance_section = None
+    illustration_section = None
     platform_section = None
     markdown_path = []
     numbered_path = []
     heading_sequence = 0
     function_table = False
+    declared_scope_quantities = {}
     context_rows = [{**row, 'source_ref': 'CTX-' + row['source_ref']} for row in document_source_references(scope_prefix)]
     for row in [*context_rows, *rows]:
         text = row['text'].strip()
         row_policy = document_component_policy(text)
         normative_row = row_policy and row_policy['kind'] == 'REQUIREMENT'
+        literal_requirement_header = normative_row and text.endswith(':')
+        pure_technology_declaration = not normative_row and re.match(
+            r'^(?:(?:Unbekannte|Unknown)\s+)?(?:Schnittstellen?|Interfaces?|Anschl(?:uss|üsse)|Connections?)\s*:', text, re.I)
         markdown = re.match(r'^(#{1,6})\s+(.+?)(?:\s+#+)?$', text)
         logical = markdown[2] if markdown else text
         heading = re.match(r'^(\d+(?:\.\d+)*)[.)]?\s+(.+)', logical)
@@ -367,6 +397,8 @@ def document_component_sources(rows: list, *, scope_prefix=''):
             identifier = heading[1]
             numbered_path = [entry for entry in numbered_path if identifier.startswith(entry[0] + '.')]
             numbered_path.append((identifier, logical))
+        elif heading:
+            heading = None  # A quantity row cannot end its containing chapter.
         if heading:
             function_table = False
         if text.startswith('|'):
@@ -398,7 +430,16 @@ def document_component_sources(rows: list, *, scope_prefix=''):
             platform_section = None
         if heading and assurance_section is not None and not heading[1].startswith(assurance_section + '.'):
             assurance_section = None
-        assurance_header = chapter == 'assurance'
+        if heading and illustration_section is not None and not heading[1].startswith(illustration_section + '.'):
+            illustration_section = None
+        illustration_header = chapter == 'illustration'
+        if illustration_header:
+            illustration_section = heading[1] if heading else ''
+        if (illustration_section is not None and not illustration_header and function_section is None
+                and (row_policy is None or row_policy['kind'] == 'CATEGORY')):
+            row_policy = {'kind': 'REQUIREMENT', 'role': 'OTHER', 'quantity': None}
+            normative_row = True
+        assurance_header = chapter in {'assurance', 'engineering_process'}
         if assurance_header:
             assurance_section = heading[1] if heading else ''
         if assurance_section is not None and not assurance_header:
@@ -415,6 +456,8 @@ def document_component_sources(rows: list, *, scope_prefix=''):
             requirement_section = None
             requirement_lead = False
         if re.fullmatch(r'(?:Das System|The system)\s+(?:muss|must|shall|soll|should)\s*:?\s*', text, re.I):
+            requirement_lead = True
+        if literal_requirement_header:
             requirement_lead = True
         if (requirement_section is not None or requirement_lead) and not requirement_header:
             row_policy = {'kind': 'REQUIREMENT', 'role': 'OTHER', 'quantity': None}
@@ -443,8 +486,27 @@ def document_component_sources(rows: list, *, scope_prefix=''):
         if required_body:
             first_function_body = False
         in_functions = function_section is not None and heading and '.' in heading[1]
+        # A repeated existence assertion constrains an already declared scope;
+        # it does not install another anonymous group. Named systems and aliases
+        # remain separate, and the repeated literal statement stays a requirement.
+        if not markdown and row_policy and row_policy['kind'] == 'INSTANCE':
+            context = [entry[1] for entry in [*markdown_path, *numbered_path]]
+            key = (tuple(document_system_scope(context)), row_policy['role'])
+            count = row_policy['quantity']
+            if (declared_scope_quantities.get(key) == count and not document_device_aliases(text)
+                    and not re.search(r'\b(?:weitere|zusätzliche|additional|another|further)\b', text, re.I)
+                    and re.match(r'^(?:Es\s+(?:gibt|existiert|existieren)|There\s+(?:is|are))\b', text, re.I)):
+                row_policy = {'kind': 'REQUIREMENT', 'role': 'OTHER', 'quantity': None}
+                normative_row = True
+            else:
+                declared_scope_quantities[key] = count
         if row['source_ref'].startswith('CTX-'):
             continue
+        if pure_technology_declaration:
+            continue  # The independent technology grounding preserves these declarations.
+        if (re.fullmatch(r'(?:[-*_]\s*){3,}', text) or re.fullmatch(r'(?:`{3,}|~{3,})[^`~]*', text)
+                or re.match(r'^(?:Musterprojekt|Sample project)\b', text, re.I)):
+            continue  # Document decoration is not executable hardware or a duty.
         if function_header:
             continue  # A structural function caption is not an executable duty.
         # Markdown headings and two-column numbered index rows navigate the
@@ -497,6 +559,13 @@ def document_component_sources(rows: list, *, scope_prefix=''):
                 clauses.append(body[start:index].strip().rstrip('.'))
                 start = index + len(delimiter)
         clauses.append(body[start:].strip().rstrip('.'))
+        # Delimiters and list markers carry no component claim. Keep their
+        # original source row, but never offer an empty citation to the model.
+        clauses = [clause for clause in clauses if clause and clause not in {'-', '*'}]
+        if not clauses:
+            continue
+        if any(re.search(r'\w[-\u2010-\u2014\u2212]$', clause) for clause in clauses[:-1]):
+            clauses = [body.strip().rstrip('.')]  # Shared head nouns are not independent devices or functions.
         function_list = bool(function_section is not None and not normative_row and not heading
                              and len(clauses) > 1 and not re.search(r'\b(?:muss|soll|shall|must|wenn|falls|if|when)\b|[.!?]\s+\w', body, re.I))
         if function_list:
@@ -504,6 +573,7 @@ def document_component_sources(rows: list, *, scope_prefix=''):
             if len(last) == 2 and all(last):
                 clauses = [*clauses[:-1], *last]
             clauses = [re.sub(r'^[-*]\s+', '', clause).strip().rstrip('.') for clause in clauses]
+            clauses = [clause for clause in clauses if clause and clause not in {'-', '*'}]
         policies = [document_component_policy(clause) for clause in clauses]
         mixed_hardware = len({p['role'] for p in policies if p and p['kind'] in {'CATEGORY', 'INSTANCE'}}) > 1
         split = len(clauses) > 1 and not normative_row and not function_table and (function_list or prefix or architecture_section is not None or (mixed_hardware and not re.search(r'Funktion|Function|Anforderung|REQ|Testf', text, re.I)))
@@ -512,7 +582,7 @@ def document_component_sources(rows: list, *, scope_prefix=''):
             if function_section is not None and not (policy and policy['kind'] == 'REQUIREMENT'):
                 policy = {'kind': 'FUNCTION', 'role': 'OTHER', 'quantity': None}
             required = bool(function_table or architecture_section is not None or split or in_functions or required_body or re.match(r'^(?:Funktionen?|Functions?)\s*:', text, re.I)
-                            or (policy and policy['kind'] in {'CATEGORY', 'INSTANCE', 'REQUIREMENT'})
+                            or (policy and policy['kind'] in {'CATEGORY', 'INSTANCE', 'FUNCTION', 'REQUIREMENT'})
                             or (policy and policy['kind'] == 'FUNCTION' and re.search(_DOCUMENT_ACTION, clause, re.I)))
             if function_section is not None and not function_header:
                 required = True
@@ -797,7 +867,7 @@ def document_response_json(content: str):
         result = {}
         for key, value in pairs:
             if key in result:
-                raise ValueError('Doppelter Schlüssel in der Qwen-Antwort: ' + key)
+                raise ValueError('Doppelter Schlüssel in der Modellantwort: ' + key)
             result[key] = value
         return result
     return json.loads(content, object_pairs_hook=unique)
@@ -1058,7 +1128,7 @@ def validate_document_interpretation(value, source: str, *, context_aliases=None
         if component.kind in {'INSTANCE', 'CATEGORY'} and re.search(r'\bcontroller\b', normalized_label(component.name)) and component.role not in {'CONTROLLER', 'GATEWAY'}:
             semantic_errors.append(f'{component.name}: ausdrücklich als Controller benannt; role CONTROLLER erforderlich.')
     for line in eligible_source.splitlines():
-        group = re.match(r'^\s*(?:[-*]\s*)?(Sensorik|Aktorik|Sensor\s+types|Sensortypen|Actuator\s+types|Aktortypen)\s*[:(]', line, re.I)
+        group = re.match(r'^\s*(?:[-*]\s*)?(' + _DOCUMENT_TYPE_GROUP_LABEL + r')\s*[:(]', line, re.I)
         if not group:
             continue
         role = 'SENSOR' if group[1].lower().startswith('sensor') else 'ACTUATOR'
@@ -1590,7 +1660,7 @@ def reference_inventory_members(fact: dict) -> list[str]:
     if fact['kind'] != 'CATEGORY' or fact['role'] not in {'SENSOR', 'ACTUATOR'}:
         return []
     text = fact['source_quote'].strip()
-    match = re.fullmatch(r'(?:[-*]\s*)?(?:Sensorik|Aktorik|Sensor\s+types|Sensortypen|Actuator\s+types|Aktortypen)\s*(?:\(([^()]*)\)|:\s*([^()]*))\.?', text, re.I)
+    match = re.fullmatch(r'(?:[-*]\s*)?' + _DOCUMENT_TYPE_GROUP_LABEL + r'\s*(?:\(([^()]*)\)|:\s*([^()]*))\.?', text, re.I)
     if not match:
         return []
     body = match[1] if match[1] is not None else match[2]
@@ -1841,7 +1911,7 @@ def _validate_reference_design(result: dict, prepared: dict, *, profile=None, in
         normalized_parameters = DEFAULT_TECHNOLOGY_REGISTRY.normalize_parameters(identity, port['parameters'])
         for parameter in normalized_parameters:
             if roles.get(parameter) != 'CONFIGURATION':
-                raise ValueError(f'Referenzanschluss {port_id}: {parameter} ist kein zulässiger CONFIGURATION-Wert; Qwen darf keine Hardware-, Referenz- oder Abnahmebelege erzeugen.')
+                raise ValueError(f'Referenzanschluss {port_id}: {parameter} ist kein zulässiger CONFIGURATION-Wert; Das lokale Modell darf keine Hardware-, Referenz- oder Abnahmebelege erzeugen.')
         review = DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters(identity, port['parameters'])
         for finding in review.get('findings', []):
             parameter = finding.get('parameter')

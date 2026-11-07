@@ -1,0 +1,32 @@
+import ts from '../../../frontend/node_modules/typescript/lib/typescript.js';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import assert from 'node:assert/strict';
+
+const path = 'frontend/src/features/agent/lib/engineering-specification.ts';
+const beforeText = readFileSync(new URL('before/'+path,import.meta.url),'utf8');
+const afterText = readFileSync(new URL('../../../'+path,import.meta.url),'utf8');
+const parse = text => ts.createSourceFile(path,text,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
+const before = parse(beforeText), after = parse(afterText);
+const find = file => file.statements.find(node=>ts.isFunctionDeclaration(node)&&node.name?.text==='extractEngineeringSpecification');
+const a=find(before),b=find(after);
+const previewGuards=b.body.statements.filter(node=>ts.isIfStatement(node)&&node.expression.getText(after).includes('options.preview'));
+assert.equal(previewGuards.length,1);
+assert.equal(b.parameters.length,a.parameters.length+1);
+assert.equal(b.parameters.at(-1).name.getText(after),'options');
+const normalBody=ts.factory.updateBlock(b.body,b.body.statements.filter(node=>!previewGuards.includes(node)));
+const normal=ts.factory.updateFunctionDeclaration(b,b.modifiers,b.asteriskToken,b.name,b.typeParameters,b.parameters.slice(0,-1),b.type,normalBody);
+const printer=ts.createPrinter({removeComments:true});
+assert.equal(printer.printNode(ts.EmitHint.Unspecified,a,before),printer.printNode(ts.EmitHint.Unspecified,normal,after));
+const prior=JSON.parse(readFileSync(new URL('../nis-model-independent-workflow-20261106/workload.json',import.meta.url),'utf8'));
+const identityFiles=Object.entries(prior.frozen_files).map(([path,expected])=>{
+  const actual=createHash('sha256').update(readFileSync(new URL('../../../'+path,import.meta.url))).digest('hex');
+  assert.equal(actual,expected);
+  return {path,expected,actual};
+});
+const source=readFileSync(new URL('../../../frontend/e2e/fixtures/document-preview-example.txt',import.meta.url));
+const original=readFileSync(new URL('../document-function-owner-cross-reference-20261017/reference-source-review/neu 9.txt',import.meta.url));
+assert.ok(source.equals(original));
+const report={status:'PASSED',scope:'Read-only AST and byte identity checks, not native inference or full workflow acceptance',default_generation_ast_unchanged:true,normalization:'Exclude only the explicit options.preview guard and its optional fifth parameter; comments omitted by TypeScript printer',prior_model_integration_files_unchanged:identityFiles,original_fixture_byte_identical:true};
+writeFileSync(new URL('scope-proof.json',import.meta.url),JSON.stringify(report,null,2)+'\n');
+console.log(JSON.stringify({status:report.status,default_generation_ast_unchanged:true,prior_files_unchanged:identityFiles.length,original_fixture_byte_identical:true}));

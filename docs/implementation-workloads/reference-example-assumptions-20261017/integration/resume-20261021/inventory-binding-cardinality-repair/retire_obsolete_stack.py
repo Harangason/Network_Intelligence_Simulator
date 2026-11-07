@@ -4,6 +4,7 @@ The immutable candidate image and its original PREPARED receipt remain retained.
 No production data, image pruning, model edits or inference are performed.
 """
 from datetime import datetime, timezone
+import argparse
 import hashlib
 import importlib.util
 import json
@@ -95,16 +96,23 @@ def run():
     for row in work['after']:
         saved = Path(row['path'])
         live = ROOT / saved.relative_to(host / 'after')
-        assert ref(live)['sha256'] == row['sha256'] == ref(saved)['sha256']
+        assert ref(saved)['sha256'] == row['sha256']
+        expected = (PLAN or {}).get('reviewed_current_gate_files', {}).get(
+            live.relative_to(ROOT).as_posix(), row['sha256'])
+        assert ref(live)['sha256'] == expected
     receipt = read(RECEIPT)
     original_receipt = ref(RECEIPT)
     assert receipt['status'] == 'PREPARED' and receipt['image_id'] == IMAGE
     assert receipt['containers'] == NAMES
+    if PLAN:
+        assert original_receipt['sha256'] == PLAN['receipt_sha256']
     command = "Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'python.exe' -and $_.CommandLine -match 'native_original_document_driver.py|native_original_workflow_driver.py' } | Select-Object ProcessId | ConvertTo-Json -Compress"
     assert not subprocess.check_output(['powershell', '-NoProfile', '-Command', command], text=True).strip(), 'Active native driver; do not retire.'
     baseline = protected()
     before = containers()
     app, db = inspect(NAMES['app']), inspect(NAMES['db'])
+    if PLAN:
+        assert [app['Id'], db['Id']] == PLAN['container_ids']
     assert app['Image'] == IMAGE
     assert db['Image'] == 'sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685'
     for c in (app, db):
@@ -116,8 +124,19 @@ def run():
                    (NAMES['network'] in c['NetworkSettings']['Networks'] or
                     any(m.get('Name') == NAMES['runtime'] for m in c['Mounts'])) for c in before)
     for case in ('vehicle', 'robot'):
-        manifest = ROOT / ('docs/implementation-workloads/reference-example-assumptions-20261017/integration/native-resumed-20261021-' + case + '/retirement-6d6-20261021/manifest.json')
-        assert read(manifest)['status'] == 'COMPLETE_GET_CAPTURE'
+        if PLAN:
+            capture = PLAN['project_exports'][case]
+            for name, saved in capture['evidence'].items():
+                path = Path(saved['path']).resolve(strict=True)
+                assert path.is_relative_to(OUT) and ref(path)['sha256'] == saved['sha256']
+                if name == 'export':
+                    assert read(path)['project_id'].removeprefix('network-project-') == capture['project_id']
+                elif name == 'jobs':
+                    assert read(path)['jobs'] == []
+            assert set(capture['evidence']) == {'export', 'draft', 'jobs'}
+        else:
+            manifest = ROOT / ('docs/implementation-workloads/reference-example-assumptions-20261017/integration/native-resumed-20261021-' + case + '/retirement-6d6-20261021/manifest.json')
+            assert read(manifest)['status'] == 'COMPLETE_GET_CAPTURE'
     write('precheck.json', {'at_utc': datetime.now(timezone.utc).isoformat(), 'protected': baseline,
           'original_receipt': original_receipt, 'exact_container_ids': [app['Id'], db['Id']],
           'authorization': 'Resume both original checks and verified delivery; retire this obsolete isolated diagnostic stack as required by AGENTS/WIZARD_RELEASE_GATE before its replacement. Human also authorized old-image cleanup; this operation retains the image.'})
@@ -130,6 +149,11 @@ def run():
             with path.open('wb') as stream:
                 subprocess.run([DOCKER, 'logs', c['Id']], stdout=stream, stderr=subprocess.STDOUT, check=True)
         backups.append(ref(path))
+    if PLAN:
+        diagnostics = OUT / 'application-runtime-logs'
+        diagnostics.mkdir(exist_ok=True)
+        call('cp', app['Id'] + ':/app/var/runtime/logs/.', str(diagnostics))
+        backups.extend(ref(path) for path in sorted(diagnostics.iterdir()) if path.is_file())
     dump = ARCHIVE / 'nis-test-e2e.dump'
     if not dump.exists():
         with dump.open('wb') as stream:
@@ -151,7 +175,8 @@ def run():
                 with tar.extractfile(member) as stream:
                     members.append({'name': member.name, 'bytes': member.size, 'sha256': hashlib.file_digest(stream, 'sha256').hexdigest()})
     backups.append({**ref(volume), 'members': members})
-    image_path = ARCHIVE / 'candidate-6d6fe881f4bd.tar'
+    image_tag = receipt['image_tag']
+    image_path = ARCHIVE / (image_tag.split(':', 1)[1] + '.tar')
     if not image_path.exists():
         subprocess.run([DOCKER, 'image', 'save', '--output', str(image_path), IMAGE], check=True)
     image_audit = verify_image_archive(image_path)
@@ -173,7 +198,7 @@ def run():
         assert resource.get('Labels', {}).get('networkis.test') == 'disposable'
         operations.append({'command': [kind, 'rm', name], 'result': call(kind, 'rm', name)})
     assert protected() == baseline and ref(RECEIPT) == original_receipt
-    assert inspect('networkis:candidate-6d6fe881f4bd')['Id'] == IMAGE
+    assert inspect(image_tag)['Id'] == IMAGE
     assert not any(c['Id'] in (app['Id'], db['Id']) for c in containers())
     write('retirement.json', {'at_utc': datetime.now(timezone.utc).isoformat(), 'status': 'EXACT_OBSOLETE_STACK_RETIRED',
           'operations': operations, 'backups': ref(OUT / 'backup-audit.json'), 'image_preserved': IMAGE,
@@ -181,6 +206,23 @@ def run():
           'no_image_removed': True, 'full_release_pass': False})
     print(json.dumps({'status': 'EXACT_OBSOLETE_STACK_RETIRED', 'image_preserved': IMAGE}), flush=True)
 
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--plan', type=Path)
+args = parser.parse_args()
+PLAN = read(args.plan) if args.plan else None
+if PLAN:
+    OUT = args.plan.resolve().parent
+    assert OUT.is_relative_to(ROOT / 'docs/implementation-workloads')
+    ARCHIVE = Path(PLAN['archive']).resolve()
+    assert ARCHIVE.is_relative_to(Path('F:/CodexOrdner/visualizations/2026/10/09/01a11f88-d6c9-7b63-bec3-26450a86e52c'))
+    RECEIPT = Path(PLAN['receipt']).resolve(strict=True)
+    assert RECEIPT.is_relative_to(ROOT / 'backend/test-output/release-gates')
+    IMAGE = PLAN['image_id']
+    NAMES = PLAN['resources']
+    token = NAMES['app'].removeprefix('nis-e2e-app-')
+    assert len(token) == 12 and all(char in '0123456789abcdef' for char in token)
+    assert NAMES == {kind: 'nis-e2e-' + kind + '-' + token for kind in ('app', 'db', 'network', 'runtime')}
 
 spec = importlib.util.spec_from_file_location('nis_retire_delivery', ROOT / 'scripts/release/release-and-deploy.py')
 owner = importlib.util.module_from_spec(spec)

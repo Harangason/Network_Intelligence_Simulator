@@ -1,0 +1,79 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -941,7 +941,7 @@
+         return (len(rows) >= 3 and all(isinstance(row, dict) for row in rows)
+                 and bool(rows[0]) and all(set(row) == set(rows[0]) for row in rows))
+ 
+-    def pack(allow_delta):
++    def pack(allow_delta, *, share_duplicates=True):
+         seen, copies, tables, candidates = {}, [], [], {}
+ 
+         def share(value, path, *, record=False):
+@@ -1004,12 +1004,32 @@
+             rows = list(value.values()) if isinstance(value, dict) else value if isinstance(value, list) else []
+             if path and record_rows(value):
+                 columns = list(rows[0])
+-                # Serialized equality preserves False/0/0.0/-0.0/null exactly.
+-                constants = {key: deepcopy(rows[0][key]) for key in columns
+-                             if all(serialized(row[key]) == serialized(rows[0][key]) for row in rows)}
+-                variable = [key for key in columns if key not in constants]
+-                table = {'columns': variable, 'constants': constants,
+-                         'rows': [[deepcopy(row[key]) for key in variable] for row in rows]}
++                # Compare exact JSON literals, including False/0/0.0/-0.0/null.
++                literals = [{key: serialized(row[key]) for key in columns} for row in rows]
++
++                def record_table(start, end):
++                    constants = {key: deepcopy(rows[start][key]) for key in columns
++                                 if all(row[key] == literals[start][key] for row in literals[start:end])}
++                    variable = [key for key in columns if key not in constants]
++                    return {'columns': variable, 'constants': constants,
++                            'rows': [[deepcopy(row[key]) for key in variable] for row in rows[start:end]]}
++
++                table = record_table(0, len(rows))
++                best_size = len(serialized(table).encode('utf8'))
++                partitions = set()
++                for key in columns:
++                    boundaries = (0, *(index for index in range(1, len(rows))
++                                      if literals[index][key] != literals[index - 1][key]), len(rows))
++                    # Bound the optimization search, never the number of records.
++                    # Each alternative retains every row in its original order.
++                    if not 2 < len(boundaries) <= 17 or boundaries in partitions:
++                        continue
++                    partitions.add(boundaries)
++                    segmented = {'segments': [record_table(start, end)
++                                             for start, end in zip(boundaries, boundaries[1:])]}
++                    size = len(serialized(segmented).encode('utf8'))
++                    if size < best_size:
++                        table, best_size = segmented, size
+                 if isinstance(value, dict):
+                     table['keys'] = list(value)
+                 if len(serialized(table).encode('utf8')) + len(path.encode('utf8')) + 4 < len(serialized(value).encode('utf8')):
+@@ -1021,12 +1041,12 @@
+                 return [tabulate(item, pointer(path, index)) for index, item in enumerate(value)]
+             return value
+ 
+-        return {'nis_context_snapshot': tabulate(share(current, '')),
++        return {'nis_context_snapshot': tabulate(share(current, '') if share_duplicates else deepcopy(current)),
+                 'nis_context_tables': tables, 'nis_context_copies': copies}
+ 
+     # A local sharing choice can defeat a better outer record table. Keep the
+     # unchanged baseline as a complete alternative, never force a larger wire.
+-    return min((deepcopy(current), pack(False), pack(True)),
++    return min((deepcopy(current), pack(False), pack(True), pack(False, share_duplicates=False)),
+                key=lambda value: len(serialized(value).encode('utf8')))
+ 
+ 
+@@ -1101,7 +1121,12 @@
+         'in nis_context_tables steht eine Tabelle: columns benennt die variablen Felder; '
+         'jede rows-Zeile enthält deren Werte in derselben Reihenfolge. constants gelten '
+         'unverändert für jede Zeile. Mit keys entsteht ein Objekt keys[i] -> Zeile[i], '
+-        'sonst eine Liste von Datensätzen. Zuerst alle Tabellen rekonstruieren, danach '
++        'sonst eine Liste von Datensätzen. Eine Tabelle mit segments enthält stattdessen '
++        'mehrere solche columns/constants/rows-Tabellen: ihre vollständig rekonstruierten '
++        'Zeilen in der angegebenen Reihenfolge aneinanderhängen, ohne Sortierung oder '
++        'Auslassung. Ein äußeres keys ordnet erst danach allen Zeilen ihre Schlüssel zu. '
++        'Konstanten eines Segments gelten ausschließlich für seine eigenen Zeilen. '
++        'Zuerst alle Tabellen rekonstruieren, danach '
+         'nis_context_copies der Reihe nach als RFC6902-Operationen ausführen: copy setzt '
+         'eine vollständige tiefe Kopie von from an path ein; ein folgendes replace ersetzt '
+         'das vorhandene Feld an path exakt durch value. Frühere Kopien und Änderungen '

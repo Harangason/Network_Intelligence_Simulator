@@ -15,6 +15,57 @@ from backend.nis.engineering.network.physical_ports import topology_port_finding
 from backend.nis.workflow.services.service import WorkflowStatusService
 
 
+def _read_signal_contracts():
+    nodes = {str(row['id']): row for row in model.objects('HardwareNode')}
+    functions = {str(row['id']): row for row in model.objects('Function')}
+    messages = {str(row['id']): row for row in model.objects('Message')}
+    actual = {}
+    for signal in model.objects('Signal'):
+        message = messages[str(signal['message_id'])]
+        reference = str(message['configuration']['communication_contract']['producer_ref'])
+        function = functions.get(reference)
+        owner = nodes.get(reference) or (nodes.get(str(function['hardware_node_id'])) if function else None)
+        producer = '$gateway' if owner and owner['device_type'] == 'Gateway' else (nodes.get(reference) or function or {})['name']
+        key = ' :: '.join((producer, message['name'], signal['name']))
+        assert key not in actual, key
+        actual[key] = {
+            **{field: signal.get(field) for field in ('start_bit', 'length_bits', 'data_type', 'factor',
+                'offset_value', 'unit', 'min_value', 'max_value', 'byte_order')},
+            'enum_values': (signal.get('data') or {}).get('enum_values'),
+            'semantic_type': (signal.get('semantic') or {}).get('semantic_type'),
+            'generation_role': (signal.get('configuration') or {}).get('generation_role'),
+        }
+    return actual
+
+
+def _assert_original_signal_contracts(actual):
+    """Check the existing browser manifest before expensive downstream work."""
+    fixture_root = Path(__file__).resolve().parents[2] / 'frontend/e2e/fixtures'
+    expected = json.loads((fixture_root / 'wizard-large-signal-contracts.json').read_text(encoding='utf-8'))['signals']
+    differences = {key: {'expected': expected.get(key), 'actual': actual.get(key)}
+                   for key in expected.keys() | actual.keys() if expected.get(key) != actual.get(key)}
+    assert not differences, json.dumps(differences, default=str)
+
+
+def test_captured_large_model_preserves_original_signal_contracts_before_routing():
+    prompt = (Path(__file__).resolve().parents[2] / 'frontend/e2e/fixtures/wizard-large-50-250-250.txt').read_text(encoding='utf-8')
+    authority = ToolAuthority('pytest-wizard-signal-contracts-' + str(uuid4()))
+
+    def verify():
+        WorkflowStatusService(authority.project_id).set_context({'agent_wizard_status': {'agent_prompt': prompt}})
+        proposal = wizard_generation.generate({'prompt': prompt})
+        checked = proposal_service.validate(proposal['proposal_id'])
+        assert checked['validation_result']['valid'], json.dumps(checked['validation_result'], default=str)
+        approved = proposal_service.review(proposal['proposal_id'], revision=checked['revision'],
+            decision='approve', actor='isolated-test-review', trace_id=str(uuid4()))
+        proposal_service.apply(approved['proposal_id'], actor='isolated-test-review', trace_id=str(uuid4()))
+        return _read_signal_contracts()
+
+    result = execute(authority, 'verify_original_signal_contracts', Permission.GENERATE_PROPOSAL, {}, lambda _: verify())
+    assert result.success, result.model_dump()
+    _assert_original_signal_contracts(result.data)
+
+
 def test_full_captured_model_and_all_routing_validate_without_rewriting_inputs(tmp_path):
     prompt = (Path(__file__).resolve().parents[2] / 'frontend/e2e/fixtures/wizard-large-50-250-250.txt').read_text(encoding='utf-8')
     authority = ToolAuthority('pytest-wizard-full-routing-' + str(uuid4()))
@@ -53,6 +104,7 @@ def test_full_captured_model_and_all_routing_validate_without_rewriting_inputs(t
     approved = call('review_full_model', lambda: proposal_service.review(proposal['proposal_id'],
         revision=checked['revision'], decision='approve', actor='isolated-test-review', trace_id=str(uuid4())))
     call('apply_full_model', lambda: proposal_service.apply(approved['proposal_id'], actor='isolated-test-review', trace_id=str(uuid4())))
+    _assert_original_signal_contracts(call('read_original_signal_contracts', _read_signal_contracts))
     hardware = call('read_complete_hardware', lambda: model.objects('HardwareNode'))
     assert len(hardware) == 552
     assert sum(item['device_type'] == 'SensorController' for item in hardware) == 250

@@ -43,6 +43,8 @@ def decode_wire(value):
             parent[key] = deepcopy(source[source_key])
         elif operation['op'] == 'replace':
             parent[key]  # A replacement cannot silently create an absent field.
+            if 'value_json_literal' in operation:
+                assert operation['value_json_literal'] == encoded(operation['value']), 'Contradictory scalar literal'
             parent[key] = deepcopy(operation['value'])
         else:
             raise AssertionError('Undocumented private reconstruction operation')
@@ -59,7 +61,8 @@ def complete_authored_context():
         {'id': f'authored-port-{index}', 'device_id': f'authored-owner-{index}',
          'technology': 'authored-counter-only', 'parameters': {
              **common, 'local_channel_index': index, 'address_binding': f'channel-{index}',
-             'a/b~c': -0.0 if index % 2 else 0.0, '': [index, False, None]},
+             'a/b~c': -0.0 if index % 2 else 0.0, '': [index, False, None],
+             'inherited_value': 'authored-before' if index < 16 else 'authored-after'},
          'rationale': 'Independently authored complete wire counter, no hardware evidence.',
          'field_references': {'ports': ['reference-supplement']}}
         for index in range(32)
@@ -105,6 +108,8 @@ def test_delta_and_existing_record_tables_reconstruct_ordered_copy_dependencies(
     assert len(decode_wire(packed)['current_candidate']['devices']) == 80
     assert len(decode_wire(packed)['current_candidate']['ports']) == 32
     assert decode_wire(packed)['later_changed_copy']['address_binding'] == 'new-final'
+    assert decode_wire(packed)['current_candidate']['ports'][0]['parameters']['inherited_value'] == 'authored-before'
+    assert decode_wire(packed)['current_candidate']['ports'][31]['parameters']['inherited_value'] == 'authored-after'
 
 
 def test_different_dictionary_fields_are_never_replaced_by_a_foreign_shape():
@@ -115,8 +120,75 @@ def test_different_dictionary_fields_are_never_replaced_by_a_foreign_shape():
     assert len(encoded(packed).encode()) <= len(encoded(original).encode())
 
 
+def test_irreducible_source_fails_with_bounded_diagnostic_not_source_content(caplog):
+    private_marker = 'private-original-source-not-for-diagnostic-logs'
+    current = {'original_source': private_marker * 4000,
+               'planning_stage': 'Authored complete-source bound',
+               'current_candidate': {'devices': [], 'ports': [], 'functions': []}}
+    before = canonical(current)
+    with caplog.at_level('WARNING'), pytest.raises(ValueError, match='keine Quelle gekürzt'):
+        reasoner._reference_context_messages([], None, current, 'Authored system', 131072)
+    messages = [record.getMessage() for record in caplog.records
+                if 'Native reference context guard rejected complete input:' in record.getMessage()]
+    assert messages, 'Missing bounded pre-inference context-failure diagnostic'
+    diagnostic = json.loads(messages[-1].split(': ', 1)[1])
+    assert diagnostic['maximum'] == 131072
+    assert diagnostic['required_utf8_upper_bound'] > 131072
+    assert diagnostic['input_utf8_bytes'] + 8192 + 2048 == diagnostic['required_utf8_upper_bound']
+    assert diagnostic['planning_stage'] == current['planning_stage']
+    assert diagnostic['candidate_counts'] == {'devices': 0, 'ports': 0, 'functions': 0}
+    assert len(diagnostic['complete_context_sha256']) == 64
+    assert private_marker not in caplog.text
+    assert canonical(current) == before
+
+
 @pytest.mark.parametrize('operation', ['remove', 'add', 'move', 'test', 'unknown'])
 def test_independent_receiver_rejects_undocumented_operations(operation):
     with pytest.raises(AssertionError, match='Undocumented'):
         decode_wire({'nis_context_snapshot': {'value': 1}, 'nis_context_tables': [],
                      'nis_context_copies': [{'op': operation, 'path': '/value', 'value': 2}]})
+
+
+def test_changed_scalar_literal_has_exact_witness_without_changing_typed_value():
+    common = {f'parameter_{index}': f'explicit-original-value-{index}' for index in range(64)}
+    original = {'first': {**common, 'signed': 0.0, 'enabled': False},
+                'second': {**common, 'signed': -0.0, 'enabled': True}}
+    packed = reasoner._reference_context_snapshot(original)
+    replacements = {item['path']: item for item in packed['nis_context_copies']
+                    if item['op'] == 'replace'}
+    assert replacements['/second/signed']['value_json_literal'] == '-0.0'
+    assert encoded(replacements['/second/signed']['value']) == '-0.0'
+    assert replacements['/second/enabled']['value_json_literal'] == 'true'
+    assert replacements['/second/enabled']['value'] is True
+    assert canonical(decode_wire(packed)) == canonical(original)
+
+
+def test_independent_receiver_rejects_contradictory_scalar_literal_witness():
+    with pytest.raises(AssertionError, match='Contradictory scalar literal'):
+        decode_wire({'nis_context_snapshot': {'value': 0.0}, 'nis_context_tables': [],
+                     'nis_context_copies': [{'op': 'replace', 'path': '/value',
+                                             'value': -0.0, 'value_json_literal': '0.0'}]})
+
+
+def test_flat_configuration_copy_bases_are_retained_not_prior_delta_targets():
+    original = complete_authored_context()
+    original['later_exact_copy'] = deepcopy(original['current_candidate']['ports'][31]['parameters'])
+    packed = reasoner._reference_context_snapshot(original)
+    copied = set()
+    for operation in packed['nis_context_copies']:
+        if operation['op'] == 'copy':
+            assert operation['from'] not in copied, 'A prior delta target is used as a copy base'
+            copied.add(operation['path'])
+    assert canonical(decode_wire(packed)) == canonical(original)
+
+
+def test_late_configuration_overrides_are_explicit_for_each_shallow_copy():
+    original = complete_authored_context()
+    packed = reasoner._reference_context_snapshot(original)
+    operations = packed['nis_context_copies']
+    for index in range(16, 32):
+        path = f'/current_candidate/ports/{index}/parameters'
+        assert any(item['op'] == 'copy' and item['path'] == path for item in operations)
+        assert any(item['op'] == 'replace' and item['path'] == path + '/inherited_value'
+                   and item['value'] == 'authored-after' for item in operations), 'Late override is hidden behind a copied delta'
+    assert canonical(decode_wire(packed)) == canonical(original)

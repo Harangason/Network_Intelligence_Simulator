@@ -1,0 +1,102 @@
+{
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "kind": "repair",
+  "modify_code": true,
+  "allow_repair": true,
+  "status": "FULL_VEHICLE_RUNNING",
+  "revision_before": {
+    "backend/nis/agent/orchestration/local_reasoner.py": "ff083f527d948cf7bee28da5138c5af79433b6ac0a7b0b2e116c04a07e64215c",
+    "backend/tests/test_reference_reasoner.py": "df2819605a9625dd266bfcf2685e4a34fd96611694ee8727aacf66694d873ee2"
+  },
+  "unresolved_decisions": [],
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-retry-context-20261104-vehicle\\profile-replan-state-repair-20261105\\before\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "ff083f527d948cf7bee28da5138c5af79433b6ac0a7b0b2e116c04a07e64215c"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-retry-context-20261104-vehicle\\profile-replan-state-repair-20261105\\before\\backend\\tests\\test_reference_reasoner.py",
+      "sha256": "df2819605a9625dd266bfcf2685e4a34fd96611694ee8727aacf66694d873ee2"
+    }
+  ],
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "first_failing_layer": "Reference profile replan lifecycle",
+    "root_cause": "The semantic repair restarts inventory but clears prior IO/functions only after inventory and carries old communications through new inventory. Stale downstream choices consume the complete-context budget before the state reset.",
+    "reproduction": "Native session 78201 completed all seven communication groups; actual profile repair revisited inventory with 37 functions, 22 ports, 6 measurements, 3 commands and 20 dependencies. It exceeded the unchanged window before resetting those arrays.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-retry-context-20261104-vehicle\\terminal-evidence.json",
+        "sha256": "6338fd39369972d6074279de37fb7350c7049c78905ef2b92d19af37557e266d"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-retry-context-20261104-vehicle\\backend-terminal.log",
+        "sha256": "59777e5847d335478bec8b633a7b9a26773c04a7f4696c3af684e2081aa04849"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-retry-context-20261104-vehicle\\plan-reference\\response.json",
+        "sha256": "f3c219676a5e4c25d1d3cc1aac5f534ff098b0996b78db6d7513fed0da2d401a"
+      }
+    ],
+    "affected_files": [
+      "backend/nis/agent/orchestration/local_reasoner.py",
+      "backend/tests/test_reference_reasoner.py"
+    ],
+    "acceptance_criteria": [
+      "Start each full profile replan from the retained source-bound devices with all dependent stage outputs rebuilt in normal order. Keep complete original and supplemental text and precise validation feedback.",
+      "Replace prior unresolved findings with current pass findings while keeping the previous findings as repair feedback and diagnostic evidence. Preserve strict semantic validation and all budgets."
+    ],
+    "targeted_tests": [
+      "Normal planner recovers from actual missing communication finding and starts the second inventory without stale downstream outputs."
+    ],
+    "weaken_assertions_to_pass": false
+  },
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-retry-context-20261104-vehicle\\profile-replan-state-repair-20261105\\after\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "2459e817dd1510c754f2b7684cfbb6c698ca5ccd233596a28704cd3bf53c5968"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-retry-context-20261104-vehicle\\profile-replan-state-repair-20261105\\after\\backend\\tests\\test_reference_reasoner.py",
+      "sha256": "91f6f7631f69f7c1f1e8397db584287edf5a02fb15858648c9fe229a61267782"
+    }
+  ],
+  "files_changed": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_reasoner.py"
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-retry-context-20261104-vehicle\\profile-replan-state-repair-20261105\\change.diff",
+      "sha256": "dfe8e820bc197700157100a6840afc4f9a67be1b4a331453eff9bdf46fbc6722"
+    }
+  ],
+  "red": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-retry-context-20261104-vehicle\\profile-replan-state-repair-20261105\\red-saved-baseline-native-fixtures.xml",
+    "sha256": "91fd95cf8d8f7d0d53731616a4f2ce1677479f836a98bb336f1ca5c20d649091"
+  },
+  "historical_initial_counter": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-retry-context-20261104-vehicle\\profile-replan-state-repair-20261105\\red.xml",
+    "result": "PASS on corrected current source, not a RED baseline"
+  },
+  "excluded_probe": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-retry-context-20261104-vehicle\\profile-replan-state-repair-20261105\\red-saved-baseline.xml",
+    "result": "Historical integration/conftest staging overlay, excluded. Repeated with normal backend fixtures and correct failing assertion."
+  },
+  "tests": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-retry-context-20261104-vehicle\\profile-replan-state-repair-20261105\\green.xml",
+      "sha256": "84a8ee8f7ce8412211316cd6437e6f5f97b1051576a2e196c0bc59457d86050e"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-retry-context-20261104-vehicle\\profile-replan-state-repair-20261105\\green-replan-diagnostic.xml",
+      "sha256": "e3e0022713f788f53d71f5bfc0e08e71b933a0742f84c5a135d2e419077cf912"
+    }
+  ],
+  "targeted_pass": 44,
+  "active_native_session": 24092,
+  "candidate_receipt": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\joint-profile-replan-originals-20261105\\879fee8da739\\receipt.json",
+    "sha256": "9c69480bf8dcdaeea9e0dd6760842c91c491b1a1c858ead54d2899ddb5f03dae"
+  }
+}

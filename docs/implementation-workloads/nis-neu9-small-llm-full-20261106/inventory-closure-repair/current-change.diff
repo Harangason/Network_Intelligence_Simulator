@@ -1,0 +1,67 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -197,6 +197,27 @@
+             or len(set(names)) != len(names) or target['max_rows'] != len(names)):
+         raise ValueError('Inventarbündel benötigt zwei bis acht eindeutige ursprüngliche Namen innerhalb seiner Grenze.')
+     return tuple(names)
++
++
++def _reference_inventory_closed(prepared, target, devices):
++    """Recognize only fully bound finite source instances, never open hardware demand."""
++    if not target or target['minimum_rows'] or target.get('names'):
++        return False
++    fact = prepared['facts'][target['fact_id']]
++    if fact['kind'] != 'INSTANCE':
++        return False
++    selected = [row for row in devices if target['fact_id'] in row['source_fact_ids']
++                and (not target.get('member')
++                     or row['source_member_bindings'].get(target['fact_id']) == target['member'])]
++    if (len(selected) != fact['quantity']
++            or any(row['quantity'] != 1 or fact['role'] not in {row['kind'], 'OTHER'} for row in selected)
++            or len({row['id'] for row in selected}) != len(selected)
++            or len({row['name'] for row in selected}) != len(selected)):
++        return False
++    expected = {row['name'] for row in prepared['catalog'].get('source_devices', [])
++                if (row.get('evidence') or {}).get('source_quote') == fact['source_quote']
++                and (row.get('evidence') or {}).get('source_context', []) == fact.get('source_context', [])}
++    return expected <= {row['name'] for row in selected}
+ 
+ 
+ def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=(), port_intent=False, port_groups=False, device_ids=(), producer_ids=(), inventory_target=None, derivation_fact_ids=None, existing_devices=()):
+@@ -430,6 +451,14 @@
+         if not batch_names:
+             incomplete['properties']['inventory_choices']['minItems'] = 1
+         schema['anyOf'] = [complete, incomplete]
++        if _reference_inventory_closed(prepared, inventory_target, existing_devices):
++            # The exact original quantity and names are already bound. A new
++            # declaration cannot add coverage; the separate functional-hardware
++            # stages still evaluate every FUNCTION/REQUIREMENT afterward.
++            schema['properties']['inventory_choices']['maxItems'] = 0
++            schema['properties']['inventory_complete'] = {'type': 'boolean', 'enum': [True]}
++            complete['properties']['inventory_choices']['maxItems'] = 0
++            schema['anyOf'] = [complete]
+         if derivation_fact_ids is not None:
+             existing_choices = [row for row in choices
+                                 if row['properties']['choice_kind']['enum'] == ['EXISTING']]
+@@ -1760,6 +1789,7 @@
+             async def infer(stage, allowed, producer_ids=(), feedback=None, *, port_ids=(), function_ids=(), port_intent=False, port_groups=False, device_ids=(), inventory_target=None, derivation_fact_ids=None):
+                 nonlocal reference_messages, reference_prompt, reference_anchor, reference_anchors
+                 inventory_stage = inventory_target is not None or derivation_fact_ids is not None
++                inventory_closed = _reference_inventory_closed(prepared, inventory_target, current['devices'])
+                 if device_ids:
+                     kinds = {'ports': {'CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR'},
+                              'measurements': {'SENSOR'}, 'commands': {'ACTUATOR'}}
+@@ -1822,9 +1852,10 @@
+                                  'Parameterstufe legt JEDEN erzeugten Anschluss aus. Kein fertiges Modell oder Timing-/Safety-PASS. '
+                                  if port_groups else '')
+                               + ('Ausschließlich IO für alle angeforderten vorhandenen Teilnehmer-IDs liefern; keine anderen Geräte, Anschlüsse, Messgrößen oder Befehle überschreiben. Teilnehmer und ihre IO getrennt erhalten. Alle Nachbarteilnehmer bleiben als Planungskontext sichtbar. ' if device_ids else '')
+-                              + ('Jeder inventory_choices-Eintrag beginnt mit choice_kind: EXISTING für eine vorhandene ID-Bindung, NEW_<Geräteart> für wirklich neue Hardware (z.B. NEW_SENSOR passend zu kind=SENSOR). Bei EXISTING danach ausschließlich device_id, source_fact_ids, rationale und field_references auswählen; niemals id/name/kind eines alten Geräts neu schreiben. NIS erhält sämtliche unveränderlichen Gerätedaten und ergänzt nur die Quellen-/Typ-/Referenzbindung. Bei NEW_<Geräteart> danach alle vom Schema angeforderten neuen Geräteentscheidungen liefern, niemals eine vorhandene ID. choice_kind wird nur intern geprüft und nicht als Modellfeld gespeichert. Die gemeinsame Stufengrenze gilt für alle Einträge zusammen. ' if inventory_stage and derivation_fact_ids is None else '')
+-                              + (('inventory_choices ist ein Objekt mit genau den angeforderten ursprünglichen Namen als Schlüsseln. Für jeden Schlüssel genau eine vollständige NEW_<Geräteart>- oder EXISTING-Entscheidung gemäß Schema liefern. Festgelegte NEW-Identität, Name, Geräteart, Menge und Quellenbindung ergänzt NIS aus diesem angeforderten Platz; diese ausgeblendeten Felder nicht wiederholen. Offene owner_device_id, purpose, rationale und field_references selbst quellengebunden entscheiden. Alle Schlüssel sind Pflicht; keine Identität doppelt verwenden. ' if _reference_inventory_batch_names(inventory_target) else 'Nur ein echtes Gerät oder eine vorhandene Gerätebindung für den angeforderten Quellenbefund/das Typmitglied liefern, keine zweite Platzhalterzeile. ') + 'source_fact_ids enthält ausschließlich diese eine FactID; source_member_bindings neuer Geräte ausschließlich das angeforderte wörtliche Mitglied. Bei vorhandenen Geräten setzt NIS die angeforderte Typbindung selbst. Funktional zusätzlich notwendige Hardware wird danach in einem eigenen Schritt geplant. ' if inventory_target else '')
+-                              + ('inventory_complete bewertet nur diesen deklarierten Quellenbereich. Bei vollständiger Abdeckung true; wenn er bereits abgedeckt ist, ist ein leeres Delta mit true zulässig. False verlangt eine echte weitere Instanz/Bindung dieses Bereichs. ' if inventory_target else '')
++                              + ('Jeder inventory_choices-Eintrag beginnt mit choice_kind: EXISTING für eine vorhandene ID-Bindung, NEW_<Geräteart> für wirklich neue Hardware (z.B. NEW_SENSOR passend zu kind=SENSOR). Bei EXISTING danach ausschließlich device_id, source_fact_ids, rationale und field_references auswählen; niemals id/name/kind eines alten Geräts neu schreiben. NIS erhält sämtliche unveränderlichen Gerätedaten und ergänzt nur die Quellen-/Typ-/Referenzbindung. Bei NEW_<Geräteart> danach alle vom Schema angeforderten neuen Geräteentscheidungen liefern, niemals eine vorhandene ID. choice_kind wird nur intern geprüft und nicht als Modellfeld gespeichert. Die gemeinsame Stufengrenze gilt für alle Einträge zusammen. ' if inventory_stage and derivation_fact_ids is None and not inventory_closed else '')
++                              + (('inventory_choices ist ein Objekt mit genau den angeforderten ursprünglichen Namen als Schlüsseln. Für jeden Schlüssel genau eine vollständige NEW_<Geräteart>- oder EXISTING-Entscheidung gemäß Schema liefern. Festgelegte NEW-Identität, Name, Geräteart, Menge und Quellenbindung ergänzt NIS aus diesem angeforderten Platz; diese ausgeblendeten Felder nicht wiederholen. Offene owner_device_id, purpose, rationale und field_references selbst quellengebunden entscheiden. Alle Schlüssel sind Pflicht; keine Identität doppelt verwenden. ' if _reference_inventory_batch_names(inventory_target) else 'Nur ein echtes Gerät oder eine vorhandene Gerätebindung für den angeforderten Quellenbefund/das Typmitglied liefern, keine zweite Platzhalterzeile. ') + 'source_fact_ids enthält ausschließlich diese eine FactID; source_member_bindings neuer Geräte ausschließlich das angeforderte wörtliche Mitglied. Bei vorhandenen Geräten setzt NIS die angeforderte Typbindung selbst. Funktional zusätzlich notwendige Hardware wird danach in einem eigenen Schritt geplant. ' if inventory_target and not inventory_closed else '')
++                              + ('inventory_complete bewertet nur diesen deklarierten Quellenbereich. Bei vollständiger Abdeckung true; wenn er bereits abgedeckt ist, ist ein leeres Delta mit true zulässig. False verlangt eine echte weitere Instanz/Bindung dieses Bereichs. ' if inventory_target and not inventory_closed else '')
++                              + ('Die feste urspruengliche Instanzmenge und alle zugehoerigen Originalnamen sind bereits vollstaendig gebunden. Fuer diesen Quellenbereich ausschliesslich inventory_choices=[] und inventory_complete=true liefern; keine weitere Instanz oder bestehende Bindung wiederholen. Echte offene Fachentscheidungen bleiben in unresolved. Die folgenden Quellenbereiche und funktionsbedingten Hardwarestufen bleiben separat vollstaendig zu pruefen. ' if inventory_closed else '')
+                               + ('Prüfe jetzt die physische Hardware für die ausdrücklich angeforderten FUNCTION-/REQUIREMENT-FactIDs. Vollständige Quelle und sämtliche Nachbarfunktionen bleiben Konsistenzkontext; weitere Quellenbefunde werden in eigenen Hardwarestufen bearbeitet. Sensoren und Aktoren sind echte Teilnehmer, keine bloßen Werte im Controller. Vorhandene Geräte wiederverwenden oder fehlende Messquellen, Verarbeitung, Verbraucher und Aktoren ergänzen; unabhängige Messgrößen und Stellwirkungen berücksichtigen. Ports/Messgrößen/Befehle/Funktionen/Kommunikation folgen erst nach ALLEN Hardwarestufen und erzeugen KEINE Geräte mehr. Notwendige Peripherie dieses Quellenbereichs niemals in spätere IO-Schritte verschieben. source_fact_ids enthält nur passende angeforderte FUNCTION-/REQUIREMENT-FactIDs, jede höchstens einmal; keine neuen Bindungen an Quelleninventar. Alte Bindungen wiederverwendeter IDs bleiben serverseitig erhalten. Keine Originalmenge erhöhen oder Hardwarebelege/Defaults erfinden. Pro Antwort entweder höchstens ein wirklich neues Gerät ODER eine einzige EXISTING_BATCH-Auswahl. Deren bindings ist ein Knoten mit genau einer vorhandenen ID als Schlüssel. Sein Wert enthält source_fact_ids, rationale, field_references und following. following ist null oder der nächste solche Ein-ID-Knoten. Höchstens acht Knoten, jede ID nur einmal und in der Reihenfolge von existing_inventory_for_this_stage auswählen. Nach dem achten Knoten ist following zwingend null. Mehrere Quellenbelege derselben ID in derselben source_fact_ids-Liste bündeln; keine separaten EXISTING-Zeilen liefern. Niemals neue Hardware mit Bindungen mischen. Die Begründung jeweils in einem kurzen fachlichen Satz ohne Wiederholung des Auftrags formulieren. Mehrere passende Quellenbelege desselben Teilnehmers gemeinsam angeben. Nur tatsächlich benötigte Teilnehmer binden, nicht sämtliche Geräte mit sämtlichen Funktionen verbinden. Weiteren Hardwarebedarf mit inventory_complete=false für die normale nächste Antwort offenhalten; die Gesamtzahl notwendiger Geräte ist dadurch nicht begrenzt. inventory_complete bewertet ausschließlich den Bedarf der angeforderten FactIDs und wird erst true, wenn vorhandene plus ergänzte Hardware diesen vollständig abdeckt; ohne Ergänzungsbedarf inventory_choices=[] und true. False verlangt neue Geräte/Quellenbindungen. Unklare Fachentscheidungen konkret unresolved nennen. ' if derivation_fact_ids is not None else '')
+                               + ('port_parameters ist ein Objekt mit genau jedem angeforderten Port-ID-Schlüssel einmal. Pro Schlüssel ausschließlich parameters, eine kurze rationale und field_references ausgeben; ports bleibt []. NIS übernimmt id, device_id, technology, role und network_scope exakt aus der bereits geplanten Portabsicht. Keine andere Technologie für einen Schlüssel auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
+                               + ('functions_by_fact ist ein Objekt mit genau jedem angeforderten Funktions-FactID-Schlüssel einmal. Seine Werte enthalten die vollständige Funktionsentscheidung außer source_fact_id; diese Identität bindet NIS unverändert. functions bleibt []. Abhängigkeiten nur mit diesen Senderfunktionen liefern. Andere ursprüngliche Funktions-FactIDs dürfen bewusste Empfänger oder COMPOSITE-Bestandteile sein. ' if function_ids else ''))}

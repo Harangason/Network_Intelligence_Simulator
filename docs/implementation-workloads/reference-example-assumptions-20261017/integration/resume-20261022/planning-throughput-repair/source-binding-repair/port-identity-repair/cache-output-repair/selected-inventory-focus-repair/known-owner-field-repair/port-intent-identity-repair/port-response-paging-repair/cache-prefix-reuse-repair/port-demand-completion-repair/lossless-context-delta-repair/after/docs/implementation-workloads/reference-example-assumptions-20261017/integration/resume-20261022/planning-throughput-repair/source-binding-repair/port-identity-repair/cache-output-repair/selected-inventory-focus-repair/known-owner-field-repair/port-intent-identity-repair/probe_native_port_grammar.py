@@ -115,10 +115,16 @@ if args.port_groups:
         'All ordinary arrays including devices/ports/unresolved remain empty. /no_think'}]
 if args.context_delta:
     from backend.tests.test_reference_context_delta_capacity import complete_authored_context
+    context_fixture_source = ROOT / 'backend/tests/test_reference_context_delta_capacity.py'
+    context_fixture_hash = hashlib.sha256(context_fixture_source.read_bytes()).hexdigest()
     context = complete_authored_context()
     selected_channels = {index: secrets.randbelow(1000000000) for index in (0, 17, 31)}
     selected_address = 'authored-' + secrets.token_hex(12)
     selected_typed_values = [secrets.randbelow(1000000000), False, None]
+    inherited_values = ['authored-base-' + secrets.token_hex(12), 'authored-late-' + secrets.token_hex(12)]
+    for index, row in enumerate(context['current_candidate']['ports']):
+        row['parameters']['inherited_value'] = inherited_values[index >= 16]
+        row['parameters']['escaped/source~tag'] = inherited_values[index >= 16]
     for index, channel in selected_channels.items():
         context['current_candidate']['ports'][index]['parameters']['local_channel_index'] = channel
     context['current_candidate']['ports'][31]['parameters']['address_binding'] = selected_address
@@ -130,7 +136,11 @@ if args.context_delta:
         'first_channel, middle_channel and last_channel from ports at indices0,17,31 parameters.local_channel_index; '
         'last_address from ports[31].parameters.address_binding; '
         'last_typed_values from ports[31].parameters[the empty-string key]; '
-        'last_zero_literal is the original JSON numeric spelling as a STRING for ports[31].parameters["a/b~c"]; '
+        'first_inherited_value and last_inherited_value from ports[0] and ports[31] '
+        'parameters.inherited_value, tracing their actual copy bases and later replacements; '
+        'first_zero_literal and last_zero_literal are the exact original JSON numeric spellings as STRINGS '
+        'for ports[0] and ports[31] parameters["a/b~c"]; '
+        'last_escaped_value is ports[31].parameters["escaped/source~tag"], including the actual escaped-path replacements; '
         'source_role from reference_sources.R.role. Do not infer another ordinal, use actual reconstructed fields. /no_think')
     messages, _, _ = _reference_context_messages([], None, context,
         'Read the complete private context faithfully and answer the exact authored read-only query.', 131072)
@@ -139,12 +149,17 @@ if args.context_delta:
     expected = {'ports_count': 32, 'devices_count': 80, 'first_channel': selected_channels[0],
                 'middle_channel': selected_channels[17], 'last_channel': selected_channels[31],
                 'last_address': selected_address, 'last_typed_values': selected_typed_values,
-                'last_zero_literal': '-0.0', 'source_role': 'REFERENCE_SUPPLEMENT'}
+                'first_inherited_value': inherited_values[0], 'last_inherited_value': inherited_values[1],
+                'first_zero_literal': '0.0', 'last_zero_literal': '-0.0',
+                'last_escaped_value': inherited_values[1], 'source_role': 'REFERENCE_SUPPLEMENT'}
     schema = {'type': 'object', 'properties': {
         **{key: {'type': 'integer'} for key in ('ports_count', 'devices_count', 'first_channel',
                                                'middle_channel', 'last_channel')},
-        **{key: {'type': 'string'} for key in ('last_address', 'last_zero_literal', 'source_role')},
-        'last_typed_values': {'type': 'array', 'items': {'type': ['integer', 'boolean', 'null']}}},
+        **{key: {'type': 'string'} for key in ('last_address', 'last_zero_literal', 'source_role',
+                                              'first_inherited_value', 'last_inherited_value',
+                                              'first_zero_literal', 'last_escaped_value')},
+        'last_typed_values': {'type': 'array', 'items': {'anyOf': [
+            {'type': 'integer'}, {'type': 'boolean'}, {'type': 'null'}]}}},
         'required': list(expected), 'additionalProperties': False}
     write('authored-complete-context.json', context)
     write('expected-reconstructed-values.json', expected)
@@ -162,10 +177,12 @@ if args.context_delta:
     Draft202012Validator(schema).validate(value)
     assert json.dumps(value, sort_keys=True) == json.dumps(expected, sort_keys=True)
     assert hashlib.sha256(source.read_bytes()).hexdigest() == source_hash
+    assert hashlib.sha256(context_fixture_source.read_bytes()).hexdigest() == context_fixture_hash
     result = {'status': 'PASSED', 'at_utc': datetime.now(timezone.utc).isoformat(),
         'actual_model_requests': 1, 'authored_complete_context_reconstructed': True,
         'input_utf8_bytes': sum(len(row['content'].encode('utf-8')) for row in messages),
         'source_sha256': source_hash, 'eval_count': response.get('eval_count'),
+        'authored_fixture_sha256': context_fixture_hash,
         'prompt_eval_count': response.get('prompt_eval_count'), 'canonical_writes': False,
         'original_model_acceptance': False, 'provider_model_context_output_timeout_unchanged': True}
     write('result.json', result)

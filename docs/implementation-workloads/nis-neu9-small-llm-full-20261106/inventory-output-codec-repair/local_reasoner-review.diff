@@ -1,0 +1,114 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -536,6 +536,55 @@
+     return schema
+ 
+ 
++def _reference_compact_inventory_schema(schema):
++    """Elide only exact offered constants; retain the request-local decoding map."""
++    from copy import deepcopy
++    selection = schema.get('properties', {}).get('inventory_choices', {})
++    if selection.get('type') != 'object':
++        return schema, {}
++    result, codec = deepcopy(schema), {}
++
++    def fixed(field):
++        if len(field.get('enum', [])) == 1:
++            return True, deepcopy(field['enum'][0])
++        if field.get('type') == 'null':
++            return True, None
++        if field.get('type') == 'array':
++            if field.get('maxItems') == 0:
++                return True, []
++            if field.get('minItems') == field.get('maxItems') == 1:
++                known, value = fixed(field.get('items', {}))
++                if known:
++                    return True, [value]
++        if field.get('type') == 'object' and field.get('additionalProperties') is False:
++            properties = field.get('properties', {})
++            values = {key: fixed(value) for key, value in properties.items()}
++            if set(field.get('required', [])) == set(properties) and all(row[0] for row in values.values()):
++                return True, {key: row[1] for key, row in values.items()}
++        return False, None
++
++    for branch in [result, *result.get('anyOf', [])]:
++        for name, slot in branch['properties']['inventory_choices']['properties'].items():
++            for variant in slot.get('anyOf', [slot]):
++                properties = variant['properties']
++                kind = properties['choice_kind']['enum'][0]
++                constants = {}
++                if kind.startswith('NEW_'):
++                    for key in ('id', 'name', 'kind', 'quantity', 'source_fact_ids',
++                                'source_member_bindings', 'context_kind', 'contained_device_ids'):
++                        known, value = fixed(properties.get(key, {}))
++                        if known:
++                            constants[key] = value
++                            properties.pop(key)
++                    variant['required'] = [key for key in variant.get('required', []) if key not in constants]
++                record = {'constants': constants, 'allowed': list(properties),
++                          'required': list(variant.get('required', []))}
++                previous = codec.setdefault(name, {}).setdefault(kind, record)
++                if previous != record:
++                    raise ValueError('Inventaralternativen müssen dieselben festgelegten Identitäten verwenden.')
++    return result, codec
++
++
+ def _reference_port_page_complete(intents, complete):
+     """Bound one reply, never the total required physical connections."""
+     if (type(complete) is not bool or not isinstance(intents, list)
+@@ -643,7 +692,7 @@
+     return expanded
+ 
+ 
+-def _reference_expand_inventory_choices(devices, choices, *, inventory_target=None):
++def _reference_expand_inventory_choices(devices, choices, *, inventory_target=None, inventory_codec=None):
+     """Apply one shared bound before resolving new rows or known-ID bindings."""
+     minimum = 1 if inventory_target and (inventory_target['minimum_rows'] or inventory_target.get('names')) else 0
+     batch_names = _reference_inventory_batch_names(inventory_target)
+@@ -651,6 +700,18 @@
+     if batch_names:
+         if not isinstance(choices, dict) or set(choices) != set(batch_names):
+             raise ValueError('Inventarbündel muss jeden angeforderten ursprünglichen Namen genau einmal enthalten.')
++        if inventory_codec:
++            from copy import deepcopy
++            if set(inventory_codec) != set(batch_names):
++                raise ValueError('Inventarantwort muss zur unveränderten angeforderten Auswahl gehören.')
++            choices = deepcopy(choices)
++            for name, choice in choices.items():
++                selected = choice.get('choice_kind') if isinstance(choice, dict) else None
++                record = inventory_codec[name].get(selected) if isinstance(selected, str) else None
++                if (record is None or set(choice) - set(record['allowed'])
++                        or not set(record['required']) <= set(choice)):
++                    raise ValueError('Inventarantwort darf nur vollständige offene Entscheidungen der angebotenen Auswahl enthalten.')
++                choice.update(deepcopy(record['constants']))
+         known = {row['id']: row['name'] for row in devices}
+         for name, choice in choices.items():
+             if not isinstance(choice, dict):
+@@ -1687,8 +1748,8 @@
+                                  'Parameterstufe legt JEDEN erzeugten Anschluss aus. Kein fertiges Modell oder Timing-/Safety-PASS. '
+                                  if port_groups else '')
+                               + ('Ausschließlich IO für alle angeforderten vorhandenen Teilnehmer-IDs liefern; keine anderen Geräte, Anschlüsse, Messgrößen oder Befehle überschreiben. Teilnehmer und ihre IO getrennt erhalten. Alle Nachbarteilnehmer bleiben als Planungskontext sichtbar. ' if device_ids else '')
+-                              + ('Jeder inventory_choices-Eintrag beginnt mit choice_kind: EXISTING für eine vorhandene ID-Bindung, NEW_<Geräteart> für wirklich neue Hardware (z.B. NEW_SENSOR passend zu kind=SENSOR). Bei EXISTING danach ausschließlich device_id, source_fact_ids, rationale und field_references auswählen; niemals id/name/kind eines alten Geräts neu schreiben. NIS erhält sämtliche unveränderlichen Gerätedaten und ergänzt nur die Quellen-/Typ-/Referenzbindung. Bei NEW_<Geräteart> danach die vollständigen neuen Gerätedaten liefern, niemals eine vorhandene ID. choice_kind wird nur intern geprüft und nicht als Modellfeld gespeichert. Die gemeinsame Stufengrenze gilt für alle Einträge zusammen. ' if inventory_stage and derivation_fact_ids is None else '')
+-                              + (('inventory_choices ist ein Objekt mit genau den angeforderten ursprünglichen Namen als Schlüsseln. Für jeden Schlüssel genau eine vollständige NEW_<Geräteart>- oder EXISTING-Entscheidung liefern; Name und angebotene ID müssen zum jeweiligen Schlüssel gehören. Alle Schlüssel sind Pflicht; keine Identität doppelt verwenden. ' if _reference_inventory_batch_names(inventory_target) else 'Nur ein echtes Gerät oder eine vorhandene Gerätebindung für den angeforderten Quellenbefund/das Typmitglied liefern, keine zweite Platzhalterzeile. ') + 'source_fact_ids enthält ausschließlich diese eine FactID; source_member_bindings neuer Geräte ausschließlich das angeforderte wörtliche Mitglied. Bei vorhandenen Geräten setzt NIS die angeforderte Typbindung selbst. Funktional zusätzlich notwendige Hardware wird danach in einem eigenen Schritt geplant. ' if inventory_target else '')
++                              + ('Jeder inventory_choices-Eintrag beginnt mit choice_kind: EXISTING für eine vorhandene ID-Bindung, NEW_<Geräteart> für wirklich neue Hardware (z.B. NEW_SENSOR passend zu kind=SENSOR). Bei EXISTING danach ausschließlich device_id, source_fact_ids, rationale und field_references auswählen; niemals id/name/kind eines alten Geräts neu schreiben. NIS erhält sämtliche unveränderlichen Gerätedaten und ergänzt nur die Quellen-/Typ-/Referenzbindung. Bei NEW_<Geräteart> danach alle vom Schema angeforderten neuen Geräteentscheidungen liefern, niemals eine vorhandene ID. choice_kind wird nur intern geprüft und nicht als Modellfeld gespeichert. Die gemeinsame Stufengrenze gilt für alle Einträge zusammen. ' if inventory_stage and derivation_fact_ids is None else '')
++                              + (('inventory_choices ist ein Objekt mit genau den angeforderten ursprünglichen Namen als Schlüsseln. Für jeden Schlüssel genau eine vollständige NEW_<Geräteart>- oder EXISTING-Entscheidung gemäß Schema liefern. Festgelegte NEW-Identität, Name, Geräteart, Menge und Quellenbindung ergänzt NIS aus diesem angeforderten Platz; diese ausgeblendeten Felder nicht wiederholen. Offene owner_device_id, purpose, rationale und field_references selbst quellengebunden entscheiden. Alle Schlüssel sind Pflicht; keine Identität doppelt verwenden. ' if _reference_inventory_batch_names(inventory_target) else 'Nur ein echtes Gerät oder eine vorhandene Gerätebindung für den angeforderten Quellenbefund/das Typmitglied liefern, keine zweite Platzhalterzeile. ') + 'source_fact_ids enthält ausschließlich diese eine FactID; source_member_bindings neuer Geräte ausschließlich das angeforderte wörtliche Mitglied. Bei vorhandenen Geräten setzt NIS die angeforderte Typbindung selbst. Funktional zusätzlich notwendige Hardware wird danach in einem eigenen Schritt geplant. ' if inventory_target else '')
+                               + ('inventory_complete bewertet nur diesen deklarierten Quellenbereich. Bei vollständiger Abdeckung true; wenn er bereits abgedeckt ist, ist ein leeres Delta mit true zulässig. False verlangt eine echte weitere Instanz/Bindung dieses Bereichs. ' if inventory_target else '')
+                               + ('Prüfe jetzt die physische Hardware für die ausdrücklich angeforderten FUNCTION-/REQUIREMENT-FactIDs. Vollständige Quelle und sämtliche Nachbarfunktionen bleiben Konsistenzkontext; weitere Quellenbefunde werden in eigenen Hardwarestufen bearbeitet. Sensoren und Aktoren sind echte Teilnehmer, keine bloßen Werte im Controller. Vorhandene Geräte wiederverwenden oder fehlende Messquellen, Verarbeitung, Verbraucher und Aktoren ergänzen; unabhängige Messgrößen und Stellwirkungen berücksichtigen. Ports/Messgrößen/Befehle/Funktionen/Kommunikation folgen erst nach ALLEN Hardwarestufen und erzeugen KEINE Geräte mehr. Notwendige Peripherie dieses Quellenbereichs niemals in spätere IO-Schritte verschieben. source_fact_ids enthält nur passende angeforderte FUNCTION-/REQUIREMENT-FactIDs, jede höchstens einmal; keine neuen Bindungen an Quelleninventar. Alte Bindungen wiederverwendeter IDs bleiben serverseitig erhalten. Keine Originalmenge erhöhen oder Hardwarebelege/Defaults erfinden. Pro Antwort entweder höchstens ein wirklich neues Gerät ODER eine einzige EXISTING_BATCH-Auswahl. Deren bindings ist ein Knoten mit genau einer vorhandenen ID als Schlüssel. Sein Wert enthält source_fact_ids, rationale, field_references und following. following ist null oder der nächste solche Ein-ID-Knoten. Höchstens acht Knoten, jede ID nur einmal und in der Reihenfolge von existing_inventory_for_this_stage auswählen. Nach dem achten Knoten ist following zwingend null. Mehrere Quellenbelege derselben ID in derselben source_fact_ids-Liste bündeln; keine separaten EXISTING-Zeilen liefern. Niemals neue Hardware mit Bindungen mischen. Die Begründung jeweils in einem kurzen fachlichen Satz ohne Wiederholung des Auftrags formulieren. Mehrere passende Quellenbelege desselben Teilnehmers gemeinsam angeben. Nur tatsächlich benötigte Teilnehmer binden, nicht sämtliche Geräte mit sämtlichen Funktionen verbinden. Weiteren Hardwarebedarf mit inventory_complete=false für die normale nächste Antwort offenhalten; die Gesamtzahl notwendiger Geräte ist dadurch nicht begrenzt. inventory_complete bewertet ausschließlich den Bedarf der angeforderten FactIDs und wird erst true, wenn vorhandene plus ergänzte Hardware diesen vollständig abdeckt; ohne Ergänzungsbedarf inventory_choices=[] und true. False verlangt neue Geräte/Quellenbindungen. Unklare Fachentscheidungen konkret unresolved nennen. ' if derivation_fact_ids is not None else '')
+                               + ('port_parameters ist ein Objekt mit genau jedem angeforderten Port-ID-Schlüssel einmal. Pro Schlüssel ausschließlich parameters, eine kurze rationale und field_references ausgeben; ports bleibt []. NIS übernimmt id, device_id, technology, role und network_scope exakt aus der bereits geplanten Portabsicht. Keine andere Technologie für einen Schlüssel auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
+@@ -1789,6 +1850,7 @@
+                                existing_devices=current['devices'] if inventory_stage else ()),
+                             'think': False, 'stream': True, 'keep_alive': self.keep_alive,
+                            'options': {'temperature': 0, 'num_predict': 8192, 'num_ctx': self.context_tokens}}
++                payload['format'], inventory_codec = _reference_compact_inventory_schema(payload['format'])
+                 for attempt in range(2):
+                     try:
+                         payload['options']['num_ctx'] = _reference_context_window(payload['messages'], self.context_tokens)
+@@ -1869,7 +1931,7 @@
+                                 raise ValueError('Inventarstufe liefert Geräte ausschließlich über inventory_choices, nicht über devices.')
+                             decoded['devices'] = _reference_expand_inventory_choices(
+                                 current['devices'], decoded.pop('inventory_choices'),
+-                                inventory_target=inventory_target)
++                                inventory_target=inventory_target, inventory_codec=inventory_codec)
+                         if port_intent and 'port_intents' in decoded:
+                             if decoded.get('ports', []) != []:
+                                 raise ValueError('Neue native Portabsichten ausschließlich über port_intents liefern.')

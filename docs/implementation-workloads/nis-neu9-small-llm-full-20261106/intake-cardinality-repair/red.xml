@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="3" time="31.189" timestamp="2026-11-06T16:08:58.580193+01:00" hostname="Haranga"><testcase classname="tests.test_qwen_document_intake" name="test_document_decoder_cardinality_is_bounded_even_if_provider_ignores_max_properties[independent_optional_lines]" time="3.101"><failure message="AssertionError: assert 25 &lt;= 24&#10; +  where 25 = len({'R0001': {'additionalProperties': False, 'properties': {'kind': {'enum': ['CATEGORY'], 'type': 'string'}, 'role': {'e...type': 'string'}, 'quantity': {'type': 'null'}}, 'required': ['kind', 'role'], 'title': 'DocumentComponent', ...}, ...})">source_kind = 'independent_optional_lines'
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000020580519BA0&gt;
+
+    @pytest.mark.parametrize('source_kind', ['independent_optional_lines', 'complete_preserved_example'])
+    def test_document_decoder_cardinality_is_bounded_even_if_provider_ignores_max_properties(source_kind, monkeypatch):
+        from pathlib import Path
+        monkeypatch.setenv('LOCAL_AI_MODEL', 'llama3.1:8b')
+        source = ('\n'.join(f'Sensor: Messfuehler{i:02d}' for i in range(23))
+                  + '\nBeobachtung: Zusatz A\nBeobachtung: Zusatz B\n')
+        if source_kind == 'complete_preserved_example':
+            raw = (Path(__file__).resolve().parents[2] / 'frontend/e2e/fixtures/document-preview-example.txt').read_bytes()
+            assert hashlib.sha256(raw).hexdigest() == '32c864c91ac85c2884ef0c3c9e62456e6ade59cc2a22cae384bdfe5a2e2eff60'
+            source = raw.decode('utf-8')
+        observed = []
+        class PayloadCaptured(Exception):
+            pass
+        async def run():
+            reasoner = LocalEngineeringReasoner()
+            await reasoner.client.aclose()
+            def transport(request):
+                if request.url.path == '/api/show':
+                    return httpx.Response(200, json={'details': {'family': 'llama', 'format': 'gguf'},
+                        'model_info': {'general.parameter_count': 8030261312}, 'capabilities': ['completion', 'tools']})
+                payload = json.loads(request.content)
+                observed.append(payload)
+                components = payload['format']['properties']['components']
+                assert len(components['properties']) &lt;= components['maxProperties'] == 24
+                # Choosing every permitted key cannot overflow, even when a provider
+                # does not enforce the maxProperties keyword itself.
+                assert len(dict.fromkeys(components['properties'])) &lt;= 24
+                raise PayloadCaptured()
+            reasoner.client = httpx.AsyncClient(transport=httpx.MockTransport(transport))
+            try:
+                with pytest.raises(PayloadCaptured):
+                    await reasoner.interpret_document(source, 'bounded-complete-source.txt')
+            finally:
+                await reasoner.client.aclose()
+&gt;       asyncio.run(run())
+
+backend\tests\test_qwen_document_intake.py:1621: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:196: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:119: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\base_events.py:725: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+backend\tests\test_qwen_document_intake.py:1618: in run
+    await reasoner.interpret_document(source, 'bounded-complete-source.txt')
+backend\nis\agent\orchestration\local_reasoner.py:1408: in interpret_document
+    response = await self.client.post(self.chat_url, json=payload)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\httpx\_client.py:1859: in post
+    return await self.request(
+backend\.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+backend\.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+backend\.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\httpx\_transports\mock.py:34: in handle_async_request
+    response = self.handler(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+request = &lt;Request('POST', 'http://127.0.0.1:11434/api/chat')&gt;
+
+    def transport(request):
+        if request.url.path == '/api/show':
+            return httpx.Response(200, json={'details': {'family': 'llama', 'format': 'gguf'},
+                'model_info': {'general.parameter_count': 8030261312}, 'capabilities': ['completion', 'tools']})
+        payload = json.loads(request.content)
+        observed.append(payload)
+        components = payload['format']['properties']['components']
+&gt;       assert len(components['properties']) &lt;= components['maxProperties'] == 24
+E       AssertionError: assert 25 &lt;= 24
+E        +  where 25 = len({'R0001': {'additionalProperties': False, 'properties': {'kind': {'enum': ['CATEGORY'], 'type': 'string'}, 'role': {'e...type': 'string'}, 'quantity': {'type': 'null'}}, 'required': ['kind', 'role'], 'title': 'DocumentComponent', ...}, ...})
+
+backend\tests\test_qwen_document_intake.py:1610: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_document_decoder_cardinality_is_bounded_even_if_provider_ignores_max_properties[complete_preserved_example]" time="25.833"><failure message="AssertionError: assert 25 &lt;= 24&#10; +  where 25 = len({'R0001': {'additionalProperties': False, 'properties': {'kind': {'type': 'string', 'enum': ['CATEGORY', 'FUNCTION']},...'quantity': {'enum': [100], 'type': 'integer'}}, 'required': ['kind', 'role'], 'title': 'DocumentComponent', ...}, ...})">source_kind = 'complete_preserved_example'
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000020580519CD0&gt;
+
+    @pytest.mark.parametrize('source_kind', ['independent_optional_lines', 'complete_preserved_example'])
+    def test_document_decoder_cardinality_is_bounded_even_if_provider_ignores_max_properties(source_kind, monkeypatch):
+        from pathlib import Path
+        monkeypatch.setenv('LOCAL_AI_MODEL', 'llama3.1:8b')
+        source = ('\n'.join(f'Sensor: Messfuehler{i:02d}' for i in range(23))
+                  + '\nBeobachtung: Zusatz A\nBeobachtung: Zusatz B\n')
+        if source_kind == 'complete_preserved_example':
+            raw = (Path(__file__).resolve().parents[2] / 'frontend/e2e/fixtures/document-preview-example.txt').read_bytes()
+            assert hashlib.sha256(raw).hexdigest() == '32c864c91ac85c2884ef0c3c9e62456e6ade59cc2a22cae384bdfe5a2e2eff60'
+            source = raw.decode('utf-8')
+        observed = []
+        class PayloadCaptured(Exception):
+            pass
+        async def run():
+            reasoner = LocalEngineeringReasoner()
+            await reasoner.client.aclose()
+            def transport(request):
+                if request.url.path == '/api/show':
+                    return httpx.Response(200, json={'details': {'family': 'llama', 'format': 'gguf'},
+                        'model_info': {'general.parameter_count': 8030261312}, 'capabilities': ['completion', 'tools']})
+                payload = json.loads(request.content)
+                observed.append(payload)
+                components = payload['format']['properties']['components']
+                assert len(components['properties']) &lt;= components['maxProperties'] == 24
+                # Choosing every permitted key cannot overflow, even when a provider
+                # does not enforce the maxProperties keyword itself.
+                assert len(dict.fromkeys(components['properties'])) &lt;= 24
+                raise PayloadCaptured()
+            reasoner.client = httpx.AsyncClient(transport=httpx.MockTransport(transport))
+            try:
+                with pytest.raises(PayloadCaptured):
+                    await reasoner.interpret_document(source, 'bounded-complete-source.txt')
+            finally:
+                await reasoner.client.aclose()
+&gt;       asyncio.run(run())
+
+backend\tests\test_qwen_document_intake.py:1621: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:196: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:119: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\base_events.py:725: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+backend\tests\test_qwen_document_intake.py:1618: in run
+    await reasoner.interpret_document(source, 'bounded-complete-source.txt')
+backend\nis\agent\orchestration\local_reasoner.py:1408: in interpret_document
+    response = await self.client.post(self.chat_url, json=payload)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\httpx\_client.py:1859: in post
+    return await self.request(
+backend\.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+backend\.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+backend\.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\httpx\_transports\mock.py:34: in handle_async_request
+    response = self.handler(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+request = &lt;Request('POST', 'http://127.0.0.1:11434/api/chat')&gt;
+
+    def transport(request):
+        if request.url.path == '/api/show':
+            return httpx.Response(200, json={'details': {'family': 'llama', 'format': 'gguf'},
+                'model_info': {'general.parameter_count': 8030261312}, 'capabilities': ['completion', 'tools']})
+        payload = json.loads(request.content)
+        observed.append(payload)
+        components = payload['format']['properties']['components']
+&gt;       assert len(components['properties']) &lt;= components['maxProperties'] == 24
+E       AssertionError: assert 25 &lt;= 24
+E        +  where 25 = len({'R0001': {'additionalProperties': False, 'properties': {'kind': {'type': 'string', 'enum': ['CATEGORY', 'FUNCTION']},...'quantity': {'enum': [100], 'type': 'integer'}}, 'required': ['kind', 'role'], 'title': 'DocumentComponent', ...}, ...})
+
+backend\tests\test_qwen_document_intake.py:1610: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_terminal_invalid_document_answer_has_local_raw_response_and_hash_diagnostic" time="0.914"><failure message="assert 0 == 1&#10; +  where 0 = len([])">caplog = &lt;_pytest.logging.LogCaptureFixture object at 0x00000205848EE7B0&gt;
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x00000205FFACB410&gt;
+
+    def test_terminal_invalid_document_answer_has_local_raw_response_and_hash_diagnostic(caplog, monkeypatch):
+        monkeypatch.setenv('LOCAL_AI_MODEL', 'llama3.1:8b')
+        invalid = json.dumps({'components': {'NO_SUCH_SOURCE': {'kind': 'INSTANCE', 'role': 'CONTROLLER', 'quantity': 1}},
+                              'technologies': {}, 'summary': 'Untrusted counterprobe', 'proposed_task': 'Do not adopt',
+                              'assumptions': [], 'open_questions': []})
+        async def run():
+            reasoner = LocalEngineeringReasoner()
+            await reasoner.client.aclose()
+            def transport(request):
+                if request.url.path == '/api/show':
+                    return httpx.Response(200, json={'details': {'family': 'llama', 'format': 'gguf'},
+                        'model_info': {'general.parameter_count': 8030261312}, 'capabilities': ['completion', 'tools']})
+                return httpx.Response(200, json={'message': {'content': invalid}, 'done_reason': 'stop',
+                                               'eval_count': 73, 'prompt_eval_count': 121})
+            reasoner.client = httpx.AsyncClient(transport=httpx.MockTransport(transport))
+            try:
+                with pytest.raises(ValueError, match='nicht quellenkonform'):
+                    await reasoner.interpret_document(SOURCE, 'invalid-counterprobe.txt')
+            finally:
+                await reasoner.client.aclose()
+        asyncio.run(run())
+        diagnostics = [row.message for row in caplog.records if row.message.startswith('Native document validation failed: ')]
+&gt;       assert len(diagnostics) == 1
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+backend\tests\test_qwen_document_intake.py:1653: AssertionError</failure></testcase></testsuite></testsuites>

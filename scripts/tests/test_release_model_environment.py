@@ -41,6 +41,17 @@ def test_absent_model_overrides_preserve_existing_image_defaults(monkeypatch):
     assert helper() == {} and gate.local_ai_model_arguments(helper()) == []
 
 
+def test_explicit_read_only_tokenizer_endpoint_reaches_same_retained_stack(monkeypatch):
+    gate = load('model_gate_tokenizer', 'scripts/run-release-gate.py')
+    monkeypatch.delenv('LOCAL_AI_MODEL', raising=False)
+    monkeypatch.delenv('LOCAL_AI_FAST_MODEL', raising=False)
+    endpoint = 'http://host.docker.internal:13503/tokenize-chat'
+    monkeypatch.setenv('NIS_LOCAL_TOKENIZER_URL', endpoint)
+    environment = gate.local_ai_model_environment()
+    assert environment == {'NIS_LOCAL_TOKENIZER_URL': endpoint}
+    assert gate.local_ai_model_arguments(environment) == ['-e', 'NIS_LOCAL_TOKENIZER_URL=' + endpoint]
+
+
 @pytest.mark.parametrize('actual,allow', [('llama3.1:8b', False), ('qwen3.8:27b', True)])
 def test_retained_stack_reuse_checks_actual_configured_model_environment(actual, allow):
     delivery = load('model_delivery', 'scripts/release-and-deploy.py')

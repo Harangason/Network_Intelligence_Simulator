@@ -1,0 +1,100 @@
+{
+  "goal_id": "nis-loop-diagnosis-20261105",
+  "goal_type": "repair",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "project_scope": "NIS reference planning retries",
+  "requested_change": "Prevent a profile repair from retaining stale downstream stage outputs and overflowing the complete source context. Preserve validation and original evidence.",
+  "kind": "repair",
+  "modify_code": true,
+  "allow_repair": true,
+  "required_outcomes": [
+    "diagnose_current_process",
+    "remove_stale_profile_retry_context",
+    "verify_regression",
+    "production_delivery"
+  ],
+  "validation_requirements": [
+    "regression",
+    "complete_release_gate",
+    "running_image_and_health"
+  ],
+  "revision_before": {
+    "backend/nis/agent/orchestration/local_reasoner.py": "f37b595d9fa8dcd5735ce4c228391da043ee9c23871a0acd9714a037cc80bfec",
+    "backend/tests/test_reference_reasoner.py": "e710ae52dcf5cd462166701a44eeb88da604adc66d475b8742add6fdcc21deba"
+  },
+  "files_inspected": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_reasoner.py"
+  ],
+  "repair": {
+    "root_cause": "plan_profile resets compiled devices and history before a profile retry, but clears prior ports/functions/commands/measurements/dependencies only after all inventory calls. Last actual run rebuilt inventory at call 53 with downstream state from its first 52 calls and overflowed at call 65.",
+    "owner": "PROJECT_PRODUCT",
+    "first_failing_layer": "local_reasoner.plan_profile state transition",
+    "reproduction": "Actual unchanged full original vehicle run: 64 validated calls then INVALID_INPUT context guard. Existing test_reference_profile_replan_discards_stale_downstream_stage_outputs covers this transition.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-loop-diagnosis-20261105\\diagnosis.json",
+        "sha256": "96970cbb75eeb446375ea8458aa33ae3a4260519ade45658e5df6b1071e04001"
+      }
+    ],
+    "weaken_assertions_to_pass": false,
+    "affected_files": [
+      "backend/nis/agent/orchestration/local_reasoner.py",
+      "backend/tests/test_reference_reasoner.py"
+    ],
+    "acceptance_criteria": [
+      "A retry enters its first inventory call with only newly compiled devices and empty downstream fields.",
+      "Original source and reference source content remain exact.",
+      "Canonical write/review controls remain unchanged."
+    ],
+    "targeted_tests": [
+      "backend/tests/test_reference_reasoner.py::test_reference_profile_replan_discards_stale_downstream_stage_outputs"
+    ]
+  },
+  "implementation_plan": [
+    "Clear every prior-stage output before compiling a new profile attempt.",
+    "Keep original source, references, review protection and final validator unchanged.",
+    "Reuse the other active chat regression fixture without modifying its test.",
+    "Bundle with the existing delivery work; no second candidate or native run.",
+    "Inject an invalid actual sender-port binding in the regression. Omitting all communication does not itself force this validator to retry and would not exercise the repaired transition."
+  ],
+  "completion_status": "VALIDATING",
+  "remaining_findings": [
+    "Current 27B model has only 6/66 GPU layers on 8GiB; under-10-minute original acceptance is not established.",
+    "Repeated full-profile repair still needs explicit stage ownership or a terminal diagnostic; no silent long reruns."
+  ],
+  "delivery": {
+    "decision": "YES",
+    "authorization": "AGENTS.md standing verified production delivery",
+    "target": "canonical NetworkIS stack",
+    "checks": {}
+  },
+  "files_changed": [
+    "backend/nis/agent/orchestration/local_reasoner.py"
+  ],
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-loop-diagnosis-20261105\\before\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "ff083f527d948cf7bee28da5138c5af79433b6ac0a7b0b2e116c04a07e64215c"
+    }
+  ],
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-loop-diagnosis-20261105\\after\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "f37b595d9fa8dcd5735ce4c228391da043ee9c23871a0acd9714a037cc80bfec"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-loop-diagnosis-20261105\\repair.diff",
+      "sha256": "647084eaeddd701e516f64f4e10f73ea5644efc2dc25290093c9fc57672a4690"
+    }
+  ],
+  "tests": {
+    "status": "PENDING_RESOURCE_WINDOW_END"
+  },
+  "validation": {
+    "syntax": "PASSED",
+    "runtime_regression": "PENDING"
+  }
+}

@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="5" time="2.725" timestamp="2026-11-05T06:22:06.715097+01:00" hostname="Haranga"><testcase classname="tests.test_reference_reasoner" name="test_reference_profile_replan_discards_stale_downstream_stage_outputs" time="0.130"><failure message="ModuleNotFoundError: No module named 'psycopg'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000013E5594A190&gt;
+
+    def test_reference_profile_replan_discards_stale_downstream_stage_outputs(monkeypatch):
+&gt;       instance, prepared, observed = reasoner_with_transport(monkeypatch)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_reasoner.py:1330: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_reasoner.py:116: in reasoner_with_transport
+    prepared = intake.prepare_reference_design(request or fixture_request())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\project_intake.py:1416: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:4: in &lt;module&gt;
+    from backend.nis.knowledge.semantic_vocabulary import engineering_phrase_match
+backend\nis\knowledge\__init__.py:16: in &lt;module&gt;
+    from backend.nis.knowledge.sources import PostgresSourceAdapter
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Provider-neutral source adapters and staging for engineering knowledge."""
+    
+    from __future__ import annotations
+    
+    from abc import ABC, abstractmethod
+    from collections import defaultdict
+    from dataclasses import dataclass, field
+    import csv
+    import io
+    import json
+    from pathlib import Path
+    import re
+    import sqlite3
+    import tempfile
+    from typing import Any, Iterable
+    from urllib.parse import urlparse
+    from urllib.request import Request, urlopen
+    import xml.etree.ElementTree as ET
+    
+&gt;   import psycopg
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\knowledge\sources.py:20: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_reasoner" name="test_full_profile_repair_reuses_bounded_phases_and_complete_source" time="0.029"><failure message="ModuleNotFoundError: No module named 'psycopg'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000013E55505810&gt;
+
+    def test_full_profile_repair_reuses_bounded_phases_and_complete_source(monkeypatch):
+        original = intake.validate_reference_design_profile
+        checks = []
+        def require_repair(value, prepared, profile):
+            checks.append(deepcopy(value))
+            if len(checks) == 1:
+                raise ValueError('Unit finding requires another complete native profile review')
+            return original(value, prepared, profile)
+        monkeypatch.setattr(intake, 'validate_reference_design_profile', require_repair)
+&gt;       reasoner, prepared, observed = reasoner_with_transport(monkeypatch)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_reasoner.py:577: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_reasoner.py:116: in reasoner_with_transport
+    prepared = intake.prepare_reference_design(request or fixture_request())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\project_intake.py:1416: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_reasoner" name="test_local_request_ids_are_remapped_with_actual_communication_ids" time="0.006"><failure message="ModuleNotFoundError: No module named 'psycopg'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000013E558CAC30&gt;
+
+    def test_local_request_ids_are_remapped_with_actual_communication_ids(monkeypatch):
+&gt;       reasoner, prepared, observed = reasoner_with_transport(monkeypatch)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_reasoner.py:328: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_reasoner.py:116: in reasoner_with_transport
+    prepared = intake.prepare_reference_design(request or fixture_request())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\project_intake.py:1416: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_reasoner" name="test_reference_history_rebase_keeps_full_current_sources_and_catalogs" time="0.032"><failure message="ModuleNotFoundError: No module named 'jsonschema'">def test_reference_history_rebase_keeps_full_current_sources_and_catalogs():
+        from backend.nis.agent.orchestration.local_reasoner import _reference_context_messages
+        current = {'original_source': 'Quelle vollständig µ', 'registered_catalogs': {'all': [1, 2]},
+                   'current_candidate': {'devices': [{'id': 'C'}]}}
+        history = [{'role': 'system', 'content': 'system'}, {'role': 'user', 'content': 'x' * 120000},
+                   {'role': 'assistant', 'content': 'y' * 10000}]
+        messages, full, rebased = _reference_context_messages(history, {}, current, 'system', 131072)
+        assert rebased and messages == full
+&gt;       assert effective_reference_context(messages) == current
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_reasoner.py:1265: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_reasoner.py:58: in effective_reference_context
+    from backend.tests.test_reference_planning_throughput import unpack_context_message
+.venv\Lib\site-packages\_pytest\assertion\rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Independent private-wire checks; no original-model or native acceptance claim."""
+    import asyncio
+    from copy import deepcopy
+    import json
+    
+    import httpx
+    import pytest
+&gt;   from jsonschema import Draft202012Validator, ValidationError
+E   ModuleNotFoundError: No module named 'jsonschema'
+
+backend\tests\test_reference_planning_throughput.py:8: ModuleNotFoundError</failure></testcase><testcase classname="" name="test_preserved_before_source_exposes_stale_downstream_state" time="0.057"><failure message="ModuleNotFoundError: No module named 'psycopg'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000013E554D7240&gt;
+
+    def test_preserved_before_source_exposes_stale_downstream_state(monkeypatch):
+        path = Path(__file__).parent / "before/backend/nis/agent/orchestration/local_reasoner.py"
+        before = ModuleType("nis_retry_before_counterprobe")
+        before.__file__ = str(path)
+        exec(compile(path.read_text(encoding="utf-8"), str(path), "exec"), before.__dict__)
+        monkeypatch.setattr(regression.LocalEngineeringReasoner, "plan_reference_design",
+                            before.LocalEngineeringReasoner.plan_reference_design)
+        with pytest.raises(AssertionError) as caught:
+&gt;           regression.test_reference_profile_replan_discards_stale_downstream_stage_outputs(monkeypatch)
+
+docs\implementation-workloads\nis-loop-diagnosis-20261105\test_before_source_counterprobe.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_reasoner.py:1330: in test_reference_profile_replan_discards_stale_downstream_stage_outputs
+    instance, prepared, observed = reasoner_with_transport(monkeypatch)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\tests\test_reference_reasoner.py:116: in reasoner_with_transport
+    prepared = intake.prepare_reference_design(request or fixture_request())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\project_intake.py:1416: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase></testsuite></testsuites>

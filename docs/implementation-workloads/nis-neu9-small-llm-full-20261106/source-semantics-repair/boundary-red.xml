@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="6" time="1.323" timestamp="2026-11-06T17:38:48.891124+01:00" hostname="Haranga"><testcase classname="tests.test_qwen_document_intake" name="test_explicitly_additional_inventory_is_not_a_repeated_scope_assertion[Es gibt weitere 3 Sensoren.]" time="0.023"><failure message="assert 3 == 6&#10; +  where 3 = sum(&lt;generator object test_explicitly_additional_inventory_is_not_a_repeated_scope_assertion.&lt;locals&gt;.&lt;genexpr&gt; at 0x000002284D29A810&gt;)">declaration = 'Es gibt weitere 3 Sensoren.'
+
+    @pytest.mark.parametrize('declaration', ['Es gibt weitere 3 Sensoren.', 'There are another 3 sensors.'])
+    def test_explicitly_additional_inventory_is_not_a_repeated_scope_assertion(declaration):
+        from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+        source = '# Gebäude\n## Systemumfang\n3 Sensoren\n' + declaration
+        units = document_component_sources(document_source_references(source))
+&gt;       assert sum(unit['policy']['quantity'] for unit in units if unit['policy'] and unit['policy']['kind'] == 'INSTANCE') == 6
+E       assert 3 == 6
+E        +  where 3 = sum(&lt;generator object test_explicitly_additional_inventory_is_not_a_repeated_scope_assertion.&lt;locals&gt;.&lt;genexpr&gt; at 0x000002284D29A810&gt;)
+
+backend\tests\test_qwen_document_intake.py:1820: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_explicitly_additional_inventory_is_not_a_repeated_scope_assertion[There are another 3 sensors.]" time="0.002"><failure message="assert 3 == 6&#10; +  where 3 = sum(&lt;generator object test_explicitly_additional_inventory_is_not_a_repeated_scope_assertion.&lt;locals&gt;.&lt;genexpr&gt; at 0x000002284C958A00&gt;)">declaration = 'There are another 3 sensors.'
+
+    @pytest.mark.parametrize('declaration', ['Es gibt weitere 3 Sensoren.', 'There are another 3 sensors.'])
+    def test_explicitly_additional_inventory_is_not_a_repeated_scope_assertion(declaration):
+        from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+        source = '# Gebäude\n## Systemumfang\n3 Sensoren\n' + declaration
+        units = document_component_sources(document_source_references(source))
+&gt;       assert sum(unit['policy']['quantity'] for unit in units if unit['policy'] and unit['policy']['kind'] == 'INSTANCE') == 6
+E       assert 3 == 6
+E        +  where 3 = sum(&lt;generator object test_explicitly_additional_inventory_is_not_a_repeated_scope_assertion.&lt;locals&gt;.&lt;genexpr&gt; at 0x000002284C958A00&gt;)
+
+backend\tests\test_qwen_document_intake.py:1820: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_registered_transport_quantity_is_not_an_outline_heading[25 LIN]" time="0.001"><failure message="AssertionError: assert True is False&#10; +  where True = &lt;function _document_context_heading at 0x000002284D2CCB80&gt;('25 LIN')">row = '25 LIN'
+
+    @pytest.mark.parametrize('row', ['25 LIN', '10 CAN-FD', '5 Automotive Ethernet'])
+    def test_registered_transport_quantity_is_not_an_outline_heading(row):
+        from backend.nis.agent.orchestration.project_intake import _document_context_heading, document_source_contexts
+&gt;       assert _document_context_heading(row) is False
+E       AssertionError: assert True is False
+E        +  where True = &lt;function _document_context_heading at 0x000002284D2CCB80&gt;('25 LIN')
+
+backend\tests\test_qwen_document_intake.py:1827: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_registered_transport_quantity_is_not_an_outline_heading[10 CAN-FD]" time="0.001"><failure message="AssertionError: assert True is False&#10; +  where True = &lt;function _document_context_heading at 0x000002284D2CCB80&gt;('10 CAN-FD')">row = '10 CAN-FD'
+
+    @pytest.mark.parametrize('row', ['25 LIN', '10 CAN-FD', '5 Automotive Ethernet'])
+    def test_registered_transport_quantity_is_not_an_outline_heading(row):
+        from backend.nis.agent.orchestration.project_intake import _document_context_heading, document_source_contexts
+&gt;       assert _document_context_heading(row) is False
+E       AssertionError: assert True is False
+E        +  where True = &lt;function _document_context_heading at 0x000002284D2CCB80&gt;('10 CAN-FD')
+
+backend\tests\test_qwen_document_intake.py:1827: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_registered_transport_quantity_is_not_an_outline_heading[5 Automotive Ethernet]" time="0.001"><failure message="AssertionError: assert True is False&#10; +  where True = &lt;function _document_context_heading at 0x000002284D2CCB80&gt;('5 Automotive Ethernet')">row = '5 Automotive Ethernet'
+
+    @pytest.mark.parametrize('row', ['25 LIN', '10 CAN-FD', '5 Automotive Ethernet'])
+    def test_registered_transport_quantity_is_not_an_outline_heading(row):
+        from backend.nis.agent.orchestration.project_intake import _document_context_heading, document_source_contexts
+&gt;       assert _document_context_heading(row) is False
+E       AssertionError: assert True is False
+E        +  where True = &lt;function _document_context_heading at 0x000002284D2CCB80&gt;('5 Automotive Ethernet')
+
+backend\tests\test_qwen_document_intake.py:1827: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_generic_device_heading_is_retained_in_owner_scope" time="0.001"><failure message="AssertionError: assert ['Roboterzelle'] == ['Roboterzell...ales Gateway']&#10;  &#10;  Right contains one more item: 'Zentrales Gateway'&#10;  Use -v to get more diff">def test_generic_device_heading_is_retained_in_owner_scope():
+        from backend.nis.agent.orchestration.project_intake import document_source_scope
+&gt;       assert document_source_scope(['Roboterzelle', 'Zentrales Gateway']) == ['Roboterzelle', 'Zentrales Gateway']
+E       AssertionError: assert ['Roboterzelle'] == ['Roboterzell...ales Gateway']
+E         
+E         Right contains one more item: 'Zentrales Gateway'
+E         Use -v to get more diff
+
+backend\tests\test_qwen_document_intake.py:1833: AssertionError</failure></testcase></testsuite></testsuites>

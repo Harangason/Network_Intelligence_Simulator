@@ -1,0 +1,147 @@
+{
+  "goal_id": "finite-source-inventory-closure",
+  "kind": "repair",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "modify_code": true,
+  "allow_repair": true,
+  "status": "LOCAL_AND_NATIVE_PASS_ORIGINAL_PENDING",
+  "required_outcomes": [
+    "closed_instance_decoder",
+    "open_scope_preserved",
+    "native_small_model_closure"
+  ],
+  "validation_requirements": [
+    "red_green",
+    "targeted_regression",
+    "native_response"
+  ],
+  "outcomes": {},
+  "validations": {},
+  "unresolved_decisions": [],
+  "files_changed": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_inventory_closure.py",
+    "docs/implementation-workloads/nis-neu9-small-llm-full-20261106/inventory-closure-repair/probe_native_closure.py",
+    "docs/implementation-workloads/nis-neu9-small-llm-full-20261106/freeze_repair.py"
+  ],
+  "revision_before": {
+    "backend/nis/agent/orchestration/local_reasoner.py": "0895d1b9568162cfffe6ba91c65ef3bbf8c59a7ae24d178fedae54b7aeb7e3db",
+    "backend/tests/test_reference_inventory_closure.py": "09f0e7241fe58040e19b993e2d12828e64a3b5e0c86e245a601fb5b4e211344d",
+    "docs/implementation-workloads/nis-neu9-small-llm-full-20261106/inventory-closure-repair/probe_native_closure.py": "bb93308abb5a70b28e4ca7366fdf4f947edc9d8d0a15b54bf8c2ce0ef2d83450",
+    "docs/implementation-workloads/nis-neu9-small-llm-full-20261106/freeze_repair.py": "7a823ad0e934757d83fdb2c677e284bd6d415a8dd53e99a58af90092370678ec"
+  },
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\inventory-closure-repair\\before\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "8a51940f09c588fd9bd09b4adc8f6795dc9d06424ba05e8613c43eb6c76e9367"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\inventory-closure-repair\\before\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\freeze_repair.py",
+      "sha256": "a097b01cc875acf66feff044890a024f82f76edc6586a39479b538783a720469"
+    }
+  ],
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "finding_ids": [
+      "7711-finite-inventory-redeclares-covered-name"
+    ],
+    "root_cause": "After exact INSTANCE quantity and all original names have been bound, native grammar still allows NEW rows and incomplete continuation; prompt still asks for one row. Actual terminal attempts repeat the first already covered sensor under a fresh ID. Public uniqueness validation correctly rejects both.",
+    "first_failing_layer": "Private native source-inventory closure schema and stage instruction",
+    "reproduction": "Normal original 7711: 100 of 100 sensor identities, then names=[],minimum_rows=0,max_rows=1; two NEW_SENSOR answers repeat first name. Independent unit closure counter will demonstrate schema acceptance before repair.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\attempt-11\\terminal-7711-verified\\manifest.json",
+        "sha256": "8292d376764fe1cb30e33293410d099a9211f11855a68196c94be2008dbdaf56"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\attempt-11\\terminal-7711-verified\\backend.log",
+        "sha256": "0d4ecac3088a119d29c588c8de4d1d909ddd4540149adcbd3afa4a444336e96f"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\attempt-11\\terminal-7711-verified\\events.ndjson",
+        "sha256": "c50d6646c7b22581ca239af38d134d1f216a0a9731977a89060090ec70079933"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\provider-20261107T103402Z.json",
+        "sha256": "6d41428be44584576d855df53b0a6a050b63f49daaaca8daa1325b29c107d120"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\inventory-closure-repair\\red.xml",
+        "sha256": "64b12c4a7aa06faf8bdf7c79f88f79defebf64d2ad65b901061230a0f076bcf4"
+      }
+    ],
+    "required_fix": "Narrow only verified complete finite INSTANCE selection to inventory_choices=[] and inventory_complete=true, retain unresolved. Verify actual exact quantity, unique identities/names, all original names and source/member coverage. Preserve CATEGORY and functional-hardware continuation, public validators and normal review. Match closure instruction to schema.",
+    "affected_files": [
+      "backend/nis/agent/orchestration/local_reasoner.py",
+      "backend/tests/test_reference_inventory_closure.py"
+    ],
+    "affected_services": [
+      "Native reference schema",
+      "Native reference prompt"
+    ],
+    "targeted_tests": [
+      "backend/tests/test_reference_inventory_closure.py"
+    ],
+    "regression_scope": [
+      "test_reference_reasoner.py",
+      "test_reference_inventory_batch.py",
+      "test_reference_inventory_codec.py",
+      "test_reference_inventory_field_scope.py",
+      "test_reference_binding_schema_capacity.py"
+    ],
+    "weaken_assertions_to_pass": false,
+    "acceptance_criteria": [
+      "Complete exact source instances reject any extra NEW/EXISTING row and false completion in native schema",
+      "Unresolved remains representable; known IDs, names, quantities, source bindings unchanged",
+      "Incomplete names/count/member coverage and CATEGORY/derivation remain open",
+      "Existing identity/quantity/public validation gates unchanged",
+      "Actual small-Qwen response closes authored complete group without redeclaration"
+    ]
+  },
+  "tests": [
+    {
+      "session": 60456,
+      "exit_code": 1,
+      "result": "RED: schema accepted duplicate original name after exact quantity covered",
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\inventory-closure-repair\\red.xml",
+      "sha256": "64b12c4a7aa06faf8bdf7c79f88f79defebf64d2ad65b901061230a0f076bcf4"
+    },
+    {
+      "session": 16929,
+      "exit_code": 0,
+      "result": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "195",
+        "time": "721.111",
+        "timestamp": "2026-11-07T11:39:02.305794+01:00",
+        "hostname": "Haranga"
+      },
+      "evidence": {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\inventory-closure-repair\\green-regression.xml",
+        "sha256": "e96907f8dc31feadbf79e54aa1c25c688624308419186938ee59a766ef14b40e"
+      }
+    },
+    {
+      "scope": "Native counter host setup",
+      "exit_code": 1,
+      "result": "KeyError planning_stage before request creation; zero inference requests; native-counter folder preserved"
+    },
+    {
+      "session": 33807,
+      "exit_code": 0,
+      "model": "qwen3.5:9b",
+      "actual_requests": 2,
+      "status": "PASS",
+      "evidence": {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\inventory-closure-repair\\native-counter-02\\result.json",
+        "sha256": "9338a13c2de5380504ae35a8fd191ac01842a04388d841162b7f46845ac19aae"
+      }
+    }
+  ],
+  "remaining_findings": [
+    "Fresh whole neu9 and full release/production still pending"
+  ]
+}

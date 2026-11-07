@@ -124,6 +124,7 @@ if args.context_delta:
     inherited_values = ['authored-base-' + secrets.token_hex(12), 'authored-late-' + secrets.token_hex(12)]
     for index, row in enumerate(context['current_candidate']['ports']):
         row['parameters']['inherited_value'] = inherited_values[index >= 16]
+        row['parameters']['escaped/source~tag'] = inherited_values[index >= 16]
     for index, channel in selected_channels.items():
         context['current_candidate']['ports'][index]['parameters']['local_channel_index'] = channel
     context['current_candidate']['ports'][31]['parameters']['address_binding'] = selected_address
@@ -137,7 +138,9 @@ if args.context_delta:
         'last_typed_values from ports[31].parameters[the empty-string key]; '
         'first_inherited_value and last_inherited_value from ports[0] and ports[31] '
         'parameters.inherited_value, tracing their actual copy bases and later replacements; '
-        'last_zero_literal is the original JSON numeric spelling as a STRING for ports[31].parameters["a/b~c"]; '
+        'first_zero_literal and last_zero_literal are the exact original JSON numeric spellings as STRINGS '
+        'for ports[0] and ports[31] parameters["a/b~c"]; '
+        'last_escaped_value is ports[31].parameters["escaped/source~tag"], including the actual escaped-path replacements; '
         'source_role from reference_sources.R.role. Do not infer another ordinal, use actual reconstructed fields. /no_think')
     messages, _, _ = _reference_context_messages([], None, context,
         'Read the complete private context faithfully and answer the exact authored read-only query.', 131072)
@@ -147,12 +150,14 @@ if args.context_delta:
                 'middle_channel': selected_channels[17], 'last_channel': selected_channels[31],
                 'last_address': selected_address, 'last_typed_values': selected_typed_values,
                 'first_inherited_value': inherited_values[0], 'last_inherited_value': inherited_values[1],
-                'last_zero_literal': '-0.0', 'source_role': 'REFERENCE_SUPPLEMENT'}
+                'first_zero_literal': '0.0', 'last_zero_literal': '-0.0',
+                'last_escaped_value': inherited_values[1], 'source_role': 'REFERENCE_SUPPLEMENT'}
     schema = {'type': 'object', 'properties': {
         **{key: {'type': 'integer'} for key in ('ports_count', 'devices_count', 'first_channel',
                                                'middle_channel', 'last_channel')},
         **{key: {'type': 'string'} for key in ('last_address', 'last_zero_literal', 'source_role',
-                                              'first_inherited_value', 'last_inherited_value')},
+                                              'first_inherited_value', 'last_inherited_value',
+                                              'first_zero_literal', 'last_escaped_value')},
         'last_typed_values': {'type': 'array', 'items': {'anyOf': [
             {'type': 'integer'}, {'type': 'boolean'}, {'type': 'null'}]}}},
         'required': list(expected), 'additionalProperties': False}

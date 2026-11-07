@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="16.536" timestamp="2026-11-04T22:04:09.157928+01:00" hostname="Haranga"><testcase classname="tests.test_reference_reasoner" name="test_reference_retry_uses_full_context_and_exact_error_when_raw_reply_would_overflow" time="15.131"><failure message="ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.">stage = 'Parameter der ausgewählten Anschlüsse', allowed = {'ports'}
+producer_ids = (), feedback = None
+port_ids = ('port-fc1a063e8133f1f74fd3cfb9-1', 'port-9efac74c2fd7aee5d9481f33-1', 'port-f7d303d33ef2e60738b9f79a-1')
+function_ids = (), port_intent = False, port_groups = False, device_ids = ()
+inventory_target = None, derivation_fact_ids = None
+
+    async def infer(stage, allowed, producer_ids=(), feedback=None, *, port_ids=(), function_ids=(), port_intent=False, port_groups=False, device_ids=(), inventory_target=None, derivation_fact_ids=None):
+        nonlocal reference_messages, reference_prompt, reference_anchor, reference_anchors
+        inventory_stage = inventory_target is not None or derivation_fact_ids is not None
+        if device_ids:
+            kinds = {'ports': {'CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR'},
+                     'measurements': {'SENSOR'}, 'commands': {'ACTUATOR'}}
+            owners = {row['id']: row['kind'] for row in current['devices']}
+            if (not 1 &lt;= len(device_ids) &lt;= 4 or len(device_ids) != len(set(device_ids))
+                    or not allowed &lt;= kinds.keys()
+                    or any(owners.get(key) not in kinds[field] for key in device_ids for field in allowed)):
+                raise ValueError('Die IO-Stufe benötigt höchstens vier eindeutige bestehende Teilnehmer passender Geräteart.')
+        stage_catalog = deepcopy(catalog)
+        if port_ids:
+            stage_catalog['technology_parameters'] = technology_schemas_for(
+                row['technology'] for row in current['ports'] if row['id'] in port_ids)
+        stage_candidate = {field: rows for field, rows in current.items() if field != 'communication'}
+        if allowed == {'communication'}:
+            # Later senders need the structured decisions and their source
+            # bindings. The earlier justifications stay on the full draft
+            # for review and validation without consuming this stage's budget.
+            stage_candidate = {field: [{key: value for key, value in row.items() if key != 'rationale'}
+                                       for row in rows] for field, rows in stage_candidate.items()}
+        prompt = {**content, 'current_candidate': stage_candidate,
+                  'registered_catalogs': stage_catalog,
+                  'known_communication': [
+                      {key: row.get(key) for key in ('id', 'producer_device_id', 'consumer_device_ids', 'scope', 'source_port_id', 'consumer_port_ids', 'transmission_mode', 'request_source', 'request_communication_id', 'cycle_ms', 'min_interval_ms')}
+                      for row in current['communication']],
+                  'validation_feedback': feedback, 'planning_stage': stage,
+                  'producer_device_ids_for_this_stage': list(producer_ids),
+                  'port_ids_for_this_stage': list(port_ids),
+                  'device_ids_for_this_stage': list(device_ids),
+                  'function_fact_ids_for_this_stage': list(function_ids),
+                  'inventory_target_for_this_stage': inventory_target,
+                  'derivation_fact_ids_for_this_stage': list(derivation_fact_ids) if derivation_fact_ids is not None else None,
+                  'output_fields_for_this_stage': list(allowed),
+                  'existing_inventory_for_this_stage': [
+                      {key: row[key] for key in ('id', 'name', 'kind')}
+                      for row in current['devices']] if inventory_stage else None,
+                  'instruction': ('Nur die genannten Outputfelder füllen; alle anderen Modellarrays leer. Echte offene Entscheidungen dürfen immer in unresolved stehen. '
+                      + ('Inventarstufen liefern inventory_choices und inventory_complete; devices und alle anderen Modelllisten bleiben leer, echte Rückfragen bleiben in unresolved zulässig. inventory_choices enthält gemeinsam neue Geräte ODER Bindungen an vorhandene Geräte. existing_inventory_for_this_stage zeigt den tatsächlichen aktuellen Bestand einschließlich vorhandener Sensoren und Aktoren. Diese bleiben auch bei anderen Quellenbefunden physisch vorhanden; niemals unter NEW erneut definieren. Bereits vollständig gebundene Teilnehmer nicht wiederholen. Die Hardwareentscheidung knapp begründen. inventory_complete bewertet ausschließlich den Bedarf der aktuell ausgewählten Quellenbefunde; spätere Hardware-, IO-, Funktions- oder Kommunikationsstufen machen diese Auswahl nicht unvollständig. Diese späteren Stufen werden unabhängig vollständig ausgeführt und sind keine offenen Fachentscheidungen in unresolved. ' if inventory_stage else '')
+                      + 'Nur den ausdrücklich ausgewählten Stufenbereich vollständig liefern; vorhandene eindeutige IDs erhalten. '
+                      'Jede Auswahl in rationale mit einem kurzen fachlichen Satz und höchstens 240 Zeichen begründen; '
+                      'Quellenbindungen und technische Entscheidungen vollständig in ihren eigenen Feldern erhalten. '
+                      'Echte offene Auslegung explizit unresolved halten. '
+                      + ('Zunächst ausschließlich konkrete Portabsicht über port_intents statt ports planen: Teilnehmer und alle technischen Felder vollständig wählen, aber keine id vorgeben. Je Antwort höchstens EINEN noch fehlenden physischen Anschluss planen. Vorhandene Anschlüsse in current_candidate.ports erhalten; weitere notwendige Anschlüsse mit port_intents_complete=false für die normale nächste Antwort offenhalten. port_intents_complete bewertet alle ausgewählten Teilnehmer und ist erst true, wenn sämtliche benötigten Anschlüsse geplant sind. Leeres port_intents ist nur mit true zulässig. Die Gesamtzahl benötigter Anschlüsse ist durch diese Antwortaufteilung nicht begrenzt. Keine bereits geplanten Anschlüsse erneut deklarieren; technisch identische parallele Anschlüsse nur bei tatsächlich weiterem physischem Bedarf. Die Begründung kurz und fachlich konkret formulieren. NIS vergibt anschließend eindeutige neue Port-IDs; bestehende Ports bleiben unverändert. parameters bleibt {}. Die folgende eigene Parameterstufe legt jeden Anschluss aus; diese Zwischenstufe ist keine vollständige Prüfung. ' if port_intent else '')
+                      + ('Jetzt EINEN vollständigen physischen Anschlussbedarf für ALLE ausgewählten Teilnehmer '
+                         'über port_groups_by_device liefern; ports und alle anderen Modelllisten bleiben leer. '
+                         'Jeder vorgegebene Teilnehmer-ID-Schlüssel hat connections und eine kurze rationale. '
+                         'connections gruppiert nur vollständig gleiche technische Anschlussentscheidungen: '
+                         'technology, role, network_scope, leere parameters, rationale, field_references und count '
+                         'als ausdrücklich gewählte positive Stückzahl. Alle tatsächlich benötigten Gruppen und '
+                         'ihre vollständigen Stückzahlen JETZT festlegen, keine spätere Erweiterung oder laufende '
+                         'Ordnungszahl. NIS erzeugt genau diese Anzahl individueller Portidentitäten; echte parallele '
+                         'Anschlüsse bleiben vollständig erhalten. Keine bestätigten Hardware-/Kanalgrenzen erhöhen. '
+                         'VLANs, logische Segmentierung, Funktionsanzahl oder unterstützte Knotenkapazität begründen '
+                         'keine zusätzlichen physischen Anschlüsse. Jede Stückzahl anhand tatsächlich verschiedener '
+                         'physischer Verbindungen oder expliziten parallelen Bedarfs begründen; reine Umnummerierung '
+                         'ist kein neuer Bedarf. Quellen und feldgebundene Referenzen vollständig erhalten. '
+                         'Geplante Stückzahlen sind zu prüfende Auslegungsannahmen, niemals Hardwarequalifikationsbelege. '
+                         'Eine leere connections-Liste ist nur bei ausdrücklich begründetem fehlendem Anschlussbedarf '
+                         'dieses Teilnehmers zulässig. Echte offene Fachentscheidungen in unresolved nennen. '
+                         'port_plan_complete=true schließt diesen gesamten ausgewählten Bedarf; die folgende '
+                         'Parameterstufe legt JEDEN erzeugten Anschluss aus. Kein fertiges Modell oder Timing-/Safety-PASS. '
+                         if port_groups else '')
+                      + ('Ausschließlich IO für alle angeforderten vorhandenen Teilnehmer-IDs liefern; keine anderen Geräte, Anschlüsse, Messgrößen oder Befehle überschreiben. Teilnehmer und ihre IO getrennt erhalten. Alle Nachbarteilnehmer bleiben als Planungskontext sichtbar. ' if device_ids else '')
+                      + ('Jeder inventory_choices-Eintrag beginnt mit choice_kind: EXISTING für eine vorhandene ID-Bindung, NEW_&lt;Geräteart&gt; für wirklich neue Hardware (z.B. NEW_SENSOR passend zu kind=SENSOR). Bei EXISTING danach ausschließlich device_id, source_fact_ids, rationale und field_references auswählen; niemals id/name/kind eines alten Geräts neu schreiben. NIS erhält sämtliche unveränderlichen Gerätedaten und ergänzt nur die Quellen-/Typ-/Referenzbindung. Bei NEW_&lt;Geräteart&gt; danach die vollständigen neuen Gerätedaten liefern, niemals eine vorhandene ID. choice_kind wird nur intern geprüft und nicht als Modellfeld gespeichert. Die gemeinsame Stufengrenze gilt für alle Einträge zusammen. ' if inventory_stage and derivation_fact_ids is None else '')
+                      + ('Nur ein echtes Gerät oder eine vorhandene Gerätebindung für den angeforderten Quellenbefund/das Typmitglied liefern, keine zweite Platzhalterzeile. source_fact_ids enthält ausschließlich diese eine FactID; source_member_bindings neuer Geräte ausschließlich das angeforderte wörtliche Mitglied. Bei vorhandenen Geräten setzt NIS die angeforderte Typbindung selbst. Funktional zusätzlich notwendige Hardware wird danach in einem eigenen Schritt geplant. ' if inventory_target else '')
+                      + ('inventory_complete bewertet nur diesen deklarierten Quellenbereich. Bei vollständiger Abdeckung true; wenn er bereits abgedeckt ist, ist ein leeres Delta mit true zulässig. False verlangt eine echte weitere Instanz/Bindung dieses Bereichs. ' if inventory_target else '')
+                      + ('Prüfe jetzt die physische Hardware für die ausdrücklich angeforderten FUNCTION-/REQUIREMENT-FactIDs. Vollständige Quelle und sämtliche Nachbarfunktionen bleiben Konsistenzkontext; weitere Quellenbefunde werden in eigenen Hardwarestufen bearbeitet. Sensoren und Aktoren sind echte Teilnehmer, keine bloßen Werte im Controller. Vorhandene Geräte wiederverwenden oder fehlende Messquellen, Verarbeitung, Verbraucher und Aktoren ergänzen; unabhängige Messgrößen und Stellwirkungen berücksichtigen. Ports/Messgrößen/Befehle/Funktionen/Kommunikation folgen erst nach ALLEN Hardwarestufen und erzeugen KEINE Geräte mehr. Notwendige Peripherie dieses Quellenbereichs niemals in spätere IO-Schritte verschieben. source_fact_ids enthält nur passende angeforderte FUNCTION-/REQUIREMENT-FactIDs, jede höchstens einmal; keine neuen Bindungen an Quelleninventar. Alte Bindungen wiederverwendeter IDs bleiben serverseitig erhalten. Keine Originalmenge erhöhen oder Hardwarebelege/Defaults erfinden. Pro Antwort entweder höchstens ein wirklich neues Gerät ODER eine einzige EXISTING_BATCH-Auswahl. Deren bindings ist ein Knoten mit genau einer vorhandenen ID als Schlüssel. Sein Wert enthält source_fact_ids, rationale, field_references und following. following ist null oder der nächste solche Ein-ID-Knoten. Höchstens acht Knoten, jede ID nur einmal und in der Reihenfolge von existing_inventory_for_this_stage auswählen. Nach dem achten Knoten ist following zwingend null. Mehrere Quellenbelege derselben ID in derselben source_fact_ids-Liste bündeln; keine separaten EXISTING-Zeilen liefern. Niemals neue Hardware mit Bindungen mischen. Die Begründung jeweils in einem kurzen fachlichen Satz ohne Wiederholung des Auftrags formulieren. Mehrere passende Quellenbelege desselben Teilnehmers gemeinsam angeben. Nur tatsächlich benötigte Teilnehmer binden, nicht sämtliche Geräte mit sämtlichen Funktionen verbinden. Weiteren Hardwarebedarf mit inventory_complete=false für die normale nächste Antwort offenhalten; die Gesamtzahl notwendiger Geräte ist dadurch nicht begrenzt. inventory_complete bewertet ausschließlich den Bedarf der angeforderten FactIDs und wird erst true, wenn vorhandene plus ergänzte Hardware diesen vollständig abdeckt; ohne Ergänzungsbedarf inventory_choices=[] und true. False verlangt neue Geräte/Quellenbindungen. Unklare Fachentscheidungen konkret unresolved nennen. ' if derivation_fact_ids is not None else '')
+                      + ('port_parameters ist ein Objekt mit genau jedem angeforderten Port-ID-Schlüssel einmal. Pro Schlüssel ausschließlich parameters, eine kurze rationale und field_references ausgeben; ports bleibt []. NIS übernimmt id, device_id, technology, role und network_scope exakt aus der bereits geplanten Portabsicht. Keine andere Technologie für einen Schlüssel auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
+                      + ('functions_by_fact ist ein Objekt mit genau jedem angeforderten Funktions-FactID-Schlüssel einmal. Seine Werte enthalten die vollständige Funktionsentscheidung außer source_fact_id; diese Identität bindet NIS unverändert. functions bleibt []. Abhängigkeiten nur mit diesen Senderfunktionen liefern. Andere ursprüngliche Funktions-FactIDs dürfen bewusste Empfänger oder COMPOSITE-Bestandteile sein. ' if function_ids else ''))}
+        messages, full_messages, context_rebased = _reference_context_messages(
+            reference_messages, reference_prompt, prompt, system, self.context_tokens,
+            anchor=reference_anchor, anchors=reference_anchors[:-1])
+        progress_details = {}
+        selection_metadata = {}
+        device_names = {row['id']: row['name'] for row in current['devices']}
+        if port_ids:
+            by_port = {row['id']: row for row in current['ports']}
+            selection_metadata = {'selected_port_ids': list(port_ids), 'selection_labels': [
+                f"{device_names[by_port[key]['device_id']]} / {by_port[key]['technology']} / {by_port[key]['role']}"
+                for key in port_ids]}
+        elif device_ids or producer_ids:
+            identities = device_ids or producer_ids
+            selection_metadata = {
+                'selected_device_ids' if device_ids else 'selected_producer_device_ids': list(identities),
+                'selection_labels': [device_names[key] for key in identities]}
+        elif function_ids:
+            all_function_ids = [key for key, fact in profile_facts.items() if fact['kind'] == 'FUNCTION']
+            selection_metadata = {'selected_function_fact_ids': list(function_ids),
+                'selection_labels': [prepared['facts'][key]['name'] for key in function_ids],
+                'scope_index': all_function_ids.index(function_ids[0]) // 4 + 1,
+                'scope_count': (len(all_function_ids) + 3) // 4}
+        elif inventory_target:
+            fact_id, member = inventory_target['fact_id'], inventory_target.get('member')
+            selection_metadata = {'selected_inventory_fact_ids': [fact_id],
+                'selection_labels': [member or prepared['facts'][fact_id]['name']],
+                'selected_inventory_bound_count': sum(fact_id in row['source_fact_ids']
+                    and (member is None or row['source_member_bindings'].get(fact_id) == member)
+                    for row in current['devices'])}
+        selection_text = ('; Auswahl: ' + '; '.join(selection_metadata['selection_labels'])
+                          if selection_metadata else '')
+        def report_validation(error=None):
+            status = 'REJECTED' if error is not None else 'VALIDATED'
+            calls[-1]['validation_status'] = status
+            if error is not None:
+                calls[-1]['validation_error'] = str(error)
+            progress = sink.get()
+            if progress:
+                validated = sum(row.get('validation_status') == 'VALIDATED' for row in calls)
+                rejected = sum(row.get('validation_status') == 'REJECTED' for row in calls)
+                detail = 'Antwort abgelehnt: ' + str(error) if error is not None else 'Stufenantwort intern validiert'
+                closed_ports = ({'port_plan_complete': True, 'planned_port_count': len(result['ports'])}
+                                if error is None and port_groups else {})
+                if closed_ports:
+                    detail += f'; vollständiger ausgewählter Bedarf mit {len(result["ports"])} geplanten physischen Anschlüssen'
+                progress({'type': 'PROGRESS', 'status': 'RUNNING',
+                    'text': f'Lokaler Qwen · {stage}{selection_text}: {detail}. {validated} intern validierte und {rejected} abgelehnte Antworten; kein freigegebenes Modell.',
+                    'metadata': {**deepcopy(progress_details), 'source': 'document_reference_validation',
+                        'completed_calls': len(calls), 'validated_calls': validated, 'rejected_calls': rejected,
+                        'validation_status': status, 'validation_error': str(error) if error is not None else None,
+                        'canonical_writes': False, **closed_ports}})
+        def report_progress(attempt):
+            progress = sink.get()
+            if progress:
+                metadata = {'source': 'document_reference_design', 'completed_calls': len(calls), 'canonical_writes': False,
+                            'planning_stage': stage, 'profile_index': profile_index, 'profile_count': len(groups),
+                            'attempt': attempt, **deepcopy(selection_metadata)}
+                if inventory_stage:
+                    metadata.update(inventory_target=deepcopy(inventory_target), draft_inventory_by_kind={
+                        kind: sum(row['kind'] == kind for row in current['devices'])
+                        for kind in ('CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR', 'PHYSICAL_CONTEXT')})
+                    if derivation_fact_ids is not None:
+                        metadata['derivation_fact_ids'] = list(derivation_fact_ids)
+                scope_text = ''
+                if function_ids:
+                    scope_text = (f'; Funktionsgruppe {selection_metadata["scope_index"]} '
+                                  f'von {selection_metadata["scope_count"]}')
+                if derivation_fact_ids:
+                    fact_ids = [key for key, fact in prepared['facts'].items()
+                        if fact['kind'] in {'FUNCTION', 'REQUIREMENT'}
+                        and tuple(document_system_scope(fact.get('source_context', []))) == profile]
+                    scope_index = fact_ids.index(derivation_fact_ids[0]) // _REFERENCE_HARDWARE_FACT_BATCH + 1
+                    scope_count = (len(fact_ids) + _REFERENCE_HARDWARE_FACT_BATCH - 1) // _REFERENCE_HARDWARE_FACT_BATCH
+                    metadata.update(scope_index=scope_index, scope_count=scope_count)
+                    scope_text = f'; Quellenbereich {scope_index} von {scope_count}'
+                attempt_text = 'Planung' if attempt == 1 else f'Korrekturversuch {attempt}'
+                progress_details.update(metadata)
+                progress({'type': 'PROGRESS', 'text': f'Lokaler Qwen plant Referenzprofil {profile_index} von {len(groups)}: {stage}. {len(calls)} Modellantworten empfangen; {attempt_text}{scope_text}{selection_text}.',
+                          'status': 'RUNNING', 'metadata': metadata})
+        payload = {'model': self.model, 'messages': messages,
+                   'format': _reference_schema_for_stage(prepared, allowed, port_ids=port_ids,
+                       function_ids=function_ids, port_intent=port_intent, port_groups=port_groups, device_ids=device_ids,
+                       producer_ids=producer_ids,
+                       inventory_target=inventory_target, derivation_fact_ids=derivation_fact_ids,
+                       existing_devices=current['devices'] if inventory_stage else ()),
+                    'think': False, 'stream': True, 'keep_alive': self.keep_alive,
+                   'options': {'temperature': 0, 'num_predict': 8192, 'num_ctx': self.context_tokens}}
+        for attempt in range(2):
+            try:
+&gt;               payload['options']['num_ctx'] = _reference_context_window(payload['messages'], self.context_tokens)
+                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\nis\agent\orchestration\local_reasoner.py:1692: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+messages = [{'role': 'system', 'content': 'Du bist der lokale NIS-Referenzplaner für ausdrücklich gewählte Beispielprojekte. Glei...sel in der Qwen-Antwort: lin_bitrate_bps. Vollständigen JSON-Entwurf dieser Stufe korrigieren, keine Quellen ändern.'}]
+maximum = 131072
+
+    def _reference_context_window(messages, maximum):
+        """Reserve complete UTF-8 input plus output; never shorten a source to fit."""
+        # Byte fallback tokenization cannot need more content tokens than UTF-8
+        # bytes. The provider tokenizes decoded message content, not the HTTP JSON
+        # wrapper and its additional string escaping. Include every retry message;
+        # the existing framing reserve also covers roles and chat-template tokens.
+        required = sum(len(message['content'].encode('utf-8')) for message in messages) + 8192 + 2048
+        if required &gt; maximum:
+&gt;           raise ValueError('Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten '
+                             'das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.')
+E           ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.
+
+backend\nis\agent\orchestration\local_reasoner.py:740: ValueError
+
+During handling of the above exception, another exception occurred:
+
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001E36F9E0D60&gt;
+caplog = &lt;_pytest.logging.LogCaptureFixture object at 0x000001E36F939FD0&gt;
+
+    def test_reference_retry_uses_full_context_and_exact_error_when_raw_reply_would_overflow(monkeypatch, caplog):
+        from backend.nis.agent.orchestration import local_reasoner
+    
+        build_messages = local_reasoner._reference_context_messages
+        captured = []
+        instance, prepared, _ = reasoner_with_transport(monkeypatch, capture=captured)
+        provider = instance.client._transport.handler
+        invalid = '{"lin_bitrate_bps":19200,"lin_bitrate_bps":19200,"padding":"' + 'x' * 4600 + '"}'
+        rejected = False
+    
+        def near_limit(history, previous, current, system, maximum, **kwargs):
+            if current['port_ids_for_this_stage'] and not rejected:
+                _, full, _ = build_messages([], None, current, system, maximum)
+                content_bytes = sum(len(row['content'].encode('utf8')) for row in full)
+                padding = maximum - 8192 - 2048 - content_bytes - 350
+                assert padding &gt; 0
+                current = {**current, 'original_source': current['original_source'] + 'x' * padding}
+                return build_messages([], None, current, system, maximum)
+            return build_messages(history, previous, current, system, maximum, **kwargs)
+    
+        def respond(request):
+            nonlocal rejected
+            response = provider(request)
+            if not request.url.path.endswith('/show') and 'port_parameters' in captured[-1]['format']['properties'] and not rejected:
+                rejected = True
+                return httpx.Response(200, json={**response.json(), 'message': {'content': invalid}})
+            return response
+    
+        monkeypatch.setattr(local_reasoner, '_reference_context_messages', near_limit)
+        monkeypatch.setattr(instance.client._transport, 'handler', respond)
+&gt;       result = run_reference(instance, prepared)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_reasoner.py:1316: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_reasoner.py:386: in run_reference
+    return asyncio.run(run())
+           ^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:196: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:119: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\base_events.py:725: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+backend\tests\test_reference_reasoner.py:383: in run
+    return await reasoner.plan_reference_design(prepared)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\local_reasoner.py:1977: in plan_reference_design
+    await plan_profile()
+backend\nis\agent\orchestration\local_reasoner.py:1948: in plan_profile
+    parameters = await infer('Parameter der ausgewählten Anschlüsse', {'ports'},
+backend\nis\agent\orchestration\local_reasoner.py:1698: in infer
+    payload['options']['num_ctx'] = _reference_context_window(payload['messages'], self.context_tokens)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+messages = [{'role': 'system', 'content': 'Du bist der lokale NIS-Referenzplaner für ausdrücklich gewählte Beispielprojekte. Glei...sel in der Qwen-Antwort: lin_bitrate_bps. Vollständigen JSON-Entwurf dieser Stufe korrigieren, keine Quellen ändern.'}]
+maximum = 131072
+
+    def _reference_context_window(messages, maximum):
+        """Reserve complete UTF-8 input plus output; never shorten a source to fit."""
+        # Byte fallback tokenization cannot need more content tokens than UTF-8
+        # bytes. The provider tokenizes decoded message content, not the HTTP JSON
+        # wrapper and its additional string escaping. Include every retry message;
+        # the existing framing reserve also covers roles and chat-template tokens.
+        required = sum(len(message['content'].encode('utf-8')) for message in messages) + 8192 + 2048
+        if required &gt; maximum:
+&gt;           raise ValueError('Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten '
+                             'das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.')
+E           ValueError: Der vollständige Referenzabschnitt und seine Entwurfsdaten überschreiten das konfigurierte lokale Kontextfenster. Es wurde keine Quelle gekürzt.
+
+backend\nis\agent\orchestration\local_reasoner.py:740: ValueError</failure></testcase></testsuite></testsuites>

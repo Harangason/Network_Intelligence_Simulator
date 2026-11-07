@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="13" skipped="0" tests="13" time="3.141" timestamp="2026-11-06T17:25:38.463588+01:00" hostname="Haranga"><testcase classname="tests.test_qwen_document_intake" name="test_plural_function_ecu_quantity_is_inventory_not_a_numeric_heading[50 Funktions-ECUs-50]" time="0.006"><failure message="assert 0 == 50">label = '50 Funktions-ECUs', count = 50
+
+    @pytest.mark.parametrize('label,count', [('50 Funktions-ECUs', 50), ('7 ECUs', 7), ('12 FunktionsECUs', 12)])
+    def test_plural_function_ecu_quantity_is_inventory_not_a_numeric_heading(label, count):
+        from backend.nis.agent.tools.inventory_quantities import quantities
+        from backend.nis.agent.orchestration.project_intake import document_component_policy, _document_context_heading
+&gt;       assert quantities(label)['ecus'] == count
+E       assert 0 == 50
+
+backend\tests\test_qwen_document_intake.py:1754: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_plural_function_ecu_quantity_is_inventory_not_a_numeric_heading[7 ECUs-7]" time="0.003"><failure message="AssertionError: assert None == {'kind': 'INSTANCE', 'role': 'CONTROLLER', 'quantity': 7}&#10; +  where None = &lt;function document_component_policy at 0x00000217A5E90A40&gt;('7 ECUs')">label = '7 ECUs', count = 7
+
+    @pytest.mark.parametrize('label,count', [('50 Funktions-ECUs', 50), ('7 ECUs', 7), ('12 FunktionsECUs', 12)])
+    def test_plural_function_ecu_quantity_is_inventory_not_a_numeric_heading(label, count):
+        from backend.nis.agent.tools.inventory_quantities import quantities
+        from backend.nis.agent.orchestration.project_intake import document_component_policy, _document_context_heading
+        assert quantities(label)['ecus'] == count
+&gt;       assert document_component_policy(label) == {'kind': 'INSTANCE', 'role': 'CONTROLLER', 'quantity': count}
+E       AssertionError: assert None == {'kind': 'INSTANCE', 'role': 'CONTROLLER', 'quantity': 7}
+E        +  where None = &lt;function document_component_policy at 0x00000217A5E90A40&gt;('7 ECUs')
+
+backend\tests\test_qwen_document_intake.py:1755: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_plural_function_ecu_quantity_is_inventory_not_a_numeric_heading[12 FunktionsECUs-12]" time="0.001"><failure message="assert 0 == 12">label = '12 FunktionsECUs', count = 12
+
+    @pytest.mark.parametrize('label,count', [('50 Funktions-ECUs', 50), ('7 ECUs', 7), ('12 FunktionsECUs', 12)])
+    def test_plural_function_ecu_quantity_is_inventory_not_a_numeric_heading(label, count):
+        from backend.nis.agent.tools.inventory_quantities import quantities
+        from backend.nis.agent.orchestration.project_intake import document_component_policy, _document_context_heading
+&gt;       assert quantities(label)['ecus'] == count
+E       assert 0 == 12
+
+backend\tests\test_qwen_document_intake.py:1754: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_signal_and_device_property_evidence_is_not_installed_hardware[Signal: MotorRPM]" time="0.002"><failure message="AssertionError: assert ({'kind': 'CATEGORY', 'role': 'ACTUATOR', 'quantity': None} and 'CATEGORY' in {'FUNCTION', 'REQUIREMENT'})">label = 'Signal: MotorRPM'
+
+    @pytest.mark.parametrize('label', ['Signal: MotorRPM', 'MotorCurrent &gt; 5 A', 'MotorRPM = 0',
+                                      'Gateway Load', 'Gateway Delay', 'Gateway-Auslastung', 'Motorstromüberwachung'])
+    def test_signal_and_device_property_evidence_is_not_installed_hardware(label):
+        from backend.nis.agent.orchestration.project_intake import document_component_policy
+        policy = document_component_policy(label)
+&gt;       assert policy and policy['kind'] in {'FUNCTION', 'REQUIREMENT'}
+E       AssertionError: assert ({'kind': 'CATEGORY', 'role': 'ACTUATOR', 'quantity': None} and 'CATEGORY' in {'FUNCTION', 'REQUIREMENT'})
+
+backend\tests\test_qwen_document_intake.py:1764: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_signal_and_device_property_evidence_is_not_installed_hardware[MotorCurrent &gt; 5 A]" time="0.001"><failure message="AssertionError: assert ({'kind': 'CATEGORY', 'role': 'ACTUATOR', 'quantity': None} and 'CATEGORY' in {'FUNCTION', 'REQUIREMENT'})">label = 'MotorCurrent &gt; 5 A'
+
+    @pytest.mark.parametrize('label', ['Signal: MotorRPM', 'MotorCurrent &gt; 5 A', 'MotorRPM = 0',
+                                      'Gateway Load', 'Gateway Delay', 'Gateway-Auslastung', 'Motorstromüberwachung'])
+    def test_signal_and_device_property_evidence_is_not_installed_hardware(label):
+        from backend.nis.agent.orchestration.project_intake import document_component_policy
+        policy = document_component_policy(label)
+&gt;       assert policy and policy['kind'] in {'FUNCTION', 'REQUIREMENT'}
+E       AssertionError: assert ({'kind': 'CATEGORY', 'role': 'ACTUATOR', 'quantity': None} and 'CATEGORY' in {'FUNCTION', 'REQUIREMENT'})
+
+backend\tests\test_qwen_document_intake.py:1764: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_signal_and_device_property_evidence_is_not_installed_hardware[MotorRPM = 0]" time="0.001"><failure message="AssertionError: assert ({'kind': 'CATEGORY', 'role': 'ACTUATOR', 'quantity': None} and 'CATEGORY' in {'FUNCTION', 'REQUIREMENT'})">label = 'MotorRPM = 0'
+
+    @pytest.mark.parametrize('label', ['Signal: MotorRPM', 'MotorCurrent &gt; 5 A', 'MotorRPM = 0',
+                                      'Gateway Load', 'Gateway Delay', 'Gateway-Auslastung', 'Motorstromüberwachung'])
+    def test_signal_and_device_property_evidence_is_not_installed_hardware(label):
+        from backend.nis.agent.orchestration.project_intake import document_component_policy
+        policy = document_component_policy(label)
+&gt;       assert policy and policy['kind'] in {'FUNCTION', 'REQUIREMENT'}
+E       AssertionError: assert ({'kind': 'CATEGORY', 'role': 'ACTUATOR', 'quantity': None} and 'CATEGORY' in {'FUNCTION', 'REQUIREMENT'})
+
+backend\tests\test_qwen_document_intake.py:1764: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_signal_and_device_property_evidence_is_not_installed_hardware[Gateway Load]" time="0.001"><failure message="AssertionError: assert ({'kind': 'CATEGORY', 'role': 'GATEWAY', 'quantity': None} and 'CATEGORY' in {'FUNCTION', 'REQUIREMENT'})">label = 'Gateway Load'
+
+    @pytest.mark.parametrize('label', ['Signal: MotorRPM', 'MotorCurrent &gt; 5 A', 'MotorRPM = 0',
+                                      'Gateway Load', 'Gateway Delay', 'Gateway-Auslastung', 'Motorstromüberwachung'])
+    def test_signal_and_device_property_evidence_is_not_installed_hardware(label):
+        from backend.nis.agent.orchestration.project_intake import document_component_policy
+        policy = document_component_policy(label)
+&gt;       assert policy and policy['kind'] in {'FUNCTION', 'REQUIREMENT'}
+E       AssertionError: assert ({'kind': 'CATEGORY', 'role': 'GATEWAY', 'quantity': None} and 'CATEGORY' in {'FUNCTION', 'REQUIREMENT'})
+
+backend\tests\test_qwen_document_intake.py:1764: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_signal_and_device_property_evidence_is_not_installed_hardware[Gateway Delay]" time="0.002"><failure message="AssertionError: assert ({'kind': 'CATEGORY', 'role': 'GATEWAY', 'quantity': None} and 'CATEGORY' in {'FUNCTION', 'REQUIREMENT'})">label = 'Gateway Delay'
+
+    @pytest.mark.parametrize('label', ['Signal: MotorRPM', 'MotorCurrent &gt; 5 A', 'MotorRPM = 0',
+                                      'Gateway Load', 'Gateway Delay', 'Gateway-Auslastung', 'Motorstromüberwachung'])
+    def test_signal_and_device_property_evidence_is_not_installed_hardware(label):
+        from backend.nis.agent.orchestration.project_intake import document_component_policy
+        policy = document_component_policy(label)
+&gt;       assert policy and policy['kind'] in {'FUNCTION', 'REQUIREMENT'}
+E       AssertionError: assert ({'kind': 'CATEGORY', 'role': 'GATEWAY', 'quantity': None} and 'CATEGORY' in {'FUNCTION', 'REQUIREMENT'})
+
+backend\tests\test_qwen_document_intake.py:1764: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_signal_and_device_property_evidence_is_not_installed_hardware[Gateway-Auslastung]" time="0.001"><failure message="AssertionError: assert ({'kind': 'CATEGORY', 'role': 'GATEWAY', 'quantity': None} and 'CATEGORY' in {'FUNCTION', 'REQUIREMENT'})">label = 'Gateway-Auslastung'
+
+    @pytest.mark.parametrize('label', ['Signal: MotorRPM', 'MotorCurrent &gt; 5 A', 'MotorRPM = 0',
+                                      'Gateway Load', 'Gateway Delay', 'Gateway-Auslastung', 'Motorstromüberwachung'])
+    def test_signal_and_device_property_evidence_is_not_installed_hardware(label):
+        from backend.nis.agent.orchestration.project_intake import document_component_policy
+        policy = document_component_policy(label)
+&gt;       assert policy and policy['kind'] in {'FUNCTION', 'REQUIREMENT'}
+E       AssertionError: assert ({'kind': 'CATEGORY', 'role': 'GATEWAY', 'quantity': None} and 'CATEGORY' in {'FUNCTION', 'REQUIREMENT'})
+
+backend\tests\test_qwen_document_intake.py:1764: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_signal_and_device_property_evidence_is_not_installed_hardware[Motorstrom\xfcberwachung]" time="0.001"><failure message="AssertionError: assert ({'kind': 'CATEGORY', 'role': 'ACTUATOR', 'quantity': None} and 'CATEGORY' in {'FUNCTION', 'REQUIREMENT'})">label = 'Motorstromüberwachung'
+
+    @pytest.mark.parametrize('label', ['Signal: MotorRPM', 'MotorCurrent &gt; 5 A', 'MotorRPM = 0',
+                                      'Gateway Load', 'Gateway Delay', 'Gateway-Auslastung', 'Motorstromüberwachung'])
+    def test_signal_and_device_property_evidence_is_not_installed_hardware(label):
+        from backend.nis.agent.orchestration.project_intake import document_component_policy
+        policy = document_component_policy(label)
+&gt;       assert policy and policy['kind'] in {'FUNCTION', 'REQUIREMENT'}
+E       AssertionError: assert ({'kind': 'CATEGORY', 'role': 'ACTUATOR', 'quantity': None} and 'CATEGORY' in {'FUNCTION', 'REQUIREMENT'})
+
+backend\tests\test_qwen_document_intake.py:1764: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_device_nouns_and_independent_building_inventory_scopes_remain_separate" time="0.003"><failure message="AssertionError: assert 'OTHER' == 'CONTROLLER'&#10;  &#10;  - CONTROLLER&#10;  + OTHER">def test_device_nouns_and_independent_building_inventory_scopes_remain_separate():
+        from backend.nis.agent.orchestration.project_intake import document_component_sources, document_component_policy, document_source_references
+        for label, role in [('Body Control Module', 'CONTROLLER'), ('Motor mit Encoder', 'ACTUATOR'),
+                            ('Temperatursensor', 'SENSOR'), ('Gateway (GW)', 'GATEWAY')]:
+&gt;           assert document_component_policy(label)['role'] == role
+E           AssertionError: assert 'OTHER' == 'CONTROLLER'
+E             
+E             - CONTROLLER
+E             + OTHER
+
+backend\tests\test_qwen_document_intake.py:1772: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_robot_scope_references_and_engineering_views_do_not_add_devices" time="0.013"><failure message="assert 35 == 15&#10; +  where 35 = sum(&lt;generator object test_robot_scope_references_and_engineering_views_do_not_add_devices.&lt;locals&gt;.&lt;genexpr&gt; at 0x00000217A61B3C60&gt;)">def test_robot_scope_references_and_engineering_views_do_not_add_devices():
+        from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+        source = ('# Roboterzelle\n## Systemumfang\n- 8 Sensoren\n- 4 Aktoren\n- 2 ECUs\n- 1 Gateway\n'
+                  '## Sensoren\nDie 8 Sensoren erfassen Messwerte.\nJeder Sensor erhält mindestens:\n- ID\n- Messgröße\n'
+                  '## Zentrales Gateway\nEs existiert genau ein zentrales Gateway.\nAufgaben:\n- Daten übertragen\n---\n'
+                  '## Netzwerk-Editor\nDarstellung von:\n- 8 Sensoren\n- 4 Aktoren\n- 2 ECUs\n- 1 Gateway\n'
+                  '## Parameter\n- Gateway Delay\n## Signaldefinition\n- Signal: MotorRPM\nMotorCurrent &gt; 5 A\n')
+        units = document_component_sources(document_source_references(source))
+        instances = [unit for unit in units if unit['policy'] and unit['policy']['kind'] == 'INSTANCE']
+&gt;       assert sum(unit['policy']['quantity'] for unit in instances) == 15
+E       assert 35 == 15
+E        +  where 35 = sum(&lt;generator object test_robot_scope_references_and_engineering_views_do_not_add_devices.&lt;locals&gt;.&lt;genexpr&gt; at 0x00000217A61B3C60&gt;)
+
+backend\tests\test_qwen_document_intake.py:1790: AssertionError</failure></testcase><testcase classname="tests.test_qwen_document_intake" name="test_preserved_full_original_source_grammar_retains_declared_scope_without_view_inventory" time="1.831"><failure message="AssertionError: assert {'SENSOR': 40... 'GATEWAY': 4} == {'SENSOR': 10... 'GATEWAY': 1}&#10;  &#10;  Differing items:&#10;  {'CONTROLLER': 0} != {'CONTROLLER': 50}&#10;  {'ACTUATOR': 200} != {'ACTUATOR': 100}&#10;  {'SENSOR': 400} != {'SENSOR': 100}&#10;  {'GATEWAY': 4} != {'GATEWAY': 1}&#10;  Use -v to get more diff">def test_preserved_full_original_source_grammar_retains_declared_scope_without_view_inventory():
+        from pathlib import Path
+        from backend.nis.agent.orchestration.project_intake import document_component_sources, document_source_references
+        raw = (Path(__file__).resolve().parents[2] / 'frontend/e2e/fixtures/document-preview-example.txt').read_bytes()
+        assert hashlib.sha256(raw).hexdigest() == '32c864c91ac85c2884ef0c3c9e62456e6ade59cc2a22cae384bdfe5a2e2eff60'
+        source = raw.decode('utf-8')
+        units = document_component_sources(document_source_references(source))
+        instances = [unit for unit in units if unit['policy'] and unit['policy']['kind'] == 'INSTANCE']
+        totals = {role: sum(unit['policy']['quantity'] for unit in instances if unit['policy']['role'] == role)
+                  for role in ['SENSOR', 'ACTUATOR', 'CONTROLLER', 'GATEWAY']}
+&gt;       assert totals == {'SENSOR': 100, 'ACTUATOR': 100, 'CONTROLLER': 50, 'GATEWAY': 1}
+E       AssertionError: assert {'SENSOR': 40... 'GATEWAY': 4} == {'SENSOR': 10... 'GATEWAY': 1}
+E         
+E         Differing items:
+E         {'CONTROLLER': 0} != {'CONTROLLER': 50}
+E         {'ACTUATOR': 200} != {'ACTUATOR': 100}
+E         {'SENSOR': 400} != {'SENSOR': 100}
+E         {'GATEWAY': 4} != {'GATEWAY': 1}
+E         Use -v to get more diff
+
+backend\tests\test_qwen_document_intake.py:1807: AssertionError</failure></testcase></testsuite></testsuites>

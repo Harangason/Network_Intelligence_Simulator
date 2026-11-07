@@ -1,0 +1,26 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -552,6 +552,23 @@
+                     bound_choices(child, fields)
+ 
+     bound_choices(schema)
++    # Reuse identical final field constraints across the ordered binding states.
++    # This preserves their language while avoiding thousands of repeated
++    # constraints at the native provider boundary.
++    shared_fields, field_names = {}, {}
++    for name, node in schema['$defs'].items():
++        if not name.startswith('NativeReferenceBinding_'):
++            continue
++        for alternative in node['anyOf']:
++            fields = next(iter(alternative['properties'].values()))['properties']
++            for field in ('source_fact_ids', 'rationale', 'field_references'):
++                key = json.dumps(fields[field], sort_keys=True, separators=(',', ':'))
++                if key not in field_names:
++                    identity = f'NativeReferenceBindingField_{len(field_names)}'
++                    field_names[key] = identity
++                    shared_fields[identity] = fields[field]
++                fields[field] = {'$ref': '#/$defs/' + field_names[key]}
++    schema['$defs'].update(shared_fields)
+     return schema
+ 
+ 

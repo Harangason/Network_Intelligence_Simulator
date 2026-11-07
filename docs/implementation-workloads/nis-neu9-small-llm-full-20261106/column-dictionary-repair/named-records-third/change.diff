@@ -1,0 +1,348 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ rejected/backend/nis/agent/orchestration/local_reasoner.py
+@@ -1076,8 +1076,34 @@
+                     constants = {key: deepcopy(rows[start][key]) for key in columns
+                                  if all(row[key] == literals[start][key] for row in literals[start:end])}
+                     variable = [key for key in columns if key not in constants]
+-                    return {'columns': variable, 'constants': constants,
++                    table = {'columns': variable, 'constants': constants,
+                             'rows': [[deepcopy(row[key]) for key in variable] for row in rows[start:end]]}
++                    # Independent columns can repeat outside contiguous cohorts.
++                    # Compare exact JSON literals, never Python's False == 0 or
++                    # normalized strings. Dictionaries preserve every occurrence.
++                    for column, key in enumerate(variable):
++                        values, indices, positions = {}, [], {}
++                        for row in rows[start:end]:
++                            literal = serialized(row[key])
++                            if literal not in positions:
++                                positions[literal] = 'v' + str(len(values))
++                                values[positions[literal]] = deepcopy(row[key])
++                            indices.append(positions[literal])
++                        if len(values) == len(indices):
++                            continue
++                        candidate = deepcopy(table)
++                        candidate.setdefault('dictionaries', {})[key] = values
++                        for row, index in zip(candidate['rows'], indices):
++                            row[column] = index
++                        if len(serialized(candidate).encode('utf8')) < len(serialized(table).encode('utf8')):
++                            table = candidate
++                    # Keep opaque identity and each variable field directly
++                    # associated; native readers must not align identity tuples.
++                    if 'id' in columns:
++                        table['records'] = [dict(zip(table['columns'], row)) for row in table['rows']]
++                        del table['columns']
++                        del table['rows']
++                    return table
+ 
+                 table = record_table(0, len(rows))
+                 best_size = len(serialized(table).encode('utf8'))
+@@ -1186,7 +1212,25 @@
+         'ist dies ihr vollständiger Dateninhalt in kompakter Darstellung. An jedem JSON-Pointer '
+         'in nis_context_tables steht eine Tabelle: columns benennt die variablen Felder; '
+         'jede rows-Zeile enthält deren Werte in derselben Reihenfolge. constants gelten '
+-        'unverändert für jede Zeile. Mit keys entsteht ein Objekt keys[i] -> Zeile[i], '
++        'unverändert für jede Zeile. Bei Datensätzen mit Identität stehen stattdessen '
++        'records mit ausdrücklich benannten Feldern; jedes records-Objekt ist ein '
++        'Datensatz, ergänzt um constants. Seine id und seine übrigen benannten '
++        'Felder gehören unmittelbar zusammen; keine Spaltenposition abzählen. '
++        'Auch dort gelten dictionaries ausschließlich für das gleichnamige Feld. '
++        'Optional enthält dictionaries je ausdrücklich genanntem '
++        'Spaltennamen ein Objekt mit ausdrücklich benannten Schlüsseln und vollständigen JSON-Werten. '
++        'NUR in dieser Spalte ist die Zelle ein solcher Schlüssel: zuerst '
++        'dictionaries[Spaltenname][Zellenschlüssel] als vollständige tiefe Kopie einsetzen. '
++        'Zum Beispiel verweist die Zelle "v7" exakt auf den Eintrag "v7", unabhängig '
++        'von dessen Position im Objekt. Keine Position abzählen oder Zahl umrechnen. '
++        'Der Schlüssel ist niemals ein fachlicher Wert oder eine Geräte-ID. '
++        'Geräte-IDs ausschließlich wörtlich aus der id-Spalte derselben Zeile übernehmen, '
++        'niemals aus dem Verweisschlüssel oder einer Zeilennummer ableiten. '
++        'Alle anderen Spalten bleiben wörtliche Werte, auch ganze Zahlen. '
++        'Jedes Segment besitzt seine eigenen dictionaries; keine Schlüssel zwischen Segmenten '
++        'übertragen. Erst danach Tabellen, Kopien und Kontextpatches wie beschrieben auflösen. '
++        'Alle Zeilen, Wiederholungen, Typen und Literalvorzeichen bleiben erhalten. '
++        'Mit keys entsteht ein Objekt keys[i] -> Zeile[i], '
+         'sonst eine Liste von Datensätzen. Eine Tabelle mit segments enthält stattdessen '
+         'mehrere solche columns/constants/rows-Tabellen: ihre vollständig rekonstruierten '
+         'Zeilen in der angegebenen Reihenfolge aneinanderhängen, ohne Sortierung oder '
+--- before/backend/tests/test_reference_inventory_context_capacity.py
++++ rejected/backend/tests/test_reference_inventory_context_capacity.py
+@@ -11,6 +11,70 @@
+ 
+ def encoded(value):
+     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
++
++
++def authored_interleaved_context():
++    # Non-adjacent repetition, with independently varying columns: a contiguous
++    # run partition cannot factor both columns. No native source/model fixture.
++    return {'original_source': 'Unchanged authored source µ /~\r\n', 'a/b~c': {'': [
++        {'id': f'authored-row-{i:03}',
++         'purpose': f'Authored function {i % 7}: ' + 'Preserve the complete explicit measurement purpose. ' * 2,
++         'evidence': {'reference': f'authored-reference-{i % 5}', 'literal': [False, 0, 0.0, -0.0, None][i % 5]},
++         'literal': [False, 0, 0.0, -0.0, None, '0'][i % 6],
++         'constant': 'retained', 'ordinal': i}
++        for i in range(251)]}}
++
++
++def test_noncontiguous_column_values_share_once_and_roundtrip_exactly():
++    from backend.tests.test_reference_context_delta_capacity import decode_wire
++    from backend.tests.test_reference_planning_throughput import unpack_context_message
++    current = authored_interleaved_context()
++    before = encoded(current)
++    packed = reasoner._reference_context_snapshot(current)
++    table = packed['nis_context_snapshot']['a/b~c']['']
++    assert any('dictionaries' in part for part in table.get('segments', [table]))
++    # Lookup must not require counting implicit array offsets. Changing the
++    # presentation order of dictionary entries cannot change their references.
++    for part in table.get('segments', [table]):
++        for column, dictionary in part.get('dictionaries', {}).items():
++            assert isinstance(dictionary, dict)
++            assert all(isinstance(key, str) for key in dictionary)
++            cells = ([row[column] for row in part['records']] if 'records' in part else
++                     [row[part['columns'].index(column)] for row in part['rows']])
++            assert all(isinstance(cell, str) and cell in dictionary for cell in cells)
++            part['dictionaries'][column] = dict(reversed(list(dictionary.items())))
++    assert len(encoded(packed).encode()) < len(before.encode()) * .35
++    assert encoded(decode_wire(packed)) == encoded(unpack_context_message(packed)) == before
++    assert encoded(current) == before
++    restored = decode_wire(packed)['a/b~c']['']
++    restored[0]['evidence']['reference'] = 'changed in independent receiver'
++    assert restored[5]['evidence']['reference'] == 'authored-reference-0'
++
++
++def test_interleaved_columns_preserve_complete_large_source_and_strict_bound():
++    from backend.tests.test_reference_reasoner import effective_reference_context
++    current = authored_interleaved_context()
++    current['original_source'] = 'Complete independently authored literal source line.\n' * 1600
++    before = encoded(current)
++    messages, _, _ = reasoner._reference_context_messages([], None, current, 'Authored counter', 131072)
++    assert encoded(effective_reference_context(messages)) == before
++    required = sum(len(row['content'].encode('utf8')) for row in messages) + 8192 + 2048
++    assert required <= 131072
++    with pytest.raises(ValueError, match='keine Quelle gekürzt'):
++        reasoner._reference_context_window(messages, required - 1)
++
++
++def test_interleaved_column_dictionaries_survive_cached_patch_and_literal_key_order():
++    from backend.tests.test_reference_reasoner import effective_reference_context
++    first = authored_interleaved_context()
++    messages, _, _ = reasoner._reference_context_messages([], None, first, 'Authored counter', 131072)
++    current = deepcopy(first)
++    current['a/b~c'][''][240]['purpose'] = 'Late exact replacement µ'
++    current['a/b~c'][''][240]['literal'] = -0.0
++    history = [*messages, {'role': 'assistant', 'content': '{}'}]
++    result, _, _ = reasoner._reference_context_messages(history, first, current, 'Authored counter', 131072)
++    assert encoded(effective_reference_context(result)) == encoded(current)
++    assert first['a/b~c'][''][240]['purpose'] != current['a/b~c'][''][240]['purpose']
+ 
+ 
+ def authored_context(size=147, source_lines=800):
+@@ -40,6 +104,18 @@
+     }
+ 
+ 
++def test_identity_fields_are_named_together_without_positional_alignment():
++    current = authored_many_cohort_context()
++    packed = reasoner._reference_context_snapshot(current)
++    table = packed['nis_context_snapshot']['current_candidate']['devices']
++    for part in table.get('segments', [table]):
++        assert 'records' in part and 'rows' not in part and 'columns' not in part
++        assert all('id' in row or 'id' in part['constants'] for row in part['records'])
++    assert encoded(effective_reference_context([
++        {'role': 'system', 'content': 'Independent counter'},
++        {'role': 'user', 'content': json.dumps(packed)}])) == encoded(current)
++
++
+ def read_selection(value, current=None):
+     """Independent reader of the existing literal/table vocabulary."""
+     inventory = value['existing_inventory']
+--- before/backend/tests/test_reference_context_delta_capacity.py
++++ rejected/backend/tests/test_reference_context_delta_capacity.py
+@@ -35,10 +35,15 @@
+         table = parent[key]
+         rows = []
+         for part in table.get('segments', [table]):
+-            for values in part['rows']:
+-                assert len(part['columns']) == len(values)
++            records = part.get('records')
++            if records is None:
++                assert all(len(part['columns']) == len(values) for values in part['rows'])
++                records = [dict(zip(part['columns'], values, strict=True)) for values in part['rows']]
++            for record in records:
+                 rows.append({**deepcopy(part['constants']),
+-                             **dict(zip(part['columns'], values, strict=True))})
++                             **{column: deepcopy(part['dictionaries'][column][cell])
++                                if column in part.get('dictionaries', {}) else cell
++                                for column, cell in record.items()}})
+         parent[key] = dict(zip(table['keys'], rows, strict=True)) if 'keys' in table else rows
+     for operation in value['nis_context_copies']:
+         parent, key = location(operation['path'])
+--- before/backend/tests/test_reference_planning_throughput.py
++++ rejected/backend/tests/test_reference_planning_throughput.py
+@@ -29,8 +29,18 @@
+         parent, key = location(path)
+         table = parent[key]
+         parts = table['segments'] if 'segments' in table else [table]
+-        records = [{**deepcopy(part['constants']), **dict(zip(part['columns'], row, strict=True))}
+-                   for part in parts for row in part['rows']]
++        records = []
++        counts = []
++        for part in parts:
++            fields = part['records'] if 'records' in part else [dict(zip(part['columns'], row, strict=True)) for row in part['rows']]
++            records.extend({**deepcopy(part['constants']), **deepcopy(row)} for row in fields)
++            counts.append(len(fields))
++        offset = 0
++        for part, count in zip(parts, counts, strict=True):
++            for record in records[offset:offset + count]:
++                for column, values in part.get('dictionaries', {}).items():
++                    record[column] = deepcopy(values[record[column]])
++            offset += count
+         parent[key] = dict(zip(table['keys'], records, strict=True)) if 'keys' in table else records
+     for operation in value['nis_context_copies']:
+         parent, key = location(operation['path'])
+--- before/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/inventory-output-codec-repair/probe_native_codec.py
++++ rejected/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/inventory-output-codec-repair/probe_native_codec.py
+@@ -22,9 +22,11 @@
+ parser.add_argument('--packed-context', action='store_true')
+ parser.add_argument('--cohort-context', action='store_true')
+ parser.add_argument('--many-cohort-context', action='store_true')
++parser.add_argument('--column-dictionaries', action='store_true')
+ parser.add_argument('--shared-owner-clarification', action='store_true')
+ parser.add_argument('--model', choices=['llama3.1:8b', 'qwen3.5:9b'])
+ args = parser.parse_args()
++args.many_cohort_context = args.many_cohort_context or args.column_dictionaries
+ args.cohort_context = args.cohort_context or args.many_cohort_context
+ args.packed_context = args.packed_context or args.cohort_context
+ OUT = (args.output or Path(__file__).resolve().parent / 'native-grammar').resolve()
+@@ -108,8 +110,18 @@
+                     return int('segments' in value) + sum(count_segments(item) for item in value.values())
+                 return sum(count_segments(item) for item in value) if isinstance(value, list) else 0
+             segment_tables = count_segments(json.loads(messages[-1]['content']))
+-            assert segment_tables > 0, 'The native probe must actually exercise segmented tables.'
+-            if args.many_cohort_context:
++            if args.column_dictionaries:
++                packed = json.loads(messages[-1]['content'])
++                def purpose_dictionary(value):
++                    if isinstance(value, dict):
++                        return ('Responsible for the authored temperature measurement chain.'
++                                in value.get('dictionaries', {}).get('purpose', {}).values()
++                                or any(purpose_dictionary(item) for item in value.values()))
++                    return any(purpose_dictionary(item) for item in value) if isinstance(value, list) else False
++                assert purpose_dictionary(packed), 'The selected purpose must actually be dictionary encoded.'
++            else:
++                assert segment_tables > 0, 'The native probe must actually exercise segmented tables.'
++            if args.many_cohort_context and not args.column_dictionaries:
+                 def largest_segment_count(value):
+                     if isinstance(value, dict):
+                         return max([len(value.get('segments', [])), *(largest_segment_count(v) for v in value.values())])
+@@ -151,6 +163,7 @@
+               'native_owner_selection_basis': 'purpose_only_in_complete_context' if args.cohort_context else None,
+               'many_cohort_context': args.many_cohort_context, 'expected_owner': expected_owner,
+               'shared_owner_clarification': args.shared_owner_clarification,
++              'column_dictionaries': args.column_dictionaries,
+               'schema_and_public_validation_and_scoped_merge': True,
+               'source_code_sha256': hashlib.sha256((ROOT / 'backend/nis/agent/orchestration/local_reasoner.py').read_bytes()).hexdigest(),
+               'original_acceptance': False, 'simulation_acceptance': False,
+--- before/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/freeze_repair.py
++++ rejected/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/freeze_repair.py
+@@ -11,11 +11,11 @@
+ out=Path(__file__).resolve().parent
+ root=out.parents[2]
+ parser=argparse.ArgumentParser(description=__doc__)
+-parser.add_argument('--phase',choices=['source-reference','source-semantics','function-coverage','inventory-batch','inventory-codec','inventory-context','inventory-cohort','inventory-bindings','inventory-closure','inventory-segments','inventory-views'],required=True)
++parser.add_argument('--phase',choices=['source-reference','source-semantics','function-coverage','inventory-batch','inventory-codec','inventory-context','inventory-cohort','inventory-bindings','inventory-closure','inventory-segments','inventory-views','inventory-columns'],required=True)
+ args=parser.parse_args()
+ semantic_phase=args.phase in {'source-semantics','function-coverage'}
+ coverage_phase=args.phase=='function-coverage'
+-directory=out/({'source-reference':'intake-source-reference-repair','source-semantics':'source-semantics-repair','function-coverage':'function-coverage-repair','inventory-batch':'inventory-batch-repair','inventory-codec':'inventory-output-codec-repair','inventory-context':'inventory-context-capacity-repair','inventory-cohort':'inventory-context-capacity-repair/cohort-table-repair','inventory-bindings':'binding-schema-capacity-repair','inventory-closure':'inventory-closure-repair','inventory-segments':'inventory-segment-capacity-repair','inventory-views':'inventory-view-deduplication-repair'}[args.phase])
++directory=out/({'source-reference':'intake-source-reference-repair','source-semantics':'source-semantics-repair','function-coverage':'function-coverage-repair','inventory-batch':'inventory-batch-repair','inventory-codec':'inventory-output-codec-repair','inventory-context':'inventory-context-capacity-repair','inventory-cohort':'inventory-context-capacity-repair/cohort-table-repair','inventory-bindings':'binding-schema-capacity-repair','inventory-closure':'inventory-closure-repair','inventory-segments':'inventory-segment-capacity-repair','inventory-views':'inventory-view-deduplication-repair','inventory-columns':'column-dictionary-repair'}[args.phase])
+ baseline=out/'intake-cardinality-repair'/'before'
+ def baseline_file(name):
+     if (baseline/name).exists():return baseline/name
+@@ -33,14 +33,15 @@
+ def parse(path):
+     return ast.parse(path.read_text(encoding='utf-8'))
+ 
+-if args.phase in {'inventory-closure', 'inventory-segments', 'inventory-views'}:
++if args.phase in {'inventory-closure', 'inventory-segments', 'inventory-views', 'inventory-columns'}:
++    column_phase = args.phase == 'inventory-columns'
+     view_phase = args.phase == 'inventory-views'
+-    segment_phase = args.phase in {'inventory-segments', 'inventory-views'}
++    segment_phase = args.phase in {'inventory-segments', 'inventory-views', 'inventory-columns'}
+     import xml.etree.ElementTree as ET
+     check = next(ET.parse(directory/'green-regression.xml').getroot().iter('testsuite')).attrib
+     assert check['failures'] == check['errors'] == check['skipped'] == '0'
+     assert work['active_local_regression']['status'] == 'PASS' and work['active_local_regression']['exit_code'] == 0
+-    native_path = directory/('native-single-inventory/result.json' if view_phase else 'native-many-cohorts-shared/result.json' if segment_phase else 'native-counter-02/result.json')
++    native_path = directory/('native-column-dictionaries-keyed/result.json' if column_phase else 'native-single-inventory/result.json' if view_phase else 'native-many-cohorts-shared/result.json' if segment_phase else 'native-counter-02/result.json')
+     native = json.loads(native_path.read_text(encoding='utf8'))
+     assert native['status'] == 'PASS' and native['model'] == 'qwen3.5:9b'
+     if segment_phase:
+@@ -52,7 +53,21 @@
+         reviewed = json.loads((directory/'native-independent-review.json').read_text(encoding='utf8'))
+         assert reviewed['all_eight_owner_assertions_retained']
+         assert reviewed['expected_id_not_supplied_in_instruction']
+-        if view_phase:
++        if column_phase:
++            assert native['column_dictionaries'] is True
++            assert reviewed['all251primary_context_records_source_and_schema_identical']
++            assert reviewed['purpose_actually_dictionary_encoded']
++            assert reviewed['all_eight_actual_owners_correct']
++            replay = json.loads((directory/'native-context-replay.json').read_text(encoding='utf8'))
++            assert replay['status'] == 'PASS' and replay['baseline_replay'] == 'FAIL_UNCHANGED_CONTEXT_LIMIT'
++            assert replay['all_content_and_order_and_types_preserved'] and replay['independent_decoders'] == 2
++            assert replay['maximum'] == 131072 and replay['output_reserve'] == 8192 and replay['framing_reserve'] == 2048
++            assert replay['current_required'] <= replay['maximum']
++            assert ref(Path(replay['context']['path'])) == replay['context']
++            assert ref(Path(replay['application']['path'])) == replay['application']
++            assert int(check['tests']) == 195
++            review_names = ('prior_request', 'prior_response', 'current_request', 'current_response', 'passing_result')
++        elif view_phase:
+             assert reviewed['all251primary_context_records_source_and_schema_identical']
+             assert reviewed['latest_inventory_pointer'] == '/current_candidate/devices'
+             review_names = ('prior_request', 'prior_response', 'current_request', 'current_response', 'passing_result')
+@@ -70,6 +85,9 @@
+     # Compare all application declarations. Only the closure predicate, native
+     # schema and the infer instruction/predicate assignment may differ.
+     def normalize(tree):
++        if column_phase:
++            tree.body = [node for node in tree.body if getattr(node, 'name', None) not in {'_reference_context_snapshot', '_reference_context_messages'}]
++            return ast.dump(tree, include_attributes=False)
+         if view_phase:
+             tree.body = [node for node in tree.body if getattr(node, 'name', None) != '_reference_context_messages']
+             before_sentence = 'existing_inventory_for_this_stage zeigt den tatsächlichen aktuellen Bestand einschließlich vorhandener Sensoren und Aktoren.'
+@@ -110,6 +128,8 @@
+              str((out/'freeze_repair.py').relative_to(root)).replace(chr(92), '/')]
+     if view_phase:
+         names += ['backend/tests/test_reference_inventory_focus.py', 'backend/tests/test_reference_reasoner.py']
++    if column_phase:
++        names += ['backend/tests/test_reference_context_delta_capacity.py', 'backend/tests/test_reference_planning_throughput.py']
+     for name, digest in work['frozen_files'].items():
+         if name not in names:
+             assert ref(root/name)['sha256'] == digest, name
+@@ -133,7 +153,7 @@
+     proof = {'status': 'FROZEN_LOCAL_AND_NATIVE_COUNTER_PASS_ORIGINAL_PENDING',
+         'at': datetime.now(timezone.utc).isoformat(), 'source': source, 'verification_sha256': verification,
+         'checks': {'green-regression.xml': check}, 'native_counter': ref(native_path),
+-        'application_change_scope': ['two derived inventory projections reference the unchanged complete current inventory', 'terminal bounded local context evidence'] if view_phase else ['existing lossless serializer: all per-column contiguous run partitions'] if segment_phase else ['finite source-inventory closure predicate', 'native schema closure subset', 'matching stage instruction'],
++        'application_change_scope': ['existing lossless serializer: exact per-column JSON-value dictionaries', 'matching private reconstruction protocol'] if column_phase else ['two derived inventory projections reference the unchanged complete current inventory', 'terminal bounded local context evidence'] if view_phase else ['existing lossless serializer: all per-column contiguous run partitions'] if segment_phase else ['finite source-inventory closure predicate', 'native schema closure subset', 'matching stage instruction'],
+         'all_other_application_ast_identical': True,
+         'public_validation_merge_scheduler_context_output_timeout_original_unchanged': True,
+         'original_acceptance': False, 'simulation_acceptance': False,
+@@ -146,13 +166,13 @@
+         'result': check, 'evidence': [ref(directory/'green-regression.xml')]})
+     work['repair']['evidence'].extend([ref(directory/'source-scope-proof.json'), ref(native_path)])
+     (out/'workload.json').write_text(json.dumps(work, ensure_ascii=False, indent=2)+'\n', encoding='utf8')
+-    state_path = out/('attempt-13/state.json' if view_phase else 'attempt-12/state.json' if segment_phase else 'attempt-11/state.json')
++    state_path = out/('attempt-14/state.json' if column_phase else 'attempt-13/state.json' if view_phase else 'attempt-12/state.json' if segment_phase else 'attempt-11/state.json')
+     state = json.loads(state_path.read_text(encoding='utf8'))
+-    terminal_path = out/('attempt-13/terminal-51532-verified/manifest.json' if view_phase else 'attempt-12/terminal-19307-verified/manifest.json' if segment_phase else 'attempt-11/terminal-7711-verified/manifest.json')
++    terminal_path = out/('attempt-14/terminal-13024-verified/manifest.json' if column_phase else 'attempt-13/terminal-51532-verified/manifest.json' if view_phase else 'attempt-12/terminal-19307-verified/manifest.json' if segment_phase else 'attempt-11/terminal-7711-verified/manifest.json')
+     terminal = json.loads(terminal_path.read_text(encoding='utf8'))
+     assert state['status'] == terminal['state_status'] == 'NATIVE_PLAN_REFERENCE_FAILED'
+-    assert terminal['session'] == (51532 if view_phase else 19307 if segment_phase else 7711) and terminal['exit_code'] == 1 and terminal['normal_terminal_result']['success'] is False
+-    retire_name = 'retire-c3f' if view_phase else 'retire-6d8' if segment_phase else 'retire-4c4'
++    assert terminal['session'] == (13024 if column_phase else 51532 if view_phase else 19307 if segment_phase else 7711) and terminal['exit_code'] == 1 and terminal['normal_terminal_result']['success'] is False
++    retire_name = 'retire-af52' if column_phase else 'retire-c3f' if view_phase else 'retire-6d8' if segment_phase else 'retire-4c4'
+     plan = {'receipt': state['receipt'], 'image_id': state['image_id'], 'resources': state['containers'],
+         'state': str(state_path), 'terminal_evidence': ref(terminal_path),
+         'expected_production_image': work['current_image'], 'output': str(out/retire_name),

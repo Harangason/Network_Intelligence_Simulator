@@ -1,6 +1,42 @@
+import { expectIntakeStartReady, startReviewedIntake } from './support/wizard-intake';
 import { test, expect } from 'playwright/test';
 import { createHash, randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+
+test('raw sample file keeps scope separate from concrete device and connection review @document-preview', async ({ page }) => {
+  const requests: string[] = [];
+  page.on('request', request => {
+    if (request.method() === 'POST' && /\/api\/engineering\/agent\/(?:chat|document-intake)(?:\?|$)/.test(request.url())) requests.push(request.url());
+  });
+  await page.goto(`/studio/engineering?assistant=project&project=nis-e2e-source-preview-${randomUUID()}`);
+  const dialog = page.getByRole('dialog', { name: 'Engineering-Auftrag erstellen' });
+  await dialog.locator('#engineering-project-name').fill('Ungeprüfte Beispieldatei');
+  await dialog.locator('fieldset.agent-project-name-step input[type=file]').setInputFiles(
+    fileURLToPath(new URL('./fixtures/document-preview-example.txt', import.meta.url)));
+  await expect(dialog.getByText(/vollständig gelesen \(11\.578 Zeichen\)/)).toBeVisible();
+  await dialog.getByRole('button', { name: '4', exact: true }).click();
+  const review = dialog.getByRole('region', { name: 'Dokumentprüfung erforderlich' });
+  await expect(review.getByRole('heading', { name: 'Beispieldokument zuerst prüfen' })).toBeVisible();
+  await expect(review).toContainText('Genannter Sollumfang');
+  await expect(review).toContainText('100');
+  await expect(review).toContainText('50');
+  await expect(dialog.getByRole('region', { name: 'Offene Geräteangaben' })).toHaveCount(0);
+  await expect(dialog.getByLabel(/Funktion \[1\. Systemumfang\]: Anschluss/)).toHaveCount(0);
+  await expect(dialog.getByLabel(/Motor \[6\. 50 Funktions-ECUs\]: Anschluss/)).toHaveCount(0);
+  await expect(dialog.getByRole('tree', { name: /Controller-Struktur/ })).toHaveCount(0);
+  await review.getByRole('button', { name: 'Zur Dokumentprüfung', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: 'Lokalen KI-Vorschlag erstellen', exact: true })).toBeVisible();
+  await expect(dialog.getByText(/vollständig gelesen \(11\.578 Zeichen\)/)).toBeVisible();
+  await dialog.getByRole('button', { name: '5', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: 'Auftrag starten', exact: true })).toBeDisabled();
+  const blocker = dialog.getByRole('listitem').filter({ hasText: 'Das Beispieldokument vollständig mit der lokalen KI auswerten' });
+  await expect(blocker).toBeVisible();
+  await expect(dialog).not.toContainText('Anschlüsse festlegen:');
+  await blocker.getByRole('button', { name: 'Angabe ergänzen', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: 'Lokalen KI-Vorschlag erstellen', exact: true })).toBeVisible();
+  await expect(dialog.getByText(/vollständig gelesen \(11\.578 Zeichen\)/)).toBeVisible();
+  expect(requests).toEqual([]);
+});
 
 test('document network failure retains the complete attachment and permits only explicit retry @document-transport', async ({ page }) => {
   // Transport contract only. Abort before backend inference; no native extraction PASS.
@@ -22,7 +58,7 @@ test('document network failure retains the complete attachment and permits only 
     name: 'vollstaendige-pruefquelle.md', mimeType: 'text/markdown', buffer: Buffer.from(source),
   });
   await expect(dialog.getByText(/vollständig gelesen \(419\.634 Zeichen\)/)).toBeVisible();
-  await dialog.getByRole('button', { name: 'Lokalen Qwen-Vorschlag erstellen', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Lokalen KI-Vorschlag erstellen', exact: true }).click();
   const error = dialog.locator('fieldset.agent-project-name-step').getByRole('alert');
   await expect(error).toContainText('Verbindung zur lokalen Dokumentauswertung wurde unterbrochen');
   await expect(error).toContainText('kein vollständiges Prüfergebnis empfangen');
@@ -30,7 +66,7 @@ test('document network failure retains the complete attachment and permits only 
   await expect(description).toHaveValue('Vollständige Anlage prüfen.');
   await expect(notes).toHaveValue('Freigaben erst nach vollständiger Prüfung.');
   await expect(dialog.getByText(/vollständig gelesen \(419\.634 Zeichen\)/)).toBeVisible();
-  await expect(dialog.getByRole('region', { name: 'Qwen-Dokumentvorschlag' })).toHaveCount(0);
+  await expect(dialog.getByRole('region', { name: 'KI-Dokumentvorschlag' })).toHaveCount(0);
   expect(requests).toHaveLength(1);
   expect(requests[0].source).toContain(source);
   await dialog.getByRole('button', { name: 'Dokument erneut prüfen', exact: true }).click();
@@ -56,7 +92,7 @@ test('document intake preserves complete requirements and reports unresolved sco
   await expect(dialog.getByRole('spinbutton', { name: 'Controller: verbindliche Anzahl', exact: true })).toHaveValue('5');
   await expect(dialog.getByRole('spinbutton', { name: 'Anzahl Bremsaktuator', exact: true })).toHaveValue('');
   await expect(dialog.getByRole('spinbutton', { name: 'Aktoren: verbindliche Anzahl', exact: true })).toHaveValue('0');
-  await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+  await expectIntakeStartReady(dialog, false);
   await expect(dialog.getByRole('table', { name: 'Kommunikationssysteme prüfen' })).not.toContainText('embedded_systems · adc');
   await expect(dialog).not.toContainText('degradieren /');
 });
@@ -74,7 +110,7 @@ test('document scope answers enter inventory without hiding unanswered sensor ty
   await expect(dialog.getByRole('spinbutton', { name: 'Sensoren: verbindliche Anzahl', exact: true })).toHaveValue('2');
   await expect(dialog.getByRole('alert', { name: 'Offene Gerätegruppen' })).toContainText('IMU');
   await expect(dialog.getByRole('alert', { name: 'Offene Gerätegruppen' })).toContainText('Radar');
-  await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+  await expectIntakeStartReady(dialog, false);
   await expect(dialog.getByRole('spinbutton', { name: 'Anzahl Kamera', exact: true })).toHaveValue('2');
 });
 
@@ -101,7 +137,7 @@ test('typed document handoff retains source facts and asks for a function host @
   await dialog.locator('#engineering-project-name').fill('Typed document contract');
   const description = dialog.getByPlaceholder('Was soll dieses Projekt leisten?');
   await description.fill(source);
-  await dialog.getByRole('button', { name: 'Lokalen Qwen-Vorschlag erstellen', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Lokalen KI-Vorschlag erstellen', exact: true }).click();
   await expect(dialog.getByText('Controlled handoff contract')).toBeVisible();
   await dialog.getByRole('button', { name: 'Geprüfte Dokumentangaben übernehmen', exact: true }).click();
   await expect(description).toHaveValue(source);
@@ -120,5 +156,5 @@ test('typed document handoff retains source facts and asks for a function host @
   await dialog.getByRole('button', { name: 'Funktionszuordnungen übernehmen', exact: true }).click();
   await expect(host).toHaveValue('Hauptrechner');
   await expect(dialog.getByRole('spinbutton', { name: 'Anzahl Encoder', exact: true })).toHaveValue('');
-  await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+  await expectIntakeStartReady(dialog, false);
 });

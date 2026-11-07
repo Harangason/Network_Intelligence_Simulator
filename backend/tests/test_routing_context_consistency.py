@@ -9,6 +9,22 @@ from backend.nis.knowledge.semantic_vocabulary import EngineeringSemanticVocabul
 from backend.tests.test_routing import FakeValidator, route_payload, SOURCE, TARGET, SOURCE_INTERFACE, TARGET_INTERFACE, SOURCE_PORT, TARGET_PORT
 
 
+def test_someip_channel_selects_its_logical_endpoint_without_accepting_a_foreign_protocol():
+    from backend.nis.engineering.routing.generation import RoutingGenerationService
+    interfaces = [{'id': TARGET_INTERFACE, 'interface_type': 'SOME_IP'},
+                  {'id': 'foreign', 'interface_type': 'CAN_FD'}]
+    selected = RoutingGenerationService._logical_endpoint(interfaces, {'id': TARGET_PORT, 'technology': 'SOME_IP'})
+    assert selected['id'] == TARGET_INTERFACE
+    route = route_payload()
+    route['source']['protocol'] = route['destinations'][0]['protocol'] = 'SOME_IP'
+    validator = FakeValidator(source_type='SOME_IP', target_type='SOME_IP')
+    assert validator.validate(route)['valid'] is True
+    route['destinations'][0]['protocol'] = 'CAN_FD'
+    result = validator.validate(route)
+    assert result['valid'] is False
+    assert 'DESTINATION_LOGICAL_PROTOCOL_MISMATCH' in {item['code'] for item in result['errors']}
+
+
 @pytest.mark.parametrize('role', ['source', 'destination'])
 @pytest.mark.parametrize('lifecycle', ['deprecated', 'superseded'])
 def test_retired_selected_channel_is_invalid_even_when_bus_and_reachable_path_match(role, lifecycle):

@@ -1,3 +1,4 @@
+import { expectIntakeStartReady, startReviewedIntake } from './support/wizard-intake';
 import { test, expect, type Page } from 'playwright/test';
 import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
@@ -618,7 +619,7 @@ test('new small wizard traverses all nine stages and survives reload/restart @sm
     await expect(submit).toBeEnabled();
     const name = await submit.innerText();
     await submit.click();
-    if (name === 'Übernehmen') break;
+    if (name === 'Auftrag starten') break;
     if (step === 9) throw new Error('Questionnaire did not offer submit.');
   }
   const requested = (await startRequest).postDataJSON().wizard_command.wizard_context;
@@ -733,10 +734,10 @@ for (const technology of ['I2C', 'Modbus RTU']) {
     await dialog.getByRole('radio', { name: /Variante 0/ }).check();
     await dialog.getByTitle('Geräteumfang', { exact: true }).click();
     if (technology === 'I2C') {
-      await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+      await expectIntakeStartReady(dialog, false);
       await dialog.getByLabel('RaspberryPi: Anschluss', { exact: true }).selectOption('I2C');
       await expect(dialog.getByLabel('Temperatursensor1: Anschluss', { exact: true })).toHaveValue('');
-      await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+      await expectIntakeStartReady(dialog, false);
       for (const name of ['RaspberryPi', 'Temperatursensor1', 'Temperatursensor2', 'Temperatursensor3', 'Temperatursensor4', 'Ventilaktor1', 'Ventilaktor2']) {
         await dialog.getByLabel(`${name}: Anschluss`, { exact: true }).selectOption('I2C');
       }
@@ -744,12 +745,12 @@ for (const technology of ['I2C', 'Modbus RTU']) {
       await expect(dialog.getByLabel('Temperatursensor1: Anschluss', { exact: true })).toHaveValue('I2C');
       await dialog.getByLabel('Sensor 1: Messgröße', { exact: true }).selectOption('temperature');
     }
-    await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+    await expectIntakeStartReady(dialog, false);
     await dialog.getByLabel('Ventilaktor1: Stellbefehl', { exact: true }).selectOption('OPEN_CLOSE');
     await expect(dialog.getByLabel('Ventilaktor2: Stellbefehl', { exact: true })).toHaveValue('');
-    await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+    await expectIntakeStartReady(dialog, false);
     await dialog.getByLabel('Ventilaktor2: Stellbefehl', { exact: true }).selectOption('OPEN_CLOSE');
-    await dialog.getByRole('button', { name: 'Übernehmen', exact: true }).click();
+    await startReviewedIntake(dialog);
     await expect(completeThroughWizard(page, project, true, ['RaspberryPi', 'Temperatursensor1', 'Temperatursensor2', 'Temperatursensor3', 'Temperatursensor4', 'Ventilaktor1', 'Ventilaktor2'], false, undefined, undefined, true))
       .rejects.toThrow(/Wizard BLOCKED at parameters:.*bestätigte Angaben/);
     const workflow = await readProject(page, project, '/api/engineering/workflow');
@@ -1003,7 +1004,7 @@ test('reviewable functional TX/RX OFF survives request reload and canonical mode
   for (let step = 0; step < 10; step++) {
     const button = dialog.locator('.eng-agent-questionnaire-head').getByRole('button');
     await expect(button).toBeEnabled(); const label = await button.innerText(); await button.click();
-    if (label === 'Übernehmen' || label === 'Auftrag starten') break;
+    if (label === 'Auftrag starten') break;
   }
   const context = (await startRequest).postDataJSON().wizard_command.wizard_context;
   const submitted = context.system_cluster_assignments.flatMap((cluster: any) => cluster.functional_routes ?? []);

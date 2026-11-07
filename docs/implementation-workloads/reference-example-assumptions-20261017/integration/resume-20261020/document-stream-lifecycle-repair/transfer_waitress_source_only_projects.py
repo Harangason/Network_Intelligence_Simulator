@@ -33,9 +33,21 @@ repair.add_argument('--port-intent-identity-repair-dir', type=Path)
 repair.add_argument('--port-response-paging-repair-dir', type=Path)
 repair.add_argument('--cache-prefix-reuse-repair-dir', type=Path)
 repair.add_argument('--port-demand-completion-repair-dir', type=Path)
+repair.add_argument('--lossless-context-delta-repair-dir', type=Path)
+repair.add_argument('--communication-sender-scope-repair-dir', type=Path)
+repair.add_argument('--communication-context-repair-dir', type=Path)
 parser.add_argument('--destination-prefix', default='native-waitress-lifecycle')
 args = parser.parse_args()
-port_demand_dir = args.port_demand_completion_repair_dir.resolve() if args.port_demand_completion_repair_dir else None
+communication_context_dir = (args.communication_context_repair_dir.resolve()
+                             if args.communication_context_repair_dir else None)
+sender_scope_dir = (
+    Path(json.loads((communication_context_dir / 'source-scope-proof.json').read_bytes())['previous_repair']).resolve()
+    if communication_context_dir else
+    args.communication_sender_scope_repair_dir.resolve() if args.communication_sender_scope_repair_dir else None)
+context_delta_dir = (sender_scope_dir.parent if sender_scope_dir else
+                     args.lossless_context_delta_repair_dir.resolve() if args.lossless_context_delta_repair_dir else None)
+port_demand_dir = (context_delta_dir.parent if context_delta_dir else
+                   args.port_demand_completion_repair_dir.resolve() if args.port_demand_completion_repair_dir else None)
 cache_prefix_dir = (port_demand_dir.parent if port_demand_dir else
                     args.cache_prefix_reuse_repair_dir.resolve() if args.cache_prefix_reuse_repair_dir else None)
 port_response_dir = (cache_prefix_dir.parent if cache_prefix_dir else
@@ -64,12 +76,20 @@ receipt = json.loads(args.receipt.read_text(encoding='utf-8'))
 assert re.fullmatch('[a-z0-9-]+', args.destination_prefix)
 repair_dir = source_binding_dir or args.context_repair_dir or args.inventory_cardinality_repair_dir or args.inventory_progress_repair_dir or args.context_cache_progress_repair_dir or args.launcher_repair_dir or args.fresh_id_repair_dir or args.throughput_repair_dir
 evidence_dir = repair_dir.resolve() if repair_dir else OUT
-transfer_evidence_dir = port_demand_dir or cache_prefix_dir or port_response_dir or port_intent_dir or known_owner_dir or inventory_focus_dir or cache_output_dir or selected_identity_dir or evidence_dir
+transfer_evidence_dir = communication_context_dir or sender_scope_dir or context_delta_dir or port_demand_dir or cache_prefix_dir or port_response_dir or port_intent_dir or known_owner_dir or inventory_focus_dir or cache_output_dir or selected_identity_dir or evidence_dir
 historical_dir = args.throughput_repair_dir.resolve() if source_binding_dir else evidence_dir
 assert evidence_dir.is_relative_to(BASE.resolve())
 assert transfer_evidence_dir.is_relative_to(BASE.resolve())
 fresh_id_dir = (BASE / 'resume-20261021/inventory-binding-cardinality-repair/progress-decoder-repair/context-cache-progress-repair/launcher-repair/fresh-id-decoder-repair') if args.throughput_repair_dir else evidence_dir
 identity = json.loads((transfer_evidence_dir / ('current-input-identity.json' if repair_dir else 'waitress-candidate-input-identity.json')).read_text(encoding='utf-8'))
+sender_scope_identity = (json.loads((sender_scope_dir / 'current-input-identity.json').read_bytes())
+                         if communication_context_dir else identity)
+if sender_scope_dir:
+    assert sender_scope_dir.is_relative_to(BASE.resolve())
+context_delta_identity = (json.loads((context_delta_dir / 'current-input-identity.json').read_text())
+                          if sender_scope_dir else identity)
+port_demand_identity = (json.loads((port_demand_dir / 'current-input-identity.json').read_text())
+                        if context_delta_dir else identity)
 cache_prefix_identity = (json.loads((cache_prefix_dir / 'current-input-identity.json').read_text())
                          if port_demand_dir else identity)
 port_response_identity = (json.loads((port_response_dir / 'current-input-identity.json').read_text())
@@ -123,6 +143,21 @@ def cache_prefix_baseline_bytes(name):
 def port_demand_baseline_bytes(name):
     """Preserve exact pre-demand app/operator bytes in the immutable parent chain."""
     before = port_demand_dir / 'before' / name if port_demand_dir else None
+    return before.read_bytes() if before and before.is_file() else context_delta_baseline_bytes(name)
+
+
+def context_delta_baseline_bytes(name):
+    """Bind historical parent evidence to the exact pre-delta app/operator."""
+    before = context_delta_dir / 'before' / name if context_delta_dir else None
+    return before.read_bytes() if before and before.is_file() else sender_scope_baseline_bytes(name)
+
+
+def sender_scope_baseline_bytes(name):
+    """Bind the delta repair to its actual pre-sender-scope inputs."""
+    before = sender_scope_dir / 'before' / name if sender_scope_dir else None
+    if before and before.is_file():
+        return before.read_bytes()
+    before = communication_context_dir / 'before' / name if communication_context_dir else None
     return (before if before and before.is_file() else ROOT / name).read_bytes()
 
 
@@ -605,22 +640,92 @@ if port_demand_dir:
     previous_files = json.loads((cache_prefix_dir / 'actual-host-source-files.json').read_text())['files']
     current_files = json.loads((port_demand_dir / 'actual-host-source-files.json').read_text())['files']
     for entries, expected in ((previous_files, cache_prefix_identity['source_sha256']),
-                              (current_files, identity['source_sha256'])):
+                              (current_files, port_demand_identity['source_sha256'])):
         assert sha(json.dumps(entries, sort_keys=True, separators=(',', ':')).encode()) == expected
     assert set(previous_files) == set(current_files) and len(current_files) == 2313
     assert [name for name in sorted(current_files) if current_files[name] != previous_files[name]] == proof['allowed_app_changes']
     for name in proof['allowed_app_changes']:
         assert sha(port_demand_baseline_bytes(name).replace(b'\r\n', b'\n')) == previous_files[name]
-        assert sha((ROOT / name).read_bytes().replace(b'\r\n', b'\n')) == current_files[name]
+        assert sha(context_delta_baseline_bytes(name).replace(b'\r\n', b'\n')) == current_files[name]
     freeze = json.loads((port_demand_dir / 'candidate-prepare-freeze.json').read_text())
-    assert {key: freeze[key] for key in identity} == identity
+    assert {key: freeze[key] for key in port_demand_identity} == port_demand_identity
     assert freeze['targeted_regressions_passed'] and freeze['native_grammar_passed']
     assert freeze['fresh_native_acceptance_claimed'] is False
     for saved in freeze['validation_evidence']:
         assert sha(Path(saved['path']).read_bytes()) == saved['sha256']
     result = json.loads((port_demand_dir / 'candidate-prepare-result.json').read_text())
-    assert result['exit_code'] == 0 and result['source_sha256'] == identity['source_sha256']
+    assert result['exit_code'] == 0 and result['source_sha256'] == port_demand_identity['source_sha256']
     for name, digest in freeze['frozen_affected_files'].items():
+        assert sha(context_delta_baseline_bytes(name)) == digest
+        frozen[name] = digest
+if context_delta_dir:
+    proof = json.loads((context_delta_dir / 'source-scope-proof.json').read_text())
+    assert proof['allowed_app_changes'] == ['backend/nis/agent/orchestration/local_reasoner.py']
+    assert proof['changed_module_AST_nodes'] == ['_reference_context_snapshot', '_reference_context_messages']
+    assert proof['all_other_AST_exact'] and proof['normal_reasoner_class_AST_exact']
+    assert proof['input_guard_patch_and_schema_AST_exact']
+    previous_files = json.loads((port_demand_dir / 'actual-host-source-files.json').read_text())['files']
+    current_files = json.loads((context_delta_dir / 'actual-host-source-files.json').read_text())['files']
+    for entries, expected in ((previous_files, port_demand_identity['source_sha256']),
+                              (current_files, context_delta_identity['source_sha256'])):
+        assert sha(json.dumps(entries, sort_keys=True, separators=(',', ':')).encode()) == expected
+    assert set(previous_files) == set(current_files) and len(current_files) == 2313
+    assert [name for name in sorted(current_files) if current_files[name] != previous_files[name]] == proof['allowed_app_changes']
+    for name in proof['allowed_app_changes']:
+        assert sha(context_delta_baseline_bytes(name).replace(b'\r\n', b'\n')) == previous_files[name]
+        assert sha(sender_scope_baseline_bytes(name).replace(b'\r\n', b'\n')) == current_files[name]
+    freeze = json.loads((context_delta_dir / 'candidate-prepare-freeze.json').read_text())
+    assert {key: freeze[key] for key in context_delta_identity} == context_delta_identity
+    assert freeze['targeted_regressions_passed'] and freeze['native_grammar_passed']
+    assert freeze['fresh_native_acceptance_claimed'] is False
+    for saved in freeze['validation_evidence']:
+        assert sha(Path(saved['path']).read_bytes()) == saved['sha256']
+    result = json.loads((context_delta_dir / 'candidate-prepare-result.json').read_text())
+    assert result['exit_code'] == 0 and result['source_sha256'] == context_delta_identity['source_sha256']
+    for name, digest in freeze['frozen_affected_files'].items():
+        assert sha(sender_scope_baseline_bytes(name)) == digest
+        frozen[name] = digest
+if sender_scope_dir:
+    proof = json.loads((sender_scope_dir / 'source-scope-proof.json').read_text())
+    expected_change = ['backend/nis/agent/orchestration/local_reasoner.py']
+    assert proof['allowed_app_changes'] == expected_change
+    assert proof['only_private_sender_schema_and_call_changed']
+    current_files = json.loads((sender_scope_dir / 'actual-host-source-files.json').read_text())['files']
+    previous_files = json.loads((context_delta_dir / 'actual-host-source-files.json').read_text())['files']
+    assert sha(json.dumps(current_files, sort_keys=True, separators=(',', ':')).encode()) == sender_scope_identity['source_sha256']
+    assert set(current_files) == set(previous_files) and len(current_files) == 2313
+    assert [name for name in sorted(current_files) if current_files[name] != previous_files[name]] == expected_change
+    for name in expected_change:
+        baseline = communication_context_dir / 'before' if communication_context_dir else ROOT
+        assert sha((baseline / name).read_bytes().replace(b'\r\n', b'\n')) == current_files[name]
+    freeze = json.loads((sender_scope_dir / 'candidate-prepare-freeze.json').read_text())
+    assert {key: freeze[key] for key in sender_scope_identity} == sender_scope_identity
+    assert freeze['targeted_regressions_passed'] and freeze['native_grammar_passed']
+    assert freeze['fresh_native_acceptance_claimed'] is False
+    if not communication_context_dir:
+        assert receipt['verification_sha256'] == identity['verification_sha256']
+    for saved in freeze['validation_evidence']:
+        assert sha(Path(saved['path']).read_bytes()) == saved['sha256']
+    result = json.loads((sender_scope_dir / 'candidate-prepare-result.json').read_text())
+    assert result['exit_code'] == 0 and result['source_sha256'] == sender_scope_identity['source_sha256']
+    if not communication_context_dir:
+        assert result['image_id'] == receipt['image_id']
+    for name, digest in freeze['frozen_affected_files'].items():
+        before = communication_context_dir / 'before' / name if communication_context_dir else None
+        assert sha((before if before and before.is_file() else ROOT / name).read_bytes()) == digest
+        frozen[name] = digest
+if communication_context_dir:
+    proof = json.loads((communication_context_dir / 'source-scope-proof.json').read_bytes())
+    current_files = json.loads((communication_context_dir / 'actual-host-source-files.json').read_bytes())['files']
+    previous_files = json.loads((sender_scope_dir / 'actual-host-source-files.json').read_bytes())['files']
+    assert set(current_files) == set(previous_files)
+    assert [name for name in sorted(current_files) if current_files[name] != previous_files[name]] == expected_change
+    assert sha(json.dumps(current_files, sort_keys=True, separators=(',', ':')).encode()) == identity['source_sha256']
+    assert all(sha((ROOT / name).read_bytes().replace(b'\r\n', b'\n')) == digest for name, digest in current_files.items())
+    assert receipt['verification_sha256'] == identity['verification_sha256']
+    for saved in proof['validation_evidence']:
+        assert sha(Path(saved['path']).read_bytes()) == saved['sha256']
+    for name, digest in proof['frozen_affected_files'].items():
         assert sha((ROOT / name).read_bytes()) == digest
         frozen[name] = digest
 assert all(sha((ROOT / name).read_bytes()) == digest for name, digest in frozen.items())

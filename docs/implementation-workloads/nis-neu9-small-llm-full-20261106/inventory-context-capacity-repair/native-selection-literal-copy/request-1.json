@@ -1,0 +1,60 @@
+{
+  "model": "llama3.1:8b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Copy the supplied literal object exactly. No selection or reasoning."
+    },
+    {
+      "role": "user",
+      "content": "{\"target_member\": \"rear\", \"selected_device_ids\": [\"authored-device-010\", \"authored-device-011\"]}"
+    }
+  ],
+  "format": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "target_member": {
+        "type": "string",
+        "enum": [
+          "front",
+          "rear"
+        ]
+      },
+      "selected_device_ids": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2,
+        "items": {
+          "type": "string",
+          "enum": [
+            "authored-device-000",
+            "authored-device-001",
+            "authored-device-002",
+            "authored-device-003",
+            "authored-device-004",
+            "authored-device-005",
+            "authored-device-006",
+            "authored-device-007",
+            "authored-device-008",
+            "authored-device-009",
+            "authored-device-010",
+            "authored-device-011"
+          ]
+        }
+      }
+    },
+    "required": [
+      "target_member",
+      "selected_device_ids"
+    ]
+  },
+  "think": false,
+  "stream": true,
+  "keep_alive": "10m",
+  "options": {
+    "temperature": 0,
+    "num_predict": 8192,
+    "num_ctx": 131072
+  }
+}

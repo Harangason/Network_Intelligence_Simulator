@@ -1,0 +1,1038 @@
+--- before/frontend/src/features/agent/lib/engineering-specification.ts
++++ after/frontend/src/features/agent/lib/engineering-specification.ts
+@@ -107,6 +107,7 @@
+   networkArchitecture: NetworkArchitectureMode;
+   targetCounts: EngineeringTargetCounts;
+   unresolvedInventoryGroups: string[];
++  documentReviewRequired?: boolean;
+   reference_design?: Record<string, unknown>;
+ };
+ 
+@@ -2120,6 +2121,7 @@
+   overrides: Partial<EngineeringHardwareCounts> = {},
+   domainOverride?: string,
+   completenessFirst = false,
++  options: { preview?: boolean } = {},
+ ): ExtractedEngineeringSpecification {
+   const reference = readDocumentReferenceDesign(text);
+   if (reference) return extractReferenceDesignSpecification(text, reference, overrides, domainOverride);
+@@ -2130,6 +2132,22 @@
+   const explicitMode = text.match(/^- Generierungsmodus:\s*(REAL_PROJECT|EXAMPLE_PROJECT)\s*$/mi)?.[1]?.toUpperCase();
+   const legacyConfirmed = !explicitMode && /per Wizard-Uebernehmen bestaetigt/.test(text);
+   const exampleRequested = engineeringGenerationMode(text) === 'EXAMPLE_PROJECT';
++  // A source document is not an approved instance inventory. In the wizard,
++  // keep its stated scope separate until typed source facts have been reviewed.
++  // Confirmed generation and short, explicit structured requests retain their
++  // existing path; accepted reference designs were resolved above.
++  if (options.preview && exampleRequested && !documentEquipment?.facts
++      && originalLines.some(line => /^\s*(?:#{1,6}\s+|\d+(?:\.\d+)*[.)]\s+)\S/u.test(line))) {
++    const domain = domainOverride || domainFrom(text);
++    return {
++      chains: [], domain, modelType: domainOverride || extractProjectModelType(text, domain),
++      interfaceType: 'Other', communicationSystems: extractCommunicationSystems(text),
++      communicationSystemCounts: extractCommunicationSystemCounts(text),
++      networkArchitecture: extractNetworkArchitectureMode(text),
++      targetCounts: { ...extractEngineeringTargetCounts(text), ...confirmedHardwareCounts(text), ...overrides },
++      unresolvedInventoryGroups: [], documentReviewRequired: true,
++    };
++  }
+   const measurements = sensorMeasurementSelections(text);
+   // Structured review selections are metadata, not natural-language hardware
+   // inventory. Their JSON numbers and role names must not create extra nodes.
+--- before/frontend/src/features/agent/lib/engineering-specification.test.mjs
++++ after/frontend/src/features/agent/lib/engineering-specification.test.mjs
+@@ -1831,3 +1831,47 @@
+   assert.match(first, /Perception/);
+   assert.doesNotMatch(first, /Planning/);
+ });
++
++test('raw sample document preview keeps source scope without inventing concrete devices', () => {
++  const source = readFileSync(new URL('../../../../e2e/fixtures/document-preview-example.txt', import.meta.url), 'utf8');
++  assert.equal(source.length, 11578);
++  for (const text of [source, '\n- Aufgaben-Anlage: neu 9.txt (text/plain, 11 KB)\n' + source]) {
++    const preview = extractEngineeringSpecification(text, {}, 'automotive', false, { preview: true });
++    assert.equal(preview.documentReviewRequired, true);
++    assert.deepEqual(preview.targetCounts, { sensors: 100, actuators: 100, ecus: 50, gateways: 1, explicit: true });
++    assert.deepEqual(new Set(preview.communicationSystems), new Set(['LIN', 'CAN_FD', 'Ethernet']));
++    assert.deepEqual(preview.chains, []);
++  }
++});
++
++test('legacy quantity review does not establish typed sample document inventory', () => {
++  const source = readFileSync(new URL('../../../../e2e/fixtures/document-preview-example.txt', import.meta.url), 'utf8');
++  const legacy = { questions: [], devices: [], answers: [] };
++  const preview = extractEngineeringSpecification(source + '\n- Dokument-Geräte: ' + JSON.stringify(legacy), {}, 'automotive', false, { preview: true });
++  assert.equal(preview.documentReviewRequired, true);
++  assert.deepEqual(preview.chains, []);
++});
++
++test('typed document preview uses reviewed instances without sample fillers', () => {
++  const source = '# Beispielprojekt Montage\n## Architektur\nController Alpha\nSensor S1\n## Anforderungen\nREQ-A: The controller shall read S1.';
++  const components = [
++    { name: 'Alpha', kind: 'INSTANCE', role: 'CONTROLLER', quantity: 1, source_quote: 'Controller Alpha', source_context: ['Beispielprojekt Montage', 'Architektur'] },
++    { name: 'S1', kind: 'INSTANCE', role: 'SENSOR', quantity: 1, source_quote: 'Sensor S1', source_context: ['Beispielprojekt Montage', 'Architektur'] },
++    { name: 'REQ-A', kind: 'REQUIREMENT', role: 'OTHER', quantity: null, source_quote: 'REQ-A: The controller shall read S1.', source_context: ['Beispielprojekt Montage', 'Anforderungen'] },
++  ];
++  const reviewed = reviewDocumentEquipment(source, { interpretation: { components, technologies: [] } }, {}, false);
++  const preview = extractEngineeringSpecification(source + '\n- Dokument-Geräte: ' + JSON.stringify(reviewed), {}, 'custom', false, { preview: true });
++  assert.notEqual(preview.documentReviewRequired, true);
++  assert.deepEqual([...new Set(preview.chains.map(chain => chain.hardware_name))].sort(), ['Alpha', 'S1']);
++  assert.equal(preview.targetCounts.ecus, 1);
++  assert.equal(preview.targetCounts.sensors, 1);
++  assert.equal(readReviewedDocumentEquipment(source + '\n- Dokument-Geräte: ' + JSON.stringify(reviewed)).facts.length, 3);
++});
++
++test('structured request preview still recognizes explicit nonautomotive devices', () => {
++  const source = 'Controller: PLC1\nSensor: Encoder1\n- Geräteanschlüsse: {"PLC1":"EtherCAT","Encoder1":"EtherCAT"}';
++  const preview = extractEngineeringSpecification(source, {}, 'industrial_automation', false, { preview: true });
++  assert.notEqual(preview.documentReviewRequired, true);
++  assert.deepEqual([...new Set(preview.chains.map(chain => chain.hardware_name))].sort(), ['Encoder1', 'PLC1']);
++  assert.ok(preview.chains.every(chain => chain.interface_type === 'EtherCAT'));
++});
+--- before/frontend/src/features/agent/ui/agent-chat-core.tsx
++++ after/frontend/src/features/agent/ui/agent-chat-core.tsx
+@@ -1256,7 +1256,7 @@
+   // reviewed systems/counts while a device's connection or function is clarified.
+   const equipmentReviewSource = documentReviewSource(taskSource);
+   const recognizedEquipment = useMemo(
+-    () => extractEngineeringSpecification(taskSource, {}, previewDomain),
++    () => extractEngineeringSpecification(taskSource, {}, previewDomain, false, { preview: true }),
+     [previewDomain, taskSource],
+   );
+   const equipmentValues = Object.fromEntries(EQUIPMENT_CATEGORIES.map(({ key }) => [key,
+@@ -1273,7 +1273,7 @@
+     setNetworkArchitecture(extractNetworkArchitectureMode(taskSource));
+   }, [taskSource]);
+   const plannedEquipment = useMemo(
+-    () => extractEngineeringSpecification(taskSource, equipmentCounts, previewDomain),
++    () => extractEngineeringSpecification(taskSource, equipmentCounts, previewDomain, false, { preview: true }),
+     [equipmentCounts.actuators, equipmentCounts.ecus, equipmentCounts.gateways, equipmentCounts.sensors, previewDomain, taskSource],
+   );
+   const documentControllerChains = plannedEquipment.chains.filter(chain => isEngineeringControllerDevice(chain.device_type));
+@@ -1297,7 +1297,7 @@
+   const connectionInventory = [...new Map(plannedEquipment.chains.map(chain => [chain.hardware_name, chain])).values()];
+   const sensorInventory = connectionInventory.filter(chain => chain.device_type === 'SensorController');
+   const namedSensors = sensorInventory.filter(chain => !/^Sensor\d+$/.test(chain.hardware_name));
+-  const sensorRows = Array.from({ length: Math.min(1000, Math.max(equipmentCounts.sensors || 0, sensorInventory.length)) }, (_, index) => {
++  const sensorRows = Array.from({ length: plannedEquipment.documentReviewRequired ? 0 : Math.min(1000, Math.max(equipmentCounts.sensors || 0, sensorInventory.length)) }, (_, index) => {
+     const chain = namedSensors[index] ?? sensorInventory.find(item => item.hardware_name === `Sensor${index + 1}`);
+     return { name: chain?.hardware_name ?? `Sensor${index + 1}`,
+       label: chain?.hardware_name ? `Sensor ${index + 1} · ${chain.hardware_name}` : `Sensor ${index + 1}`,
+@@ -2984,6 +2984,7 @@
+     </div>;
+   };
+   const startBlockers = [
++    ...(plannedEquipment.documentReviewRequired ? [{ step: 'project', text: 'Das Beispieldokument vollständig mit der lokalen KI auswerten und die Quellenbefunde prüfen und übernehmen.' }] : []),
+     ...(referenceExample && !acceptedReference ? [{ step: 'project', text: 'Die aktuellen Referenzannahmen vollständig prüfen und übernehmen.' }] : []),
+     ...(unresolvedDocumentFunctions.length ? [{ step: 'equipment', text: `Ausführenden Controller für ${unresolvedDocumentFunctions.length} Funktionsbefunde festlegen und übernehmen.` }] : []),
+     ...(!projectReady ? [{ step: 'project', text: 'Bitte einen Projektnamen eingeben.' }] : []),
+@@ -2992,7 +2993,7 @@
+     ...(!equipmentReady ? [{ step: 'equipment', text: intakeRequirement && equipmentValues.actuators === ''
+       ? 'Die Anzahl der Ventile bzw. Aktoren ist noch offen.' : 'Die verbindlichen Geräteanzahlen fehlen oder sind ungültig.' }] : []),
+     ...(!acceptedReference && !equipmentOwnershipReady ? [{ step: 'equipment', text: 'Die Zuordnung der Teilnehmer zu ihren Controllern ist noch offen.' }] : []),
+-    ...(!equipmentIdentityReady ? [{ step: 'equipment', text: 'Geräteanzahl und konkret benannte Geräte stimmen noch nicht überein. Bitte Geräte in der Anforderung benennen; fehlende Geräte werden nicht erfunden.' }] : []),
++    ...(!plannedEquipment.documentReviewRequired && !equipmentIdentityReady ? [{ step: 'equipment', text: 'Geräteanzahl und konkret benannte Geräte stimmen noch nicht überein. Bitte Geräte in der Anforderung benennen; fehlende Geräte werden nicht erfunden.' }] : []),
+     ...(!acceptedReference && unresolvedConnections.length ? [{ step: 'equipment', text: `Anschlüsse festlegen: ${unresolvedConnections.map(chain => chain.hardware_name).join(', ')}. Eine Auswahl für den Controller ersetzt nicht die Anschlüsse seiner Sensoren und Aktoren.` }] : []),
+     ...(!acceptedReference && unresolvedSensorMeasurements.length ? [{ step: 'equipment', text: `Messgrößen festlegen: ${unresolvedSensorMeasurements.map(row => row.name).join(', ')}.` }] : []),
+     ...(!acceptedReference && unresolvedCommands.length ? [{ step: 'equipment', text: `Stellbefehl und Kodierung festlegen: ${unresolvedCommands.join(', ')}.` }] : []),
+@@ -3358,6 +3359,7 @@
+             </span>
+           </label>
+           {taskAttachmentError && <p className="notice error" role="alert">{taskAttachmentError}</p>}
++          {plannedEquipment.documentReviewRequired && <p className="notice" role="status">Dieses Beispieldokument nennt Sollzahlen und Beispiele. Vor konkreten Geräte-, Funktions- und Anschlussvorschlägen muss die vollständige Quelle ausgewertet und geprüft werden.</p>}
+           <button className="button secondary" type="button" disabled={effectiveBusy || documentIntakeBusy || !taskReady || !!taskAttachmentError}
+             onClick={() => void reviewDocumentWithQwen()}>{documentIntakeBusy ? 'Lokale KI prüft das Dokument …' : documentIntakeError ? 'Dokument erneut prüfen' : 'Lokalen KI-Vorschlag erstellen'}</button>
+           {referenceReview()}
+@@ -3554,6 +3556,14 @@
+       {activeStepId === "equipment" && (
+         <fieldset className="agent-choice-group">
+           <legend>Geräteumfang prüfen</legend>
++          {plannedEquipment.documentReviewRequired ? <section className="agent-cluster-review" aria-label="Dokumentprüfung erforderlich">
++            <h3>Beispieldokument zuerst prüfen</h3>
++            <p>Die Quelle enthält Sollzahlen und beispielhafte Funktionen. Konkrete Geräte und ihre Anschlüsse sind noch nicht aus geprüften Dokumentbefunden abgeleitet.</p>
++            <h4>Genannter Sollumfang</h4>
++            <dl>{EQUIPMENT_CATEGORIES.map(({ key, label }) => <div key={key}><dt>{label}</dt><dd>{recognizedEquipment.targetCounts[key]}</dd></div>)}</dl>
++            <p>Erstelle im ersten Schritt den lokalen KI-Vorschlag und prüfe die vollständigen Quellenbefunde. Fehlende Beispieldaten können anschließend als Referenzannahmen geplant und gesondert freigegeben werden.</p>
++            <button className="button secondary" type="button" disabled={effectiveBusy} onClick={() => setStep(visibleSteps.findIndex(item => item.id === 'project'))}>Zur Dokumentprüfung</button>
++          </section> : <>
+           {domainMismatch && !domainMismatchAccepted && (
+             <section className="agent-domain-conflict" role="alert">
+               <div>
+@@ -3906,6 +3916,7 @@
+               })()}
+             </section>
+           )}
++          </>}
+         </fieldset>
+       )}
+       {phase === 'questionnaire' && activeStepId === 'status' && !submittedContext && (
+--- before/frontend/e2e/document-intake.spec.ts
++++ after/frontend/e2e/document-intake.spec.ts
+@@ -2,6 +2,41 @@
+ import { test, expect } from 'playwright/test';
+ import { createHash, randomUUID } from 'node:crypto';
+ import { fileURLToPath } from 'node:url';
++
++test('raw sample file keeps scope separate from concrete device and connection review @document-preview', async ({ page }) => {
++  const requests: string[] = [];
++  page.on('request', request => {
++    if (request.method() === 'POST' && /\/api\/engineering\/agent\/(?:chat|document-intake)(?:\?|$)/.test(request.url())) requests.push(request.url());
++  });
++  await page.goto(`/studio/engineering?assistant=project&project=nis-e2e-source-preview-${randomUUID()}`);
++  const dialog = page.getByRole('dialog', { name: 'Engineering-Auftrag erstellen' });
++  await dialog.locator('#engineering-project-name').fill('Ungeprüfte Beispieldatei');
++  await dialog.locator('fieldset.agent-project-name-step input[type=file]').setInputFiles(
++    fileURLToPath(new URL('./fixtures/document-preview-example.txt', import.meta.url)));
++  await expect(dialog.getByText(/vollständig gelesen \(11\.578 Zeichen\)/)).toBeVisible();
++  await dialog.getByRole('button', { name: '4', exact: true }).click();
++  const review = dialog.getByRole('region', { name: 'Dokumentprüfung erforderlich' });
++  await expect(review.getByRole('heading', { name: 'Beispieldokument zuerst prüfen' })).toBeVisible();
++  await expect(review).toContainText('Genannter Sollumfang');
++  await expect(review).toContainText('100');
++  await expect(review).toContainText('50');
++  await expect(dialog.getByRole('region', { name: 'Offene Geräteangaben' })).toHaveCount(0);
++  await expect(dialog.getByLabel(/Funktion \[1\. Systemumfang\]: Anschluss/)).toHaveCount(0);
++  await expect(dialog.getByLabel(/Motor \[6\. 50 Funktions-ECUs\]: Anschluss/)).toHaveCount(0);
++  await expect(dialog.getByRole('tree', { name: /Controller-Struktur/ })).toHaveCount(0);
++  await review.getByRole('button', { name: 'Zur Dokumentprüfung', exact: true }).click();
++  await expect(dialog.getByRole('button', { name: 'Lokalen KI-Vorschlag erstellen', exact: true })).toBeVisible();
++  await expect(dialog.getByText(/vollständig gelesen \(11\.578 Zeichen\)/)).toBeVisible();
++  await dialog.getByRole('button', { name: '5', exact: true }).click();
++  await expect(dialog.getByRole('button', { name: 'Auftrag starten', exact: true })).toBeDisabled();
++  const blocker = dialog.getByRole('listitem').filter({ hasText: 'Das Beispieldokument vollständig mit der lokalen KI auswerten' });
++  await expect(blocker).toBeVisible();
++  await expect(dialog).not.toContainText('Anschlüsse festlegen:');
++  await blocker.getByRole('button', { name: 'Angabe ergänzen', exact: true }).click();
++  await expect(dialog.getByRole('button', { name: 'Lokalen KI-Vorschlag erstellen', exact: true })).toBeVisible();
++  await expect(dialog.getByText(/vollständig gelesen \(11\.578 Zeichen\)/)).toBeVisible();
++  expect(requests).toEqual([]);
++});
+ 
+ test('document network failure retains the complete attachment and permits only explicit retry @document-transport', async ({ page }) => {
+   // Transport contract only. Abort before backend inference; no native extraction PASS.
+--- before/frontend/e2e/fixtures/document-preview-example.txt
++++ after/frontend/e2e/fixtures/document-preview-example.txt
+@@ -0,0 +1,787 @@
++Musterprojekt – Fahrzeugnetzwerk
++
++## 1. Systemumfang
++
++- **100 Sensoren**
++- **100 Aktuatoren**
++- **50 Funktions-ECUs**
++- **1 zentrales Gateway**
++- Kommunikationssysteme:
++  - **25 LIN**
++  - **10 CAN-FD**
++  - **5 Automotive Ethernet**
++- **je Funktion-ECU min 5 und max 20 Signale anlegen, die Anzahl richtet sich an die Notwendigkeit zur Darstellung der Funktionsrelevantendaten   
++
++---
++
++## 2. Sensoren
++
++Die 100 Sensoren erfassen typische fahrzeugrelevante Größen, zum Beispiel:
++
++- Temperatur
++- Druck
++- Drehzahl
++- Raddrehzahl
++- Beschleunigung
++- Lenkwinkel
++- Spannung
++- Strom
++- Füllstand
++- Position
++- Abstand
++- Zustände
++- weitere physikalische Messgrößen
++
++Jeder Sensor erhält mindestens:
++
++- eindeutige ID
++- Name
++- Beschreibung
++- Messgröße
++- Einheit
++- Minimum
++- Maximum
++- Auflösung
++- Zykluszeit
++- Producer-Zuordnung
++- angeschlossenes Interface
++- verwendete Kommunikationstechnologie
++
++---
++
++## 3. Beispiel Temperatursensor
++
++- Bereich: **−20 °C bis +120 °C**
++- Auflösung: **0,1 °C**
++- Signal: `Temperature`
++- Verwendung durch eine Thermal-/Klima-ECU
++
++Die ECU verarbeitet daraus beispielsweise:
++
++- `TemperatureCurrent`
++- `TemperatureTarget`
++- `TemperatureStatus`
++- `OverTemperatureWarning`
++- `ThermalControlRequest`
++
++---
++
++## 4. Beispiel Drehzahlsensor
++
++- Bereich: **0 bis 5000 U/min**
++- Auflösung: **50 U/min**
++- Signal: `MotorRPM`
++
++Mögliche Werte:
++
++- 0
++- 50
++- 100
++- 150
++- …
++- 4900
++- 4950
++- 5000 U/min
++
++Beispielregeln:
++
++- ab 4800 U/min → Warning
++- über 5000 U/min → Grenzwertverletzung
++
++---
++
++## 5. Beispiel Stromsensor
++
++- Bereich: **0 bis 20 A**
++- Auflösung beispielsweise: **0,1 A**
++
++Verwendung:
++
++- Motorstromüberwachung
++- Lastbewertung
++- Plausibilitätsprüfung
++- Fehlererkennung
++
++Beispiel:
++
++```text
++MotorCurrent > 5 A
++AND
++MotorRPM = 0
++
++→ MOTOR_BLOCKED_POSSIBLE
++```
++
++---
++
++## 6. 50 Funktions-ECUs
++
++Die 50 ECUs sollen typische Fahrzeugfunktionen repräsentieren, zum Beispiel:
++
++- Motorsteuergerät
++- Getriebesteuergerät
++- Batteriemanagement
++- Bremsregelsystem
++- Lenkungssteuergerät
++- Fahrwerksteuergerät
++- Klimasteuergerät
++- Body Control Module
++- Türsteuergeräte
++- Sitzsteuergeräte
++- Lichtsteuergerät
++- Airbagsteuergerät
++- Kombiinstrument
++- Infotainment
++- Telematik
++- Diagnose
++- Fahrerassistenz
++- Energieversorgung
++- zentrale Fahrzeugsteuerung
++- weitere typische Funktions-ECUs
++
++---
++
++## 7. ECU-Signale
++
++Jede Funktionen erhält fachlich passende Nachrichten darin enthalten sind die Signale, ergänze die entsprechend der Funktionsanforderung-/beschreibung:
++
++
++### Eingangssignale
++
++Beispielsweise:
++
++- Sensorsignale
++- Statussignale anderer ECUs
++- Anforderungssignale
++- Diagnoseinformationen
++- Netzwerkstatus
++
++### Ausgangssignale
++
++Beispielsweise:
++
++- Funktionsstatus
++- Regelwerte
++- Commands
++- Warnungen
++- Fehlerstatus
++- Diagnosewerte
++- Freigaben
++- Systemzustände
++
++---
++
++## 8. Beispiel Batteriemanagement
++
++Eingänge:
++
++- Zellspannungen
++- Batteriestrom
++- Batterietemperaturen
++- Fahrzeugzustand
++- Ladezustand
++
++Ausgänge:
++
++- State of Charge
++- State of Health
++- Leistungsgrenze
++- Ladefreigabe
++- Entladefreigabe
++- Battery Status
++- Fault Level
++- Temperature Warning
++
++---
++
++## 9. Beispiel Motion-/Antriebs-ECU
++
++Eingänge:
++
++- Motordrehzahl
++- Motorstrom
++- Drehmomentanforderung
++- Betriebszustand
++- Fahrzustand
++
++Ausgänge:
++
++- RPM Status
++- Torque Status
++- Motion System Status
++- Limit Warning
++- Drive Command
++- Fault Status
++
++---
++
++## 10. Kommunikationstechnologien
++
++### LIN
++
++Verwendung für:
++
++- sensornahe Teilnehmer
++- einfache Aktuatoren
++- Komfortfunktionen
++- kostengünstige Kommunikation
++- weniger zeitkritische Daten
++
++### CAN-FD
++
++Verwendung für:
++
++- klassische Fahrzeugfunktionen
++- Antrieb
++- Fahrwerk
++- Bremse
++- Body-Funktionen
++- zeitkritische Steuergeräte
++
++### Automotive Ethernet
++
++Verwendung für:
++
++- zentrale Steuergeräte
++- Fahrerassistenz
++- datenintensive Kommunikation
++- Diagnose
++- Infotainment
++- Backbone-Kommunikation
++
++---
++
++## 11. Zentrales Gateway
++
++Es existiert **genau ein zentrales Gateway**.
++
++Aufgaben:
++
++- Verbindung der LIN-, CAN-FD- und Ethernet-Segmente
++- Routing
++- Message Forwarding
++- Signalweiterleitung
++- Protokollübergänge
++- Gateway Queueing
++- Gateway Timing
++- Gateway Load Monitoring
++
++Das Gateway muss technisch nachvollziehbar zeigen:
++
++- welche Messages es passieren,
++- welche Signale weitergeleitet werden,
++- welche Bussegmente beteiligt sind,
++- welche Verzögerung entsteht,
++- welche Last erzeugt wird.
++
++---
++
++## 12. Routing-Tabelle
++
++Für jede relevante Kommunikation wird definiert:
++
++- Producer
++- Consumer
++- Signal
++- Message
++- Source Interface
++- Source Network
++- Gateway
++- Destination Network
++- Destination Interface
++- Routingpfad
++- Zykluszeit
++- Priorität
++- Timing-Anforderung
++
++Beispiel:
++
++```text
++ECU_A
++→ CAN_FD_1
++→ Central Gateway
++→ Ethernet Backbone
++→ ECU_B
++```
++
++---
++
++## 13. Routing-Erstellung
++
++Routing kann entstehen durch:
++
++- manuelle Erstellung
++- Import
++- Netzwerk-Editor
++- KI-Vorschlag
++
++KI-generierte oder automatisch erkannte Routen werden zunächst als:
++
++```text
++DRAFT
++PENDING_CONFIRMATION
++```
++
++gespeichert.
++
++Erst der Benutzer bestätigt sie.
++
++---
++
++## 14. Netzwerk-Editor
++
++Der Netzwerk-Editor stellt grafisch dar:
++
++- 100 Sensoren
++- 100 Aktoren
++- 50 ECUs
++- 1 Gateway
++- LIN-Netze
++- CAN-FD-Netze
++- Ethernet-Netze
++- Ports
++- Interfaces
++- Verbindungen
++
++Zusätzlich:
++
++- Routing Overlay
++- Signalpfade
++- Message-Pfade
++- Buslast
++- Gateway-Auslastung
++
++---
++
++## 15. Parameter
++
++Für alle verwendeten Netzwerke werden technische Parameter definiert.
++
++Beispiele:
++
++- Bitrate
++- Data Bitrate
++- Payload
++- MTU
++- Cycle Time
++- Timeout
++- Priorität
++- maximale Latenz
++- Jitter
++- Queueing
++- Gateway Delay
++- Protocol Overhead
++- Reliability
++- QoS
++
++---
++
++## 16. Capacity & Timing
++
++Vor der Simulation werden berechnet:
++
++- Average Bus Load
++- Peak Load
++- Burst Load
++- Capacity Reserve
++- Message Load
++- Route Load
++- Gateway Load
++- Queue Load
++- Latenz
++- End-to-End-Latenz
++- Jitter
++- Timing Reserve
++
++---
++
++## 17. Validation
++
++Das System prüft mindestens:
++
++- fehlende Producer
++- fehlende Consumer
++- unvollständige Signale
++- fehlende Interfaces
++- fehlerhafte Routingpfade
++- nicht erreichbare ECUs
++- Protokollinkompatibilitäten
++- Busüberlast
++- Gateway-Überlast
++- Timingverletzungen
++- Jitterverletzungen
++- ungültige Signalbereiche
++- doppelte Signale oder Routen
++
++---
++
++## 18. KI-Unterstützung
++
++Die KI unterstützt bei:
++
++- ECU-Definition
++- Signaldefinition
++- Interface-Erstellung
++- Message-Erstellung
++- Routing
++- Parameter-Vorschlägen
++- Fehleranalyse
++- Capacity-Analyse
++- Simulation
++- Trace-Auswertung
++
++Die KI kann größere Workloads verarbeiten.
++
++Beispiel:
++
++```text
++Erzeuge für 50 ECUs
++alle logisch notwendigen
++Eingangs- und Ausgangssignale.
++```
++
++Der Agent zerlegt den Auftrag in Work Packages und prüft anschließend:
++
++- geforderte Menge
++- erzeugte Menge
++- gültige Menge
++- fehlende Objekte
++- Duplikate
++- Fehler
++
++---
++
++## 19. Simulationsgrundlage
++
++Die Simulation verwendet keine beliebigen Zufallswerte.
++
++Grundlage sind:
++
++- Signalbereiche
++- Einheiten
++- Auflösungen
++- Zykluszeiten
++- Signalabhängigkeiten
++- Funktionslogik
++- Messages
++- Routing
++- Netzwerkparameter
++
++---
++
++## 20. Signalverhalten
++
++Mögliche Signalprofile:
++
++- Constant
++- Ramp
++- Step
++- Sine
++- Pulse
++- State dependent
++- Formula based
++- Lookup Table
++- External Series
++
++Die Werte müssen innerhalb der Signaldefinitionen bleiben.
++
++---
++
++## 21. Golden Trace
++
++Die Simulation kann einen fehlerfreien:
++
++```text
++GOLDEN TRACE
++```
++
++erzeugen.
++
++Eigenschaften:
++
++- plausible Signalwerte
++- korrekte Signalauflösung
++- korrekte Zykluszeiten
++- konsistente Signalabhängigkeiten
++- korrektes Routing
++- keine künstlich injizierten Fehler
++
++Dieser Trace dient als Referenz.
++
++---
++
++## 22. Fehlersimulation
++
++Zusätzlich können Fehler eingebracht werden.
++
++Signalfehler:
++
++- Signal Stuck
++- Drift
++- Offset
++- Spike
++- Dropout
++- Noise
++- Frozen
++- Out of Range
++- Invalid Value
++
++Kommunikationsfehler:
++
++- Message Loss
++- Message Delay
++- Message Jitter
++- Message Corruption
++- Message Duplication
++- Timeout
++- Wrong Cycle
++
++Netzwerkfehler:
++
++- Network Overload
++- Gateway Delay
++- Gateway Drop
++- Queue Overflow
++- Link Down
++- Bus Off
++
++---
++
++## 23. Fehlerquellen
++
++Fehlerszenarien können entstehen durch:
++
++- Benutzerdefinition
++- vordefinierten Fault Catalog
++- KI-Vorschlag
++- seed-basierten Random-Fault-Modus
++
++KI-generierte Fehler werden zunächst als Proposal dargestellt und müssen bestätigt werden.
++
++---
++
++## 24. Simulation Views
++
++Während der Simulation mindestens:
++
++### Network / ECU View
++
++Darstellung von:
++
++- ECUs
++- Sensoren
++- Gateway
++- Busse
++- Messages
++- Datenfluss
++
++### Signal View
++
++Darstellung von:
++
++- Signalwert
++- Verlauf
++- Einheit
++- Grenzwerten
++- Warnungen
++- Fault Markern
++
++### Bus Load View
++
++Darstellung von:
++
++- Current Load
++- Average Load
++- Peak Load
++- Capacity Reserve
++
++### Events
++
++Darstellung von:
++
++- Warnings
++- Errors
++- Faults
++- Timeouts
++- Message Loss
++
++---
++
++## 25. Signalplot
++
++Der Nutzer kann Signale auswählen.
++
++Beispiel:
++
++```text
++Temperature
++MotorRPM
++MotorCurrent
++BatterySOC
++WheelSpeed
++```
++
++Plot enthält:
++
++- gemeinsame Zeitachse
++- aktuelle Werte
++- Min/Max
++- Grenzwerte
++- Warning Limits
++- Error Limits
++- Fault Marker
++- Playhead
++- Zoom
++- Pan
++
++Unterschiedliche physikalische Einheiten werden vorzugsweise in separaten Signal-Lanes dargestellt.
++
++---
++
++## 26. Buslastvisualisierung
++
++Pro Netzwerk:
++
++```text
++Current Load
++Average Load
++Peak Load
++Burst Load
++Capacity Reserve
++```
++
++Beispiel:
++
++```text
++CAN_FD_POWERTRAIN
++
++Current: 67 %
++Average: 58 %
++Peak: 82 %
++Reserve: 33 %
++```
++
++Zusätzlich als Zeitreihe.
++
++---
++
++## 27. Results / Analysis
++
++Nach Simulation:
++
++- Calculated vs Simulated Bus Load
++- Signal Summary
++- Timing Summary
++- Jitter
++- Latency
++- Gateway Load
++- Fault Summary
++- Timeout Summary
++- Routing Performance
++- Critical Signals
++- Critical Routes
++
++---
++
++## 28. Trace-Analyse
++
++Jeder Simulationstrace kann direkt geöffnet werden in:
++
++```text
++TRACE ANALYSE
++```
++
++Ablauf:
++
++```text
++Simulation
++→ Trace
++→ Botschaften
++→ Sequenz
++→ Signale
++→ Synchronisierter Trace
++→ Findings
++→ Root Cause
++```
++
++---
++
++## 29. Data Science & Intelligence
++
++Auswertung des Gesamtsystems hinsichtlich:
++
++- System Health
++- Network Quality
++- Routing Quality
++- Data Quality
++- Timing Compliance
++- Capacity Reserve
++- Fehlerhäufigkeit
++- Anomalien
++- Bottlenecks
++- Reifegrad
++- Optimierungsvorschläge
++
++---
++
++## 30. Gesamtworkflow
++
++```text
++1. Engineering-Modell
++
++2. Routing-Tabelle
++
++3. Netzwerk-Editor
++
++4. Parameter
++
++5. Capacity & Timing
++
++6. Validation
++
++7. Simulation
++
++8. Results / Analysis
++
++9. Data Science & Intelligence
++```
++
++---
++
++## 31. Ziel des Musterprojekts
++
++Das Musterprojekt bildet damit eine skalierbare Fahrzeugarchitektur mit:
++
++```text
++100 Sensoren
++
++50 Funktions-ECUs
++
++1 zentralen Gateway
++
++20 LIN
++
++10 CAN-FD
++
++5 Automotive Ethernet
++```
++
++ab.
++
++Es dient als Referenzsystem für:
++
++- Engineering-Modellierung
++- Signalmodellierung
++- Kommunikationsarchitektur
++- Routing
++- Netzwerktopologie
++- Capacity & Timing
++- Buslastberechnung
++- KI-Agenten
++- Workload-Orchestrierung
++- realistische Simulation
++- Fehlersimulation
++- Trace-Analyse
++- Data Science
++- Systemreifegrad
++- spätere EIP-Integration
+--- before/docs/WIZARD_EXECUTION_CONTRACT.md
++++ after/docs/WIZARD_EXECUTION_CONTRACT.md
+@@ -113,3 +113,18 @@
+ der aktuellen Projektwerte abschließbar sein. Die Wertebestätigung enthält die
+ aktuelle Profilrevision; alte Bestätigungen werden nicht als neue Prüfung gewertet.
+ Eine solche Projektbestätigung erteilt keine globale Katalog- oder PHY-Freigabe.
++
++## Vorschau vollständiger Beispieldokumente
++
++Eine gegliederte Beispielquelle bleibt vor der Übernahme typisierter Dokumentbefunde
++eine Quelle mit genanntem Sollumfang. Die reine Wizard-Vorschau darf daraus weder
++lexikalische Textfunde noch ergänzte Branchentemplates als konkrete Geräte ausgeben
++und keine gerätebezogenen Anschlussfragen daraus ableiten. Sie führt stattdessen
++zur vorhandenen ausdrücklichen lokalen Dokumentauswertung und Quellenprüfung.
++Stückzahlantworten ohne typisierte Befunde ersetzen diese Prüfung nicht.
++
++Vollständiger Quelltext und ausdrücklich genannte Sollzahlen/Technologien bleiben
++erhalten. Geprüfte Dokumentbefunde und angenommene Referenzentwürfe verwenden ihre
++normalen vorhandenen Wege. Kurze eindeutige strukturierte Aufträge und bereits
++bestätigte Erzeugungsaufträge behalten ihren Ablauf. Die Quellenanzeige löst weder
++automatisch einen Modellrequest noch eine Projektmodelländerung aus.
+--- before/docs/WIZARD_RELEASE_GATE.md
++++ after/docs/WIZARD_RELEASE_GATE.md
+@@ -51,6 +51,12 @@
+ 
+ Browser and HTTP acceptance insert no generated model rows directly, and no
+ successful write response is mocked.
++The raw sample-file preview additionally uploads the byte-preserved historical
++`neu 9.txt` source as `document-preview-example.txt`, traverses equipment and final
++status, and verifies that declared scope is not presented as concrete generated
++devices. Its missing-review action returns to the explicit document review while
++retaining the complete attachment; neither inference nor START is automatic.
++This case is source-preview coverage, not native model or Original acceptance.
+ The large and amendment positive fixtures separately supply explicitly reviewed
+ virtual LIN and IPv4/UDP Ethernet serializer profiles through the normal parameter API.
+ Ethernet declares the actual upper-layer payload and 28 header bytes (IPv4 20 + UDP 8);

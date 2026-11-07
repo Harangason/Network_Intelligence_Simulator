@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="21.955" timestamp="2026-11-04T16:58:00.940379+01:00" hostname="Haranga"><testcase classname="tests.test_reference_reasoner" name="test_local_request_ids_are_remapped_with_actual_communication_ids" time="20.532"><failure message="assert False&#10; +  where False = all(&lt;generator object test_local_request_ids_are_remapped_with_actual_communication_ids.&lt;locals&gt;.&lt;genexpr&gt; at 0x000002F851461D80&gt;)">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000002F84A590C30&gt;
+
+    def test_local_request_ids_are_remapped_with_actual_communication_ids(monkeypatch):
+        reasoner, prepared, observed = reasoner_with_transport(monkeypatch)
+        async def run():
+            try:
+                return await reasoner.plan_reference_design(prepared)
+            finally:
+                await reasoner.client.aclose()
+        result = asyncio.run(run())
+        by_name = {row['signal_name']: row for row in result['proposal']['communication']}
+        assert by_name['response']['request_communication_id'] == by_name['request']['id']
+        assert by_name['request']['id'] != 'request'
+        assert all(row['id'].startswith('c') for row in by_name.values())
+        batches = [row for row in observed if row['planning_stage'] == 'Fachliche Kommunikation']
+        assert len(batches) &gt;= 2
+        assert any(row['known_communication'] for row in batches[1:])
+        assert all(batch['original_source'] == prepared['source_evidence']['source_text'] for batch in batches)
+        assert all(batch['reference_sources'] == prepared['reference_sources'] for batch in batches)
+        for batch in batches:
+            for field, rows in batch['current_candidate'].items():
+                if field == 'unresolved':
+                    continue
+&gt;               assert all('rationale' not in row for row in rows)
+E               assert False
+E                +  where False = all(&lt;generator object test_local_request_ids_are_remapped_with_actual_communication_ids.&lt;locals&gt;.&lt;genexpr&gt; at 0x000002F851461D80&gt;)
+
+backend\tests\test_reference_reasoner.py:348: AssertionError</failure></testcase></testsuite></testsuites>

@@ -6,6 +6,7 @@ from copy import deepcopy
 from contextlib import contextmanager
 from contextvars import ContextVar
 import json
+from hashlib import sha256
 from math import isfinite
 from typing import Any, Iterable
 
@@ -59,6 +60,7 @@ class TechnologyRegistry:
         self._timing_models: dict[str, Any] = {}
         self._revision = 0
         self._parameter_key_snapshots: dict[str | None, tuple[int, frozenset[str]]] = {}
+        self._parameter_review_snapshots: dict[str, tuple[int, dict[str, Any]]] = {}
         self._parameter_validation_cache = ContextVar('technology_parameter_validation_cache', default=None)
 
     @property
@@ -321,6 +323,116 @@ class TechnologyRegistry:
             result.append(field)
         return result
 
+    def parameter_value_review(self, technology_id: str) -> dict[str, Any]:
+        """Persisted human catalog review, bound to the exact native field revision.
+
+        Reviewing simulation settings supplies no physical/device evidence. A
+        changed profile cannot inherit the approval of an older field revision.
+        """
+        from backend.nis.communication.catalog import technology_review
+        technology = self.normalize_id(technology_id)
+        cached = self._parameter_review_snapshots.get(technology)
+        if cached is not None and cached[0] == self._revision:
+            return deepcopy(cached[1])
+        fields = self.parameter_fields(technology)
+        definition = self._profiles[technology].definition
+        reviewed_schema = {'fields': fields, **{key: definition.get(key) for key in
+                           ('parameter_constraints', 'parameter_aliases', 'rate_model', 'local_timing_schema')}}
+        fingerprint = sha256(json.dumps(reviewed_schema, sort_keys=True, ensure_ascii=True,
+                                        separators=(',', ':')).encode()).hexdigest()
+        review = deepcopy(technology_review(technology).get('parameter_values_review') or {})
+        values = {field['key']: field['simulation_default'] for field in fields}
+        matching = (review.get('revision_sha256') == fingerprint
+                    and review.get('values') == values
+                    and review.get('source') == 'EXPLICIT_USER_CATALOG_REVIEW'
+                    and review.get('hardware_evidence') is False
+                    and review.get('status') == 'CONFIRMED')
+        result = {**review, 'technology': technology, 'revision_sha256': fingerprint,
+                  'values': values, 'status': 'CONFIRMED' if matching else 'REVIEW_REQUIRED',
+                  'hardware_evidence': False}
+        self._parameter_review_snapshots[technology] = (self._revision, deepcopy(result))
+        return result
+
+    def with_parameter_reviews(self, parameters: dict[str, Any]) -> dict[str, Any]:
+        """Reuse reviewed settings and invalidate only unconfirmed changed values."""
+        from backend.nis.communication.catalog import PARAMETER_CORE_ALIASES, PARAMETER_UI_ALIASES
+        ids = [parameters.get('technology')]
+        ids += list(parameters.get('simulation_parameter_assumptions') or {})
+        ids += list(parameters.get('technology_parameters') or {})
+        ids += [row.get('technology') for row in parameters.get('networks') or []]
+        reviews = {}
+        for technology in dict.fromkeys(self.normalize_id(item) for item in ids if item):
+            review = self.parameter_value_review(technology)
+            changed = []
+            scopes = []
+            assumed = (parameters.get('simulation_parameter_assumptions') or {}).get(technology) or {}
+            scopes.append(('simulation', assumed.get('values') or {}, assumed.get('provenance') or {}))
+            scoped = (parameters.get('technology_parameters') or {}).get(technology) or {}
+            scopes.append(('technology', scoped.get('values') or {}, scoped.get('provenance') or {}))
+            if self.normalize_id(parameters.get('technology')) == technology:
+                # Persisted simulation settings own unconfirmed legacy defaults.
+                effective = {key: value for key, value in parameters.items()
+                             if key not in (assumed.get('values') or {})
+                             or ((parameters.get('parameter_provenance') or {}).get(key) or {}).get('source') in {'USER_CONFIRMED', 'EXPLICIT_USER_SPECIFICATION'}}
+                scopes.append(('project', effective, parameters.get('parameter_provenance') or {}))
+            scopes += [(str(row.get('id')), row, row.get('parameter_provenance') or {})
+                       for row in parameters.get('networks') or []
+                       if self.normalize_id(row.get('technology')) == technology]
+            aliases = {**PARAMETER_CORE_ALIASES, **self._profiles[technology].definition.get('parameter_aliases', {})}
+            config_keys = {PARAMETER_UI_ALIASES.get(key, key) for key, role in self.parameter_roles(technology).items()
+                           if role == 'CONFIGURATION'}
+            entries = []
+            for scope, values, proofs in scopes:
+                for supplied_key, value in values.items():
+                    if supplied_key == 'bitrate' and ('arbitration_bitrate' in values or 'nominal_bitrate_bps' in values):
+                        continue
+                    key = PARAMETER_UI_ALIASES.get(aliases.get(supplied_key, supplied_key), aliases.get(supplied_key, supplied_key))
+                    if key not in review['values']:
+                        continue
+                    proof = proofs.get(supplied_key) or {}
+                    override = (scoped.get('provenance') or {}).get(supplied_key) or {}
+                    if scope in {'simulation', 'project'} and supplied_key in (scoped.get('values') or {}) and (
+                            override.get('source') == 'USER_CONFIRMED' and override.get('status') == 'CONFIRMED'
+                            and override.get('value') == scoped['values'][supplied_key]):
+                        continue
+                    entries.append((scope, key, value, proof))
+            stamped = set()
+            for scope, key, value, proof in entries:
+                setting_review = proof.get('parameter_review') or {}
+                current_review = (setting_review.get('source') == 'EXPLICIT_USER_PARAMETER_REVIEW'
+                                  and setting_review.get('status') == 'CONFIRMED' and setting_review.get('value') == value
+                                  and setting_review.get('revision_sha256') == review['revision_sha256'])
+                identity_matches = not proof.get('technology') or self.normalize_id(proof['technology']) == technology
+                if (current_review and identity_matches and proof.get('value') == value
+                        and (proof.get('source') == 'EXPLICIT_USER_SPECIFICATION'
+                             or proof.get('source') == 'USER_CONFIRMED' and proof.get('status') == 'CONFIRMED'
+                             or proof.get('source') == 'NIS_SIMULATION_ASSUMPTION' and proof.get('status') == 'ASSUMED'
+                             and proof.get('hardware_evidence') is False)):
+                    stamped.add((key, json.dumps(value, sort_keys=True)))
+            configured = [(key, value) for _scope, key, value, _proof in entries
+                          if key in config_keys and value is not None and value != '']
+            # A normal form save must finish review after a profile update. This
+            # acknowledges only this project's settings, not the catalog or PHY.
+            project_reviewed = bool(configured) and all((key, json.dumps(value, sort_keys=True)) in stamped for key, value in configured)
+            for scope, key, value, proof in entries:
+                if value == review['values'][key]:
+                    continue
+                setting_review = proof.get('parameter_review') or {}
+                confirmed = (proof.get('value') == value
+                             and (not proof.get('technology') or self.normalize_id(proof['technology']) == technology)
+                             and (proof.get('source') == 'EXPLICIT_USER_SPECIFICATION'
+                                  or proof.get('source') == 'USER_CONFIRMED' and proof.get('status') == 'CONFIRMED'
+                                  or proof.get('source') == 'NIS_SIMULATION_ASSUMPTION' and proof.get('hardware_evidence') is False
+                                  and setting_review.get('source') == 'EXPLICIT_USER_PARAMETER_REVIEW'
+                                  and setting_review.get('status') == 'CONFIRMED' and setting_review.get('value') == value
+                                  and setting_review.get('revision_sha256') == review['revision_sha256']))
+                if not confirmed:
+                    changed.append({'scope': scope, 'parameter': key, 'value': value})
+            approved = not changed and (review['status'] == 'CONFIRMED' or project_reviewed)
+            reviews[technology] = {**review, 'catalog_status': review['status'], 'project_values_reviewed': project_reviewed,
+                                   'changed_parameters': changed, 'status': 'CONFIRMED' if approved else 'REVIEW_REQUIRED'}
+        return {**parameters, 'technology_parameter_reviews': reviews}
+
     def simulation_defaults_for_project(self, parameters: dict[str, Any], technology_ids=()) -> dict[str, Any]:
         """Fill missing project values; never edit central profiles or confirm devices.
 
@@ -370,7 +482,7 @@ class TechnologyRegistry:
                 proofs[key] = {**proposal, 'value': values[key]}
             groups[technology] = {'values': values, 'provenance': proofs}
         result['simulation_parameter_assumptions'] = groups
-        return result
+        return self.with_parameter_reviews(result)
 
     def list_all(self) -> list[dict[str, Any]]:
         """Enumerate canonical definitions without implying verified projects."""

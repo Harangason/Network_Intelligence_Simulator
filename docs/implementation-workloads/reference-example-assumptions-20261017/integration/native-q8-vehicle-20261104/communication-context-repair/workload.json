@@ -1,0 +1,91 @@
+{
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "kind": "repair",
+  "modify_code": true,
+  "allow_repair": true,
+  "status": "NEW_FULL_VEHICLE_REQUEST_RUNNING",
+  "revision_before": {
+    "backend/nis/agent/orchestration/local_reasoner.py": "6c0f59891b38783659775a3f4f0063c7c426bab52f82775c6c71b3a0eee96ee8",
+    "backend/tests/test_reference_reasoner.py": "a071bd2fd3f47b7bc6c677bca2267a8fd09c62949506800f3b96b277283a24b6"
+  },
+  "unresolved_decisions": [],
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-vehicle-20261104\\communication-context-repair\\before\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "6c0f59891b38783659775a3f4f0063c7c426bab52f82775c6c71b3a0eee96ee8"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-vehicle-20261104\\communication-context-repair\\before\\backend\\tests\\test_reference_reasoner.py",
+      "sha256": "a071bd2fd3f47b7bc6c677bca2267a8fd09c62949506800f3b96b277283a24b6"
+    }
+  ],
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "first_failing_layer": "Private reference communication context builder",
+    "root_cause": "The last completed batch left complete original text and accepted design data intact but the next fresh communication snapshot exceeded the unchanged byte guard. The builder includes prior free-text justifications with the technical decisions in every sender batch.",
+    "reproduction": "Native session 86511, qwen3.8:27b q8_0 Flash Attention. Forty-nine validated replies; next communication snapshot 121359 content bytes + 10240 reserve = 131599 > 131072.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-vehicle-20261104\\terminal-evidence.json",
+        "sha256": "a341e50fac33a759adfd705c3763f18285fb5144636c85ac403907d09225d80d"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-vehicle-20261104\\context-guard-server.log",
+        "sha256": "6357de4691de63886404fe8c243f9b30b22768fdc197d77a7dd73dd78ea296f6"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-vehicle-20261104\\plan-reference\\response.json",
+        "sha256": "1c0de060712149576a2eab85489439abea951bdfa5e4feeab278ca88541c9002"
+      }
+    ],
+    "affected_files": [
+      "backend/nis/agent/orchestration/local_reasoner.py",
+      "backend/tests/test_reference_reasoner.py"
+    ],
+    "acceptance_criteria": [
+      "Keep original and supplemental text, every typed candidate value, reference binding, known communication signature and all full server-side rationales. Exclude only prior rationale from communication prompts.",
+      "Keep provider, output and context settings, private sender restriction, schema, canonical validation and release gates."
+    ],
+    "targeted_tests": [
+      "Exercise the normal planner with inter-batch bus response, preserve source and stored rationale, and measure the context counter."
+    ],
+    "weaken_assertions_to_pass": false
+  },
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-vehicle-20261104\\communication-context-repair\\after\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "1ea928993f9efd8c0c5381313eb508c880aa09306d45bf50d5c1654b9ad65924"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-vehicle-20261104\\communication-context-repair\\after\\backend\\tests\\test_reference_reasoner.py",
+      "sha256": "8adcdaea09676f629c9d655463972666f0ddbc5917a8a26014f8fa322ff0b7c2"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-vehicle-20261104\\communication-context-repair\\change.diff",
+      "sha256": "c90d7bd7a23561e878927b43c95b2f4d9a26786caa17d8d5d9f2d1d2716f4312"
+    }
+  ],
+  "files_changed": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_reasoner.py"
+  ],
+  "tests": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-vehicle-20261104\\communication-context-repair\\green.xml",
+      "sha256": "5a77296b9d4bbe19410b4e2a718fdda7ae039bb8436a06eaf79e86d8a7a62189"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-vehicle-20261104\\communication-context-repair\\red.xml",
+      "sha256": "64ced5040fe5390d0902ce3eb0d4e66559af7e790d0e0082fbac1d99b1ff4bfd"
+    }
+  ],
+  "targeted_pass": 326,
+  "candidate_receipt": {
+    "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\joint-communication-context-originals-20c7bcdda2a9\\8bb3a4ec72c7\\receipt.json",
+    "sha256": "c2d1394de2ce544fadb8f4fe801046b10119c5170ae681345843e268ac2473cf"
+  },
+  "active_native_session": 70672,
+  "active_state": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\reference-example-assumptions-20261017\\integration\\native-q8-context-repair-20261104-vehicle\\state.json"
+}

@@ -43,7 +43,7 @@ def verification_manifest():
     paths.update((ROOT/'frontend/src').rglob('*.test.*'))
     paths.update((ROOT/'scripts/release').glob('*.py'))
     paths.update((ROOT/'scripts/verification').glob('*.py'))
-    paths.update(ROOT/name for name in ('start-networkis.ps1', 'scripts/dev/start-networkis.ps1'))
+    paths.update(ROOT/name for name in ('start-networkis.ps1', 'scripts/dev/start-networkis.ps1', 'host_metrics_bridge.py'))
     paths.update(ROOT/name for name in ('frontend/playwright.config.ts',
         'scripts/run-release-gate.py', 'scripts/run-isolated-tests.py',
         'scripts/verify-live-wizard.py', 'scripts/deploy-verified-release.py',
@@ -57,7 +57,7 @@ def verification_manifest():
 
 def local_ai_model_environment():
     """Forward explicit existing configuration without inventing model defaults."""
-    return {name: value for name in ('LOCAL_AI_MODEL', 'LOCAL_AI_FAST_MODEL')
+    return {name: value for name in ('LOCAL_AI_MODEL', 'LOCAL_AI_FAST_MODEL', 'NIS_LOCAL_TOKENIZER_URL')
             if (value := os.environ.get(name, '').strip())}
 
 

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.995" timestamp="2026-11-07T15:22:00.205514+01:00" hostname="Haranga"><testcase classname="tests.test_reference_inventory_context_capacity" name="test_oversized_complete_input_still_has_bounded_diagnostic_with_exact_context_hash" time="0.094"><failure message="KeyError: 'context_artifact'">caplog = &lt;_pytest.logging.LogCaptureFixture object at 0x0000026B6EE65940&gt;
+tmp_path = WindowsPath('C:/Users/marti/AppData/Local/Temp/nis-pytest-xgxn9cic/test_oversized_complete_input_0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000026B6F7D9940&gt;
+
+    def test_oversized_complete_input_still_has_bounded_diagnostic_with_exact_context_hash(caplog, tmp_path, monkeypatch):
+        monkeypatch.setenv('NIS_RUNTIME_DIR', str(tmp_path))
+        current = authored_context(251, 1600)
+        assert len(current['original_source'].encode('utf8')) &gt; 131072
+        before = encoded(current)
+        with pytest.raises(ValueError, match='keine Quelle gekürzt'):
+            reasoner._reference_context_messages([], None, current, 'Independent counter only', 131072)
+        diagnostic = next(json.loads(row.message.split('Native reference context guard rejected complete input: ', 1)[1])
+                          for row in caplog.records if 'Native reference context guard rejected complete input: ' in row.message)
+        assert diagnostic['complete_context_sha256'] == hashlib.sha256(before.encode('utf-8')).hexdigest()
+&gt;       artifact = tmp_path / diagnostic['context_artifact']
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'context_artifact'
+
+backend\tests\test_reference_inventory_context_capacity.py:115: KeyError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,60 @@
+{
+  "model": "llama3.1:8b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Read the complete synthetic context. Return only the required JSON. No model writes or qualification. Independent synthetic reading counter, not a hardware proposal. Return selected_device_ids with exactly those existing SENSOR IDs whose source_member_bindings[F-selection] equals the current inventory_target.member. Use the latest nis_current_selection, preserve source order. Do not choose controllers. Old selection and old answer are superseded by the latest update. First report target_member from the latest selection, then select matching SENSOR IDs."
+    },
+    {
+      "role": "user",
+      "content": "{\"nis_current_selection\": {\"planning_stage\": \"Independent inventory counter\", \"inventory_target\": {\"fact_id\": \"F-selection\", \"member\": \"rear\", \"names\": [], \"minimum_rows\": 2, \"max_rows\": 2}, \"derivation_fact_ids\": null, \"existing_inventory\": [{\"id\": \"authored-device-000\", \"name\": \"Independent device 000 µ\", \"kind\": \"CONTROLLER\", \"source_fact_ids\": [\"F-selection\"], \"source_member_bindings\": {\"F-selection\": \"front\"}}, {\"id\": \"authored-device-001\", \"name\": \"Independent device 001 µ\", \"kind\": \"CONTROLLER\", \"source_fact_ids\": [\"F-selection\"], \"source_member_bindings\": {\"F-selection\": \"front\"}}, {\"id\": \"authored-device-002\", \"name\": \"Independent device 002 µ\", \"kind\": \"CONTROLLER\", \"source_fact_ids\": [\"F-selection\"], \"source_member_bindings\": {\"F-selection\": \"front\"}}, {\"id\": \"authored-device-003\", \"name\": \"Independent device 003 µ\", \"kind\": \"CONTROLLER\", \"source_fact_ids\": [\"F-selection\"], \"source_member_bindings\": {\"F-selection\": \"front\"}}, {\"id\": \"authored-device-004\", \"name\": \"Independent device 004 µ\", \"kind\": \"CONTROLLER\", \"source_fact_ids\": [\"F-selection\"], \"source_member_bindings\": {\"F-selection\": \"front\"}}, {\"id\": \"authored-device-005\", \"name\": \"Independent device 005 µ\", \"kind\": \"CONTROLLER\", \"source_fact_ids\": [\"F-selection\"], \"source_member_bindings\": {\"F-selection\": \"front\"}}, {\"id\": \"authored-device-006\", \"name\": \"Independent device 006 µ\", \"kind\": \"CONTROLLER\", \"source_fact_ids\": [\"F-selection\"], \"source_member_bindings\": {\"F-selection\": \"front\"}}, {\"id\": \"authored-device-007\", \"name\": \"Independent device 007 µ\", \"kind\": \"CONTROLLER\", \"source_fact_ids\": [\"F-selection\"], \"source_member_bindings\": {\"F-selection\": \"front\"}}, {\"id\": \"authored-device-008\", \"name\": \"Independent device 008 µ\", \"kind\": \"SENSOR\", \"source_fact_ids\": [\"F-selection\"], \"source_member_bindings\": {\"F-selection\": \"front\"}}, {\"id\": \"authored-device-009\", \"name\": \"Independent device 009 µ\", \"kind\": \"SENSOR\", \"source_fact_ids\": [\"F-selection\"], \"source_member_bindings\": {\"F-selection\": \"front\"}}, {\"id\": \"authored-device-010\", \"name\": \"Independent device 010 µ\", \"kind\": \"SENSOR\", \"source_fact_ids\": [\"F-selection\"], \"source_member_bindings\": {\"F-selection\": \"rear\"}}, {\"id\": \"authored-device-011\", \"name\": \"Independent device 011 µ\", \"kind\": \"SENSOR\", \"source_fact_ids\": [\"F-selection\"], \"source_member_bindings\": {\"F-selection\": \"rear\"}}]}}"
+    }
+  ],
+  "format": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "target_member": {
+        "type": "string",
+        "enum": [
+          "front",
+          "rear"
+        ]
+      },
+      "selected_device_ids": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2,
+        "items": {
+          "type": "string",
+          "enum": [
+            "authored-device-000",
+            "authored-device-001",
+            "authored-device-002",
+            "authored-device-003",
+            "authored-device-004",
+            "authored-device-005",
+            "authored-device-006",
+            "authored-device-007",
+            "authored-device-008",
+            "authored-device-009",
+            "authored-device-010",
+            "authored-device-011"
+          ]
+        }
+      }
+    },
+    "required": [
+      "target_member",
+      "selected_device_ids"
+    ]
+  },
+  "think": false,
+  "stream": true,
+  "keep_alive": "10m",
+  "options": {
+    "temperature": 0,
+    "num_predict": 8192,
+    "num_ctx": 131072
+  }
+}

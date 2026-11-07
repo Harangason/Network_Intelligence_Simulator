@@ -1,0 +1,60 @@
+{
+  "model": "llama3.1:8b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Read the complete synthetic context. Return only the required JSON. No model writes or qualification. Independent synthetic reading counter, not a hardware proposal. Return selected_device_ids with exactly those existing SENSOR IDs whose source_member_bindings[F-selection] equals the current inventory_target.member. Use the latest nis_current_selection, preserve source order. Do not choose controllers. Old selection and old answer are superseded by the latest update. First report target_member from the latest selection, then select matching SENSOR IDs. NIS-Kontextfortsetzung: Die erste Nutzernachricht enthält den vollständigen Planungskontext. Nachrichten mit nis_context_patch aktualisieren diesen vollständig nach RFC6902; nicht genannte Werte bleiben unverändert. Maßgeblich ist der daraus rekonstruierte aktuelle NIS-Kontext mit planning_stage und output_fields_for_this_stage. Vorherige Modellantworten sind Vorschläge; nur die NIS-Kontextupdates bestätigen den serverseitig geprüften Zwischenstand. Keine ursprünglichen Fakten, Teilnehmer oder offenen Quellenbereiche verwerfen. Weiter ausschließlich im aktuellen Antwortschema antworten. Verlustfreie Tabellendarstellung: Enthält eine Nachricht nis_context_snapshot, ist dies ihr vollständiger Dateninhalt in kompakter Darstellung. An jedem JSON-Pointer in nis_context_tables steht eine Tabelle: columns benennt die variablen Felder; jede rows-Zeile enthält deren Werte in derselben Reihenfolge. constants gelten unverändert für jede Zeile. Mit keys entsteht ein Objekt keys[i] -> Zeile[i], sonst eine Liste von Datensätzen. Zuerst alle Tabellen rekonstruieren, danach nis_context_copies der Reihe nach als RFC6902-Operationen ausführen: copy setzt eine vollständige tiefe Kopie von from an path ein; ein folgendes replace ersetzt das vorhandene Feld an path exakt durch value. Frühere Kopien und Änderungen behalten auch die exakte skalare Schreibweise: value_json_literal enthält bei Skalarersetzungen zusätzlich das ursprüngliche JSON-Literal als Zeichenkette, zum Beispiel \"-0.0\". Es beschreibt denselben typisierten value, ist kein anderer Wert und kein Override. Beim Lesen von Literalzeichen zählt diese exakte Schreibweise einschließlich Vorzeichen. Diese Angaben bleiben auch bei späteren tiefen Kopien erhalten. Frühere Kopien und Änderungen gelten für spätere Kopien als Basis. Bei JSON-Pointern das führende / als Wurzelmarker überspringen und danach an / in Segmente zerlegen; innerhalb jedes Segments zuerst ~1 zu / und dann ~0 zu ~ dekodieren. a~1b~0c bezeichnet den EINEN Schlüssel a/b~c, ein abschließendes / den leeren Schlüssel. JSON-Skalartypen und Literalvorzeichen exakt erhalten, niemals normalisieren oder runden: false ist nicht 0, und -0.0 behält sein Minuszeichen gegenüber 0.0. Maßgeblich ist stets der konkrete rekonstruierte Wert, kein Beispielstandard. Das ist keine Kürzung; sämtliche Quellen, Felder und Werte bleiben exakt erhalten. Enthält die rekonstruierte Nachricht nis_context_patch, diese Operationen anschließend auf den aktuellen Planungskontext anwenden, nicht auf die Tabellendarstellung. Bei einem Anker-Neustand gilt der Patch ab dem ursprünglichen Kontext der ersten Nachricht; zwischenzeitliche Vorschläge sind durch diesen vollständigen aktuellen Neustand ersetzt. nis_current_selection wiederholt die aktuelle Auswahl und die geprüften vorhandenen Gerätebindungen direkt lesbar außerhalb der Tabellen. Sie gehört zur jeweiligen Nachricht; Ihr existing_inventory ist entweder eine Liste von Datensätzen oder eine Tabelle mit columns, constants und rows nach denselben Tabellenregeln: jede Zeile ist ein Gerät, alle Identitäten und Quellenbindungen bleiben vollständig und in gleicher Reihenfolge. bei einer Fortsetzung zählt ausschließlich die Auswahl in der letzten Nutzernachricht. Diese Lesehilfe ersetzt weder den vollständigen Kontext noch seine Quellen oder Prüfungen."
+    },
+    {
+      "role": "user",
+      "content": "{\"nis_context_snapshot\":{\"original_source\":\"Unchanged authored source line 0000: full quantities, requirements and literal values.\\nUnchanged authored source line 0001: full quantities, requirements and literal values.\\n\",\"planning_stage\":\"Independent inventory counter\",\"inventory_target_for_this_stage\":{\"fact_id\":\"F-selection\",\"member\":\"rear\",\"names\":[],\"minimum_rows\":2,\"max_rows\":2},\"derivation_fact_ids_for_this_stage\":null,\"current_candidate\":{\"devices\":{\"columns\":[\"id\",\"name\",\"kind\",\"source_member_bindings\"],\"constants\":{\"quantity\":1,\"source_fact_ids\":[\"F-selection\"],\"owner_device_id\":null,\"purpose\":\"Independently authored purpose, not original evidence.\",\"rationale\":\"Complete authored source-preserving inventory decision.\",\"context_kind\":null,\"contained_device_ids\":[],\"field_references\":{}},\"rows\":[[\"authored-device-000\",\"Independent device 000 µ\",\"CONTROLLER\",{\"F-selection\":\"front\"}],[\"authored-device-001\",\"Independent device 001 µ\",\"CONTROLLER\",{\"F-selection\":\"front\"}],[\"authored-device-002\",\"Independent device 002 µ\",\"CONTROLLER\",{\"F-selection\":\"front\"}],[\"authored-device-003\",\"Independent device 003 µ\",\"CONTROLLER\",{\"F-selection\":\"front\"}],[\"authored-device-004\",\"Independent device 004 µ\",\"CONTROLLER\",{\"F-selection\":\"front\"}],[\"authored-device-005\",\"Independent device 005 µ\",\"CONTROLLER\",{\"F-selection\":\"front\"}],[\"authored-device-006\",\"Independent device 006 µ\",\"CONTROLLER\",{\"F-selection\":\"front\"}],[\"authored-device-007\",\"Independent device 007 µ\",\"CONTROLLER\",{\"F-selection\":\"front\"}],[\"authored-device-008\",\"Independent device 008 µ\",\"SENSOR\",{\"F-selection\":\"front\"}],[\"authored-device-009\",\"Independent device 009 µ\",\"SENSOR\",{\"F-selection\":\"front\"}],[\"authored-device-010\",\"Independent device 010 µ\",\"SENSOR\",{\"F-selection\":\"rear\"}],[\"authored-device-011\",\"Independent device 011 µ\",\"SENSOR\",{\"F-selection\":\"rear\"}]]}},\"existing_inventory_for_this_stage\":{\"columns\":[\"id\",\"name\",\"kind\"],\"constants\":{},\"rows\":[[\"authored-device-000\",\"Independent device 000 µ\",\"CONTROLLER\"],[\"authored-device-001\",\"Independent device 001 µ\",\"CONTROLLER\"],[\"authored-device-002\",\"Independent device 002 µ\",\"CONTROLLER\"],[\"authored-device-003\",\"Independent device 003 µ\",\"CONTROLLER\"],[\"authored-device-004\",\"Independent device 004 µ\",\"CONTROLLER\"],[\"authored-device-005\",\"Independent device 005 µ\",\"CONTROLLER\"],[\"authored-device-006\",\"Independent device 006 µ\",\"CONTROLLER\"],[\"authored-device-007\",\"Independent device 007 µ\",\"CONTROLLER\"],[\"authored-device-008\",\"Independent device 008 µ\",\"SENSOR\"],[\"authored-device-009\",\"Independent device 009 µ\",\"SENSOR\"],[\"authored-device-010\",\"Independent device 010 µ\",\"SENSOR\"],[\"authored-device-011\",\"Independent device 011 µ\",\"SENSOR\"]]},\"instruction\":\"Independent synthetic reading counter, not a hardware proposal. Return selected_device_ids with exactly those existing SENSOR IDs whose source_member_bindings[F-selection] equals the current inventory_target.member. Use the latest nis_current_selection, preserve source order. Do not choose controllers. Old selection and old answer are superseded by the latest update.\"},\"nis_context_tables\":[\"/current_candidate/devices\",\"/existing_inventory_for_this_stage\"],\"nis_context_copies\":[],\"nis_current_selection\":{\"planning_stage\":\"Independent inventory counter\",\"inventory_target\":{\"fact_id\":\"F-selection\",\"member\":\"rear\",\"names\":[],\"minimum_rows\":2,\"max_rows\":2},\"derivation_fact_ids\":null,\"existing_inventory\":{\"columns\":[\"id\",\"name\",\"kind\",\"source_fact_ids\",\"source_member_bindings\"],\"constants\":{},\"rows\":[[\"authored-device-000\",\"Independent device 000 µ\",\"CONTROLLER\",[\"F-selection\"],{\"F-selection\":\"front\"}],[\"authored-device-001\",\"Independent device 001 µ\",\"CONTROLLER\",[\"F-selection\"],{\"F-selection\":\"front\"}],[\"authored-device-002\",\"Independent device 002 µ\",\"CONTROLLER\",[\"F-selection\"],{\"F-selection\":\"front\"}],[\"authored-device-003\",\"Independent device 003 µ\",\"CONTROLLER\",[\"F-selection\"],{\"F-selection\":\"front\"}],[\"authored-device-004\",\"Independent device 004 µ\",\"CONTROLLER\",[\"F-selection\"],{\"F-selection\":\"front\"}],[\"authored-device-005\",\"Independent device 005 µ\",\"CONTROLLER\",[\"F-selection\"],{\"F-selection\":\"front\"}],[\"authored-device-006\",\"Independent device 006 µ\",\"CONTROLLER\",[\"F-selection\"],{\"F-selection\":\"front\"}],[\"authored-device-007\",\"Independent device 007 µ\",\"CONTROLLER\",[\"F-selection\"],{\"F-selection\":\"front\"}],[\"authored-device-008\",\"Independent device 008 µ\",\"SENSOR\",[\"F-selection\"],{\"F-selection\":\"front\"}],[\"authored-device-009\",\"Independent device 009 µ\",\"SENSOR\",[\"F-selection\"],{\"F-selection\":\"front\"}],[\"authored-device-010\",\"Independent device 010 µ\",\"SENSOR\",[\"F-selection\"],{\"F-selection\":\"rear\"}],[\"authored-device-011\",\"Independent device 011 µ\",\"SENSOR\",[\"F-selection\"],{\"F-selection\":\"rear\"}]]}}}"
+    }
+  ],
+  "format": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "target_member": {
+        "type": "string",
+        "enum": [
+          "front",
+          "rear"
+        ]
+      },
+      "selected_device_ids": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2,
+        "items": {
+          "type": "string",
+          "enum": [
+            "authored-device-000",
+            "authored-device-001",
+            "authored-device-002",
+            "authored-device-003",
+            "authored-device-004",
+            "authored-device-005",
+            "authored-device-006",
+            "authored-device-007",
+            "authored-device-008",
+            "authored-device-009",
+            "authored-device-010",
+            "authored-device-011"
+          ]
+        }
+      }
+    },
+    "required": [
+      "target_member",
+      "selected_device_ids"
+    ]
+  },
+  "think": false,
+  "stream": true,
+  "keep_alive": "10m",
+  "options": {
+    "temperature": 0,
+    "num_predict": 8192,
+    "num_ctx": 131072
+  }
+}

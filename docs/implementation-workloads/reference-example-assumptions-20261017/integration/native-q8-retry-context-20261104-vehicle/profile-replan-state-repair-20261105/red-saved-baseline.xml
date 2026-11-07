@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="3.234" timestamp="2026-11-05T06:25:12.161184+01:00" hostname="Haranga"><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.integration.native-q8-retry-context-20261104-vehicle.profile-replan-state-repair-20261105.test_saved_baseline" name="test_saved_baseline_replan_keeps_stale_downstream_outputs" time="2.277"><failure message="TypeError: _validate_reference_design() got an unexpected keyword argument 'inventory_only'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000002238E411810&gt;
+
+    def test_saved_baseline_replan_keeps_stale_downstream_outputs(monkeypatch):
+        path = Path(__file__).parent / "before/backend/nis/agent/orchestration/local_reasoner.py"
+        spec = importlib.util.spec_from_file_location("saved_replan_baseline", path)
+        saved = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(saved)
+        monkeypatch.setattr(cases, "LocalEngineeringReasoner", saved.LocalEngineeringReasoner)
+&gt;       cases.test_reference_profile_replan_discards_stale_downstream_stage_outputs(monkeypatch)
+
+docs\implementation-workloads\reference-example-assumptions-20261017\integration\native-q8-retry-context-20261104-vehicle\profile-replan-state-repair-20261105\test_saved_baseline.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_reasoner.py:1352: in test_reference_profile_replan_discards_stale_downstream_stage_outputs
+    result = run_reference(instance, prepared)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\tests\test_reference_reasoner.py:386: in run_reference
+    return asyncio.run(run())
+           ^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:196: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:119: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\base_events.py:725: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+backend\tests\test_reference_reasoner.py:383: in run
+    return await reasoner.plan_reference_design(prepared)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+docs\implementation-workloads\reference-example-assumptions-20261017\integration\native-q8-retry-context-20261104-vehicle\profile-replan-state-repair-20261105\before\backend\nis\agent\orchestration\local_reasoner.py:1988: in plan_reference_design
+    await plan_profile()
+docs\implementation-workloads\reference-example-assumptions-20261017\integration\native-q8-retry-context-20261104-vehicle\profile-replan-state-repair-20261105\before\backend\nis\agent\orchestration\local_reasoner.py:1879: in plan_profile
+    check_inventory(current['devices'])
+docs\implementation-workloads\reference-example-assumptions-20261017\integration\native-q8-retry-context-20261104-vehicle\profile-replan-state-repair-20261105\before\backend\nis\agent\orchestration\local_reasoner.py:1526: in check_inventory
+    pending = _validate_reference_inventory({'devices': devices}, prepared, profile, partial=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+result = {'devices': [{'rationale': 'Eindeutige deklarierte Rolle, Anzahl und kanonische Identität aus dem Originalinventar; ke...e- oder Timingnachweis.', 'field_references': {}, 'id': 'source-cc9cfd15a66c71f738a2e3ea', 'name': 'Controller', ...}]}
+prepared = {'request': {'mode': 'EXAMPLE_PROJECT', 'prompt': 'Controller (ECU)\nSensorik (Temperatursensoren)\nAktorik (Ventile)\...DESIGN', 'processing_evidence': 'NONE', 'field_validity': 'REQUIRES_REVIEW', ...}, 'confirmed_commands': {}, ...}, ...}
+profile = (), partial = True
+
+    def _validate_reference_inventory(result: dict, prepared: dict, profile, *, partial=False) -&gt; list[dict]:
+        """Internal prerequisite only: never returns approval or a review candidate."""
+&gt;       return _validate_reference_design(result, prepared, profile=tuple(profile), inventory_only=True, partial_inventory=partial)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: _validate_reference_design() got an unexpected keyword argument 'inventory_only'
+
+backend\nis\agent\orchestration\project_intake.py:1605: TypeError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,29 @@
+--- before/local_reasoner.py
++++ after/local_reasoner.py
+@@ -1126,6 +1126,9 @@
+         'Vorschläge sind durch diesen vollständigen aktuellen Neustand ersetzt. '
+         'nis_current_selection wiederholt die aktuelle Auswahl und die geprüften vorhandenen '
+         'Gerätebindungen direkt lesbar außerhalb der Tabellen. Sie gehört zur jeweiligen Nachricht; '
++        'Ihr existing_inventory ist entweder eine Liste von Datensätzen oder eine Tabelle mit '
++        'columns, constants und rows nach denselben Tabellenregeln: jede Zeile ist ein Gerät, '
++        'alle Identitäten und Quellenbindungen bleiben vollständig und in gleicher Reihenfolge. '
+         'bei einer Fortsetzung zählt ausschließlich die Auswahl in der letzten Nutzernachricht. '
+         'Diese Lesehilfe ersetzt weder den vollständigen Kontext noch seine Quellen oder Prüfungen.')
+ 
+@@ -1143,6 +1146,16 @@
+                     ('id', 'name', 'kind', 'source_fact_ids', 'source_member_bindings')}
+                     for row in current['current_candidate']['devices']],
+             }
++            # The directly readable selection must not repeat field names for
++            # every device after the complete context has already been packed.
++            # Use the same exact table vocabulary, without copies or omissions.
++            inventory = packed['nis_current_selection']['existing_inventory']
++            columns = ['id', 'name', 'kind', 'source_fact_ids', 'source_member_bindings']
++            table = {'columns': columns, 'constants': {},
++                     'rows': [[row[key] for key in columns] for row in inventory]}
++            if len(json.dumps(table, ensure_ascii=False, separators=(',', ':')).encode('utf8')) < len(
++                    json.dumps(inventory, ensure_ascii=False, separators=(',', ':')).encode('utf8')):
++                packed['nis_current_selection']['existing_inventory'] = table
+         return json.dumps(packed, ensure_ascii=False, separators=(',', ':'))
+ 
+     full = [{'role': 'system', 'content': system + protocol},

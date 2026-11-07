@@ -1,0 +1,17 @@
+--- before/backend/tests/test_reference_context_delta_capacity.py
++++ after/backend/tests/test_reference_context_delta_capacity.py
+@@ -33,8 +33,12 @@
+     for pointer in value['nis_context_tables']:
+         parent, key = location(pointer)
+         table = parent[key]
+-        rows = [{**deepcopy(table['constants']), **dict(zip(table['columns'], row, strict=True))}
+-                for row in table['rows']]
++        rows = []
++        for part in table.get('segments', [table]):
++            for values in part['rows']:
++                assert len(part['columns']) == len(values)
++                rows.append({**deepcopy(part['constants']),
++                             **dict(zip(part['columns'], values, strict=True))})
+         parent[key] = dict(zip(table['keys'], rows, strict=True)) if 'keys' in table else rows
+     for operation in value['nis_context_copies']:
+         parent, key = location(operation['path'])

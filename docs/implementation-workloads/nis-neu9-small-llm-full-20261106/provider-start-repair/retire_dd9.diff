@@ -1,0 +1,29 @@
+--- 
++++ 
+@@ -102,6 +102,26 @@
+             assert current['status'] == 'REFERENCE_CANCELED' and not current.get('reference_design')
+             assert current['reference_generation']['source_sha256'] == state['original_sha256']
+             save('fresh-cancellation-precheck.json', current)
++        elif state['status'] == 'READY_FOR_NATIVE_INTAKE':
++            # An unused preparation with the disabled provider is not a native failure.
++            assert PLAN.get('reason') == 'UNUSED_DISABLED_PROVIDER_PREPARATION'
++            assert state['base_url'] == receipt['base_url']
++            state_dir = Path(PLAN['state']).parent
++            assert not any((state_dir / stage).exists() for stage in ('intake', 'plan-reference'))
++            environment = dict(row.split('=', 1) for row in app['Config']['Env'] if '=' in row)
++            assert environment['LOCAL_AI_BASE_URL'] == 'http://127.0.0.1:1/v1'
++            from urllib.request import Request, build_opener, ProxyHandler
++            observed = {}
++            for key, endpoint in [('draft', '/api/engineering/agent/project-draft'),
++                                  ('export', '/api/engineering/projects/export'),
++                                  ('jobs', '/api/simulations')]:
++                query = Request(receipt['base_url'] + endpoint, headers={'X-Project-ID': state['project_id']})
++                with build_opener(ProxyHandler({})).open(query, timeout=20) as response:
++                    observed[key] = json.load(response)
++            assert not observed['draft'].get('data')
++            assert not any(observed['export']['source_data'].values())
++            assert observed['jobs']['jobs'] == []
++            save('fresh-unused-precheck.json', observed)
+         else:
+             assert state['status'].endswith('_FAILED')
+     assert db['Image'] == 'sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685'

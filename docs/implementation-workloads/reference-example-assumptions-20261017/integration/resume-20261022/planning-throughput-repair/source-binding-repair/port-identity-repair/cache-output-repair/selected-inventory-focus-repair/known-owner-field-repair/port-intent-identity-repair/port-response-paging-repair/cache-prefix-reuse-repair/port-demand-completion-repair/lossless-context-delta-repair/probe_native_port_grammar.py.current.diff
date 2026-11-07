@@ -1,0 +1,119 @@
+--- before/docs/implementation-workloads/reference-example-assumptions-20261017/integration/resume-20261022/planning-throughput-repair/source-binding-repair/port-identity-repair/cache-output-repair/selected-inventory-focus-repair/known-owner-field-repair/port-intent-identity-repair/probe_native_port_grammar.py
++++ after/docs/implementation-workloads/reference-example-assumptions-20261017/integration/resume-20261022/planning-throughput-repair/source-binding-repair/port-identity-repair/cache-output-repair/selected-inventory-focus-repair/known-owner-field-repair/port-intent-identity-repair/probe_native_port_grammar.py
+@@ -22,9 +22,12 @@
+ parser.add_argument('--port-pages', action='store_true')
+ parser.add_argument('--prefix-cache', action='store_true')
+ parser.add_argument('--port-groups', action='store_true')
++parser.add_argument('--context-delta', action='store_true')
+ parser.add_argument('--evidence-dir', type=Path)
+ args=parser.parse_args()
+ assert not (args.port_groups and (args.port_pages or args.prefix_cache))
++assert not (args.context_delta and any((args.port_groups, args.port_pages, args.prefix_cache,
++                                      args.owner_first_diagnostic, args.repeat_original_prompt)))
+ assert args.attempt.replace('-', '').isalnum()
+ OUT = (args.evidence_dir.resolve() if args.evidence_dir else Path(__file__).resolve().parent) / args.attempt
+ OUT.mkdir(exist_ok=False)
+@@ -43,10 +46,10 @@
+ 
+ source = ROOT / 'backend/nis/agent/orchestration/local_reasoner.py'
+ source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+-nonce = secrets.token_hex(16) if args.prefix_cache or args.port_groups else None
++nonce = secrets.token_hex(16) if args.prefix_cache or args.port_groups or args.context_delta else None
+ write('waiting.json', {'pid':os.getpid(), 'at_utc':datetime.now(timezone.utc).isoformat(),
+                       'source_sha256':source_hash, 'actual_model_requests':0,
+-                      **({'nonce':nonce} if args.prefix_cache or args.port_groups else {})})
++                      **({'nonce':nonce} if args.prefix_cache or args.port_groups or args.context_delta else {})})
+ print(json.dumps({'status':'WAITING_FOR_EXACT_PROCESS_GUARD','pid':os.getpid()}), flush=True)
+ deadline = time.monotonic() + 120
+ while not (OUT / 'go.json').exists():
+@@ -54,7 +57,7 @@
+     time.sleep(0.5)
+ go = json.loads((OUT / 'go.json').read_text())
+ assert go['pid'] == os.getpid() and go['source_sha256'] == source_hash
+-if args.prefix_cache or args.port_groups:
++if args.prefix_cache or args.port_groups or args.context_delta:
+     assert go['nonce'] == nonce, 'A fresh exact-process nonce is required.'
+ command = "$mainId=@(Get-NetTCPConnection -LocalPort 11434 | Where-Object {$_.OwningProcess -gt 0} | Select-Object -ExpandProperty OwningProcess -Unique);if($mainId.Count -ne 1){throw 'Ambiguous main provider'};$main=Get-CimInstance Win32_Process -Filter ('ProcessId='+$mainId[0]);if($main.Name -ne 'ollama.exe' -or $main.CommandLine -notmatch '(?:^|\\s)serve(?:\\s|$)'){throw 'Unexpected main provider identity'};[ordered]@{main_owner=$mainId[0];workers=@(Get-CimInstance Win32_Process | Where-Object {$_.ParentProcessId -eq $mainId[0] -and $_.Name -eq 'llama-server.exe'} | Select-Object ProcessId,CommandLine)} | ConvertTo-Json -Depth 5 -Compress"
+ provider = json.loads(subprocess.check_output(['powershell','-NoProfile','-Command',command],text=True))
+@@ -110,12 +113,81 @@
+         'Set port_plan_complete=true. NIS expands these exact finite counts into individual IDs; '
+         'do not supply IDs, device_id fields, ordinary ports or a never-ending next connector. '
+         'All ordinary arrays including devices/ports/unresolved remain empty. /no_think'}]
++if args.context_delta:
++    from backend.tests.test_reference_context_delta_capacity import complete_authored_context
++    context_fixture_source = ROOT / 'backend/tests/test_reference_context_delta_capacity.py'
++    context_fixture_hash = hashlib.sha256(context_fixture_source.read_bytes()).hexdigest()
++    context = complete_authored_context()
++    selected_channels = {index: secrets.randbelow(1000000000) for index in (0, 17, 31)}
++    selected_address = 'authored-' + secrets.token_hex(12)
++    selected_typed_values = [secrets.randbelow(1000000000), False, None]
++    inherited_values = ['authored-base-' + secrets.token_hex(12), 'authored-late-' + secrets.token_hex(12)]
++    for index, row in enumerate(context['current_candidate']['ports']):
++        row['parameters']['inherited_value'] = inherited_values[index >= 16]
++        row['parameters']['escaped/source~tag'] = inherited_values[index >= 16]
++    for index, channel in selected_channels.items():
++        context['current_candidate']['ports'][index]['parameters']['local_channel_index'] = channel
++    context['current_candidate']['ports'][31]['parameters']['address_binding'] = selected_address
++    context['current_candidate']['ports'][31]['parameters'][''] = selected_typed_values
++    context['instruction'] = (
++        'This is an authored private context reconstruction counter, never a real model or hardware decision. '
++        'Reconstruct the complete current context using the documented tables and ordered RFC6902 operations. '
++        'Return ONLY the requested facts: ports_count and devices_count from current_candidate; '
++        'first_channel, middle_channel and last_channel from ports at indices0,17,31 parameters.local_channel_index; '
++        'last_address from ports[31].parameters.address_binding; '
++        'last_typed_values from ports[31].parameters[the empty-string key]; '
++        'first_inherited_value and last_inherited_value from ports[0] and ports[31] '
++        'parameters.inherited_value, tracing their actual copy bases and later replacements; '
++        'first_zero_literal and last_zero_literal are the exact original JSON numeric spellings as STRINGS '
++        'for ports[0] and ports[31] parameters["a/b~c"]; '
++        'last_escaped_value is ports[31].parameters["escaped/source~tag"], including the actual escaped-path replacements; '
++        'source_role from reference_sources.R.role. Do not infer another ordinal, use actual reconstructed fields. /no_think')
++    messages, _, _ = _reference_context_messages([], None, context,
++        'Read the complete private context faithfully and answer the exact authored read-only query.', 131072)
++    packed = json.loads(messages[1]['content'])
++    assert any(operation['op'] == 'replace' for operation in packed['nis_context_copies'])
++    expected = {'ports_count': 32, 'devices_count': 80, 'first_channel': selected_channels[0],
++                'middle_channel': selected_channels[17], 'last_channel': selected_channels[31],
++                'last_address': selected_address, 'last_typed_values': selected_typed_values,
++                'first_inherited_value': inherited_values[0], 'last_inherited_value': inherited_values[1],
++                'first_zero_literal': '0.0', 'last_zero_literal': '-0.0',
++                'last_escaped_value': inherited_values[1], 'source_role': 'REFERENCE_SUPPLEMENT'}
++    schema = {'type': 'object', 'properties': {
++        **{key: {'type': 'integer'} for key in ('ports_count', 'devices_count', 'first_channel',
++                                               'middle_channel', 'last_channel')},
++        **{key: {'type': 'string'} for key in ('last_address', 'last_zero_literal', 'source_role',
++                                              'first_inherited_value', 'last_inherited_value',
++                                              'first_zero_literal', 'last_escaped_value')},
++        'last_typed_values': {'type': 'array', 'items': {'anyOf': [
++            {'type': 'integer'}, {'type': 'boolean'}, {'type': 'null'}]}}},
++        'required': list(expected), 'additionalProperties': False}
++    write('authored-complete-context.json', context)
++    write('expected-reconstructed-values.json', expected)
+ payload={'model':'qwen3.8:27b','messages':messages,'format':schema,'think':False,'stream':False,
+          'keep_alive':'10m','options':{'temperature':0,'num_predict':8192,
+                                       'num_ctx':_reference_context_window(messages,131072)}}
+ if not args.prefix_cache:
+     write('request.json',payload)
+ write('started.json',{'at_utc':datetime.now(timezone.utc).isoformat(),'pid':os.getpid(),'actual_model_requests':1})
++if args.context_delta:
++    response = get('http://127.0.0.1:11434/api/chat', payload)
++    write('response.json', response)
++    assert response.get('done_reason') == 'stop'
++    value = json.loads(response['message']['content'])
++    Draft202012Validator(schema).validate(value)
++    assert json.dumps(value, sort_keys=True) == json.dumps(expected, sort_keys=True)
++    assert hashlib.sha256(source.read_bytes()).hexdigest() == source_hash
++    assert hashlib.sha256(context_fixture_source.read_bytes()).hexdigest() == context_fixture_hash
++    result = {'status': 'PASSED', 'at_utc': datetime.now(timezone.utc).isoformat(),
++        'actual_model_requests': 1, 'authored_complete_context_reconstructed': True,
++        'input_utf8_bytes': sum(len(row['content'].encode('utf-8')) for row in messages),
++        'source_sha256': source_hash, 'eval_count': response.get('eval_count'),
++        'authored_fixture_sha256': context_fixture_hash,
++        'prompt_eval_count': response.get('prompt_eval_count'), 'canonical_writes': False,
++        'original_model_acceptance': False, 'provider_model_context_output_timeout_unchanged': True}
++    write('result.json', result)
++    print(json.dumps(result), flush=True)
++    sys.exit(0)
+ if args.port_groups:
+     response = get('http://127.0.0.1:11434/api/chat', payload)
+     write('response.json', response)

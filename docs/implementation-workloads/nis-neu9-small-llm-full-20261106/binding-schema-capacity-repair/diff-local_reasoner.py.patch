@@ -1,0 +1,56 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -438,27 +438,46 @@
+                 # One required ID key per node, only later identities in the
+                 # following node, and a finite depth encode both constraints.
+                 bound = min(8, len(existing_choices))
+-                def binding_node(start, remaining):
+-                    name = f'NativeReferenceBinding_{start}_{remaining}'
++                def binding_range(start, end, remaining):
++                    # Share balanced ranges instead of copying every later
++                    # identity into every possible suffix. The accepted ordered
++                    # chains are unchanged; reference depth stays logarithmic.
++                    name = (f'NativeReferenceBinding_{start}_{remaining}' if end - start == 1
++                            else f'NativeReferenceBindingRange_{start}_{end}_{remaining}')
+                     reference = {'$ref': '#/$defs/' + name}
+                     if name in schema['$defs']:
+                         return reference
+                     alternatives = []
+                     schema['$defs'][name] = {'anyOf': alternatives}
+-                    for index in range(start, len(existing_choices)):
+-                        row = existing_choices[index]
++                    if end - start > 1:
++                        middle = (start + end) // 2
++                        alternatives.extend([binding_range(start, middle, remaining),
++                                             binding_range(middle, end, remaining)])
++                    else:
++                        row = existing_choices[start]
+                         identity = row['properties']['device_id']['enum'][0]
+                         properties = {key: deepcopy(value) for key, value in row['properties'].items()
+                                       if key not in {'choice_kind', 'device_id'}}
+                         properties['following'] = {'type': 'null'}
+-                        if remaining > 1 and index + 1 < len(existing_choices):
+-                            properties['following'] = {'anyOf': [{'type': 'null'}, binding_node(index + 1, remaining - 1)]}
++                        if remaining > 1 and start + 1 < len(existing_choices):
++                            properties['following'] = {'anyOf': [
++                                {'type': 'null'}, *binding_suffix(start + 1, 0, len(existing_choices), remaining - 1)]}
+                         alternatives.append({'type': 'object', 'properties': {identity: {
+                             'type': 'object', 'properties': properties,
+                             'required': list(properties), 'additionalProperties': False}},
+                             'required': [identity], 'additionalProperties': False})
+                     return reference
+-                keyed = binding_node(0, bound)
++
++                def binding_suffix(first, start, end, remaining):
++                    if first <= start:
++                        return [binding_range(start, end, remaining)]
++                    if first >= end:
++                        return []
++                    middle = (start + end) // 2
++                    return (binding_suffix(first, start, middle, remaining)
++                            + binding_suffix(first, middle, end, remaining))
++
++                keyed = binding_range(0, len(existing_choices), bound)
+                 batch = {'type': 'object', 'properties': {
+                     'choice_kind': {'type': 'string', 'enum': ['EXISTING_BATCH']}, 'bindings': keyed},
+                     'required': ['choice_kind', 'bindings'], 'additionalProperties': False}

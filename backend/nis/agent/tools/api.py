@@ -169,7 +169,7 @@ def document_intake():
     if not _human_intent():
         return jsonify({'error': 'Bitte die lokale Dokumentauswertung ausdrücklich starten.'}), 403
     return _local_document_response('interpret_project_document', interpret_project_document,
-                                    'Lokaler Qwen startet die vollständige Dokumentprüfung.')
+                                    'Lokale KI startet die vollständige Dokumentprüfung.')
 
 
 @agent_api.route('/document-reference-design', methods=['GET', 'POST'])
@@ -186,7 +186,7 @@ def document_reference_design():
     if not _human_intent():
         return jsonify({'error': 'Die Referenzplanung muss ausdrücklich als Beispielauftrag gestartet werden.'}), 403
     return _local_document_response('generate_reference_design', drafts.generate_reference_design,
-                                    'Lokaler Qwen plant getrennte, prüfbare Referenzannahmen.')
+                                    'Lokale KI plant getrennte, prüfbare Referenzannahmen.')
 
 
 @agent_api.post('/document-reference-design/accept')

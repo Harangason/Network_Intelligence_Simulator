@@ -1,0 +1,66 @@
+{
+  "goal_id": "neu9-model-selection-operator",
+  "kind": "repair",
+  "goal_type": "implementation",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "project_scope": "NIS local verification operators",
+  "requested_change": "Honor explicit human qwen3.5:9b task override with actual metadata and native probe identity; no automatic fallback",
+  "modify_code": true,
+  "allow_repair": true,
+  "required_outcomes": [
+    "explicit_model_binding",
+    "unchanged_validation"
+  ],
+  "validation_requirements": [
+    "syntax",
+    "diff",
+    "actual_native_result"
+  ],
+  "revision_before": {
+    "docs/implementation-workloads/nis-neu9-small-llm-full-20261106/read_provider.py": "8ae3d92a8d53834c314036adc08f1133646306e79210b505a4fb2092ba891d09",
+    "docs/implementation-workloads/nis-neu9-small-llm-full-20261106/binding-schema-capacity-repair/probe_native_bindings.py": "30dad0d382550c5843e8c2b2dd789c59c89a532f2292903c29e659c6374c0eb3",
+    "docs/implementation-workloads/nis-neu9-small-llm-full-20261106/initialize.py": "d8e2b0f710f20cf30082f54029327df08d09f99582b5d26b1cd80f7f1a22250c",
+    "docs/implementation-workloads/nis-neu9-small-llm-full-20261106/verify_isolation.py": "30df1d237a8ad6852c74668f9b6bc91dcf67f9824dadb245a1a7a463dc36dfa3"
+  },
+  "unresolved_decisions": [],
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "root_cause": "Verification operators hardcode old llama identity despite explicit new human model decision",
+    "first_failing_layer": "Host verification model selection",
+    "reproduction": "read_provider.py names llama metadata while loaded_models reports qwen3.5:9b",
+    "affected_files": [
+      "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\read_provider.py",
+      "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\binding-schema-capacity-repair\\probe_native_bindings.py",
+      "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\initialize.py",
+      "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\verify_isolation.py"
+    ],
+    "acceptance_criteria": "Explicit model argument and task authorization required; actual selected metadata and response model checked; original/schema/merge gates unchanged; bind selected model and human authorization into every fresh native state, check actual isolated image environment against that selection",
+    "targeted_tests": "Syntax, assertion diff and actual native counter",
+    "weaken_assertions_to_pass": false,
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\human-small-model-decision-20261107.json",
+        "sha256": "4e0aa6d66910f0401af22c62856256ed2d9f4060e4310a5339126b33f9cefadb"
+      }
+    ]
+  },
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\binding-schema-capacity-repair\\model-selection-operator\\after\\read_provider.py",
+      "sha256": "8ae3d92a8d53834c314036adc08f1133646306e79210b505a4fb2092ba891d09"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\binding-schema-capacity-repair\\model-selection-operator\\after\\binding-schema-capacity-repair\\probe_native_bindings.py",
+      "sha256": "30dad0d382550c5843e8c2b2dd789c59c89a532f2292903c29e659c6374c0eb3"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\binding-schema-capacity-repair\\model-selection-operator\\after\\initialize.py",
+      "sha256": "0b17d24ffed6e994fabcde9c6523de85f8967ebe23121ffcb80461bff421fae5"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\binding-schema-capacity-repair\\model-selection-operator\\after\\verify_isolation.py",
+      "sha256": "e857ab87d5e077b84c634a584f2b8ad18b37587ccdb807918883bf1e76a48f17"
+    }
+  ],
+  "status": "APPLIED_SYNTAX_PASS_NATIVE_PENDING_RESOURCE_COORDINATION"
+}

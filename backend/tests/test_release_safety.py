@@ -115,7 +115,9 @@ def test_source_change_during_units_refuses_candidate_build(tmp_path, monkeypatc
     scripts = tmp_path / 'scripts'
     scripts.mkdir()
     for name in ('run-isolated-tests.py', 'write-build-info.py',
-                 'verification/run-isolated-tests.py', 'build/write-build-info.py'):
+                 'verification/run-isolated-tests.py', 'build/write-build-info.py',
+                 'release-and-deploy.py', 'release/release-and-deploy.py',
+                 'release_storage.py', 'release/release_storage.py'):
         target = scripts / name
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(ROOT / 'scripts' / name, target)

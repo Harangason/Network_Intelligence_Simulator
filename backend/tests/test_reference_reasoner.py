@@ -49,6 +49,13 @@ def native_binding_schemas(schema):
             assert node['additionalProperties'] is False
             assert len(node['properties']) == 1 and node['required'] == list(node['properties'])
             identity, record = next(iter(node['properties'].items()))
+            record = deepcopy(record)
+            for field, constraint in record['properties'].items():
+                if '$ref' in constraint:
+                    assert set(constraint) == {'$ref'}
+                    target = constraint['$ref'].removeprefix('#/$defs/')
+                    assert target.startswith('NativeReferenceBindingField_')
+                    record['properties'][field] = deepcopy(schema['$defs'][target])
             records.setdefault(identity, []).append(record)
     return records
 
@@ -116,6 +123,7 @@ def reasoner_with_transport(monkeypatch, *, family='qwen3', truncate=False, capt
     prepared = intake.prepare_reference_design(request or fixture_request())
     design = design_factory(prepared)
     observed = []
+    monkeypatch.setenv('LOCAL_AI_MODEL', 'qwen3.8:27b')
     monkeypatch.setenv('LOCAL_AI_CONTEXT_TOKENS', '131072')
     def handler(request):
         if request.url.path.endswith('/show'):
@@ -167,12 +175,19 @@ def reasoner_with_transport(monkeypatch, *, family='qwen3', truncate=False, capt
                 row['consumer_port_ids'] = [port_mapping.get(key, key) for key in row['consumer_port_ids']]
         candidate = {key: deepcopy(value) for key, value in active.items() if key in allowed}
         def use_offered_new_ids(rows, existing):
-            items = payload['format']['properties']['inventory_choices']['items']
-            variants = items.get('anyOf', [items])
-            offered = {item['properties']['choice_kind']['enum'][0]: item['properties']['id']['enum'][0]
-                       for item in variants if 'id' in item['properties']}
+            wire = payload['format']['properties']['inventory_choices']
+            if wire['type'] == 'object':
+                # Author the complete fixture first, then encode only the fields
+                # exposed by the real request. Never discard injected mistakes.
+                wire = _reference_schema_for_stage(prepared, {'devices'},
+                    inventory_target=content['inventory_target_for_this_stage'],
+                    existing_devices=current)['properties']['inventory_choices']
             for row in rows:
                 if row['id'] not in existing:
+                    items = wire['properties'][row['name']] if wire['type'] == 'object' else wire['items']
+                    variants = items.get('anyOf', [items])
+                    offered = {item['properties']['choice_kind']['enum'][0]: item['properties']['id']['enum'][0]
+                               for item in variants if 'id' in item['properties']}
                     row['id'] = offered['NEW_' + row['kind']]
         if content.get('inventory_target_for_this_stage'):
             target = content['inventory_target_for_this_stage']
@@ -183,8 +198,8 @@ def reasoner_with_transport(monkeypatch, *, family='qwen3', truncate=False, capt
                 candidate['devices'] = [row for row in candidate['devices'] if row['name'] in target['names']]
             existing = {row['id'] for row in content['current_candidate']['devices']}
             fresh = [row for row in candidate['devices'] if row['id'] not in existing]
-            candidate['inventory_complete'] = len(fresh) <= 1 and prepared['facts'][target['fact_id']]['role'] != never_complete_inventory_role
-            candidate['devices'] = (fresh or candidate['devices'])[:1]
+            candidate['inventory_complete'] = len(fresh) <= target['max_rows'] and prepared['facts'][target['fact_id']]['role'] != never_complete_inventory_role
+            candidate['devices'] = (fresh or candidate['devices'])[:target['max_rows']]
             use_offered_new_ids(candidate['devices'], existing)
             for row in candidate['devices']:
                 row['source_fact_ids'] = [target['fact_id']]
@@ -249,7 +264,22 @@ def reasoner_with_transport(monkeypatch, *, family='qwen3', truncate=False, capt
             candidate['inventory_choices'] = [
                 *[{'choice_kind': 'NEW_' + row['kind'], **row} for row in candidate['devices']],
                 *[{'choice_kind': 'EXISTING', **row} for row in candidate.pop('inventory_bindings')]]
-            existing = [row for row in candidate['inventory_choices'] if row['choice_kind'] == 'EXISTING']
+            if payload['format']['properties']['inventory_choices']['type'] == 'object':
+                names = [row.get('name') if row['choice_kind'] != 'EXISTING' else known[row['device_id']]['name']
+                         for row in candidate['inventory_choices']]
+                # Never silently collapse deliberately invalid repeated identities.
+                if len(set(names)) == len(names):
+                    candidate['inventory_choices'] = dict(zip(names, candidate['inventory_choices'], strict=True))
+                    full_schema = _reference_schema_for_stage(prepared, {'devices'},
+                        inventory_target=content['inventory_target_for_this_stage'], existing_devices=current)
+                    from backend.nis.agent.orchestration.local_reasoner import _reference_compact_inventory_schema
+                    _, codec = _reference_compact_inventory_schema(full_schema)
+                    for name, row in candidate['inventory_choices'].items():
+                        for key, value in codec.get(name, {}).get(row['choice_kind'], {}).get('constants', {}).items():
+                            if key in row and row[key] == value:
+                                row.pop(key)
+            existing = [row for row in (candidate['inventory_choices'].values() if isinstance(candidate['inventory_choices'], dict)
+                                       else candidate['inventory_choices']) if row['choice_kind'] == 'EXISTING']
             if (content['derivation_fact_ids_for_this_stage'] is not None and existing
                     and len({row['device_id'] for row in existing}) == len(existing)):
                 candidate['inventory_choices'] = [
@@ -339,15 +369,25 @@ def test_local_request_ids_are_remapped_with_actual_communication_ids(monkeypatc
     batches = [row for row in observed if row['planning_stage'] == 'Fachliche Kommunikation']
     assert len(batches) >= 2
     assert any(row['known_communication'] for row in batches[1:])
+    assert all(batch['original_source'] == prepared['source_evidence']['source_text'] for batch in batches)
+    assert all(batch['reference_sources'] == prepared['reference_sources'] for batch in batches)
+    for batch in batches:
+        for field, rows in batch['current_candidate'].items():
+            if field == 'unresolved':
+                continue
+            assert all('rationale' not in row for row in rows)
+            assert all('field_references' in row for row in rows)
+            assert all(row['rationale'].strip() for row in result['proposal'][field])
+    assert all(row['parameters'] for row in batches[0]['current_candidate']['ports'])
     assert result['source_evidence']['source_text'] == prepared['source_evidence']['source_text']
     assert result['canonical_writes'] is False
 
 
-def test_reference_planner_rejects_non_qwen_instead_of_changing_provider(monkeypatch):
-    reasoner, prepared, observed = reasoner_with_transport(monkeypatch, family='llama')
+def test_reference_planner_rejects_unsupported_family_instead_of_changing_provider(monkeypatch):
+    reasoner, prepared, observed = reasoner_with_transport(monkeypatch, family='mistral')
     async def run():
         try:
-            with pytest.raises(ValueError, match='lokal installiertes Qwen'):
+            with pytest.raises(ValueError, match='lokal installiertes'):
                 await reasoner.plan_reference_design(prepared)
         finally:
             await reasoner.client.aclose()
@@ -1273,6 +1313,92 @@ def test_reference_retry_keeps_exact_invalid_reply_and_same_current_context(monk
     assert retry['format'] == previous['format']
 
 
+def test_reference_retry_uses_full_context_and_exact_error_when_raw_reply_would_overflow(monkeypatch, caplog):
+    from backend.nis.agent.orchestration import local_reasoner
+
+    build_messages = local_reasoner._reference_context_messages
+    captured = []
+    instance, prepared, _ = reasoner_with_transport(monkeypatch, capture=captured)
+    provider = instance.client._transport.handler
+    invalid = '{"lin_bitrate_bps":19200,"lin_bitrate_bps":19200,"padding":"' + 'x' * 4600 + '"}'
+    rejected = False
+
+    def near_limit(history, previous, current, system, maximum, **kwargs):
+        if current['port_ids_for_this_stage'] and not rejected:
+            _, full, _ = build_messages([], None, current, system, maximum)
+            content_bytes = sum(len(row['content'].encode('utf8')) for row in full)
+            padding = maximum - 8192 - 2048 - content_bytes - 350
+            assert padding > 0
+            current = {**current, 'original_source': current['original_source'] + 'x' * padding}
+            return build_messages([], None, current, system, maximum)
+        return build_messages(history, previous, current, system, maximum, **kwargs)
+
+    def respond(request):
+        nonlocal rejected
+        response = provider(request)
+        if not request.url.path.endswith('/show') and 'port_parameters' in captured[-1]['format']['properties'] and not rejected:
+            rejected = True
+            return httpx.Response(200, json={**response.json(), 'message': {'content': invalid}})
+        return response
+
+    monkeypatch.setattr(local_reasoner, '_reference_context_messages', near_limit)
+    monkeypatch.setattr(instance.client._transport, 'handler', respond)
+    result = run_reference(instance, prepared)
+    first = next(index for index, payload in enumerate(captured) if 'port_parameters' in payload['format']['properties'])
+    initial, retry = captured[first:first + 2]
+    assert initial['messages'] == retry['messages'][:-1]
+    assert 'Doppelter Schlüssel in der Modellantwort: lin_bitrate_bps' in retry['messages'][-1]['content']
+    assert retry['format'] == initial['format']
+    assert retry['options'] == initial['options']
+    assert effective_reference_context(retry['messages']) == effective_reference_context(initial['messages'])
+    assert any(json.loads(row.message.split('Native reference validation failed: ', 1)[1])['response'] == invalid
+               for row in caplog.records if row.message.startswith('Native reference validation failed: '))
+    assert result['canonical_writes'] is False
+
+
+def test_reference_profile_replan_discards_stale_downstream_stage_outputs(monkeypatch, caplog):
+    instance, prepared, observed = reasoner_with_transport(monkeypatch)
+    provider = instance.client._transport.handler
+    omitted = False
+
+    def respond(request):
+        nonlocal omitted
+        response = provider(request)
+        if not request.url.path.endswith('/show'):
+            context = effective_reference_context(json.loads(request.content)['messages'])
+            if context['output_fields_for_this_stage'] == ['communication'] and not omitted:
+                omitted = True
+                body = response.json()
+                choice = json.loads(body['message']['content'])
+                assert choice['communication']
+                communication = choice['communication'][0]
+                communication['source_port_id'] = next(
+                    port['id'] for port in context['current_candidate']['ports']
+                    if port['device_id'] != communication['producer_device_id'])
+                return httpx.Response(200, json={**body, 'message': {'content': json.dumps(choice)}})
+        return response
+
+    monkeypatch.setattr(instance.client._transport, 'handler', respond)
+    result = run_reference(instance, prepared)
+    first_communication = next(index for index, context in enumerate(observed)
+                               if context['planning_stage'] == 'Fachliche Kommunikation')
+    replanned_inventory = next(context for context in observed[first_communication + 1:]
+                               if context['planning_stage'] == 'Physisches Quelleninventar')
+    assert replanned_inventory['validation_feedback']
+    assert 'tatsächlichen Senderanschluss' in replanned_inventory['validation_feedback']['validation_error']
+    assert replanned_inventory['original_source'] == prepared['source_evidence']['source_text']
+    assert replanned_inventory['reference_sources'] == prepared['reference_sources']
+    assert replanned_inventory['current_candidate']['devices']
+    assert all(not rows for field, rows in replanned_inventory['current_candidate'].items() if field != 'devices')
+    assert replanned_inventory['known_communication'] == []
+    repairs = [json.loads(row.message.split('Native reference profile repair requested: ', 1)[1])
+               for row in caplog.records if row.message.startswith('Native reference profile repair requested: ')]
+    assert repairs and repairs[0]['feedback'] == replanned_inventory['validation_feedback']
+    assert repairs[0]['previous_candidate_counts']['ports'] > 0
+    assert result['proposal']['communication']
+    assert result['canonical_writes'] is False
+
+
 @pytest.mark.parametrize('bad', ['missing', 'unknown', 'mismatched_role', 'existing_with_new_fields', 'new_with_existing_id', 'unregistered_role'])
 def test_private_choice_tag_cannot_hide_or_reinterpret_a_device(bad):
     prepared = intake.prepare_reference_design(fixture_request())
@@ -1611,7 +1737,13 @@ def test_inventory_prompt_exposes_exact_existing_identity_projection(monkeypatch
                  or content['derivation_fact_ids_for_this_stage'] is not None]
     assert inventory
     for content in inventory:
-        assert content['existing_inventory_for_this_stage'] == [
+        pointer = content['existing_inventory_for_this_stage']
+        assert pointer == '/current_candidate/devices'
+        referenced = content
+        for key in pointer[1:].split('/'):
+            referenced = referenced[key]
+        assert referenced == content['current_candidate']['devices']
+        assert [{key: row[key] for key in ('id', 'name', 'kind')} for row in referenced] == [
             {key: row[key] for key in ('id', 'name', 'kind')}
             for row in content['current_candidate']['devices']]
 

@@ -21,6 +21,8 @@ export type Technology = {
   max_payload_bytes?: number | null;
   native_formats?: string[];
   parameter_schema?: TechnologyParameterField[];
+  parameter_value_review?: { status: 'CONFIRMED' | 'REVIEW_REQUIRED'; revision_sha256: string;
+    reviewed_at?: string; values: Record<string, unknown>; hardware_evidence: false };
   parameter_defaults_review?: { technology: string; rate_profile: string; values: Record<string, number>; basis: string; status: 'REVIEW_REQUIRED'; source: string };
   local_timing_schema?: Array<{ key: string; label: string; numeric?: boolean; boolean?: boolean;
     type?: string; optional?: boolean; default?: string | number | boolean; options?: string[];

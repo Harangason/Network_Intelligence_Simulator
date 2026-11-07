@@ -1,0 +1,288 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -1085,9 +1085,10 @@
+                 for key in columns:
+                     boundaries = (0, *(index for index in range(1, len(rows))
+                                       if literals[index][key] != literals[index - 1][key]), len(rows))
+-                    # Bound the optimization search, never the number of records.
+-                    # Each alternative retains every row in its original order.
+-                    if not 2 < len(boundaries) <= 17 or boundaries in partitions:
++                    # At most one run partition per column bounds this search.
++                    # More small cohorts can save more than a few large ones;
++                    # every alternative still visits all rows once, in order.
++                    if len(boundaries) <= 2 or boundaries in partitions:
+                         continue
+                     partitions.add(boundaries)
+                     segmented = {'segments': [record_table(start, end)
+--- before/backend/tests/test_reference_inventory_context_capacity.py
++++ after/backend/tests/test_reference_inventory_context_capacity.py
+@@ -170,3 +170,53 @@
+     assert first['current_candidate']['devices'][80]['source_member_bindings'] == {}
+     selection = json.loads(result[-1]['content'])['nis_current_selection']
+     assert encoded(read_selection(selection)) == encoded(expected_selection(current))
++
++
++def authored_many_cohort_context(size=251):
++    """Independent small groups, not reconstructed native Original output."""
++    current = authored_cohort_context(size, 500)
++    for index, device in enumerate(current['current_candidate']['devices']):
++        device['purpose'] = (f'Independently authored group {index // 8:02}: preserve measurement '
++                             'processing and actuator feedback in the named functional group.')
++        device['rationale'] = (f'Authored decision {index // 8:02}: this physical participant retains '
++                               'its own original identity, source binding and explicit qualified limits.')
++    return current
++
++
++@pytest.mark.parametrize('size', [191, 251])
++def test_many_small_cohorts_fit_complete_context_without_source_or_guard_changes(size):
++    from backend.tests.test_reference_context_delta_capacity import decode_wire
++    from backend.tests.test_reference_planning_throughput import unpack_context_message
++    current = authored_many_cohort_context(size)
++    before = encoded(current)
++    packed = reasoner._reference_context_snapshot(current)
++    assert encoded(decode_wire(packed)) == before
++    assert encoded(unpack_context_message(packed)) == before
++    messages, _, _ = reasoner._reference_context_messages(
++        [], None, current, 'Authored capacity counter', 131072)
++    assert encoded(effective_reference_context(messages)) == before
++    assert encoded(read_selection(json.loads(messages[-1]['content'])['nis_current_selection'])) == encoded(expected_selection(current))
++    assert encoded(current) == before
++    required = sum(len(row['content'].encode('utf8')) for row in messages) + 8192 + 2048
++    assert required <= 131072
++    with pytest.raises(ValueError, match='keine Quelle gekürzt'):
++        reasoner._reference_context_window(messages, required - 1)
++
++
++def test_many_cohorts_keep_late_overrides_and_literal_boundaries():
++    from backend.tests.test_reference_context_delta_capacity import decode_wire
++    from backend.tests.test_reference_planning_throughput import unpack_context_message
++    current = authored_many_cohort_context()
++    rows = current['current_candidate']['devices']
++    for index, row in enumerate(rows):
++        row['field_references'] = {'a/b~c': [False, 0, 0.0, -0.0, None, '0'][index % 6]}
++    rows[248]['purpose'] = 'Distinct late override only for participant248, never inherited by249.'
++    before = encoded(current)
++    packed = reasoner._reference_context_snapshot(current)
++    assert encoded(decode_wire(packed)) == before
++    assert encoded(unpack_context_message(packed)) == before
++    assert encoded(current) == before
++    decoded = decode_wire(packed)['current_candidate']['devices']
++    assert len(decoded) == 251
++    assert decoded[248]['purpose'] != decoded[249]['purpose']
++    assert [row['id'] for row in decoded] == [row['id'] for row in rows]
+--- before/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/inventory-output-codec-repair/probe_native_codec.py
++++ after/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/inventory-output-codec-repair/probe_native_codec.py
+@@ -21,7 +21,11 @@
+ parser.add_argument('--output', type=Path)
+ parser.add_argument('--packed-context', action='store_true')
+ parser.add_argument('--cohort-context', action='store_true')
++parser.add_argument('--many-cohort-context', action='store_true')
++parser.add_argument('--shared-owner-clarification', action='store_true')
++parser.add_argument('--model', choices=['llama3.1:8b', 'qwen3.5:9b'])
+ args = parser.parse_args()
++args.cohort_context = args.cohort_context or args.many_cohort_context
+ args.packed_context = args.packed_context or args.cohort_context
+ OUT = (args.output or Path(__file__).resolve().parent / 'native-grammar').resolve()
+ GOAL = Path(__file__).resolve().parents[1]
+@@ -35,11 +39,18 @@
+ 
+ async def main():
+     settings = json.loads((ROOT / '.local-implementation-agent.json').read_text(encoding='utf8'))['local_implementation_agent']
+-    model = settings['preferred_models']['reasoning']
+-    assert model == 'llama3.1:8b' and settings['enabled_models'] == [model]
++    model = args.model or settings['preferred_models']['reasoning']
++    if model == 'qwen3.5:9b':
++        authorization = GOAL / 'human-small-model-decision-20261107.json'
++        decision = json.loads(authorization.read_text(encoding='utf8'))
++        assert decision['verified_directly'] is True and model in decision['human_message']
++        save('model-authorization.json', {'path': str(authorization), 'sha256': hashlib.sha256(authorization.read_bytes()).hexdigest()})
++    else:
++        assert model == 'llama3.1:8b' and settings['enabled_models'] == [model]
+     assert settings['preferred_models']['fallback'] is None
+     # Reuse the established dynamic main-worker-only admission reader. It asserts idle.
+-    admission = json.loads(subprocess.check_output([sys.executable, str(GOAL / 'read_provider.py')], text=True))
++    admission = json.loads(subprocess.check_output([sys.executable, str(GOAL / 'read_provider.py'), '--model', model], text=True))
++    assert admission['busy_slots'] == 0 and admission['loaded_models'] in ([], [model])
+     save('admission.json', admission)
+     prepared, target, full_schema, _ = batch_case(8)
+     schema, codec = r._reference_compact_inventory_schema(full_schema)
+@@ -58,26 +69,39 @@
+     if args.packed_context:
+         from backend.tests.test_reference_inventory_context_capacity import authored_context, read_selection
+         current = authored_context(12, 2)
++        if args.many_cohort_context:
++            from backend.tests.test_reference_inventory_context_capacity import authored_many_cohort_context
++            current = authored_many_cohort_context(251)
+         existing = current['current_candidate']['devices']
+         if args.cohort_context:
+             for index, row in enumerate(existing):
++                if args.many_cohort_context:
++                    row.update(kind='CONTROLLER', source_fact_ids=['Authored-CONTROLLER'])
++                    continue
+                 kind = ['CONTROLLER', 'SENSOR', 'ACTUATOR'][index // 4]
+                 row.update(kind=kind, source_fact_ids=['Authored-' + kind], source_member_bindings={},
+                            purpose=('Existing independently authored ' + kind + ' cohort; no real hardware qualification. ') * 4,
+                            rationale=('Preserve every existing ' + kind + ' identity and source binding in this synthetic counter. ') * 4)
+-            existing[1]['purpose'] = 'Responsible for the authored temperature measurement chain.'
+-            expected_owner = existing[1]['id']
++            selected = existing[248 if args.many_cohort_context else 1]
++            selected['purpose'] = 'Responsible for the authored temperature measurement chain.'
++            expected_owner = selected['id']
+             current['existing_inventory_for_this_stage'] = [
+                 {key: row[key] for key in ('id', 'name', 'kind')} for row in existing]
+         current['inventory_target_for_this_stage'] = target
+         current.update(json.loads(messages[-1]['content']))
+-        current['instruction'] += (' The twelve authored existing devices remain present and unchanged. '
++        current['instruction'] += (f' All {len(existing)} authored existing devices remain present and unchanged. '
+             'They belong to other source groups, not the eight requested new sensors. '
+             'For each new sensor use as owner the existing CONTROLLER whose purpose is '
+             'Responsible for the authored temperature measurement chain. '
+             'Read its exact ID and purpose from the complete context; names alone do not identify it. '
+             'Do not select another controller, sensor or actuator.' if args.cohort_context else
+             ' The twelve authored existing controllers remain present and unchanged. They are not the eight requested new sensors.')
++        if args.shared_owner_clarification:
++            assert args.cohort_context
++            current['instruction'] += (' All eight new sensors share the SAME matching existing owner. '
++                'Repeat that exact owner ID in all eight owner_device_id fields. IDs are opaque identities; '
++                'never increment, cycle or distribute them. The expected ID is determined only by the '
++                'existing controller purpose, not by the sensor index.')
+         messages, _, _ = r._reference_context_messages([], None, current, messages[0]['content'], 131072)
+         if args.cohort_context:
+             def count_segments(value):
+@@ -86,8 +110,14 @@
+                 return sum(count_segments(item) for item in value) if isinstance(value, list) else 0
+             segment_tables = count_segments(json.loads(messages[-1]['content']))
+             assert segment_tables > 0, 'The native probe must actually exercise segmented tables.'
++            if args.many_cohort_context:
++                def largest_segment_count(value):
++                    if isinstance(value, dict):
++                        return max([len(value.get('segments', [])), *(largest_segment_count(v) for v in value.values())])
++                    return max([0, *(largest_segment_count(v) for v in value)]) if isinstance(value, list) else 0
++                assert largest_segment_count(json.loads(messages[-1]['content'])) > 16
+         selection = json.loads(messages[-1]['content'])['nis_current_selection']
+-        assert isinstance(selection['existing_inventory'], dict) and len(read_selection(selection)) == 12
++        assert isinstance(selection['existing_inventory'], dict) and len(read_selection(selection)) == len(existing)
+         full_schema = r._reference_schema_for_stage(prepared, {'devices'}, inventory_target=target, existing_devices=existing)
+         schema, codec = r._reference_compact_inventory_schema(full_schema)
+         save('request-local-codec.json', codec)
+@@ -118,6 +148,8 @@
+               'preserved_existing_devices': len(existing), 'packed_context': args.packed_context,
+               'segmented_tables': segment_tables, 'native_owner_selection': args.cohort_context,
+               'native_owner_selection_basis': 'purpose_only_in_complete_context' if args.cohort_context else None,
++              'many_cohort_context': args.many_cohort_context, 'expected_owner': expected_owner,
++              'shared_owner_clarification': args.shared_owner_clarification,
+               'schema_and_public_validation_and_scoped_merge': True,
+               'source_code_sha256': hashlib.sha256((ROOT / 'backend/nis/agent/orchestration/local_reasoner.py').read_bytes()).hexdigest(),
+               'original_acceptance': False, 'simulation_acceptance': False,
+--- before/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/freeze_repair.py
++++ after/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/freeze_repair.py
+@@ -11,11 +11,11 @@
+ out=Path(__file__).resolve().parent
+ root=out.parents[2]
+ parser=argparse.ArgumentParser(description=__doc__)
+-parser.add_argument('--phase',choices=['source-reference','source-semantics','function-coverage','inventory-batch','inventory-codec','inventory-context','inventory-cohort','inventory-bindings','inventory-closure'],required=True)
++parser.add_argument('--phase',choices=['source-reference','source-semantics','function-coverage','inventory-batch','inventory-codec','inventory-context','inventory-cohort','inventory-bindings','inventory-closure','inventory-segments'],required=True)
+ args=parser.parse_args()
+ semantic_phase=args.phase in {'source-semantics','function-coverage'}
+ coverage_phase=args.phase=='function-coverage'
+-directory=out/({'source-reference':'intake-source-reference-repair','source-semantics':'source-semantics-repair','function-coverage':'function-coverage-repair','inventory-batch':'inventory-batch-repair','inventory-codec':'inventory-output-codec-repair','inventory-context':'inventory-context-capacity-repair','inventory-cohort':'inventory-context-capacity-repair/cohort-table-repair','inventory-bindings':'binding-schema-capacity-repair','inventory-closure':'inventory-closure-repair'}[args.phase])
++directory=out/({'source-reference':'intake-source-reference-repair','source-semantics':'source-semantics-repair','function-coverage':'function-coverage-repair','inventory-batch':'inventory-batch-repair','inventory-codec':'inventory-output-codec-repair','inventory-context':'inventory-context-capacity-repair','inventory-cohort':'inventory-context-capacity-repair/cohort-table-repair','inventory-bindings':'binding-schema-capacity-repair','inventory-closure':'inventory-closure-repair','inventory-segments':'inventory-segment-capacity-repair'}[args.phase])
+ baseline=out/'intake-cardinality-repair'/'before'
+ def baseline_file(name):
+     if (baseline/name).exists():return baseline/name
+@@ -33,22 +33,38 @@
+ def parse(path):
+     return ast.parse(path.read_text(encoding='utf-8'))
+ 
+-if args.phase == 'inventory-closure':
++if args.phase in {'inventory-closure', 'inventory-segments'}:
++    segment_phase = args.phase == 'inventory-segments'
+     import xml.etree.ElementTree as ET
+     check = next(ET.parse(directory/'green-regression.xml').getroot().iter('testsuite')).attrib
+     assert check['failures'] == check['errors'] == check['skipped'] == '0'
+     assert work['active_local_regression']['status'] == 'PASS' and work['active_local_regression']['exit_code'] == 0
+-    native_path = directory/'native-counter-02/result.json'
++    native_path = directory/('native-many-cohorts-shared/result.json' if segment_phase else 'native-counter-02/result.json')
+     native = json.loads(native_path.read_text(encoding='utf8'))
+-    assert native['status'] == 'PASS' and native['actual_inference_requests'] == 2
+-    assert native['model'] == 'qwen3.5:9b' and native['schema_public_validation_scoped_merge_preserved']
+-    assert [(row['mode'], row['new_devices'], row['preserved_existing_devices'], row['final_devices'])
+-            for row in native['counters']] == [('closed', 0, 3, 3), ('missing-last-instance', 1, 2, 3)]
++    assert native['status'] == 'PASS' and native['model'] == 'qwen3.5:9b'
++    if segment_phase:
++        assert native['actual_inference_requests'] == 1 and native['many_cohort_context']
++        assert native['schema_and_public_validation_and_scoped_merge'] and native['native_owner_selection']
++        assert native['preserved_existing_devices'] == 251 and native['native_devices'] == 8
++        assert native['expected_owner'] == 'authored-device-248'
++        assert native['shared_owner_clarification'] is True
++        reviewed = json.loads((directory/'native-independent-review.json').read_text(encoding='utf8'))
++        assert reviewed['all_eight_owner_assertions_retained'] and reviewed['all251context_records_source_and_schema_identical']
++        assert reviewed['expected_id_not_supplied_in_instruction'] and reviewed['purpose_absent_from_direct_selection']
++        for name in ('first_request', 'first_response', 'second_request', 'second_response', 'passing_result'):
++            assert ref(Path(reviewed[name]['path'])) == reviewed[name]
++    else:
++        assert native['actual_inference_requests'] == 2 and native['schema_public_validation_scoped_merge_preserved']
++        assert [(row['mode'], row['new_devices'], row['preserved_existing_devices'], row['final_devices'])
++                for row in native['counters']] == [('closed', 0, 3, 3), ('missing-last-instance', 1, 2, 3)]
+     reasoner = 'backend/nis/agent/orchestration/local_reasoner.py'
+-    assert ref(root/reasoner)['sha256'] == native['source_sha256']
++    assert ref(root/reasoner)['sha256'] == native['source_code_sha256' if segment_phase else 'source_sha256']
+     # Compare all application declarations. Only the closure predicate, native
+     # schema and the infer instruction/predicate assignment may differ.
+     def normalize(tree):
++        if segment_phase:
++            tree.body = [node for node in tree.body if getattr(node, 'name', None) != '_reference_context_snapshot']
++            return ast.dump(tree, include_attributes=False)
+         cls = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == 'LocalEngineeringReasoner')
+         plan = next(node for node in cls.body if getattr(node, 'name', None) == 'plan_reference_design')
+         infer = next(node for node in ast.walk(plan) if isinstance(node, ast.AsyncFunctionDef) and node.name == 'infer')
+@@ -66,8 +82,8 @@
+             '_reference_inventory_closed', '_reference_schema_for_stage'}]
+         return ast.dump(tree, include_attributes=False)
+     assert normalize(parse(directory/'before'/reasoner)) == normalize(parse(root/reasoner))
+-    names = [reasoner, 'backend/tests/test_reference_inventory_closure.py',
+-             str((directory/'probe_native_closure.py').relative_to(root)).replace(chr(92), '/'),
++    names = [reasoner, 'backend/tests/test_reference_inventory_context_capacity.py' if segment_phase else 'backend/tests/test_reference_inventory_closure.py',
++             str(((out/'inventory-output-codec-repair/probe_native_codec.py') if segment_phase else (directory/'probe_native_closure.py')).relative_to(root)).replace(chr(92), '/'),
+              str((out/'freeze_repair.py').relative_to(root)).replace(chr(92), '/')]
+     for name, digest in work['frozen_files'].items():
+         if name not in names:
+@@ -92,7 +108,7 @@
+     proof = {'status': 'FROZEN_LOCAL_AND_NATIVE_COUNTER_PASS_ORIGINAL_PENDING',
+         'at': datetime.now(timezone.utc).isoformat(), 'source': source, 'verification_sha256': verification,
+         'checks': {'green-regression.xml': check}, 'native_counter': ref(native_path),
+-        'application_change_scope': ['finite source-inventory closure predicate', 'native schema closure subset', 'matching stage instruction'],
++        'application_change_scope': ['existing lossless serializer: all per-column contiguous run partitions'] if segment_phase else ['finite source-inventory closure predicate', 'native schema closure subset', 'matching stage instruction'],
+         'all_other_application_ast_identical': True,
+         'public_validation_merge_scheduler_context_output_timeout_original_unchanged': True,
+         'original_acceptance': False, 'simulation_acceptance': False,
+@@ -101,21 +117,22 @@
+     for key, values in (('before', before_refs), ('after', after_refs), ('diff', [ref(directory/'change.diff')])):
+         work.setdefault(key, []).extend(values)
+     work.update(frozen_source=source, frozen_files=proof['files'], frozen_verification_sha256=verification)
+-    work['tests'].append({'scope': 'Current finite-instance closure plus adjacent inventory and reasoner regression',
++    work['tests'].append({'scope': 'Current context capacity plus adjacent serializer/stream/reasoner regression' if segment_phase else 'Current finite-instance closure plus adjacent inventory and reasoner regression',
+         'result': check, 'evidence': [ref(directory/'green-regression.xml')]})
+     work['repair']['evidence'].extend([ref(directory/'source-scope-proof.json'), ref(native_path)])
+     (out/'workload.json').write_text(json.dumps(work, ensure_ascii=False, indent=2)+'\n', encoding='utf8')
+-    state_path = out/'attempt-11/state.json'
++    state_path = out/('attempt-12/state.json' if segment_phase else 'attempt-11/state.json')
+     state = json.loads(state_path.read_text(encoding='utf8'))
+-    terminal_path = out/'attempt-11/terminal-7711-verified/manifest.json'
++    terminal_path = out/('attempt-12/terminal-19307-verified/manifest.json' if segment_phase else 'attempt-11/terminal-7711-verified/manifest.json')
+     terminal = json.loads(terminal_path.read_text(encoding='utf8'))
+     assert state['status'] == terminal['state_status'] == 'NATIVE_PLAN_REFERENCE_FAILED'
+-    assert terminal['session'] == 7711 and terminal['exit_code'] == 1 and terminal['normal_terminal_result']['success'] is False
++    assert terminal['session'] == (19307 if segment_phase else 7711) and terminal['exit_code'] == 1 and terminal['normal_terminal_result']['success'] is False
++    retire_name = 'retire-6d8' if segment_phase else 'retire-4c4'
+     plan = {'receipt': state['receipt'], 'image_id': state['image_id'], 'resources': state['containers'],
+         'state': str(state_path), 'terminal_evidence': ref(terminal_path),
+-        'expected_production_image': work['current_image'], 'output': str(out/'retire-4c4'),
+-        'archive': 'F:/CodexOrdner/visualizations/2026/10/09/01a11f88-d6c9-7b63-bec3-26450a86e52c/nis-neu9-small-llm-20261106/retire-4c4'}
+-    plan_path = out/'retire-4c4-plan.json'
++        'expected_production_image': work['current_image'], 'output': str(out/retire_name),
++        'archive': 'F:/CodexOrdner/visualizations/2026/10/09/01a11f88-d6c9-7b63-bec3-26450a86e52c/nis-neu9-small-llm-20261106/' + retire_name}
++    plan_path = out/(retire_name + '-plan.json')
+     assert not plan_path.exists()
+     plan_path.write_text(json.dumps(plan, ensure_ascii=False, indent=2)+'\n', encoding='utf8')
+     print(json.dumps({'source_sha256': source['source_sha256'], 'verification_sha256': verification, 'checks': check}))

@@ -76,8 +76,8 @@ def runtime_settings() -> RuntimeSettings:
         local_ai_base_url=os.environ.get(
             "LOCAL_AI_BASE_URL", "http://127.0.0.1:11434/v1"
         ).rstrip("/"),
-        local_ai_model=os.environ.get("LOCAL_AI_MODEL", "qwen3.8:27b").strip()
-        or "qwen3.8:27b",
+        local_ai_model=os.environ.get("LOCAL_AI_MODEL", "llama3.1:8b").strip()
+        or "llama3.1:8b",
         local_ai_fast_model=os.environ.get("LOCAL_AI_FAST_MODEL", "llama3.1:8b").strip()
         or "llama3.1:8b",
     )

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="17.943" timestamp="2026-11-03T14:48:32.679619+01:00" hostname="Haranga"><testcase classname="tests.test_reference_selected_identity" name="test_communication_decoder_restricts_only_selected_senders" time="16.751"><failure message="AssertionError: assert [] == [['communicat...r_device_id']]&#10;  &#10;  Right contains one more item: ['communication', 0, 'producer_device_id']&#10;  Use -v to get more diff">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000019BFB448510&gt;
+
+    def test_communication_decoder_restricts_only_selected_senders(monkeypatch):
+        from backend.tests.test_reference_design import with_communication
+        from backend.tests.test_reference_reasoner import (
+            effective_reference_context, reasoner_with_transport, run_reference,
+        )
+    
+        captured = []
+        instance, prepared, _ = reasoner_with_transport(monkeypatch, capture=captured)
+        run_reference(instance, prepared)
+        payload, context = next(
+            (payload, context)
+            for payload in captured
+            if (context := effective_reference_context(payload['messages']))[
+                'producer_device_ids_for_this_stage']
+        )
+        selected = context['producer_device_ids_for_this_stage']
+        communication = with_communication(fixture_design(prepared))['communication'][0]
+        communication.update(consumer_device_ids=['receiver-outside-sender-group'])
+        body = intake.ReferenceDesignProposal(communication=[communication]).model_dump(mode='json')
+        validator = Draft202012Validator(payload['format'])
+        for sender in selected:
+            body['communication'][0]['producer_device_id'] = sender
+            validator.validate(body)
+        body['communication'][0]['producer_device_id'] = 'receiver-outside-sender-group'
+        errors = list(validator.iter_errors(body))
+&gt;       assert [list(error.absolute_path) for error in errors] == [
+            ['communication', 0, 'producer_device_id'],
+        ]
+E       AssertionError: assert [] == [['communicat...r_device_id']]
+E         
+E         Right contains one more item: ['communication', 0, 'producer_device_id']
+E         Use -v to get more diff
+
+backend\tests\test_reference_selected_identity.py:71: AssertionError</failure></testcase></testsuite></testsuites>

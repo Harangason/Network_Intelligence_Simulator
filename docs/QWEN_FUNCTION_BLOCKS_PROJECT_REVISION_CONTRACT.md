@@ -1,6 +1,6 @@
-# QWEN functions and project revisions
+# Local model functions and project revisions
 
-QWEN authors executable domain logic. NIS owns canonical project access, bounded
+The explicitly configured local completion-capable model authors executable domain logic. NIS owns canonical project access, bounded
 execution, validation, review, revision checks and persistence. No arbitrary
 generated Python module is imported or executed. There is no second database,
 TechnologyProfile, block registry or independent transport simulator.
@@ -9,10 +9,19 @@ TechnologyProfile, block registry or independent transport simulator.
 
 - `agent/tools/model.py`: `ProjectRepository` actively reads the current,
   project-scoped canonical DB; `ProjectContext` freezes its exact revision.
-- `agent/tools/function_blocks.py`: local installed QWEN generates source,
+- `agent/tools/function_blocks.py`: the explicitly selected, locally installed model generates source,
   parameter schema and constraints from explicit requirements and canonical IDs.
-  There is no Llama/cloud fallback for domain code. Incomplete/timed-out responses
+  There is no implicit family or cloud fallback for domain code. The user explicitly selected llama3.1:8b on 2026-11-05 and disabled Qwen inference for NIS. New artifacts retain their actual LLAMA/QWEN author and exact model/digest; existing Qwen-authored standards and historical revisions retain their original provenance. Incomplete/timed-out responses
   create no proposal. Expected-value cases are supplied independently of QWEN.
+  Other local model families and aliases use `LOCAL_LLM` provenance with their
+  exact model/digest, verified GGUF identity, positive finite parameter count,
+  explicit completion capability and complete matching response. This is an
+  identity admission check, not evidence that a generated function is correct.
+  All existing AST, independent-case, binding, review and revision gates apply.
+  Expected-value evidence attributed to the generating model, its author label
+  or recorded family is rejected for every model, not only for Qwen.
+  Historical QWEN/LLAMA artifacts retain their original identity contract;
+  newly recorded metadata is checked by the same shared local identity validator.
 - `engineering/signals/signal_behavior_service.py`: existing `SignalBehavior`
   persistence; `FUNCTION_BLOCK` extends the existing registry/proposal contract.
 - `simulation/signals/core/function_block.py`: OOP `FunctionBlock`, bounded AST

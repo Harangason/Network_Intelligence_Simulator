@@ -28,8 +28,9 @@ def unpack_context_message(value):
     for path in value['nis_context_tables']:
         parent, key = location(path)
         table = parent[key]
-        records = [{**deepcopy(table['constants']), **dict(zip(table['columns'], row, strict=True))}
-                   for row in table['rows']]
+        parts = table['segments'] if 'segments' in table else [table]
+        records = [{**deepcopy(part['constants']), **dict(zip(part['columns'], row, strict=True))}
+                   for part in parts for row in part['rows']]
         parent[key] = dict(zip(table['keys'], records, strict=True)) if 'keys' in table else records
     for operation in value['nis_context_copies']:
         parent, key = location(operation['path'])
@@ -38,6 +39,9 @@ def unpack_context_message(value):
             parent[key] = deepcopy(source[source_key])
         elif operation['op'] == 'replace':
             parent[key]  # Only existing fields may be replaced.
+            if 'value_json_literal' in operation:
+                assert operation['value_json_literal'] == json.dumps(
+                    operation['value'], ensure_ascii=False, separators=(',', ':')), 'Contradictory scalar literal'
             parent[key] = deepcopy(operation['value'])
         else:
             raise AssertionError('Undocumented private reconstruction operation')
@@ -280,12 +284,12 @@ def test_complete_snapshot_fallback_refreshes_actual_validated_native_anchor(mon
     from backend.tests.test_reference_reasoner import reasoner_with_transport, run_reference
     actual_builder = reasoner._reference_context_messages
     observed_anchors, captured = [], []
-    def once_fresh(history, previous, current, system, maximum, *, anchor=None, anchors=()):
+    def once_fresh(history, previous, current, system, maximum, *, anchor=None, anchors=(), capacity_check=None):
         observed_anchors.append(deepcopy(anchor))
         if len(observed_anchors) == 2:
-            messages, full, _ = actual_builder([], None, current, system, maximum)
+            messages, full, _ = actual_builder([], None, current, system, maximum, capacity_check=capacity_check)
             return messages, full, True
-        return actual_builder(history, previous, current, system, maximum, anchor=anchor, anchors=anchors)
+        return actual_builder(history, previous, current, system, maximum, anchor=anchor, anchors=anchors, capacity_check=capacity_check)
     monkeypatch.setattr(reasoner, '_reference_context_messages', once_fresh)
     instance, prepared, observed = reasoner_with_transport(monkeypatch, capture=captured, wire_padding=True)
     result = run_reference(instance, prepared)

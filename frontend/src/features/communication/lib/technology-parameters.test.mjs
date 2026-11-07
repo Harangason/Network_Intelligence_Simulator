@@ -429,3 +429,27 @@ test('context links select the actual bus and canonical UI fields without mixing
   assert.equal(findingsForParameter(rows,'lin','arbitration_bitrate').length,0);
   assert.equal(technologyKey('Ethernet'),'ethernet');
 });
+
+
+test('catalog review remains distinct from hardware proof and notices an edited value', () => {
+  const parameters = {technology:'lin', simulation_parameter_assumptions:{lin:{values:{lin_bitrate_bps:19200}}},
+    technology_parameter_reviews:{lin:{status:'CONFIRMED', hardware_evidence:false, values:{lin_bitrate_bps:19200}}}};
+  assert.equal(parameterValueStatus(parameters,'lin_bitrate_bps','lin'),'REVIEWED_CATALOG');
+  assert.equal(technologyParameterUnverified(parameters,'lin_bitrate_bps','lin'),true);
+  parameters.simulation_parameter_assumptions.lin.values.lin_bitrate_bps = 9600;
+  assert.equal(parameterValueStatus(parameters,'lin_bitrate_bps','lin'),'SAVED_ASSUMPTION');
+});
+
+
+test('saving a reviewed scenario binds its acknowledgement to the current profile revision', () => {
+  const profile = {id:'lin', parameter_value_review:{revision_sha256:'profile-v2'}, parameter_schema:[
+    {key:'lin_bitrate_bps',type:'number',label:'LIN rate',simulation_default:19200,value_role:'CONFIGURATION'}]};
+  const saved = confirmTechnologyParameters({},profile,{lin_bitrate_bps:9600},{preserveSimulationAssumptions:true});
+  const proof = saved.simulation_parameter_assumptions.lin.provenance.lin_bitrate_bps;
+  assert.equal(proof.parameter_review.revision_sha256,'profile-v2');
+  assert.equal(proof.hardware_evidence,false);
+  saved.technology_parameter_reviews={lin:{status:'CONFIRMED',revision_sha256:'profile-v2',values:{lin_bitrate_bps:19200}}};
+  assert.equal(parameterValueStatus(saved,'lin_bitrate_bps','lin'),'REVIEWED_CATALOG');
+  saved.technology_parameter_reviews.lin.revision_sha256='profile-v3';
+  assert.equal(parameterValueStatus(saved,'lin_bitrate_bps','lin'),'SAVED_ASSUMPTION');
+});

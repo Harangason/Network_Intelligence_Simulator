@@ -1,0 +1,1135 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -1170,10 +1170,11 @@
+     return {**final, 'message': {**(final.get('message') or {}), 'content': ''.join(chunks)}}
+ 
+ 
+-def _reference_context_messages(history, previous, current, system, maximum, *, anchor=None, anchors=()):
++def _reference_context_messages(history, previous, current, system, maximum, *, anchor=None, anchors=(), capacity_check=None):
+     """Append exact native replies; rebase only to a complete current snapshot."""
+     from copy import deepcopy
+     import json
++    capacity_check = capacity_check or _reference_context_window
+     protocol = (
+         ' NIS-Kontextfortsetzung: Die erste Nutzernachricht enthält den vollständigen Planungskontext. '
+         'Nachrichten mit nis_context_patch aktualisieren diesen vollständig nach RFC6902; nicht genannte '
+@@ -1262,7 +1263,7 @@
+     # than an old anchor; never select by the anchor's age or total size alone.
+     alternatives = []
+     try:
+-        _reference_context_window(full, maximum)
++        capacity_check(full, maximum)
+     except ValueError:
+         pass
+     else:
+@@ -1276,7 +1277,7 @@
+         anchored = [*deepcopy(anchor_messages), {'role': 'user', 'content': wire(
+             {'nis_context_patch': _reference_context_patch(anchor_context, current)})}]
+         try:
+-            _reference_context_window(anchored, maximum)
++            capacity_check(anchored, maximum)
+         except ValueError:
+             pass  # Complete fresh snapshot still has to pass the same guard.
+         else:
+@@ -1287,13 +1288,13 @@
+         appended = [*history, {'role': 'user', 'content': wire(
+             {'nis_context_patch': _reference_context_patch(previous, current)})}]
+         try:
+-            _reference_context_window(appended, maximum)
++            capacity_check(appended, maximum)
+         except ValueError:
+             pass  # The full snapshot below must still pass the unchanged guard.
+         else:
+             return appended, full, False
+     try:
+-        _reference_context_window(full, maximum)
++        capacity_check(full, maximum)
+     except ValueError:
+         import hashlib
+         input_bytes = sum(len(row['content'].encode('utf8')) for row in full)
+@@ -1688,7 +1689,9 @@
+     async def plan_reference_design(self, prepared: dict):
+         """Propose example choices separately from immutable source facts."""
+         from backend.nis.agent.tools.cancellation import bind_document_request
++        from backend.nis.agent.orchestration.reference_token_budget import ReferenceTokenBudget
+         bind_document_request()
++        token_budget = ReferenceTokenBudget(self.client, self.chat_url, self.model, self.context_tokens)
+         from copy import deepcopy
+         import hashlib
+         from datetime import datetime, timezone
+@@ -1877,7 +1880,7 @@
+                               + ('Prüfe jetzt die physische Hardware für die ausdrücklich angeforderten FUNCTION-/REQUIREMENT-FactIDs. Vollständige Quelle und sämtliche Nachbarfunktionen bleiben Konsistenzkontext; weitere Quellenbefunde werden in eigenen Hardwarestufen bearbeitet. Sensoren und Aktoren sind echte Teilnehmer, keine bloßen Werte im Controller. Vorhandene Geräte wiederverwenden oder fehlende Messquellen, Verarbeitung, Verbraucher und Aktoren ergänzen; unabhängige Messgrößen und Stellwirkungen berücksichtigen. Ports/Messgrößen/Befehle/Funktionen/Kommunikation folgen erst nach ALLEN Hardwarestufen und erzeugen KEINE Geräte mehr. Notwendige Peripherie dieses Quellenbereichs niemals in spätere IO-Schritte verschieben. source_fact_ids enthält nur passende angeforderte FUNCTION-/REQUIREMENT-FactIDs, jede höchstens einmal; keine neuen Bindungen an Quelleninventar. Alte Bindungen wiederverwendeter IDs bleiben serverseitig erhalten. Keine Originalmenge erhöhen oder Hardwarebelege/Defaults erfinden. Pro Antwort entweder höchstens ein wirklich neues Gerät ODER eine einzige EXISTING_BATCH-Auswahl. Deren bindings ist ein Knoten mit genau einer vorhandenen ID als Schlüssel. Sein Wert enthält source_fact_ids, rationale, field_references und following. following ist null oder der nächste solche Ein-ID-Knoten. Höchstens acht Knoten, jede ID nur einmal und in der Reihenfolge von existing_inventory_for_this_stage auswählen. Nach dem achten Knoten ist following zwingend null. Mehrere Quellenbelege derselben ID in derselben source_fact_ids-Liste bündeln; keine separaten EXISTING-Zeilen liefern. Niemals neue Hardware mit Bindungen mischen. Die Begründung jeweils in einem kurzen fachlichen Satz ohne Wiederholung des Auftrags formulieren. Mehrere passende Quellenbelege desselben Teilnehmers gemeinsam angeben. Nur tatsächlich benötigte Teilnehmer binden, nicht sämtliche Geräte mit sämtlichen Funktionen verbinden. Weiteren Hardwarebedarf mit inventory_complete=false für die normale nächste Antwort offenhalten; die Gesamtzahl notwendiger Geräte ist dadurch nicht begrenzt. inventory_complete bewertet ausschließlich den Bedarf der angeforderten FactIDs und wird erst true, wenn vorhandene plus ergänzte Hardware diesen vollständig abdeckt; ohne Ergänzungsbedarf inventory_choices=[] und true. False verlangt neue Geräte/Quellenbindungen. Unklare Fachentscheidungen konkret unresolved nennen. ' if derivation_fact_ids is not None else '')
+                               + ('port_parameters ist ein Objekt mit genau jedem angeforderten Port-ID-Schlüssel einmal. Pro Schlüssel ausschließlich parameters, eine kurze rationale und field_references ausgeben; ports bleibt []. NIS übernimmt id, device_id, technology, role und network_scope exakt aus der bereits geplanten Portabsicht. Keine andere Technologie für einen Schlüssel auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
+                               + ('functions_by_fact ist ein Objekt mit genau jedem angeforderten Funktions-FactID-Schlüssel einmal. Seine Werte enthalten die vollständige Funktionsentscheidung außer source_fact_id; diese Identität bindet NIS unverändert. functions bleibt []. Abhängigkeiten nur mit diesen Senderfunktionen liefern. Andere ursprüngliche Funktions-FactIDs dürfen bewusste Empfänger oder COMPOSITE-Bestandteile sein. ' if function_ids else ''))}
+-                messages, full_messages, context_rebased = _reference_context_messages(
++                messages, full_messages, context_rebased = await token_budget.select(_reference_context_messages,
+                     reference_messages, reference_prompt, prompt, system, self.context_tokens,
+                     anchor=reference_anchor, anchors=reference_anchors[:-1])
+                 progress_details = {}
+@@ -1976,7 +1979,7 @@
+                 payload['format'], inventory_codec = _reference_compact_inventory_schema(payload['format'])
+                 for attempt in range(2):
+                     try:
+-                        payload['options']['num_ctx'] = _reference_context_window(payload['messages'], self.context_tokens)
++                        payload['options']['num_ctx'] = await token_budget.admit(payload['messages'])
+                     except ValueError:
+                         if not attempt and not reference_messages:
+                             raise
+@@ -1984,7 +1987,7 @@
+                             invalid_reply, feedback_message = payload['messages'][-2:]
+                             retry = [*full_messages, invalid_reply, feedback_message]
+                             try:
+-                                _reference_context_window(retry, self.context_tokens)
++                                await token_budget.admit(retry)
+                             except ValueError:
+                                 # The complete rejected reply stays in the
+                                 # diagnostic log. Regenerate from the unchanged
+@@ -1993,7 +1996,7 @@
+                             payload['messages'] = retry
+                         else:
+                             payload['messages'] = full_messages
+-                        payload['options']['num_ctx'] = _reference_context_window(payload['messages'], self.context_tokens)
++                        payload['options']['num_ctx'] = await token_budget.admit(payload['messages'])
+                         messages = full_messages
+                         context_rebased = True
+                     report_progress(attempt + 1)
+@@ -2015,6 +2018,7 @@
+                                           'profile_count': len(groups), 'attempt': attempt + 1,
+                                           'context_rebased': context_rebased,
+                                           'input_utf8_bytes': sum(len(row['content'].encode('utf8')) for row in payload['messages']),
++                                          'exact_token_admission': token_budget.evidence(payload['messages']),
+                                           **observation}})
+                     try:
+                         body = await _reference_stream_response(self.client, self.chat_url, payload, report_output)
+@@ -2033,7 +2037,19 @@
+                                   'inventory_target': inventory_target,
+                                   'derivation_fact_ids': list(derivation_fact_ids) if derivation_fact_ids is not None else None,
+                                   'prompt_eval_count': body.get('prompt_eval_count'), 'eval_count': body.get('eval_count'),
++                                  'exact_token_admission': token_budget.evidence(payload['messages']),
+                                   **{key: body.get(key) for key in ('load_duration', 'prompt_eval_duration', 'eval_duration', 'total_duration')}})
++                    try:
++                        await token_budget.verify_response(payload['messages'], body)
++                    except ValueError as error:
++                        report_validation(error)
++                        logging.getLogger(__name__).warning('Native reference token binding rejected: %s', json.dumps({
++                            'stage': stage, 'profile': list(profile), 'attempt': attempt + 1,
++                            'error': str(error), 'prompt_eval_count': body.get('prompt_eval_count'),
++                            'token_admission': token_budget.evidence(payload['messages']),
++                            'response': native_content,
++                            'response_sha256': hashlib.sha256(native_content.encode()).hexdigest()}, ensure_ascii=False))
++                        raise
+                     if body.get('done_reason') == 'length':
+                         error = 'Die lokale Referenzantwort wurde an der Ausgabegrenze abgeschnitten. Es wurde kein unvollständiger Entwurf übernommen.'
+                         report_validation(error)
+--- before/host_metrics_bridge.py
++++ after/host_metrics_bridge.py
+@@ -4,6 +4,7 @@
+ 
+ import argparse
+ import ctypes
++import hashlib
+ import json
+ import shutil
+ import subprocess
+@@ -13,10 +14,18 @@
+ from datetime import UTC, datetime
+ from http import HTTPStatus
+ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
++from pathlib import Path
+ 
+ 
+ MEBIBYTE = 1024 * 1024
+ _sample_lock = threading.Lock()
++_ROOT = Path(__file__).resolve().parent
++_HOST_FILES = ('host_metrics_bridge.py', 'backend/nis/agent/orchestration/reference_token_budget.py',
++               'backend/nis/agent/orchestration/host_tokenizer.py')
++# Report exactly the startup files. A disk edit cannot make an old process
++# claim the new implementation; the local release verification hashes these.
++HOST_IMPLEMENTATION = {name: hashlib.sha256((_ROOT / name).read_bytes().replace(b'\r\n', b'\n')).hexdigest()
++                       for name in _HOST_FILES}
+ 
+ 
+ class MemoryStatusEx(ctypes.Structure):
+@@ -116,12 +125,38 @@
+ class MetricsHandler(BaseHTTPRequestHandler):
+     server_version = "NetworkISHostMetrics/1.0"
+ 
++    def do_POST(self) -> None:  # noqa: N802
++        if self.path != '/tokenize-chat':
++            self.send_error(HTTPStatus.NOT_FOUND)
++            return
++        try:
++            size = int(self.headers.get('Content-Length', '0'))
++            if not 0 < size <= 4 * 1024 * 1024 or self.headers.get('Transfer-Encoding'):
++                self.send_error(HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
++                return
++            self.connection.settimeout(15)
++            from backend.nis.agent.orchestration.host_tokenizer import count_chat
++            payload = count_chat(json.loads(self.rfile.read(size)))
++            if (payload['contract_source_sha256'] != HOST_IMPLEMENTATION[_HOST_FILES[1]]
++                    or payload['host_source_sha256'] != HOST_IMPLEMENTATION[_HOST_FILES[2]]):
++                raise ValueError('Host source changed since service startup')
++            status = HTTPStatus.OK
++        except Exception:  # Unavailable evidence must never become admission.
++            payload, status = {'error': 'TOKENIZER_EVIDENCE_UNAVAILABLE'}, HTTPStatus.SERVICE_UNAVAILABLE
++        body = json.dumps(payload, separators=(',', ':')).encode('utf8')
++        self.send_response(status)
++        self.send_header('Content-Type', 'application/json; charset=utf-8')
++        self.send_header('Cache-Control', 'no-store')
++        self.send_header('Content-Length', str(len(body)))
++        self.end_headers()
++        self.wfile.write(body)
++
+     def do_GET(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
+         if self.path.rstrip("/") not in {"/health", "/metrics"}:
+             self.send_error(HTTPStatus.NOT_FOUND)
+             return
+         try:
+-            payload = {"ok": True} if self.path.startswith("/health") else performance_sample()
++            payload = {"ok": True, "implementation": HOST_IMPLEMENTATION} if self.path.startswith("/health") else performance_sample()
+             body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+             self.send_response(HTTPStatus.OK)
+             self.send_header("Content-Type", "application/json; charset=utf-8")
+@@ -144,7 +179,11 @@
+ def main() -> None:
+     parser = argparse.ArgumentParser()
+     parser.add_argument("--port", type=int, default=13502)
++    parser.add_argument("--identity", action="store_true", help="Print host asset identity without starting a service")
+     args = parser.parse_args()
++    if args.identity:
++        print(json.dumps(HOST_IMPLEMENTATION, sort_keys=True))
++        return
+     server = ThreadingHTTPServer(("127.0.0.1", args.port), MetricsHandler)
+     server.serve_forever()
+ 
+--- before/backend/nis/agent/orchestration/reference_token_budget.py
++++ after/backend/nis/agent/orchestration/reference_token_budget.py
+@@ -0,0 +1,183 @@
++"""Optional verified native token counts; the conservative byte guard remains default.
++
++Text renderer contract: Ollama v0.33.1 model/renderers/qwen35.go and renderer.go.
++Only the verified text-only, think=false subset is supported. This is not a
++tokenizer implementation: token IDs always come from the actual loaded worker.
++"""
++from __future__ import annotations
++
++import hashlib
++import json
++import os
++from pathlib import Path
++import re
++from urllib.parse import urlsplit
++
++import httpx
++
++
++CONTRACT = 'ollama-0.33.1-qwen35-text-nothink-v1'
++_CONTRACT_SOURCE_HASH = hashlib.sha256(Path(__file__).read_bytes().replace(b'\r\n', b'\n')).hexdigest()
++HOST_SOURCE_HASH = hashlib.sha256(Path(__file__).with_name('host_tokenizer.py').read_bytes().replace(b'\r\n', b'\n')).hexdigest()
++GO_SPACE = '\t\n\v\f\r \x85\xa0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000'
++
++
++def digest(value):
++    return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True,
++                                    separators=(',', ':')).encode('utf8')).hexdigest()
++
++
++def contract_source_hash():
++    # Bind loaded code, not files that may have changed since process startup.
++    return _CONTRACT_SOURCE_HASH
++
++
++def render_supported_chat(messages):
++    if (not isinstance(messages, list) or not messages
++            or not isinstance(messages[-1], dict) or messages[-1].get('role') != 'user'):
++        raise ValueError('Unsupported chat framing')
++    parts = []
++    for message in messages:
++        if (not isinstance(message, dict) or set(message) != {'role', 'content'}
++                or message['role'] not in {'system', 'user', 'assistant'}
++                or not isinstance(message['content'], str)):
++            raise ValueError('Unsupported message fields')
++        content = message['content'].strip(GO_SPACE)
++        # The upstream renderer extracts tagged assistant reasoning. Refuse that
++        # less common shape rather than silently applying an unverified rule.
++        if message['role'] == 'assistant' and any(tag in content for tag in ('<think>', '</think>')):
++            raise ValueError('Unsupported assistant reasoning content')
++        parts.append('<|im_start|>' + message['role'] + '\n' + content + '<|im_end|>\n')
++    return ''.join(parts) + '<|im_start|>assistant\n<think>\n\n</think>\n\n'
++
++
++def model_descriptor(model, version, tags, show):
++    if version.get('version') != '0.33.1':
++        raise ValueError('Unverified provider renderer version')
++    matches = [row for row in tags.get('models', []) if row.get('name') == model]
++    if len(matches) != 1:
++        raise ValueError('Ambiguous model identity')
++    identity = matches[0].get('digest', '').removeprefix('sha256:')
++    if not re.fullmatch('[0-9a-f]{64}', identity):
++        raise ValueError('Missing immutable model digest')
++    header = show.get('modelfile', '').split('\nLICENSE ', 1)[0]
++    if (show.get('template', '').strip() != '{{ .Prompt }}'
++            or re.findall(r'^RENDERER (.+)$', header, re.M) != ['qwen3.5']
++            or re.findall(r'^PARSER (.+)$', header, re.M) != ['qwen3.5']
++            or show.get('details', {}).get('family') != 'qwen35'
++            or show.get('model_info', {}).get('tokenizer.ggml.add_bos_token') is not False
++            or show.get('system') or show.get('messages')
++            or re.search(r'^ADAPTER ', header, re.M)):
++        raise ValueError('Unverified model/template configuration')
++    sources = re.findall(r'^FROM (.+)$', header, re.M)
++    if not sources or not re.search(r'sha256-[0-9a-f]{64}$', sources[0]):
++        raise ValueError('Missing tokenizer model artifact')
++    return {'model': model, 'model_digest': identity, 'provider_version': '0.33.1',
++            'template_sha256': digest(show['template']), 'renderer': CONTRACT,
++            'model_blob_sha256': sources[0][-64:],
++            'configuration_sha256': digest({k: show.get(k) for k in
++                ('template', 'parameters', 'system', 'messages', 'details')})}
++
++
++class _NeedsCount(Exception):
++    def __init__(self, messages):
++        self.messages = messages
++
++
++class ReferenceTokenBudget:
++    """Request-scoped evidence cache; selected requests are freshly revalidated."""
++    def __init__(self, client, chat_url, model, maximum, *, bridge_url=None):
++        self.client, self.chat_url, self.model, self.maximum = client, chat_url, model, maximum
++        base = urlsplit(chat_url)
++        self.api_root = chat_url.removesuffix('/api/chat')
++        self.bridge_url = bridge_url or os.environ.get('NIS_LOCAL_TOKENIZER_URL') or (
++            f'http://{base.hostname}:13502/tokenize-chat' if base.hostname else '')
++        bridge = urlsplit(self.bridge_url)
++        self.available = (base.scheme == bridge.scheme == 'http'
++            and base.hostname in {'127.0.0.1', 'localhost', 'host.docker.internal'}
++            and base.port == 11434 and bridge.hostname == base.hostname
++            and bridge.path == '/tokenize-chat' and not bridge.query
++            and not bridge.username and not base.username)
++        self.proofs = {}
++
++    async def _descriptor(self):
++        responses = [await self.client.get(self.api_root + '/api/version', timeout=15),
++                     await self.client.get(self.api_root + '/api/tags', timeout=15),
++                     await self.client.post(self.api_root + '/api/show', json={'model': self.model}, timeout=15)]
++        for response in responses:
++            response.raise_for_status()
++        return model_descriptor(self.model, *(response.json() for response in responses))
++
++    async def _measure(self, messages):
++        if not self.available:
++            return None
++        try:
++            prompt = render_supported_chat(messages)
++            descriptor = await self._descriptor()
++            response = await self.client.post(self.bridge_url, json={
++                'model': self.model, 'messages': messages, 'think': False,
++                'descriptor': descriptor, 'contract_source_sha256': contract_source_hash()}, timeout=30)
++            response.raise_for_status()
++            proof = response.json()
++            if (proof.get('schema_version') != 1 or proof.get('contract') != CONTRACT
++                    or proof.get('contract_source_sha256') != contract_source_hash()
++                    or proof.get('host_source_sha256') != HOST_SOURCE_HASH
++                    or proof.get('request_sha256') != digest(messages)
++                    or proof.get('prompt_sha256') != hashlib.sha256(prompt.encode('utf8')).hexdigest()
++                    or proof.get('descriptor') != descriptor
++                    or type(proof.get('input_tokens')) is not int or proof['input_tokens'] <= 0
++                    or type(proof.get('worker_context')) is not int or proof['worker_context'] != self.maximum
++                    or not isinstance(proof.get('worker_identity'), str)
++                    or not re.fullmatch('[0-9a-f]{64}', proof['worker_identity'])
++                    or await self._descriptor() != descriptor):
++                return None
++            return proof
++        except (httpx.HTTPError, ValueError, KeyError, TypeError, AttributeError):
++            return None
++
++    def check(self, messages, maximum):
++        from .local_reasoner import _reference_context_window
++        if maximum != self.maximum:
++            raise ValueError('Context maximum changed')
++        try:
++            return _reference_context_window(messages, maximum)
++        except ValueError as byte_error:
++            key = digest(messages)
++            if key not in self.proofs:
++                raise _NeedsCount(messages) from byte_error
++            proof = self.proofs[key]
++            if proof is not None and proof['input_tokens'] + 8192 + 2048 <= maximum:
++                return maximum
++            raise byte_error
++
++    async def select(self, builder, *args, **kwargs):
++        while True:
++            try:
++                return builder(*args, **kwargs, capacity_check=self.check)
++            except _NeedsCount as needed:
++                self.proofs[digest(needed.messages)] = await self._measure(needed.messages)
++
++    async def admit(self, messages):
++        from .local_reasoner import _reference_context_window
++        try:
++            return _reference_context_window(messages, self.maximum)
++        except ValueError:
++            # Refresh the selected message, including each retry, immediately
++            # before dispatch. A historical worker count cannot authorize it.
++            self.proofs[digest(messages)] = await self._measure(messages)
++            return self.check(messages, self.maximum)
++
++    async def verify_response(self, messages, body):
++        proof = self.proofs.get(digest(messages))
++        if proof is None:
++            return
++        current = await self._measure(messages)
++        if (current is None or current != proof
++                or type(body.get('prompt_eval_count')) is not int
++                or body['prompt_eval_count'] != proof['input_tokens']
++                or body.get('model') != self.model):
++            raise ValueError('Lokale Tokenprüfung: Modell-, Vorlagen- oder Eingabeidentität hat sich geändert. Kein Entwurf übernommen.')
++
++    def evidence(self, messages):
++        proof = self.proofs.get(digest(messages))
++        return None if proof is None else dict(proof)
+--- before/backend/nis/agent/orchestration/host_tokenizer.py
++++ after/backend/nis/agent/orchestration/host_tokenizer.py
+@@ -0,0 +1,139 @@
++"""Read-only tokenizer access through the existing Windows host bridge.
++
++Never loads/restarts a model, generates text, or probes a private provider.
++Only the process actually listening on the main Ollama port and its direct
++worker are eligible. Every count is bound before and after tokenization.
++"""
++from __future__ import annotations
++
++import hashlib
++import json
++from pathlib import Path
++import re
++import subprocess
++import threading
++import urllib.request
++
++from .reference_token_budget import (
++    CONTRACT, contract_source_hash, digest, model_descriptor, render_supported_chat,
++)
++
++_lock = threading.Lock()
++_SOURCE_HASH = hashlib.sha256(Path(__file__).read_bytes().replace(b'\r\n', b'\n')).hexdigest()
++_file_hashes = {}
++_opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
++
++
++def _http(port, endpoint, data=None):
++    request = urllib.request.Request(f'http://127.0.0.1:{port}/{endpoint}',
++        data=None if data is None else json.dumps(data, ensure_ascii=False).encode('utf8'),
++        headers={'Content-Type': 'application/json'})
++    with _opener.open(request, timeout=15) as response:
++        return json.load(response)
++
++
++def _processes():
++    command = """
++$ErrorActionPreference = 'Stop'
++[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
++# Some Windows builds return State=0 for the listener. Bind the unique local
++# endpoint with no remote peer; never use a TIME_WAIT or client connection.
++$owners = @(Get-NetTCPConnection -LocalPort 11434 -ErrorAction Stop | Where-Object { $_.LocalAddress -in @('127.0.0.1','0.0.0.0','::') -and $_.RemotePort -eq 0 -and $_.RemoteAddress -in @('0.0.0.0','::') -and $_.OwningProcess -gt 0 } | Select-Object -ExpandProperty OwningProcess -Unique)
++if ($owners.Count -ne 1) { throw 'Ambiguous main provider listener' }
++$main = Get-CimInstance Win32_Process -Filter "ProcessId=$($owners[0])"
++$children = @(Get-CimInstance Win32_Process -Filter "ParentProcessId=$($owners[0])" | Where-Object { $_.Name -eq 'llama-server.exe' })
++@($main) + $children | Select-Object ProcessId,ParentProcessId,Name,CommandLine,ExecutablePath,@{N='CreationStamp';E={$_.CreationDate.ToUniversalTime().ToString('O')}} | ConvertTo-Json -Compress
++"""
++    rows = json.loads(subprocess.check_output(['powershell', '-NoProfile', '-Command', command],
++        encoding='utf8', timeout=15, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0)))
++    if not isinstance(rows, list) or len(rows) != 2:
++        raise ValueError('Exactly one main provider and loaded worker required')
++    main, worker = rows
++    if (main['Name'] != 'ollama.exe' or worker['Name'] != 'llama-server.exe'
++            or worker['ParentProcessId'] != main['ProcessId']
++            or not main.get('ExecutablePath') or not worker.get('ExecutablePath')
++            or not main.get('CreationStamp') or not worker.get('CreationStamp')):
++        raise ValueError('Main provider process binding missing')
++    return main, worker
++
++
++def _file_identity(path):
++    path = Path(path).resolve(strict=True)
++    before = path.stat()
++    key = (str(path).casefold(), before.st_size, before.st_mtime_ns, before.st_ino)
++    value = _file_hashes.get(key)
++    if value is None:
++        with path.open('rb') as stream:
++            value = hashlib.file_digest(stream, 'sha256').hexdigest()
++        after = path.stat()
++        if (after.st_size, after.st_mtime_ns, after.st_ino) != key[1:]:
++            raise ValueError('Tokenizer artifact changed while hashing')
++        if len(_file_hashes) > 12:
++            _file_hashes.clear()
++        _file_hashes[key] = value
++    return {'sha256': value, 'bytes': before.st_size, 'mtime_ns': before.st_mtime_ns}
++
++
++def _binding(model):
++    main, worker = _processes()
++    command = worker.get('CommandLine') or ''
++    match = re.search(r'--port\s+(\d+)(?:\s|$)', command)
++    if match is None:
++        raise ValueError('Worker port absent')
++    port = int(match[1])
++    version, tags, show = _http(11434, 'api/version'), _http(11434, 'api/tags'), _http(11434, 'api/show', {'model': model})
++    descriptor = model_descriptor(model, version, tags, show)
++    loaded = [row for row in _http(11434, 'api/ps').get('models', []) if row.get('name') == model]
++    if len(loaded) != 1 or loaded[0].get('digest', '').removeprefix('sha256:') != descriptor['model_digest']:
++        raise ValueError('Requested model is not the loaded immutable model')
++    props = _http(port, 'props')
++    header = show['modelfile'].split('\nLICENSE ', 1)[0]
++    model_path = re.findall(r'^FROM (.+)$', header, re.M)[0]
++    if (Path(props.get('model_path', '')).resolve() != Path(model_path).resolve()
++            or str(model_path).casefold() not in command.casefold()):
++        raise ValueError('Loaded worker uses a different tokenizer artifact')
++    artifact = _file_identity(model_path)
++    if artifact['sha256'] != descriptor['model_blob_sha256']:
++        raise ValueError('Model blob content does not match its immutable identity')
++    slots = _http(port, 'slots')
++    if len(slots) != 1 or slots[0].get('is_processing'):
++        raise ValueError('Main worker is occupied')
++    context = props.get('default_generation_settings', {}).get('n_ctx')
++    if type(context) is not int or context <= 0:
++        raise ValueError('Worker context is unknown')
++    identity = {'main': main, 'worker': worker, 'artifact': artifact,
++        'main_binary': _file_identity(main['ExecutablePath']),
++        'worker_binary': _file_identity(worker['ExecutablePath']),
++        'worker_build': props.get('build_info'), 'worker_template': props.get('chat_template'),
++        'context': context, 'descriptor': descriptor}
++    return descriptor, digest(identity), context, port
++
++
++def count_chat(request):
++    if (not isinstance(request, dict)
++            or set(request) != {'model', 'messages', 'think', 'descriptor', 'contract_source_sha256'}
++            or request['think'] is not False or not isinstance(request['model'], str)
++            or request['contract_source_sha256'] != contract_source_hash()):
++        raise ValueError('Unsupported tokenizer request contract')
++    prompt = render_supported_chat(request['messages'])
++    if not _lock.acquire(blocking=False):
++        raise ValueError('Tokenizer observation already in progress')
++    try:
++        before = _binding(request['model'])
++        descriptor, identity, context, port = before
++        if descriptor != request['descriptor']:
++            raise ValueError('Caller model/template binding is stale')
++        tokens = _http(port, 'tokenize', {'content': prompt, 'add_special': False}).get('tokens')
++        if not isinstance(tokens, list) or not tokens or any(type(t) is not int or t < 0 for t in tokens):
++            raise ValueError('Native tokenizer did not return actual token IDs')
++        if _binding(request['model']) != before:
++            raise ValueError('Provider/worker/tokenizer changed during tokenization')
++        return {'schema_version': 1, 'contract': CONTRACT,
++            'host_source_sha256': _SOURCE_HASH,
++            'contract_source_sha256': contract_source_hash(), 'descriptor': descriptor,
++            'worker_identity': identity, 'worker_context': context,
++            'request_sha256': digest(request['messages']),
++            'prompt_sha256': hashlib.sha256(prompt.encode('utf8')).hexdigest(),
++            'input_tokens': len(tokens)}
++    finally:
++        _lock.release()
+--- before/backend/tests/test_reference_token_budget.py
++++ after/backend/tests/test_reference_token_budget.py
+@@ -0,0 +1,173 @@
++"""Strict optional tokenizer admission; no mocked Original acceptance."""
++import asyncio
++from copy import deepcopy
++import hashlib
++import json
++
++import httpx
++import pytest
++
++from backend.nis.agent.orchestration import local_reasoner as r
++
++
++def module():
++    from backend.nis.agent.orchestration import reference_token_budget
++    return reference_token_budget
++
++
++def test_supported_renderer_preserves_internal_text_and_actual_nothink_suffix():
++    b = module()
++    messages = [{'role': 'system', 'content': '  Exact µ system\n'},
++                {'role': 'user', 'content': '\nLiteral /~ source\ninside\n'},
++                {'role': 'assistant', 'content': ' {"literal":false} '},
++                {'role': 'user', 'content': 'Next\x1c'}]
++    before = deepcopy(messages)
++    assert b.render_supported_chat(messages) == (
++        '<|im_start|>system\nExact µ system<|im_end|>\n'
++        '<|im_start|>user\nLiteral /~ source\ninside<|im_end|>\n'
++        '<|im_start|>assistant\n{"literal":false}<|im_end|>\n'
++        '<|im_start|>user\nNext\x1c<|im_end|>\n'
++        '<|im_start|>assistant\n<think>\n\n</think>\n\n')
++    assert messages == before
++
++
++@pytest.mark.parametrize('messages', [
++    [], [None], [{'role': 'tool', 'content': 'x'}], [{'role': 'user', 'content': ['x']}],
++    [{'role': 'user', 'content': 'x', 'images': ['x']}],
++    [{'role': 'assistant', 'content': 'prefill'}],
++    [{'role': 'assistant', 'content': 'x</think>hidden'}, {'role': 'user', 'content': 'x'}],
++    [{'role': 'user', 'content': 'x', 'tool_calls': []}],
++])
++def test_unknown_message_shapes_never_receive_exact_admission(messages):
++    with pytest.raises(ValueError):
++        module().render_supported_chat(messages)
++
++
++def test_original_byte_guard_is_unchanged():
++    messages = [{'role': 'user', 'content': 'µ' * 100}]
++    assert r._reference_context_window(messages, 10440) == 10440
++    with pytest.raises(ValueError):
++        r._reference_context_window(messages, 10439)
++
++
++def test_unavailable_exact_count_keeps_complete_oversized_input_rejected():
++    b = module()
++    messages = [{'role': 'user', 'content': 'Original source\n' * 10000}]
++    before = deepcopy(messages)
++    async def run():
++        async with httpx.AsyncClient(transport=httpx.MockTransport(
++                lambda request: httpx.Response(503))) as client:
++            budget = b.ReferenceTokenBudget(client, 'http://127.0.0.1:11434/api/chat', 'authored:model', 131072)
++            with pytest.raises(ValueError, match='keine Quelle gekürzt'):
++                await budget.admit(messages)
++    asyncio.run(run())
++    assert messages == before
++
++
++def native_fixture():
++    b = module()
++    show = {'template': '{{ .Prompt }}', 'modelfile': 'FROM /models/sha256-' + 'a' * 64
++            + '\nRENDERER qwen3.5\nPARSER qwen3.5\n', 'details': {'family': 'qwen35'},
++            'model_info': {'tokenizer.ggml.add_bos_token': False}}
++    return {'version': '0.33.1'}, {'models': [{'name': 'test:small', 'digest': 'b' * 64}]}, show
++
++
++def transport_for(messages, tokens, corrupt=None):
++    b = module()
++    version, tags, show = native_fixture()
++    descriptor = b.model_descriptor('test:small', version, tags, show)
++    proof = {'schema_version': 1, 'contract': b.CONTRACT,
++        'host_source_sha256': b.HOST_SOURCE_HASH,
++        'contract_source_sha256': b.contract_source_hash(), 'descriptor': descriptor,
++        'worker_identity': 'c' * 64, 'worker_context': 131072,
++        'request_sha256': b.digest(messages),
++        'prompt_sha256': hashlib.sha256(b.render_supported_chat(messages).encode()).hexdigest(),
++        'input_tokens': tokens}
++    if corrupt:
++        proof.update(corrupt)
++    def handle(request):
++        values = {'/api/version': version, '/api/tags': tags, '/api/show': show,
++                  '/tokenize-chat': proof}
++        if request.url.path == '/tokenize-chat':
++            assert json.loads(request.content)['messages'] == messages
++        return httpx.Response(200, json=values[request.url.path])
++    return httpx.MockTransport(handle), proof
++
++
++@pytest.mark.parametrize('tokens,allowed', [(120832, True), (120833, False)])
++def test_exact_count_boundary_keeps_all_reserves_and_full_source(tokens, allowed):
++    messages = [{'role': 'user', 'content': 'Complete source µ\n' * 10000}]
++    async def run():
++        transport, proof = transport_for(messages, tokens)
++        async with httpx.AsyncClient(transport=transport) as client:
++            budget = module().ReferenceTokenBudget(client, 'http://127.0.0.1:11434/api/chat', 'test:small', 131072)
++            if allowed:
++                assert await budget.admit(messages) == 131072
++                await budget.verify_response(messages, {'model': 'test:small', 'prompt_eval_count': tokens})
++                assert budget.evidence(messages) == proof
++            else:
++                with pytest.raises(ValueError, match='keine Quelle gekürzt'):
++                    await budget.admit(messages)
++    asyncio.run(run())
++
++
++@pytest.mark.parametrize('corrupt', [
++    {'request_sha256': '0' * 64}, {'prompt_sha256': '0' * 64}, {'worker_identity': ''},
++    {'contract_source_sha256': '0' * 64}, {'contract': 'unknown'}, {'descriptor': {}},
++    {'host_source_sha256': '0' * 64}, {'worker_context': 262144},
++    {'input_tokens': True}, {'input_tokens': -1}, {'worker_context': 65536},
++])
++def test_unbound_native_counts_cannot_admit_any_source(corrupt):
++    messages = [{'role': 'user', 'content': 'Full source\n' * 12000}]
++    async def run():
++        transport, _ = transport_for(messages, 40000, corrupt)
++        async with httpx.AsyncClient(transport=transport) as client:
++            budget = module().ReferenceTokenBudget(client, 'http://127.0.0.1:11434/api/chat', 'test:small', 131072)
++            with pytest.raises(ValueError, match='keine Quelle gekürzt'):
++                await budget.admit(messages)
++    asyncio.run(run())
++
++
++@pytest.mark.parametrize('change', ['worker', 'tokens', 'model'])
++def test_postresponse_drift_is_rejected_before_acceptance(change):
++    messages = [{'role': 'user', 'content': 'Full source\n' * 12000}]
++    async def run():
++        transport, proof = transport_for(messages, 40000)
++        async with httpx.AsyncClient(transport=transport) as client:
++            budget = module().ReferenceTokenBudget(client, 'http://127.0.0.1:11434/api/chat', 'test:small', 131072)
++            await budget.admit(messages)
++            body = {'model': 'test:small', 'prompt_eval_count': 40000}
++            if change == 'worker':
++                proof['worker_identity'] = 'd' * 64
++            elif change == 'tokens':
++                body['prompt_eval_count'] -= 1
++            else:
++                body['model'] = 'other:model'
++            with pytest.raises(ValueError, match='Kein Entwurf übernommen'):
++                await budget.verify_response(messages, body)
++    asyncio.run(run())
++
++
++@pytest.mark.parametrize('change', ['version', 'template', 'family', 'bos', 'system', 'adapter', 'digest'])
++def test_unknown_model_configuration_cannot_claim_verified_renderer(change):
++    version, tags, show = native_fixture()
++    if change == 'version': version['version'] = '0.33.2'
++    elif change == 'template': show['template'] = 'different'
++    elif change == 'family': show['details']['family'] = 'other'
++    elif change == 'bos': show['model_info']['tokenizer.ggml.add_bos_token'] = True
++    elif change == 'system': show['system'] = 'extra hidden system text'
++    elif change == 'adapter': show['modelfile'] += 'ADAPTER /other\n'
++    else: tags['models'][0]['digest'] = 'unknown'
++    with pytest.raises(ValueError):
++        module().model_descriptor('test:small', version, tags, show)
++
++
++def test_small_byte_bounded_requests_never_require_host_tokenizer():
++    b = module()
++    async def run():
++        def forbidden(request):
++            raise AssertionError('Unnecessary provider/host call')
++        async with httpx.AsyncClient(transport=httpx.MockTransport(forbidden)) as client:
++            budget = b.ReferenceTokenBudget(client, 'http://127.0.0.1:11434/api/chat', 'any:model', 131072)
++            assert await budget.admit([{'role': 'user', 'content': 'Complete small source'}]) == 131072
++    asyncio.run(run())
+--- before/backend/tests/test_host_tokenizer.py
++++ after/backend/tests/test_host_tokenizer.py
+@@ -0,0 +1,99 @@
++"""Read-only host binding rejects drift and never loads a model."""
++from copy import deepcopy
++
++import pytest
++
++from backend.nis.agent.orchestration import host_tokenizer as h
++from backend.nis.agent.orchestration.reference_token_budget import contract_source_hash
++
++
++def request():
++    return {'model': 'authored:small', 'messages': [{'role': 'user', 'content': 'Full source µ'}],
++            'think': False, 'descriptor': {'immutable': 'authored'},
++            'contract_source_sha256': contract_source_hash()}
++
++
++def test_native_tokens_are_counted_without_generation(monkeypatch):
++    original = request()
++    monkeypatch.setattr(h, '_binding', lambda model: (original['descriptor'], 'a' * 64, 131072, 12345))
++    calls = []
++    def native(port, endpoint, data=None):
++        calls.append((port, endpoint, data))
++        assert endpoint == 'tokenize' and data['add_special'] is False
++        return {'tokens': [1, 2, 3, 4]}
++    monkeypatch.setattr(h, '_http', native)
++    before = deepcopy(original)
++    proof = h.count_chat(original)
++    assert proof['input_tokens'] == 4 and proof['worker_context'] == 131072
++    assert original == before and len(calls) == 1
++
++
++@pytest.mark.parametrize('drift', ['descriptor', 'process', 'context', 'port'])
++def test_worker_change_during_count_rejected(monkeypatch, drift):
++    original = request()
++    initial = (original['descriptor'], 'a' * 64, 131072, 12345)
++    changed = list(initial)
++    index = ['descriptor', 'process', 'context', 'port'].index(drift)
++    changed[index] = [{'immutable': 'different'}, 'b' * 64, 65536, 12346][index]
++    bindings = iter((initial, tuple(changed)))
++    monkeypatch.setattr(h, '_binding', lambda _: next(bindings))
++    monkeypatch.setattr(h, '_http', lambda *a: {'tokens': [1, 2]})
++    with pytest.raises(ValueError, match='changed during tokenization'):
++        h.count_chat(original)
++    assert not h._lock.locked()
++
++
++@pytest.mark.parametrize('tokens', [[], None, [True], [-1], ['1']])
++def test_no_estimate_or_invalid_token_ids_allowed(monkeypatch, tokens):
++    original = request()
++    monkeypatch.setattr(h, '_binding', lambda _: (original['descriptor'], 'a' * 64, 131072, 12345))
++    monkeypatch.setattr(h, '_http', lambda *a: {'tokens': tokens})
++    with pytest.raises(ValueError, match='actual token IDs'):
++        h.count_chat(original)
++
++
++def test_stale_caller_never_contacts_tokenizer(monkeypatch):
++    monkeypatch.setattr(h, '_binding', lambda _: ({'immutable': 'different'}, 'a' * 64, 131072, 12345))
++    monkeypatch.setattr(h, '_http', lambda *a: pytest.fail('No tokenizer call for stale identity'))
++    with pytest.raises(ValueError, match='stale'):
++        h.count_chat(request())
++
++
++def test_artifact_content_change_invalidates_cached_identity(tmp_path):
++    path = tmp_path / 'model.gguf'
++    path.write_bytes(b'old authored tokenizer')
++    before = h._file_identity(path)
++    path.write_bytes(b'new authored tokenizer with different length')
++    after = h._file_identity(path)
++    assert before['sha256'] != after['sha256']
++
++
++@pytest.mark.parametrize('drift', ['contract_source_sha256', 'host_source_sha256'])
++def test_http_bridge_refuses_code_loaded_after_different_startup_identity(monkeypatch, drift):
++    import io
++    import json
++    from types import SimpleNamespace
++    import host_metrics_bridge as bridge
++    proof = {'contract_source_sha256': bridge.HOST_IMPLEMENTATION[bridge._HOST_FILES[1]],
++             'host_source_sha256': bridge.HOST_IMPLEMENTATION[bridge._HOST_FILES[2]]}
++    proof[drift] = '0' * 64
++    monkeypatch.setattr(h, 'count_chat', lambda _: proof)
++    handler = object.__new__(bridge.MetricsHandler)
++    handler.path = '/tokenize-chat'
++    handler.headers = {'Content-Length': '2'}
++    handler.connection = SimpleNamespace(settimeout=lambda _: None)
++    handler.rfile, handler.wfile = io.BytesIO(b'{}'), io.BytesIO()
++    statuses = []
++    handler.send_response = statuses.append
++    handler.send_header = lambda *a: None
++    handler.end_headers = lambda: None
++    handler.do_POST()
++    assert statuses == [503]
++    assert json.loads(handler.wfile.getvalue()) == {'error': 'TOKENIZER_EVIDENCE_UNAVAILABLE'}
++
++
++def test_loaded_contract_identity_does_not_follow_later_disk_edits(monkeypatch):
++    from backend.nis.agent.orchestration import reference_token_budget as b
++    identity = b.contract_source_hash()
++    monkeypatch.setattr(b.Path, 'read_bytes', lambda _: b'changed file, not loaded code')
++    assert b.contract_source_hash() == identity
+--- before/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/inventory-output-codec-repair/probe_native_codec.py
++++ after/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/inventory-output-codec-repair/probe_native_codec.py
+@@ -23,8 +23,11 @@
+ parser.add_argument('--cohort-context', action='store_true')
+ parser.add_argument('--many-cohort-context', action='store_true')
+ parser.add_argument('--shared-owner-clarification', action='store_true')
++parser.add_argument('--exact-token-admission', action='store_true')
+ parser.add_argument('--model', choices=['llama3.1:8b', 'qwen3.5:9b'])
+ args = parser.parse_args()
++if args.exact_token_admission:
++    assert args.many_cohort_context and args.shared_owner_clarification
+ args.cohort_context = args.cohort_context or args.many_cohort_context
+ args.packed_context = args.packed_context or args.cohort_context
+ OUT = (args.output or Path(__file__).resolve().parent / 'native-grammar').resolve()
+@@ -119,19 +122,42 @@
+         from backend.tests.test_reference_reasoner import effective_reference_context
+         assert selection['existing_inventory'] == '/current_candidate/devices'
+         assert len(read_selection(selection, effective_reference_context(messages))) == len(existing)
++        if args.exact_token_admission:
++            # Independent uncompressed counterpart, preserving every field and
++            # all 251 identities. Existing packed counterprobes stay unchanged.
++            messages = [{'role': 'system', 'content': messages[0]['content']},
++                        {'role': 'user', 'content': json.dumps(current, ensure_ascii=False, separators=(',', ':'))}]
++            assert json.loads(messages[-1]['content']) == current
++            try:
++                r._reference_context_window(messages, 131072)
++            except ValueError:
++                pass
++            else:
++                raise AssertionError('Exact probe must exceed the old byte boundary')
+         full_schema = r._reference_schema_for_stage(prepared, {'devices'}, inventory_target=target, existing_devices=existing)
+         schema, codec = r._reference_compact_inventory_schema(full_schema)
+         save('request-local-codec.json', codec)
+     payload = {'model': model, 'messages': messages, 'format': schema, 'think': False,
+                'stream': True, 'keep_alive': '10m', 'options': {'temperature': 0, 'num_predict': 8192,
+-                   'num_ctx': r._reference_context_window(messages, 131072)}}
+-    save('request.json', payload)
++                   'num_ctx': 131072 if args.exact_token_admission else r._reference_context_window(messages, 131072)}}
+     with (OUT / 'events.ndjson').open('w', encoding='utf8') as log:
+         def report(value):
+             log.write(json.dumps({'at': datetime.now(timezone.utc).isoformat(), **value}) + '\n'); log.flush()
+         async with httpx.AsyncClient(timeout=1200, trust_env=False) as client:
++            budget = None
++            if args.exact_token_admission:
++                from backend.nis.agent.orchestration.reference_token_budget import ReferenceTokenBudget
++                budget = ReferenceTokenBudget(client, 'http://127.0.0.1:11434/api/chat', model, 131072)
++                payload['options']['num_ctx'] = await budget.admit(messages)
++                assert budget.evidence(messages) is not None
++                save('token-admission.json', budget.evidence(messages))
++            save('request.json', payload)
+             body = await r._reference_stream_response(client, 'http://127.0.0.1:11434/api/chat', payload, report)
+-    save('response.json', body)
++            save('response.json', body)
++            if budget is not None:
++                await budget.verify_response(messages, body)
++                save('token-response-parity.json', {'pass': True, 'prompt_eval_count': body['prompt_eval_count'],
++                                                    'proof': budget.evidence(messages)})
+     assert body['done'] is True and body.get('done_reason') != 'length' and body['model'] == model
+     value = document_response_json(body['message']['content'])
+     Draft202012Validator(schema).validate(value)
+@@ -146,11 +172,13 @@
+         assert all(row['owner_device_id'] == expected_owner for row in merged[len(existing):])
+     assert value['inventory_complete'] is True and r._reference_inventory_progress(existing, merged)
+     result = {'status': 'PASS', 'model': model, 'actual_inference_requests': 1, 'native_devices': len(merged) - len(existing),
+-              'preserved_existing_devices': len(existing), 'packed_context': args.packed_context,
+-              'segmented_tables': segment_tables, 'native_owner_selection': args.cohort_context,
++              'preserved_existing_devices': len(existing), 'packed_context': args.packed_context and not args.exact_token_admission,
++              'segmented_tables': 0 if args.exact_token_admission else segment_tables, 'native_owner_selection': args.cohort_context,
+               'native_owner_selection_basis': 'purpose_only_in_complete_context' if args.cohort_context else None,
+               'many_cohort_context': args.many_cohort_context, 'expected_owner': expected_owner,
+               'shared_owner_clarification': args.shared_owner_clarification,
++              'exact_token_admission': args.exact_token_admission,
++              'uncompressed_source_counterpart': args.exact_token_admission,
+               'schema_and_public_validation_and_scoped_merge': True,
+               'source_code_sha256': hashlib.sha256((ROOT / 'backend/nis/agent/orchestration/local_reasoner.py').read_bytes()).hexdigest(),
+               'original_acceptance': False, 'simulation_acceptance': False,
+--- before/scripts/release/run-release-gate.py
++++ after/scripts/release/run-release-gate.py
+@@ -43,7 +43,7 @@
+     paths.update((ROOT/'frontend/src').rglob('*.test.*'))
+     paths.update((ROOT/'scripts/release').glob('*.py'))
+     paths.update((ROOT/'scripts/verification').glob('*.py'))
+-    paths.update(ROOT/name for name in ('start-networkis.ps1', 'scripts/dev/start-networkis.ps1'))
++    paths.update(ROOT/name for name in ('start-networkis.ps1', 'scripts/dev/start-networkis.ps1', 'host_metrics_bridge.py'))
+     paths.update(ROOT/name for name in ('frontend/playwright.config.ts',
+         'scripts/run-release-gate.py', 'scripts/run-isolated-tests.py',
+         'scripts/verify-live-wizard.py', 'scripts/deploy-verified-release.py',
+@@ -57,7 +57,7 @@
+ 
+ def local_ai_model_environment():
+     """Forward explicit existing configuration without inventing model defaults."""
+-    return {name: value for name in ('LOCAL_AI_MODEL', 'LOCAL_AI_FAST_MODEL')
++    return {name: value for name in ('LOCAL_AI_MODEL', 'LOCAL_AI_FAST_MODEL', 'NIS_LOCAL_TOKENIZER_URL')
+             if (value := os.environ.get(name, '').strip())}
+ 
+ 
+--- before/scripts/tests/test_release_identity.py
++++ after/scripts/tests/test_release_identity.py
+@@ -10,6 +10,21 @@
+ SPEC.loader.exec_module(MODULE)
+ 
+ class ReleaseIdentityTests(unittest.TestCase):
++    def test_host_bridge_transport_changes_require_retest_without_rebuilding_app(self):
++        spec = importlib.util.spec_from_file_location('host_bridge_gate', Path(__file__).resolve().parents[1] / 'run-release-gate.py')
++        gate = importlib.util.module_from_spec(spec)
++        spec.loader.exec_module(gate)
++        with tempfile.TemporaryDirectory() as folder:
++            root = Path(folder)
++            bridge = root / 'host_metrics_bridge.py'
++            bridge.write_text('host_transport = 1', encoding='utf8')
++            source = MODULE.build_manifest(root)['source_sha256']
++            with patch.object(gate, 'ROOT', root):
++                verification = gate.verification_manifest()
++                bridge.write_text('host_transport = 2', encoding='utf8')
++                self.assertNotEqual(verification, gate.verification_manifest())
++            self.assertEqual(source, MODULE.build_manifest(root)['source_sha256'])
++
+     def test_frontend_test_changes_retest_without_changing_the_application_image(self):
+         gate_spec = importlib.util.spec_from_file_location('gate_identity', Path(__file__).resolve().parents[1] / 'run-release-gate.py')
+         gate = importlib.util.module_from_spec(gate_spec)
+--- before/scripts/tests/test_release_model_environment.py
++++ after/scripts/tests/test_release_model_environment.py
+@@ -41,6 +41,17 @@
+     assert helper() == {} and gate.local_ai_model_arguments(helper()) == []
+ 
+ 
++def test_explicit_read_only_tokenizer_endpoint_reaches_same_retained_stack(monkeypatch):
++    gate = load('model_gate_tokenizer', 'scripts/run-release-gate.py')
++    monkeypatch.delenv('LOCAL_AI_MODEL', raising=False)
++    monkeypatch.delenv('LOCAL_AI_FAST_MODEL', raising=False)
++    endpoint = 'http://host.docker.internal:13503/tokenize-chat'
++    monkeypatch.setenv('NIS_LOCAL_TOKENIZER_URL', endpoint)
++    environment = gate.local_ai_model_environment()
++    assert environment == {'NIS_LOCAL_TOKENIZER_URL': endpoint}
++    assert gate.local_ai_model_arguments(environment) == ['-e', 'NIS_LOCAL_TOKENIZER_URL=' + endpoint]
++
++
+ @pytest.mark.parametrize('actual,allow', [('llama3.1:8b', False), ('qwen3.8:27b', True)])
+ def test_retained_stack_reuse_checks_actual_configured_model_environment(actual, allow):
+     delivery = load('model_delivery', 'scripts/release-and-deploy.py')
+--- before/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/read_provider.py
++++ after/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/read_provider.py
+@@ -26,13 +26,10 @@
+ assert show['details']['format'] == 'gguf'
+ if args.model == 'llama3.1:8b':
+     assert show['details']['family'] == 'llama'
+-command = "Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'ollama.exe' -or $_.Name -eq 'llama-server.exe' } | Select-Object ProcessId,ParentProcessId,Name,CommandLine | ConvertTo-Json -Compress"
+-processes = json.loads(subprocess.check_output(['powershell', '-NoProfile', '-Command', command], encoding='utf-8'))
+-if isinstance(processes, dict):
+-    processes = [processes]
+-main = [row for row in processes if row['Name'] == 'ollama.exe' and 'AppData\\Local\\Programs\\Ollama\\ollama.exe' in row['CommandLine'] and row['CommandLine'].endswith(' serve')]
+-assert len(main) == 1
+-children = [row for row in processes if row['ParentProcessId'] == main[0]['ProcessId'] and row['Name'] == 'llama-server.exe']
++sys.path.insert(0, str(out.parents[2]))
++from backend.nis.agent.orchestration.host_tokenizer import _processes
++main_process, main_worker = _processes()
++main, children = [main_process], [main_worker]
+ slots = []
+ for worker in children:
+     import re
+--- before/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/freeze_repair.py
++++ after/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/freeze_repair.py
+@@ -11,11 +11,11 @@
+ out=Path(__file__).resolve().parent
+ root=out.parents[2]
+ parser=argparse.ArgumentParser(description=__doc__)
+-parser.add_argument('--phase',choices=['source-reference','source-semantics','function-coverage','inventory-batch','inventory-codec','inventory-context','inventory-cohort','inventory-bindings','inventory-closure','inventory-segments','inventory-views'],required=True)
++parser.add_argument('--phase',choices=['source-reference','source-semantics','function-coverage','inventory-batch','inventory-codec','inventory-context','inventory-cohort','inventory-bindings','inventory-closure','inventory-segments','inventory-views','exact-tokens'],required=True)
+ args=parser.parse_args()
+ semantic_phase=args.phase in {'source-semantics','function-coverage'}
+ coverage_phase=args.phase=='function-coverage'
+-directory=out/({'source-reference':'intake-source-reference-repair','source-semantics':'source-semantics-repair','function-coverage':'function-coverage-repair','inventory-batch':'inventory-batch-repair','inventory-codec':'inventory-output-codec-repair','inventory-context':'inventory-context-capacity-repair','inventory-cohort':'inventory-context-capacity-repair/cohort-table-repair','inventory-bindings':'binding-schema-capacity-repair','inventory-closure':'inventory-closure-repair','inventory-segments':'inventory-segment-capacity-repair','inventory-views':'inventory-view-deduplication-repair'}[args.phase])
++directory=out/({'source-reference':'intake-source-reference-repair','source-semantics':'source-semantics-repair','function-coverage':'function-coverage-repair','inventory-batch':'inventory-batch-repair','inventory-codec':'inventory-output-codec-repair','inventory-context':'inventory-context-capacity-repair','inventory-cohort':'inventory-context-capacity-repair/cohort-table-repair','inventory-bindings':'binding-schema-capacity-repair','inventory-closure':'inventory-closure-repair','inventory-segments':'inventory-segment-capacity-repair','inventory-views':'inventory-view-deduplication-repair','exact-tokens':'exact-token-admission-repair'}[args.phase])
+ baseline=out/'intake-cardinality-repair'/'before'
+ def baseline_file(name):
+     if (baseline/name).exists():return baseline/name
+@@ -32,6 +32,130 @@
+     return module
+ def parse(path):
+     return ast.parse(path.read_text(encoding='utf-8'))
++
++if args.phase == 'exact-tokens':
++    import xml.etree.ElementTree as ET
++    child_path = directory/'workload.json'
++    child = json.loads(child_path.read_text(encoding='utf8'))
++    checks = {}
++    latest_cases = {}
++    for name in ('regression-integrated.xml', 'green-anchor-wrapper.xml', 'green-host-complete.xml'):
++        xml = ET.parse(directory/name).getroot()
++        check = next(xml.iter('testsuite')).attrib
++        assert check['errors'] == check['skipped'] == '0', (name, check)
++        failures = [case for case in xml.iter('testcase') if case.find('failure') is not None]
++        if name == 'regression-integrated.xml':
++            assert check['failures'] == '1' and len(failures) == 1
++            assert failures[0].get('name') == 'test_complete_snapshot_fallback_refreshes_actual_validated_native_anchor'
++            assert "unexpected keyword argument 'capacity_check'" in failures[0].find('failure').get('message')
++        else:
++            assert check['failures'] == '0' and not failures
++        for case in xml.iter('testcase'):
++            latest_cases[(case.get('classname'), case.get('name'))] = case.find('failure') is None
++        checks[name] = check
++    assert all(latest_cases.values()), 'Every original failure must have its exact passing rerun'
++    aggregate = {'status':'PASS_ACROSS_TARGETED_RUNS','distinct_cases':len(latest_cases),
++        'single_fully_green_regression_claimed':False,'original_failure_preserved':True,
++        'scope':'245 PASS/1 signature-wrapper FAIL originally; exact wrapper rerun and final host/token checks retained',
++        'checks':checks,'evidence':[ref(directory/name) for name in checks]}
++    (directory/'regression-aggregate.json').write_text(json.dumps(aggregate,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
++    assert work['active_local_regression']['status'] == 'PASS'
++    native_path = directory/'native-final-verified/result.json'
++    native = json.loads(native_path.read_text(encoding='utf8'))
++    assert native['status'] == 'PASS' and native['actual_inference_requests'] == 1
++    assert native['model'] == 'qwen3.5:9b' and native['exact_token_admission'] and native['uncompressed_source_counterpart']
++    assert native['preserved_existing_devices'] == 251 and native['native_devices'] == 8
++    assert native['expected_owner'] == 'authored-device-248' and native['schema_and_public_validation_and_scoped_merge']
++    parity = json.loads((directory/'native-final-verified/token-response-parity.json').read_text(encoding='utf8'))
++    assert parity['pass'] and parity['prompt_eval_count'] == parity['proof']['input_tokens']
++    for name, key in [('reference_token_budget.py', 'contract_source_sha256'), ('host_tokenizer.py', 'host_source_sha256')]:
++        assert hashlib.sha256((root/'backend/nis/agent/orchestration'/name).read_bytes().replace(b'\r\n',b'\n')).hexdigest() == parity['proof'][key]
++    reasoner = 'backend/nis/agent/orchestration/local_reasoner.py'
++    assert ref(root/reasoner)['sha256'] == native['source_code_sha256']
++    # Remove precisely the reviewed optional admission hooks. All original
++    # reasoning, source construction, schemas, merge and guards must match.
++    class WithoutAdmission(ast.NodeTransformer):
++        def visit_FunctionDef(self, node):
++            if node.name == '_reference_context_messages':
++                index = [a.arg for a in node.args.kwonlyargs].index('capacity_check')
++                del node.args.kwonlyargs[index]; del node.args.kw_defaults[index]
++            return self.generic_visit(node)
++        def visit_ImportFrom(self, node):
++            return None if node.module == 'backend.nis.agent.orchestration.reference_token_budget' else node
++        def visit_Assign(self, node):
++            if any(isinstance(t, ast.Name) and t.id in {'token_budget', 'capacity_check'} for t in node.targets):
++                return None
++            return self.generic_visit(node)
++        def visit_Await(self, node):
++            call = node.value
++            if isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute) and isinstance(call.func.value, ast.Name) and call.func.value.id == 'token_budget':
++                if call.func.attr == 'select':
++                    return ast.Call(func=call.args[0], args=call.args[1:], keywords=call.keywords)
++                if call.func.attr == 'admit':
++                    return ast.Call(func=ast.Name(id='_reference_context_window', ctx=ast.Load()),
++                        args=[*call.args, ast.Attribute(value=ast.Name(id='self', ctx=ast.Load()), attr='context_tokens', ctx=ast.Load())], keywords=[])
++            return self.generic_visit(node)
++        def visit_Call(self, node):
++            if isinstance(node.func, ast.Name) and node.func.id == 'capacity_check':
++                node.func.id = '_reference_context_window'
++            return self.generic_visit(node)
++        def visit_Try(self, node):
++            if len(node.body) == 1 and isinstance(node.body[0], ast.Expr) and isinstance(node.body[0].value, ast.Await):
++                call = node.body[0].value.value
++                if isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute) and call.func.attr == 'verify_response' and isinstance(call.func.value, ast.Name) and call.func.value.id == 'token_budget':
++                    return None
++            return self.generic_visit(node)
++        def visit_Dict(self, node):
++            pairs = [(k,v) for k,v in zip(node.keys,node.values) if not (isinstance(k,ast.Constant) and k.value == 'exact_token_admission')]
++            node.keys, node.values = [p[0] for p in pairs], [p[1] for p in pairs]
++            return self.generic_visit(node)
++    assert ast.dump(parse(directory/'before'/reasoner),include_attributes=False) == ast.dump(WithoutAdmission().visit(parse(root/reasoner)),include_attributes=False)
++    names = child['repair']['affected_files']
++    for name, value in work['frozen_files'].items():
++        if name not in names: assert ref(root/name)['sha256'] == value, name
++    assert ref(Path(work['source']['path']))['sha256'] == work['source']['sha256']
++    assert len(work['required_outcomes']) == len(work['validation_requirements']) == 7
++    before_refs, after_refs, diffs = [], [], []
++    for name in names:
++        old, new = directory/'before'/name, root/name
++        saved = directory/'after'/name; saved.parent.mkdir(parents=True,exist_ok=True); saved.write_bytes(new.read_bytes())
++        if old.exists(): before_refs.append(ref(old))
++        after_refs.append(ref(saved))
++        diffs.extend(difflib.unified_diff(old.read_text(encoding='utf8').splitlines(True) if old.exists() else [],
++            new.read_text(encoding='utf8').splitlines(True),fromfile='before/'+name,tofile='after/'+name))
++    (directory/'change.diff').write_text(''.join(diffs),encoding='utf8')
++    source = module_at('exact_source_manifest',root/'scripts/write-build-info.py').build_manifest()
++    verification = module_at('exact_verification',root/'scripts/run-release-gate.py').verification_manifest()
++    for name in names:
++        if name not in work['files_changed']: work['files_changed'].append(name)
++    proof = {'status':'FROZEN_LOCAL_AND_NATIVE_COUNTER_PASS_ORIGINAL_PENDING', 'at':datetime.now(timezone.utc).isoformat(),
++        'source':source,'verification_sha256':verification,'checks':checks,'native_counter':ref(native_path),
++        'regression_aggregate':ref(directory/'regression-aggregate.json'),
++        'exact_token_response_parity':ref(directory/'native-final-verified/token-response-parity.json'),
++        'all_other_reasoner_ast_identical':True,'unchanged_byte_guard_maximum_output_reserve_sources':True,
++        'host_delivery':'Transport in verification manifest; matching host13503 tested in isolation. After exact PASS-image deployment replace only own13502 bridge and verify startup hashes; never restart main model provider.',
++        'original_acceptance':False,'simulation_acceptance':False,
++        'files':{name:ref(root/name)['sha256'] for name in work['files_changed']}}
++    (directory/'source-scope-proof.json').write_text(json.dumps(proof,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
++    for key,values in [('before',before_refs),('after',after_refs),('diff',[ref(directory/'change.diff')])]:
++        work.setdefault(key,[]).extend(values); child[key]=values
++    child['files_changed']=names; child['status']='VALIDATING'; child['completion_status']='WAITING_FOR_NEXT_FULL_RUN'
++    child_path.write_text(json.dumps(child,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
++    work.update(frozen_source=source,frozen_files=proof['files'],frozen_verification_sha256=verification)
++    work['tests'].append({'scope':'Reference regression plus final host identity targeted checks; no single combined-run claim','results':checks,'evidence':[ref(directory/n) for n in checks]})
++    (out/'workload.json').write_text(json.dumps(work,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
++    state_path=out/'attempt-14/state.json'; state=json.loads(state_path.read_text(encoding='utf8'))
++    terminal_path=out/'attempt-14/terminal-13024-verified/manifest.json'; terminal=json.loads(terminal_path.read_text(encoding='utf8'))
++    assert state['status']==terminal['state_status']=='NATIVE_PLAN_REFERENCE_FAILED'
++    assert terminal['session']==13024 and terminal['exit_code']==1 and terminal['normal_terminal_result']['success'] is False
++    retire_name='retire-250177'
++    plan={'receipt':state['receipt'],'image_id':state['image_id'],'resources':state['containers'],'state':str(state_path),
++        'terminal_evidence':ref(terminal_path),'expected_production_image':work['current_image'],'output':str(out/retire_name),
++        'archive':'F:/CodexOrdner/visualizations/2026/10/09/01a11f88-d6c9-7b63-bec3-26450a86e52c/nis-neu9-small-llm-20261106/'+retire_name}
++    plan_path=out/(retire_name+'-plan.json'); assert not plan_path.exists()
++    plan_path.write_text(json.dumps(plan,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
++    print(json.dumps({'source_sha256':source['source_sha256'],'verification_sha256':verification,'checks':checks}))
++    raise SystemExit(0)
+ 
+ if args.phase in {'inventory-closure', 'inventory-segments', 'inventory-views'}:
+     view_phase = args.phase == 'inventory-views'
+--- before/backend/tests/test_reference_planning_throughput.py
++++ after/backend/tests/test_reference_planning_throughput.py
+@@ -284,12 +284,12 @@
+     from backend.tests.test_reference_reasoner import reasoner_with_transport, run_reference
+     actual_builder = reasoner._reference_context_messages
+     observed_anchors, captured = [], []
+-    def once_fresh(history, previous, current, system, maximum, *, anchor=None, anchors=()):
++    def once_fresh(history, previous, current, system, maximum, *, anchor=None, anchors=(), capacity_check=None):
+         observed_anchors.append(deepcopy(anchor))
+         if len(observed_anchors) == 2:
+-            messages, full, _ = actual_builder([], None, current, system, maximum)
++            messages, full, _ = actual_builder([], None, current, system, maximum, capacity_check=capacity_check)
+             return messages, full, True
+-        return actual_builder(history, previous, current, system, maximum, anchor=anchor, anchors=anchors)
++        return actual_builder(history, previous, current, system, maximum, anchor=anchor, anchors=anchors, capacity_check=capacity_check)
+     monkeypatch.setattr(reasoner, '_reference_context_messages', once_fresh)
+     instance, prepared, observed = reasoner_with_transport(monkeypatch, capture=captured, wire_padding=True)
+     result = run_reference(instance, prepared)

@@ -1,0 +1,16 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -1085,9 +1085,10 @@
+                 for key in columns:
+                     boundaries = (0, *(index for index in range(1, len(rows))
+                                       if literals[index][key] != literals[index - 1][key]), len(rows))
+-                    # Bound the optimization search, never the number of records.
+-                    # Each alternative retains every row in its original order.
+-                    if not 2 < len(boundaries) <= 17 or boundaries in partitions:
++                    # At most one run partition per column bounds this search.
++                    # More small cohorts can save more than a few large ones;
++                    # every alternative still visits all rows once, in order.
++                    if len(boundaries) <= 2 or boundaries in partitions:
+                         continue
+                     partitions.add(boundaries)
+                     segmented = {'segments': [record_table(start, end)

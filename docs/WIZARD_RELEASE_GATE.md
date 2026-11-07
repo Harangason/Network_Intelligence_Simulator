@@ -30,10 +30,12 @@ manifest, and starts that image with a disposable database and runtime. It runs:
   that connection to the rest. Local controller outputs remain explicit
   non-routed FUNCTION_OUTPUT messages. ALL-scope evidence may exclude only those
   exact signal IDs; measurements, feedback and actuator commands remain covered.
-- The captured 50-controller / 250-sensor / 250-actuator request, submitted through
-  the normal START API and continued through the real wizard review UI. Its exact
+- The captured 50-controller / 250-sensor / 250-actuator request with separately
+  labelled virtual device-connection review, submitted through the normal START
+  API and continued through the real wizard review UI. Its recorded
   specification and original project/run provenance live in `frontend/e2e/fixtures`.
-  A semantic manifest compares all 1404 original signal definitions and encodings.
+  A semantic manifest compares all 1404 original signal definitions and encodings,
+  both in an early isolated model regression and in the browser workflow.
   A real running simulation is killed through an isolated application restart;
   the same persisted job must resume and complete with full scope evidence.
 - AMEND transport failures, an accepted operation whose response is lost, and
@@ -49,11 +51,22 @@ manifest, and starts that image with a disposable database and runtime. It runs:
 
 Browser and HTTP acceptance insert no generated model rows directly, and no
 successful write response is mocked.
+The raw sample-file preview additionally uploads the byte-preserved historical
+`neu 9.txt` source as `document-preview-example.txt`, traverses equipment and final
+status, and verifies that declared scope is not presented as concrete generated
+devices. Its missing-review action returns to the explicit document review while
+retaining the complete attachment; neither inference nor START is automatic.
+This case is source-preview coverage, not native model or Original acceptance.
 The large and amendment positive fixtures separately supply explicitly reviewed
 virtual LIN and IPv4/UDP Ethernet serializer profiles through the normal parameter API.
 Ethernet declares the actual upper-layer payload and 28 header bytes (IPv4 20 + UDP 8);
-a conflicting MAC-client/zero-header declaration remains rejected. The large fixture's original request,
-generated graph and 1404 signal encodings remain unchanged. The fixture is recorded
+a conflicting MAC-client/zero-header declaration remains rejected. The large fixture
+retains its captured source and graph, supplemented by two explicitly labelled
+test-operator review fields for virtual device connections. Unqualified sensor
+ports and generic actuator coverage ports are selected explicitly; the original
+1404-signal encoding manifest remains unchanged. This qualifies the reviewed
+virtual scenario, not autonomous completion of the unreviewed original request.
+The fixture is recorded
 in `frontend/e2e/fixtures/virtual-lin-profile.json` and
 `frontend/e2e/fixtures/virtual-ethernet-profile.json`; their software channel assumptions
 are not evidence of real transceivers, wiring, LDF deployment, physical conformance

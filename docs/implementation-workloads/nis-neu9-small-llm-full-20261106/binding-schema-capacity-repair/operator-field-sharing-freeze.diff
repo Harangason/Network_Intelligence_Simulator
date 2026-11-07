@@ -1,0 +1,60 @@
+--- docs\implementation-workloads\nis-neu9-small-llm-full-20261106\binding-schema-capacity-repair\operator-before-field-sharing-freeze.py
++++ docs\implementation-workloads\nis-neu9-small-llm-full-20261106\freeze_repair.py
+@@ -38,19 +38,25 @@
+     binding_phase = args.phase == 'inventory-bindings'
+     import xml.etree.ElementTree as ET
+     checks = {}
+-    regression_file = 'regression.xml' if binding_phase else 'regression-final.xml'
+-    for name in ('green.xml' if cohort_phase or binding_phase else 'green-confirmed.xml', regression_file):
++    regression_file = 'field-sharing-repair/green-regression.xml' if binding_phase else 'regression-final.xml'
++    check_names = (regression_file,) if binding_phase else ('green.xml' if cohort_phase else 'green-confirmed.xml', regression_file)
++    for name in check_names:
+         result = next(ET.parse(directory/name).getroot().iter('testsuite')).attrib
+         assert result['failures'] == result['errors'] == result['skipped'] == '0', (name, result)
+         checks[name] = result
+     assert work['active_local_regression']['status'] == 'PASS'
+     assert work['active_local_regression']['exit_code'] == 0
+-    native_path = directory/('native-251/result.json' if binding_phase else 'native-nis-cohort-purpose/result.json' if cohort_phase else 'native-nis-inventory/result.json')
++    native_path = directory/('native-251-qwen-product/result.json' if binding_phase else 'native-nis-cohort-purpose/result.json' if cohort_phase else 'native-nis-inventory/result.json')
+     native = json.loads(native_path.read_text(encoding='utf8'))
+     assert native['status'] == 'PASS' and native['actual_inference_requests'] == 1
+     if binding_phase:
+         assert native['existing_devices'] == 251 and native['native_bindings'] == 8 and native['available_facts'] == 16
+         assert native['public_validation_scoped_merge_preserved']
++        assert native['model'] == 'qwen3.5:9b'
++        assert not native['independent_shared_fields_counter'] and not native['plain_selection_counter']
++        expansion = json.loads((directory/'field-sharing-repair/independent-expansion-proof.json').read_text(encoding='utf8'))
++        assert expansion['status'] == 'PASS' and expansion['expanded_schema_exactly_equal']
++        assert expansion['source_sha256'] == native['source_sha256']
+     else:
+         assert native['native_devices'] == 8 and native['preserved_existing_devices'] == 12
+         assert native['packed_context'] and native['schema_and_public_validation_and_scoped_merge']
+@@ -64,7 +70,10 @@
+                     str((out/'inventory-output-codec-repair/probe_native_codec.py').relative_to(root)).replace('\\', '/')]
+                    if cohort_phase else [])
+     if binding_phase:
+-        extra_files = [str((directory/'probe_native_bindings.py').relative_to(root)).replace('\\', '/')]
++        extra_files = ['backend/tests/test_reference_reasoner.py',
++            *[str(path.relative_to(root)).replace('\\', '/') for path in (
++                directory/'probe_native_bindings.py', out/'read_provider.py', out/'initialize.py',
++                out/'verify_isolation.py', out/'human-small-model-decision-20261107.json')]]
+     changed_nodes = ({'_reference_schema_for_stage'} if binding_phase else
+                      {'_reference_context_messages', *({'_reference_context_snapshot'} if cohort_phase else set())})
+     assert ref(root/reasoner)['sha256'] == native['source_sha256' if binding_phase else 'source_code_sha256']
+@@ -101,14 +110,14 @@
+         'context_output_timeout_public_validation_merge_and_original_source_unchanged': True,
+         'native_semantic_selection_diagnostics': ref(out/'inventory-context-capacity-repair/native-selection-diagnostic-summary.json'),
+         'remaining_findings': work.get('remaining_findings', []),
+-        'qualification': ('Native small-model counter on251 existing authored devices/16facts/eight bindings PASS. ' if binding_phase else 'Normal NIS inventory counter and unforced existing-owner selection from segmented context PASS. ' if cohort_phase else 'Normal constrained NIS inventory counter PASS. ') + 'Earlier unconstrained semantic selection FAIL also on raw baseline; not represented as comprehensively repaired or accepted. Full ordinary Original and simulation gates remain mandatory.',
++        'qualification': ('Native qwen3.5:9b counter on251 existing authored devices/16facts/eight bindings PASS. Current field-sharing regression is separate from earlier648PASS range-only baseline. Earlier llama8B semantic selection FAIL and externally interrupted control remain preserved, not accepted. ' if binding_phase else 'Normal NIS inventory counter and unforced existing-owner selection from segmented context PASS. ' if cohort_phase else 'Normal constrained NIS inventory counter PASS. ') + 'Earlier unconstrained semantic selection FAIL also on raw baseline; not represented as comprehensively repaired or accepted. Full ordinary Original and simulation gates remain mandatory.',
+         'original_acceptance': False, 'simulation_acceptance': False,
+         'files': {name: ref(root/name)['sha256'] for name in work['files_changed']}}
+     (directory/'source-scope-proof.json').write_text(json.dumps(proof, ensure_ascii=False, indent=2)+'\n', encoding='utf8')
+     for key, values in (('before', before_refs), ('after', after_refs), ('diff', [ref(directory/'change.diff')])):
+         work.setdefault(key, []).extend(values)
+     work.update(frozen_source=source, frozen_files=proof['files'], frozen_verification_sha256=verification)
+-    work['tests'].append({'scope': 'Current-source combined reference/inventory/context/source/intake/cancellation regression',
++    work['tests'].append({'scope': 'Current-source binding-schema/source-binding/throughput/field-scope/reasoner regression' if binding_phase else 'Current-source combined reference/inventory/context/source/intake/cancellation regression',
+         'result': checks[regression_file], 'evidence': [ref(directory/regression_file)]})
+     work['repair']['evidence'].extend([ref(directory/'source-scope-proof.json'), ref(native_path)])
+     (out/'workload.json').write_text(json.dumps(work, ensure_ascii=False, indent=2)+'\n', encoding='utf8')

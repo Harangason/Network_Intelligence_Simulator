@@ -126,8 +126,9 @@ def verify_image_archive(path):
     return {'archive': ref(path), 'verified_blobs': sorted(verified), 'image_id': IMAGE}
 
 
-def verify_runtime_snapshot(diff_text, volume):
-    """Account for every writable path and all unmounted runtime archive entries."""
+def verify_runtime_snapshot(diff_text, volume, runtime_root='/app/var/runtime'):
+    """Account for every path assigned to this unmounted runtime archive."""
+    root = PurePosixPath(runtime_root)
     expected = set()
     for line in diff_text.splitlines():
         operation, separator, path = line.partition(' ')
@@ -135,10 +136,10 @@ def verify_runtime_snapshot(diff_text, volume):
         if (operation not in {'A', 'C'} or not separator or not location.is_absolute()
                 or '..' in location.parts or str(location) != path.rstrip('/')):
             raise ValueError('Unbekannte oder gelöschte beschreibbare Pfade benötigen eine eigene vollständige Sicherung.')
-        if path in {'/app', '/app/var', '/app/var/data'} or path.startswith('/app/var/data/'):
+        if path in {'/app', str(root.parent), '/app/var/data'} or path.startswith('/app/var/data/'):
             continue  # Known parents or the separately archived exact data volume.
-        if path == '/app/var/runtime' or path.startswith('/app/var/runtime/'):
-            expected.add(str(PurePosixPath('runtime') / location.relative_to('/app/var/runtime')))
+        if location.is_relative_to(root):
+            expected.add(str(PurePosixPath('runtime') / location.relative_to(root)))
         else:
             raise ValueError('Nicht gesicherter beschreibbarer Pfad außerhalb der eigenen Runtime: ' + path)
     members, names = [], set()
@@ -214,10 +215,25 @@ def run():
     ephemeral = ARCHIVE / ('runtime-ephemeral-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ') + '.tar')
     with ephemeral.open('xb') as stream:
         subprocess.run([DOCKER, 'cp', app['Id'] + ':/app/var/runtime', '-'], stdout=stream, check=True)
-    runtime_members = verify_runtime_snapshot(writable, ephemeral)
+    runtime_lines, diagnostics_lines = [], []
+    for line in writable.splitlines():
+        path = line.partition(' ')[2]
+        if path == '/app/backend' or path == '/app/backend/runtime' or path.startswith('/app/backend/runtime/'):
+            diagnostics_lines.append(line)
+        else:
+            runtime_lines.append(line)
+    runtime_members = verify_runtime_snapshot('\n'.join(runtime_lines), ephemeral)
     backups.extend([ref(OUT / 'container-writable-layer.json'),
                     {**ref(ephemeral), 'scope': 'Complete unmounted runtime, including every backend/frontend/ollama log',
                      'members': runtime_members}])
+    if diagnostics_lines:
+        diagnostics = ARCHIVE / ('runtime-backend-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ') + '.tar')
+        with diagnostics.open('xb') as stream:
+            subprocess.run([DOCKER, 'cp', app['Id'] + ':/app/backend/runtime', '-'], stdout=stream, check=True)
+        diagnostics_members = verify_runtime_snapshot(
+            '\n'.join(diagnostics_lines), diagnostics, '/app/backend/runtime')
+        backups.append({**ref(diagnostics), 'scope': 'Complete unmounted backend runtime and agent diagnostics',
+                        'members': diagnostics_members})
     for c in (app, db):
         path = OUT / (c['Name'].lstrip('/') + '.log')
         if not path.exists():

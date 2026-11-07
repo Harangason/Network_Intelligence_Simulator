@@ -53,10 +53,12 @@ def test_current_inventory_selection_and_coverage_are_literal_after_the_cached_p
     focus = json.loads(wire[-1]['content'])['nis_current_selection']
     assert focus['inventory_target'] == current['inventory_target_for_this_stage']
     assert focus['planning_stage'] == 'Physisches Quelleninventar'
-    assert focus['existing_inventory'] == [{key: radar[key] for key in
-        ('id', 'name', 'kind', 'source_fact_ids', 'source_member_bindings')}]
+    assert focus['existing_inventory'] == '/current_candidate/devices'
+    referenced = effective_reference_context(wire)['current_candidate']['devices']
+    assert referenced == [radar]
+    assert effective_reference_context(messages)['current_candidate']['devices'] == []
     assert focus['derivation_fact_ids'] is None
-    assert focus['inventory_target']['member'] != focus['existing_inventory'][0]['source_member_bindings'][fact]
+    assert focus['inventory_target']['member'] != referenced[0]['source_member_bindings'][fact]
 
 
 def test_live_inventory_output_identifies_the_current_original_selection(monkeypatch):

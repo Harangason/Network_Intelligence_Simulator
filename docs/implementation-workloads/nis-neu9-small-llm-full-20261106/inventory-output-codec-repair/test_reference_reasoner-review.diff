@@ -1,0 +1,30 @@
+--- before/backend/tests/test_reference_reasoner.py
++++ after/backend/tests/test_reference_reasoner.py
+@@ -169,6 +169,12 @@
+         candidate = {key: deepcopy(value) for key, value in active.items() if key in allowed}
+         def use_offered_new_ids(rows, existing):
+             wire = payload['format']['properties']['inventory_choices']
++            if wire['type'] == 'object':
++                # Author the complete fixture first, then encode only the fields
++                # exposed by the real request. Never discard injected mistakes.
++                wire = _reference_schema_for_stage(prepared, {'devices'},
++                    inventory_target=content['inventory_target_for_this_stage'],
++                    existing_devices=current)['properties']['inventory_choices']
+             for row in rows:
+                 if row['id'] not in existing:
+                     items = wire['properties'][row['name']] if wire['type'] == 'object' else wire['items']
+@@ -257,6 +263,14 @@
+                 # Never silently collapse deliberately invalid repeated identities.
+                 if len(set(names)) == len(names):
+                     candidate['inventory_choices'] = dict(zip(names, candidate['inventory_choices'], strict=True))
++                    full_schema = _reference_schema_for_stage(prepared, {'devices'},
++                        inventory_target=content['inventory_target_for_this_stage'], existing_devices=current)
++                    from backend.nis.agent.orchestration.local_reasoner import _reference_compact_inventory_schema
++                    _, codec = _reference_compact_inventory_schema(full_schema)
++                    for name, row in candidate['inventory_choices'].items():
++                        for key, value in codec.get(name, {}).get(row['choice_kind'], {}).get('constants', {}).items():
++                            if key in row and row[key] == value:
++                                row.pop(key)
+             existing = [row for row in (candidate['inventory_choices'].values() if isinstance(candidate['inventory_choices'], dict)
+                                        else candidate['inventory_choices']) if row['choice_kind'] == 'EXISTING']
+             if (content['derivation_fact_ids_for_this_stage'] is not None and existing

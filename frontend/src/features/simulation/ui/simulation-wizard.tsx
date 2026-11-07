@@ -1102,7 +1102,7 @@ export function SimulationWizard({
   const affectedFieldKeys = [...new Set(simulationFindings.flatMap(finding => finding.parameter_fields ?? []))];
   const findingTechnologies = [...new Set(currentFindings.map(item => technologyKey(item.technology)))];
   const proposedFieldCount = (technology?.parameter_schema ?? []).filter(field => field.simulation_default != null && parameterValueStatus(storedParameters, field.key, technologyId) === 'PROPOSAL').length;
-  const assumptionFieldCount = (technology?.parameter_schema ?? []).filter(field => parameterValueStatus(storedParameters, field.key, technologyId) === 'SAVED_ASSUMPTION').length;
+  const assumptionFieldCount = (technology?.parameter_schema ?? []).filter(field => ['SAVED_ASSUMPTION', 'REVIEWED_CATALOG'].includes(parameterValueStatus(storedParameters, field.key, technologyId))).length;
 
   if (catalogError) {
     return (
@@ -1475,6 +1475,10 @@ export function SimulationWizard({
             </div>
 
             <TechnologyCard technology={technology} />
+            {technology.parameter_value_review?.status === 'CONFIRMED' && <p role="status">
+              Katalogparameter geprüft · {technology.parameter_value_review.reviewed_at}. Unveränderte Werte werden wiederverwendet;
+              geänderte Kommunikationsparameter benötigen eine erneute Bestätigung. Geräte- und PHY-Nachweise werden getrennt geprüft.
+            </p>}
             {technology.licensing_policy?.clearance_required && <div className="notice warning" role="status">
               {licenseStates[technology.id]?.blocked === false ? '✓ Geprüfte projektbezogene Technikfreigabe vorhanden.'
                 : '⚠ Ausführung gesperrt: Eine geprüfte projektbezogene Technikfreigabe fehlt.'}
@@ -1511,12 +1515,13 @@ export function SimulationWizard({
                         value={displayedParameters[field.key]}
                         applicable={technologyParameterApplicable(field, displayedParameters)}
                         unverified={parameterIsUnverified(storedParameters, field.key, technologyId)}
-                        savedAssumption={parameterValueStatus(storedParameters, field.key, technologyId) === "SAVED_ASSUMPTION"}
+                        savedAssumption={['SAVED_ASSUMPTION', 'REVIEWED_CATALOG'].includes(parameterValueStatus(storedParameters, field.key, technologyId))}
                         simulationAssumption={field.simulation_default != null
                           && (field.default === undefined || !['SCHEMA_SIMULATION_EXAMPLE', 'REGISTERED_PARAMETER_DEFAULT'].includes(field.simulation_default_provenance?.basis ?? 'REGISTERED_PARAMETER_DEFAULT'))
                           && parameterIsUnverified(storedParameters, field.key, technologyId)}
                         proposal={field.key === "bitrate" ? technology.parameter_proposals : undefined}
                       />
+                      {parameterValueStatus(storedParameters, field.key, technologyId) === 'REVIEWED_CATALOG' && <small>Parameterwert geprüft und gespeichert</small>}
                       </div>
                     ))}
                   </div>

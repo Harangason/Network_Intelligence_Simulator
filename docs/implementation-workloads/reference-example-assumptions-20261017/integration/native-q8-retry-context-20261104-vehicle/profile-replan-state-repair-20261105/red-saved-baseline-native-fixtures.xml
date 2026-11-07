@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="23.652" timestamp="2026-11-05T06:26:05.007518+01:00" hostname="Haranga"><testcase classname="docs.implementation-workloads.reference-example-assumptions-20261017.integration.native-q8-retry-context-20261104-vehicle.profile-replan-state-repair-20261105.test_saved_baseline" name="test_saved_baseline_replan_keeps_stale_downstream_outputs" time="22.989"><failure message="assert False&#10; +  where False = all(&lt;generator object test_reference_profile_replan_discards_stale_downstream_stage_outputs.&lt;locals&gt;.&lt;genexpr&gt; at 0x0000027EC2EA7ED0&gt;)">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000027EBAF43CE0&gt;
+
+    def test_saved_baseline_replan_keeps_stale_downstream_outputs(monkeypatch):
+        path = Path(__file__).parent / "before/backend/nis/agent/orchestration/local_reasoner.py"
+        spec = importlib.util.spec_from_file_location("saved_replan_baseline", path)
+        saved = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(saved)
+        monkeypatch.setattr(cases, "LocalEngineeringReasoner", saved.LocalEngineeringReasoner)
+&gt;       cases.test_reference_profile_replan_discards_stale_downstream_stage_outputs(monkeypatch)
+
+docs\implementation-workloads\reference-example-assumptions-20261017\integration\native-q8-retry-context-20261104-vehicle\profile-replan-state-repair-20261105\test_saved_baseline.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000027EBAF43CE0&gt;
+
+    def test_reference_profile_replan_discards_stale_downstream_stage_outputs(monkeypatch):
+        instance, prepared, observed = reasoner_with_transport(monkeypatch)
+        provider = instance.client._transport.handler
+        omitted = False
+    
+        def respond(request):
+            nonlocal omitted
+            response = provider(request)
+            if not request.url.path.endswith('/show'):
+                context = effective_reference_context(json.loads(request.content)['messages'])
+                if context['output_fields_for_this_stage'] == ['communication'] and not omitted:
+                    omitted = True
+                    body = response.json()
+                    choice = json.loads(body['message']['content'])
+                    assert choice['communication']
+                    communication = choice['communication'][0]
+                    communication['source_port_id'] = next(
+                        port['id'] for port in context['current_candidate']['ports']
+                        if port['device_id'] != communication['producer_device_id'])
+                    return httpx.Response(200, json={**body, 'message': {'content': json.dumps(choice)}})
+            return response
+    
+        monkeypatch.setattr(instance.client._transport, 'handler', respond)
+        result = run_reference(instance, prepared)
+        first_communication = next(index for index, context in enumerate(observed)
+                                   if context['planning_stage'] == 'Fachliche Kommunikation')
+        replanned_inventory = next(context for context in observed[first_communication + 1:]
+                                   if context['planning_stage'] == 'Physisches Quelleninventar')
+        assert replanned_inventory['validation_feedback']
+        assert 'tatsächlichen Senderanschluss' in replanned_inventory['validation_feedback']['validation_error']
+        assert replanned_inventory['original_source'] == prepared['source_evidence']['source_text']
+        assert replanned_inventory['reference_sources'] == prepared['reference_sources']
+        assert replanned_inventory['current_candidate']['devices']
+&gt;       assert all(not rows for field, rows in replanned_inventory['current_candidate'].items() if field != 'devices')
+E       assert False
+E        +  where False = all(&lt;generator object test_reference_profile_replan_discards_stale_downstream_stage_outputs.&lt;locals&gt;.&lt;genexpr&gt; at 0x0000027EC2EA7ED0&gt;)
+
+backend\tests\test_reference_reasoner.py:1362: AssertionError</failure></testcase></testsuite></testsuites>

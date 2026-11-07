@@ -1,0 +1,369 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -536,6 +536,55 @@
+     return schema
+ 
+ 
++def _reference_compact_inventory_schema(schema):
++    """Elide only exact offered constants; retain the request-local decoding map."""
++    from copy import deepcopy
++    selection = schema.get('properties', {}).get('inventory_choices', {})
++    if selection.get('type') != 'object':
++        return schema, {}
++    result, codec = deepcopy(schema), {}
++
++    def fixed(field):
++        if len(field.get('enum', [])) == 1:
++            return True, deepcopy(field['enum'][0])
++        if field.get('type') == 'null':
++            return True, None
++        if field.get('type') == 'array':
++            if field.get('maxItems') == 0:
++                return True, []
++            if field.get('minItems') == field.get('maxItems') == 1:
++                known, value = fixed(field.get('items', {}))
++                if known:
++                    return True, [value]
++        if field.get('type') == 'object' and field.get('additionalProperties') is False:
++            properties = field.get('properties', {})
++            values = {key: fixed(value) for key, value in properties.items()}
++            if set(field.get('required', [])) == set(properties) and all(row[0] for row in values.values()):
++                return True, {key: row[1] for key, row in values.items()}
++        return False, None
++
++    for branch in [result, *result.get('anyOf', [])]:
++        for name, slot in branch['properties']['inventory_choices']['properties'].items():
++            for variant in slot.get('anyOf', [slot]):
++                properties = variant['properties']
++                kind = properties['choice_kind']['enum'][0]
++                constants = {}
++                if kind.startswith('NEW_'):
++                    for key in ('id', 'name', 'kind', 'quantity', 'source_fact_ids',
++                                'source_member_bindings', 'context_kind', 'contained_device_ids'):
++                        known, value = fixed(properties.get(key, {}))
++                        if known:
++                            constants[key] = value
++                            properties.pop(key)
++                    variant['required'] = [key for key in variant.get('required', []) if key not in constants]
++                record = {'constants': constants, 'allowed': list(properties),
++                          'required': list(variant.get('required', []))}
++                previous = codec.setdefault(name, {}).setdefault(kind, record)
++                if previous != record:
++                    raise ValueError('Inventaralternativen müssen dieselben festgelegten Identitäten verwenden.')
++    return result, codec
++
++
+ def _reference_port_page_complete(intents, complete):
+     """Bound one reply, never the total required physical connections."""
+     if (type(complete) is not bool or not isinstance(intents, list)
+@@ -643,7 +692,7 @@
+     return expanded
+ 
+ 
+-def _reference_expand_inventory_choices(devices, choices, *, inventory_target=None):
++def _reference_expand_inventory_choices(devices, choices, *, inventory_target=None, inventory_codec=None):
+     """Apply one shared bound before resolving new rows or known-ID bindings."""
+     minimum = 1 if inventory_target and (inventory_target['minimum_rows'] or inventory_target.get('names')) else 0
+     batch_names = _reference_inventory_batch_names(inventory_target)
+@@ -651,6 +700,18 @@
+     if batch_names:
+         if not isinstance(choices, dict) or set(choices) != set(batch_names):
+             raise ValueError('Inventarbündel muss jeden angeforderten ursprünglichen Namen genau einmal enthalten.')
++        if inventory_codec:
++            from copy import deepcopy
++            if set(inventory_codec) != set(batch_names):
++                raise ValueError('Inventarantwort muss zur unveränderten angeforderten Auswahl gehören.')
++            choices = deepcopy(choices)
++            for name, choice in choices.items():
++                selected = choice.get('choice_kind') if isinstance(choice, dict) else None
++                record = inventory_codec[name].get(selected) if isinstance(selected, str) else None
++                if (record is None or set(choice) - set(record['allowed'])
++                        or not set(record['required']) <= set(choice)):
++                    raise ValueError('Inventarantwort darf nur vollständige offene Entscheidungen der angebotenen Auswahl enthalten.')
++                choice.update(deepcopy(record['constants']))
+         known = {row['id']: row['name'] for row in devices}
+         for name, choice in choices.items():
+             if not isinstance(choice, dict):
+@@ -1687,8 +1748,8 @@
+                                  'Parameterstufe legt JEDEN erzeugten Anschluss aus. Kein fertiges Modell oder Timing-/Safety-PASS. '
+                                  if port_groups else '')
+                               + ('Ausschließlich IO für alle angeforderten vorhandenen Teilnehmer-IDs liefern; keine anderen Geräte, Anschlüsse, Messgrößen oder Befehle überschreiben. Teilnehmer und ihre IO getrennt erhalten. Alle Nachbarteilnehmer bleiben als Planungskontext sichtbar. ' if device_ids else '')
+-                              + ('Jeder inventory_choices-Eintrag beginnt mit choice_kind: EXISTING für eine vorhandene ID-Bindung, NEW_<Geräteart> für wirklich neue Hardware (z.B. NEW_SENSOR passend zu kind=SENSOR). Bei EXISTING danach ausschließlich device_id, source_fact_ids, rationale und field_references auswählen; niemals id/name/kind eines alten Geräts neu schreiben. NIS erhält sämtliche unveränderlichen Gerätedaten und ergänzt nur die Quellen-/Typ-/Referenzbindung. Bei NEW_<Geräteart> danach die vollständigen neuen Gerätedaten liefern, niemals eine vorhandene ID. choice_kind wird nur intern geprüft und nicht als Modellfeld gespeichert. Die gemeinsame Stufengrenze gilt für alle Einträge zusammen. ' if inventory_stage and derivation_fact_ids is None else '')
+-                              + (('inventory_choices ist ein Objekt mit genau den angeforderten ursprünglichen Namen als Schlüsseln. Für jeden Schlüssel genau eine vollständige NEW_<Geräteart>- oder EXISTING-Entscheidung liefern; Name und angebotene ID müssen zum jeweiligen Schlüssel gehören. Alle Schlüssel sind Pflicht; keine Identität doppelt verwenden. ' if _reference_inventory_batch_names(inventory_target) else 'Nur ein echtes Gerät oder eine vorhandene Gerätebindung für den angeforderten Quellenbefund/das Typmitglied liefern, keine zweite Platzhalterzeile. ') + 'source_fact_ids enthält ausschließlich diese eine FactID; source_member_bindings neuer Geräte ausschließlich das angeforderte wörtliche Mitglied. Bei vorhandenen Geräten setzt NIS die angeforderte Typbindung selbst. Funktional zusätzlich notwendige Hardware wird danach in einem eigenen Schritt geplant. ' if inventory_target else '')
++                              + ('Jeder inventory_choices-Eintrag beginnt mit choice_kind: EXISTING für eine vorhandene ID-Bindung, NEW_<Geräteart> für wirklich neue Hardware (z.B. NEW_SENSOR passend zu kind=SENSOR). Bei EXISTING danach ausschließlich device_id, source_fact_ids, rationale und field_references auswählen; niemals id/name/kind eines alten Geräts neu schreiben. NIS erhält sämtliche unveränderlichen Gerätedaten und ergänzt nur die Quellen-/Typ-/Referenzbindung. Bei NEW_<Geräteart> danach alle vom Schema angeforderten neuen Geräteentscheidungen liefern, niemals eine vorhandene ID. choice_kind wird nur intern geprüft und nicht als Modellfeld gespeichert. Die gemeinsame Stufengrenze gilt für alle Einträge zusammen. ' if inventory_stage and derivation_fact_ids is None else '')
++                              + (('inventory_choices ist ein Objekt mit genau den angeforderten ursprünglichen Namen als Schlüsseln. Für jeden Schlüssel genau eine vollständige NEW_<Geräteart>- oder EXISTING-Entscheidung gemäß Schema liefern. Festgelegte NEW-Identität, Name, Geräteart, Menge und Quellenbindung ergänzt NIS aus diesem angeforderten Platz; diese ausgeblendeten Felder nicht wiederholen. Offene owner_device_id, purpose, rationale und field_references selbst quellengebunden entscheiden. Alle Schlüssel sind Pflicht; keine Identität doppelt verwenden. ' if _reference_inventory_batch_names(inventory_target) else 'Nur ein echtes Gerät oder eine vorhandene Gerätebindung für den angeforderten Quellenbefund/das Typmitglied liefern, keine zweite Platzhalterzeile. ') + 'source_fact_ids enthält ausschließlich diese eine FactID; source_member_bindings neuer Geräte ausschließlich das angeforderte wörtliche Mitglied. Bei vorhandenen Geräten setzt NIS die angeforderte Typbindung selbst. Funktional zusätzlich notwendige Hardware wird danach in einem eigenen Schritt geplant. ' if inventory_target else '')
+                               + ('inventory_complete bewertet nur diesen deklarierten Quellenbereich. Bei vollständiger Abdeckung true; wenn er bereits abgedeckt ist, ist ein leeres Delta mit true zulässig. False verlangt eine echte weitere Instanz/Bindung dieses Bereichs. ' if inventory_target else '')
+                               + ('Prüfe jetzt die physische Hardware für die ausdrücklich angeforderten FUNCTION-/REQUIREMENT-FactIDs. Vollständige Quelle und sämtliche Nachbarfunktionen bleiben Konsistenzkontext; weitere Quellenbefunde werden in eigenen Hardwarestufen bearbeitet. Sensoren und Aktoren sind echte Teilnehmer, keine bloßen Werte im Controller. Vorhandene Geräte wiederverwenden oder fehlende Messquellen, Verarbeitung, Verbraucher und Aktoren ergänzen; unabhängige Messgrößen und Stellwirkungen berücksichtigen. Ports/Messgrößen/Befehle/Funktionen/Kommunikation folgen erst nach ALLEN Hardwarestufen und erzeugen KEINE Geräte mehr. Notwendige Peripherie dieses Quellenbereichs niemals in spätere IO-Schritte verschieben. source_fact_ids enthält nur passende angeforderte FUNCTION-/REQUIREMENT-FactIDs, jede höchstens einmal; keine neuen Bindungen an Quelleninventar. Alte Bindungen wiederverwendeter IDs bleiben serverseitig erhalten. Keine Originalmenge erhöhen oder Hardwarebelege/Defaults erfinden. Pro Antwort entweder höchstens ein wirklich neues Gerät ODER eine einzige EXISTING_BATCH-Auswahl. Deren bindings ist ein Knoten mit genau einer vorhandenen ID als Schlüssel. Sein Wert enthält source_fact_ids, rationale, field_references und following. following ist null oder der nächste solche Ein-ID-Knoten. Höchstens acht Knoten, jede ID nur einmal und in der Reihenfolge von existing_inventory_for_this_stage auswählen. Nach dem achten Knoten ist following zwingend null. Mehrere Quellenbelege derselben ID in derselben source_fact_ids-Liste bündeln; keine separaten EXISTING-Zeilen liefern. Niemals neue Hardware mit Bindungen mischen. Die Begründung jeweils in einem kurzen fachlichen Satz ohne Wiederholung des Auftrags formulieren. Mehrere passende Quellenbelege desselben Teilnehmers gemeinsam angeben. Nur tatsächlich benötigte Teilnehmer binden, nicht sämtliche Geräte mit sämtlichen Funktionen verbinden. Weiteren Hardwarebedarf mit inventory_complete=false für die normale nächste Antwort offenhalten; die Gesamtzahl notwendiger Geräte ist dadurch nicht begrenzt. inventory_complete bewertet ausschließlich den Bedarf der angeforderten FactIDs und wird erst true, wenn vorhandene plus ergänzte Hardware diesen vollständig abdeckt; ohne Ergänzungsbedarf inventory_choices=[] und true. False verlangt neue Geräte/Quellenbindungen. Unklare Fachentscheidungen konkret unresolved nennen. ' if derivation_fact_ids is not None else '')
+                               + ('port_parameters ist ein Objekt mit genau jedem angeforderten Port-ID-Schlüssel einmal. Pro Schlüssel ausschließlich parameters, eine kurze rationale und field_references ausgeben; ports bleibt []. NIS übernimmt id, device_id, technology, role und network_scope exakt aus der bereits geplanten Portabsicht. Keine andere Technologie für einen Schlüssel auslegen. Alle bekannten Nachbaranschlüsse desselben Netzes konsistent berücksichtigen. Nur CONFIGURATION-Werte; niemals EVIDENCE/REFERENCE als Annahmen bestätigen. ' if port_ids else '')
+@@ -1789,6 +1850,7 @@
+                                existing_devices=current['devices'] if inventory_stage else ()),
+                             'think': False, 'stream': True, 'keep_alive': self.keep_alive,
+                            'options': {'temperature': 0, 'num_predict': 8192, 'num_ctx': self.context_tokens}}
++                payload['format'], inventory_codec = _reference_compact_inventory_schema(payload['format'])
+                 for attempt in range(2):
+                     try:
+                         payload['options']['num_ctx'] = _reference_context_window(payload['messages'], self.context_tokens)
+@@ -1869,7 +1931,7 @@
+                                 raise ValueError('Inventarstufe liefert Geräte ausschließlich über inventory_choices, nicht über devices.')
+                             decoded['devices'] = _reference_expand_inventory_choices(
+                                 current['devices'], decoded.pop('inventory_choices'),
+-                                inventory_target=inventory_target)
++                                inventory_target=inventory_target, inventory_codec=inventory_codec)
+                         if port_intent and 'port_intents' in decoded:
+                             if decoded.get('ports', []) != []:
+                                 raise ValueError('Neue native Portabsichten ausschließlich über port_intents liefern.')
+--- before/backend/tests/test_reference_reasoner.py
++++ after/backend/tests/test_reference_reasoner.py
+@@ -169,6 +169,12 @@
+         candidate = {key: deepcopy(value) for key, value in active.items() if key in allowed}
+         def use_offered_new_ids(rows, existing):
+             wire = payload['format']['properties']['inventory_choices']
++            if wire['type'] == 'object':
++                # Author the complete fixture first, then encode only the fields
++                # exposed by the real request. Never discard injected mistakes.
++                wire = _reference_schema_for_stage(prepared, {'devices'},
++                    inventory_target=content['inventory_target_for_this_stage'],
++                    existing_devices=current)['properties']['inventory_choices']
+             for row in rows:
+                 if row['id'] not in existing:
+                     items = wire['properties'][row['name']] if wire['type'] == 'object' else wire['items']
+@@ -257,6 +263,14 @@
+                 # Never silently collapse deliberately invalid repeated identities.
+                 if len(set(names)) == len(names):
+                     candidate['inventory_choices'] = dict(zip(names, candidate['inventory_choices'], strict=True))
++                    full_schema = _reference_schema_for_stage(prepared, {'devices'},
++                        inventory_target=content['inventory_target_for_this_stage'], existing_devices=current)
++                    from backend.nis.agent.orchestration.local_reasoner import _reference_compact_inventory_schema
++                    _, codec = _reference_compact_inventory_schema(full_schema)
++                    for name, row in candidate['inventory_choices'].items():
++                        for key, value in codec.get(name, {}).get(row['choice_kind'], {}).get('constants', {}).items():
++                            if key in row and row[key] == value:
++                                row.pop(key)
+             existing = [row for row in (candidate['inventory_choices'].values() if isinstance(candidate['inventory_choices'], dict)
+                                        else candidate['inventory_choices']) if row['choice_kind'] == 'EXISTING']
+             if (content['derivation_fact_ids_for_this_stage'] is not None and existing
+--- before/backend/tests/test_reference_inventory_codec.py
++++ after/backend/tests/test_reference_inventory_codec.py
+@@ -0,0 +1,134 @@
++"""Private response compression preserves the offered identity and native decisions."""
++from copy import deepcopy
++
++import pytest
++from jsonschema import Draft202012Validator, ValidationError
++
++from backend.nis.agent.orchestration import local_reasoner as r
++from backend.nis.agent.orchestration.project_intake import ReferenceDesignProposal
++from backend.tests.test_reference_inventory_batch import batch_case
++
++
++def codec_case():
++    prepared, target, full, value = batch_case(8)
++    schema, codec = r._reference_compact_inventory_schema(full)
++    compact = deepcopy(value)
++    for name, row in compact['inventory_choices'].items():
++        for key in codec[name][row['choice_kind']]['constants']:
++            row.pop(key, None)
++    return prepared, target, full, value, schema, codec, compact
++
++
++def test_native_wire_omits_only_offered_constants_and_restores_exact_public_rows():
++    prepared, target, full, value, schema, codec, compact = codec_case()
++    Draft202012Validator(schema).validate(compact)
++    assert all(not {'id', 'name', 'kind', 'quantity', 'source_fact_ids', 'source_member_bindings',
++                    'context_kind', 'contained_device_ids'} & row.keys()
++               for row in compact['inventory_choices'].values())
++    assert all({'owner_device_id', 'purpose', 'rationale', 'field_references'} <= row.keys()
++               for row in compact['inventory_choices'].values())
++    restored = r._reference_expand_inventory_choices([], compact['inventory_choices'],
++        inventory_target=target, inventory_codec=codec)
++    expected = r._reference_expand_inventory_choices([], value['inventory_choices'], inventory_target=target)
++    assert restored == expected
++    public = ReferenceDesignProposal.model_validate({'devices': restored}).model_dump(mode='json')['devices']
++    merged = r._reference_merge_inventory_devices([], public, target, prepared['facts'])
++    assert len({row['id'] for row in merged}) == 8
++    assert [row['name'] for row in merged] == target['names']
++    Draft202012Validator(full).validate(value)  # Input schema wasn't mutated.
++
++
++@pytest.mark.parametrize('fault', ['id', 'name', 'kind', 'quantity', 'source_fact_ids',
++                                   'source_member_bindings', 'context_kind', 'contained_device_ids',
++                                   'choice_kind', 'missing_rationale', 'foreign_slot', 'missing_slot'])
++def test_compact_wire_rejects_injection_and_missing_decisions_at_schema_and_runtime(fault):
++    _, target, _, _, schema, codec, compact = codec_case()
++    name = target['names'][0]; choices = compact['inventory_choices']
++    if fault == 'missing_rationale': choices[name].pop('rationale')
++    elif fault == 'foreign_slot': choices['foreign'] = choices.pop(name)
++    elif fault == 'missing_slot': choices.pop(name)
++    else: choices[name][fault] = 'foreign'
++    with pytest.raises(ValidationError): Draft202012Validator(schema).validate(compact)
++    with pytest.raises(ValueError):
++        r._reference_expand_inventory_choices([], choices, inventory_target=target, inventory_codec=codec)
++
++
++def test_codec_preserves_native_ownership_and_purpose_instead_of_seeding_topology():
++    _, target, _, _, _, codec, compact = codec_case()
++    row = compact['inventory_choices'][target['names'][0]]
++    row.update(owner_device_id='native-owner', purpose='Native purpose', rationale='Native evidence')
++    result = r._reference_expand_inventory_choices([], compact['inventory_choices'],
++        inventory_target=target, inventory_codec=codec)
++    assert result[0]['owner_device_id'] == 'native-owner'
++    assert result[0]['purpose'] == 'Native purpose'
++    assert result[0]['rationale'] == 'Native evidence'
++
++
++def test_codec_does_not_change_unnamed_or_other_stage_schema():
++    for schema in ({'properties': {'ports': {'type': 'array'}}},
++                   {'properties': {'inventory_choices': {'type': 'array', 'items': {'type': 'object'}}}}):
++        result, codec = r._reference_compact_inventory_schema(schema)
++        assert result == schema
++        assert codec == {}
++
++
++def test_normal_planner_sends_only_open_decisions_and_preserves_complete_model(monkeypatch):
++    from backend.tests.test_reference_inventory_batch import (
++        test_normal_planner_batches_seventeen_literal_sensors_without_scope_loss)
++    original = r._reference_stream_response
++    seen = []
++
++    async def observe(client, url, payload, report):
++        choices = payload['format']['properties'].get('inventory_choices', {})
++        if choices.get('type') == 'object':
++            for slot in choices['properties'].values():
++                for variant in slot.get('anyOf', [slot]):
++                    if variant['properties']['choice_kind']['enum'] == ['NEW_SENSOR']:
++                        assert 'id' not in variant['properties']
++                        assert 'source_fact_ids' not in variant['properties']
++            seen.append(len(choices['properties']))
++        return await original(client, url, payload, report)
++
++    monkeypatch.setattr(r, '_reference_stream_response', observe)
++    test_normal_planner_batches_seventeen_literal_sensors_without_scope_loss(monkeypatch)
++    assert seen == [8, 8]
++
++
++def test_variable_physical_context_and_quantity_remain_native_decisions():
++    prepared, target, _, _ = batch_case(3)
++    prepared['facts'][target['fact_id']]['role'] = 'OTHER'
++    full = r._reference_schema_for_stage(prepared, {'devices'}, inventory_target=target)
++    schema, codec = r._reference_compact_inventory_schema(full)
++    for name in target['names']:
++        record = codec[name]['NEW_PHYSICAL_CONTEXT']
++        assert not {'quantity', 'context_kind', 'contained_device_ids'} & record['constants'].keys()
++        variant = next(row for row in schema['properties']['inventory_choices']['properties'][name]['anyOf']
++                       if row['properties']['choice_kind']['enum'] == ['NEW_PHYSICAL_CONTEXT'])
++        assert variant['properties']['context_kind']['enum'] == ['PASSIVE', 'ASSEMBLY', 'SOFTWARE_SERVICE']
++        assert 'quantity' in variant['properties']
++
++
++def test_existing_binding_keeps_its_identity_and_full_binding_wire():
++    prepared, target, _, value = batch_case(3)
++    name = target['names'][0]
++    existing = deepcopy(value['inventory_choices'][name]); existing.pop('choice_kind')
++    existing['source_fact_ids'] = ['previous-source']
++    full = r._reference_schema_for_stage(prepared, {'devices'}, inventory_target=target, existing_devices=[existing])
++    schema, codec = r._reference_compact_inventory_schema(full)
++    original = next(row for row in full['properties']['inventory_choices']['properties'][name]['anyOf']
++                    if row['properties']['choice_kind']['enum'] == ['EXISTING'])
++    compact = next(row for row in schema['properties']['inventory_choices']['properties'][name]['anyOf']
++                   if row['properties']['choice_kind']['enum'] == ['EXISTING'])
++    assert compact == original
++    assert codec[name]['EXISTING']['constants'] == {}
++    choices = {key: {field: deepcopy(v) for field, v in row.items()
++                    if field not in codec[key]['NEW_SENSOR']['constants']}
++               for key, row in value['inventory_choices'].items()}
++    choices[name] = dict(choice_kind='EXISTING', device_id=existing['id'],
++                        source_fact_ids=[target['fact_id']], rationale='New source binding', field_references={})
++    result = r._reference_expand_inventory_choices([existing], choices, inventory_target=target, inventory_codec=codec)
++    bound = next(row for row in result if row['id'] == existing['id'])
++    assert bound['name'] == existing['name']
++    assert bound['source_fact_ids'] == [target['fact_id']]
++    assert existing['source_fact_ids'] == ['previous-source']
++    assert len({row['id'] for row in result}) == 3
+--- before/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/freeze_repair.py
++++ after/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/freeze_repair.py
+@@ -11,11 +11,11 @@
+ out=Path(__file__).resolve().parent
+ root=out.parents[2]
+ parser=argparse.ArgumentParser(description=__doc__)
+-parser.add_argument('--phase',choices=['source-reference','source-semantics','function-coverage','inventory-batch'],required=True)
++parser.add_argument('--phase',choices=['source-reference','source-semantics','function-coverage','inventory-batch','inventory-codec'],required=True)
+ args=parser.parse_args()
+ semantic_phase=args.phase in {'source-semantics','function-coverage'}
+ coverage_phase=args.phase=='function-coverage'
+-directory=out/({'source-reference':'intake-source-reference-repair','source-semantics':'source-semantics-repair','function-coverage':'function-coverage-repair','inventory-batch':'inventory-batch-repair'}[args.phase])
++directory=out/({'source-reference':'intake-source-reference-repair','source-semantics':'source-semantics-repair','function-coverage':'function-coverage-repair','inventory-batch':'inventory-batch-repair','inventory-codec':'inventory-output-codec-repair'}[args.phase])
+ baseline=out/'intake-cardinality-repair'/'before'
+ def baseline_file(name):
+     if (baseline/name).exists():return baseline/name
+@@ -33,10 +33,11 @@
+ def parse(path):
+     return ast.parse(path.read_text(encoding='utf-8'))
+ 
+-if args.phase == 'inventory-batch':
++if args.phase in {'inventory-batch', 'inventory-codec'}:
++    codec_phase = args.phase == 'inventory-codec'
+     import xml.etree.ElementTree as ET
+     checks = {}
+-    for name in ('green.xml', 'progress-types-green.xml', 'regression-final.xml'):
++    for name in (('green.xml', 'regression-final.xml') if codec_phase else ('green.xml', 'progress-types-green.xml', 'regression-final.xml')):
+         result = next(ET.parse(directory/name).getroot().iter('testsuite')).attrib
+         assert result['failures'] == result['errors'] == result['skipped'] == '0', (name,result)
+         checks[name] = result
+@@ -55,6 +56,10 @@
+                      'validate_document_interpretation', 'reference_inventory_members'},
+         changed[2]: {'reasoner_with_transport'},
+     }
++    if codec_phase:
++        changed = [reasoner, 'backend/tests/test_reference_reasoner.py', 'backend/tests/test_reference_inventory_codec.py']
++        exclusions = {reasoner: {'_reference_compact_inventory_schema', '_reference_expand_inventory_choices'},
++                      changed[1]: {'reasoner_with_transport'}}
+     def protected_ast(path, excluded, strip_plan=False):
+         tree = parse(path)
+         selected = []
+@@ -68,6 +73,9 @@
+         return ast.dump(ast.Module(body=selected,type_ignores=[]),include_attributes=False)
+     for name, excluded in exclusions.items():
+         assert protected_ast(directory/'before'/name,excluded,name==reasoner) == protected_ast(root/name,excluded,name==reasoner), name
++    assertion_file = 'backend/tests/test_reference_reasoner.py'
++    assert [ast.dump(node,include_attributes=False) for node in ast.walk(parse(directory/'before'/assertion_file)) if isinstance(node,ast.Assert)] == [
++        ast.dump(node,include_attributes=False) for node in ast.walk(parse(root/assertion_file)) if isinstance(node,ast.Assert)]
+     for name,digest in work['frozen_files'].items():
+         if name not in changed: assert ref(root/name)['sha256'] == digest, name
+     assert ref(Path(work['source']['path']))['sha256'] == work['source']['sha256']
+@@ -86,7 +94,8 @@
+     proof={'at':datetime.now(timezone.utc).isoformat(),'status':'FROZEN_AFTER_LOCAL_AND_NATIVE_COUNTER_GREEN',
+            'source':source,'verification_sha256':verification,'checks':checks,'native_counter':ref(directory/'native-grammar/result.json'),
+            'unchanged_reasoner_context_output_timeout_intake_and_next_ast':True,'all_existing_reference_test_assertions_ast_unchanged':True,
+-           'intake_change':'Explicit type-list role policy; identical shared label grammar in member extraction and required-group validation.',
++           'intake_change':None if codec_phase else 'Explicit type-list role policy; identical shared label grammar in member extraction and required-group validation.',
++           'private_codec_change':'Exact named NEW-slot schema constants omitted and restored before unchanged public validation; native ownership/purpose preserved.' if codec_phase else None,
+            'original_source_unchanged':True,'original_acceptance':False,'simulation_acceptance':False,
+            'files':{name:ref(root/name)['sha256'] for name in work['files_changed']}}
+     (directory/'source-scope-proof.json').write_text(json.dumps(proof,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
+@@ -98,18 +107,20 @@
+                           'result':checks['regression-final.xml'],'evidence':[ref(directory/'regression-final.xml')]})
+     work['repair']['evidence'].extend([ref(directory/'source-scope-proof.json'),ref(directory/'native-grammar/result.json')])
+     (out/'workload.json').write_text(json.dumps(work,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
+-    state_path=out/'attempt-05/state.json'; state=json.loads(state_path.read_text(encoding='utf8'))
+-    canceled=out/'attempt-05/cancellation-6618.json'
++    attempt = 'attempt-06' if codec_phase else 'attempt-05'
++    retirement = 'retire-8e4b' if codec_phase else 'retire-3459'
++    state_path=out/attempt/'state.json'; state=json.loads(state_path.read_text(encoding='utf8'))
++    canceled=out/attempt/('cancellation-72009.json' if codec_phase else 'cancellation-6618.json')
+     assert json.loads(canceled.read_text(encoding='utf8'))['server_generation']['status']=='CANCELED'
+     state.update(status='OPERATOR_VERIFIED_REFERENCE_CANCELED',operator_terminal_evidence=ref(canceled))
+-    operator_state=out/'attempt-05/canceled-state.json'
++    operator_state=out/attempt/'canceled-state.json'
+     assert not operator_state.exists();operator_state.write_text(json.dumps(state,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
+     receipt_path=Path(state['receipt']);receipt=json.loads(receipt_path.read_text(encoding='utf8'))
+     plan={'receipt':str(receipt_path),'image_id':state['image_id'],'resources':state['containers'],
+           'state':str(operator_state),'cancellation_evidence':ref(canceled),'expected_production_image':work['current_image'],
+-          'output':str(out/'retire-3459'),
+-          'archive':'F:/CodexOrdner/visualizations/2026/10/09/01a11f88-d6c9-7b63-bec3-26450a86e52c/nis-neu9-small-llm-20261106/retire-3459'}
+-    plan_path=out/'retire-3459-plan.json';assert not plan_path.exists()
++          'output':str(out/retirement),
++          'archive':'F:/CodexOrdner/visualizations/2026/10/09/01a11f88-d6c9-7b63-bec3-26450a86e52c/nis-neu9-small-llm-20261106/'+retirement}
++    plan_path=out/(retirement+'-plan.json');assert not plan_path.exists()
+     plan_path.write_text(json.dumps(plan,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
+     print(json.dumps({'source_sha256':source['source_sha256'],'verification_sha256':verification,'checks':checks}))
+     raise SystemExit(0)

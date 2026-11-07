@@ -43,6 +43,37 @@ def test_private_function_decoder_rejects_repeated_source_identity():
         Draft202012Validator(schema).validate(body)
 
 
+def test_communication_decoder_restricts_only_selected_senders(monkeypatch):
+    from backend.tests.test_reference_design import with_communication
+    from backend.tests.test_reference_reasoner import (
+        effective_reference_context, reasoner_with_transport, run_reference,
+    )
+
+    captured = []
+    instance, prepared, _ = reasoner_with_transport(monkeypatch, capture=captured)
+    run_reference(instance, prepared)
+    payload, context = next(
+        (payload, context)
+        for payload in captured
+        if (context := effective_reference_context(payload['messages']))[
+            'producer_device_ids_for_this_stage']
+    )
+    selected = context['producer_device_ids_for_this_stage']
+    communication = with_communication(fixture_design(prepared))['communication'][0]
+    communication.update(consumer_device_ids=['receiver-outside-sender-group'])
+    body = intake.ReferenceDesignProposal(communication=[communication]).model_dump(mode='json')
+    validator = Draft202012Validator(payload['format'])
+    for sender in selected:
+        body['communication'][0]['producer_device_id'] = sender
+        validator.validate(body)
+    body['communication'][0]['producer_device_id'] = 'receiver-outside-sender-group'
+    errors = list(validator.iter_errors(body))
+    assert [list(error.absolute_path) for error in errors] == [
+        ['communication', 0, 'producer_device_id'],
+    ]
+    Draft202012Validator(intake.reference_design_schema(prepared)).validate(body)
+
+
 def test_selected_port_wire_contains_only_mutable_parameter_decisions():
     prepared = intake.prepare_reference_design(fixture_request())
     public_before = deepcopy(intake.reference_design_schema(prepared))
