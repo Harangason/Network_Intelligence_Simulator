@@ -1,3 +1,27 @@
+## 2026-11-08T07:44:36.783633+00:00 — human chose to continue91549
+
+Human explicitly chose to continue whole reference91549. Actual Python47376/3020 and Qwen69912 alive;231 prior answers, fachliche Kommunikation producing output. No cancellation/duplicate/new inference/tests/build/app edits while active. Weekly74%,stop75%. No accepted complete model/simulation/fullgate/deployment; production unchanged.
+
+Evidence: attempt-15/human-continue-91549.json. Prior cancellation question is resolved: do not abort. After terminal verify RESULT/process end and bind corrected literalreviewmetadata before fullreview/apply.
+
+## 2026-11-08T01:24:52.722472+00:00 — cancellation decision pending; request remains active
+
+Reference91549 stillRUNNING,107 internallyvalidated/0rejected calls, current sensor measurements. Cancellation decision pending direct user reply; no cancellation performed. Port stage235devices0ports,16ports forlast16actuators onlyaftercontextrebase; causaldiagnosis pending. Exact token repair locally/nativeverified, notfullOriginalPASS and notdelivered. Weekly74%,stop75%.
+
+Evidence: attempt-15/pending-cancellation-decision.json. No END resource release sent; mainprovider NIS window staysreserved until request actuallyends. Fresh actualevents/process/usage beforeanyfollowup.
+
+## 2026-11-08T01:12:49.522389+00:00 — context rebase/first ports observed
+
+Reference91549 RUNNING: all251 primary devices; full port traversal yielded16 ports only foractuators85-100, prior235participants0ports. First16ports coincidewith normal full-state context rebase120482->48379tokens; correlation,not causalproof. Parameter stage now active. No complete response/model/simulation/fullgate/delivery acceptance. Weekly74%,stop75%; no cancellationpermission.
+
+Evidence: attempt-15/context-rebase-port-correlation.json. Continue existing91549 only; afterterminal bind corrected literalreviewmetadata, inspect complete rawrationales/unresolved and normalfullvalidation beforeanyapply.
+
+## 2026-11-07T22:53:15.779752+00:00 — live reference checkpoint, weekly74%
+
+Whole fresh native reference91549 RUNNING; latest 50 prior model answers. Actual Python47376/3020 and main Qwen69912 alive. Port stage reports zero ports for completed controller/gateway/sensor groups; incomplete semantic finding, no approved model. Exact token admission active. Weekly74%, stop75%. Candidate5a6c PREPARED only, production unchanged.
+
+Evidence: attempt-15/checkpoint-usage74-native91549.json. No additional inference/tests/build/app edits while whole request runs. After terminal correct the review metadata binding as documented below.
+
 ## 2026-11-07T22:12:58.818874+00:00 — full native reference91549: port requirements
 
 Whole fresh neu9 reference91549 RUNNING; actual Python47376/3020.33 validated/0rejected calls,251 internaldevices(100S100A50ECU1G),five functional hardware source scopes completed; now full port requirements. Exact admission passed native postvalidation beyond bytebound; mainworker prefix reuse76106tokens+1487processed evidenced. No canonical model/simulation/fullgate acceptance. Candidate5a6c PREPARED only;production unchanged. No other inference/tests/build/app edits while whole request active. Stop75%weekly;last72%.
