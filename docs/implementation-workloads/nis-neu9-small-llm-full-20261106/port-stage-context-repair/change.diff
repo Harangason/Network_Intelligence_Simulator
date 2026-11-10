@@ -1,0 +1,22 @@
+--- before/local_reasoner.py
++++ after/local_reasoner.py
+@@ -1271,6 +1271,19 @@
+                 # reconstructed context. Repeating a projection here consumes
+                 # input on every continuation without adding any source fact.
+                 'existing_inventory': '/current_candidate/devices',
++            }
++        elif current.get('planning_stage') is not None:
++            if 'nis_context_snapshot' not in packed:
++                packed = {'nis_context_snapshot': packed, 'nis_context_tables': [], 'nis_context_copies': []}
++            # A stage boundary must expose its operative task directly, just
++            # like inventory selection. The complete authoritative context and
++            # preceding cached messages remain unchanged; no facts are omitted.
++            packed['nis_current_selection'] = {
++                key: deepcopy(current[key]) for key in (
++                    'planning_stage', 'instruction', 'output_fields_for_this_stage',
++                    'device_ids_for_this_stage', 'port_ids_for_this_stage',
++                    'function_fact_ids_for_this_stage', 'producer_device_ids_for_this_stage',
++                ) if key in current
+             }
+         return json.dumps(packed, ensure_ascii=False, separators=(',', ':'))
+ 

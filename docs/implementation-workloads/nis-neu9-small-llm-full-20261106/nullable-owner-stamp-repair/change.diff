@@ -1,0 +1,48 @@
+--- before/local_reasoner.py
++++ after/local_reasoner.py
+@@ -395,7 +395,20 @@
+                 properties['contained_device_ids']['maxItems'] = 0
+                 if kind in {'CONTROLLER', 'GATEWAY'}:
+                     properties['owner_device_id'] = {'type': 'null'}
+-            variants.append(variant)
++            owner_options = properties['owner_device_id'].get('anyOf')
++            if owner_options:
++                # Ownership and its evidence keys form one native decision.
++                # Public stamp validation forbids function_hosts even as an
++                # empty list when owner is null. Complete alternatives also
++                # encode that dependency in providers without if/then support.
++                variant['required'] = list(dict.fromkeys([
++                    *variant.get('required', []), 'owner_device_id']))
++                for owner_option in owner_options:
++                    owned = deepcopy(variant)
++                    owned['properties']['owner_device_id'] = deepcopy(owner_option)
++                    variants.append(owned)
++            else:
++                variants.append(variant)
+         schema['$defs'][schema['properties']['devices']['items']['$ref'].rsplit('/', 1)[-1]] = {'anyOf': variants}
+         schema['properties']['devices'].update(minItems=0, maxItems=0)
+         binding_properties = {key: deepcopy(definition['properties'][key])
+@@ -453,6 +466,7 @@
+             known_names = {row['id']: row['name'] for row in existing_devices}
+             for name in batch_names:
+                 alternatives = []
++                identities_by_kind = {}
+                 for choice in choices:
+                     variant = deepcopy(choice)
+                     properties = variant['properties']
+@@ -460,9 +474,12 @@
+                         if known_names[properties['device_id']['enum'][0]] != name:
+                             continue
+                     else:
+-                        identity = _reference_fresh_inventory_id(
+-                            prepared, properties['kind']['enum'][0], available, occupied)
+-                        occupied.add(identity)
++                        kind = properties['kind']['enum'][0]
++                        if kind not in identities_by_kind:
++                            identity = _reference_fresh_inventory_id(prepared, kind, available, occupied)
++                            occupied.add(identity)
++                            identities_by_kind[kind] = identity
++                        identity = identities_by_kind[kind]
+                         properties['id']['enum'] = [identity]
+                         properties['name']['enum'] = [name]
+                     alternatives.append(variant)

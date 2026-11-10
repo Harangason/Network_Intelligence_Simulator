@@ -1,228 +1,638 @@
+## 2026-11-09T05:05:59.502049+00:00 — 84730 server CANCELED verified; trigger unknown
+
+Fresh normalGETs confirm REFERENCE_CANCELED/CANCELED, no reference design, all18canonical source lists empty and jobs[]. Original driver handle missing, actual native driver processes absent, main72512 exists with /api/ps models[] and no direct worker. No cancellation sent by this assistant. Trigger and exact client exit code unknown; no normal client RESULT available. Preserve stale original driver state as evidence, do not call it running merely from that file. Last113validated/0rejected answers in port parameters; no model/simulation/release acceptance. Open cancellation question superseded, not retroactively authorized. Evidence attempt-19/terminal-server-canceled-84730.json and lost-client-observation-20261109T050438Z. No duplicate or internal inventory resume. Next: complete separately authorized EIPV3 resource-only coordination, then investigate interruption and general gateway protocol coverage before another native request. Mainprovider/inference ownership still requires fresh coordination; no restart/unload/load performed. Production image unchanged.
+
+## 2026-11-09T00:13:19.096238+00:00 — Request84730 active; gateway coverage decision pending
+
+Full native neu9 request84730 remains RUNNING on unchanged candidate9a75c75c9609/source63e8730f6b9a. Latest saved validation: 57 validated, 0 rejected; current selection: ['**100 Sensoren**49', '**100 Sensoren**50', '**100 Sensoren**51', '**100 Sensoren**52']. Source inventory100S/100A/50C/1G and all5 hardware scopes internally validated, not canonical acceptance. All50 ECU port groups completed with50 ports; gateway group closed with1 port. Originalsection11 explicitly requires LIN/CAN-FD/Ethernet segment connection. Single-technology ReferencePort and immutable later parameter-stage technology make this a mandatory completeness concern. Exact final gateway row/topology unavailable from running normalGET (HTTP200/data null). See attempt-19/gateway-port-review-point.json.
+
+Human asked asynchronously whether to regularly cancel84730 and investigate/repair general source-bound protocol coverage. NO answer/authorization yet; keep84730 active, no cancellation, source change, tests, build or competing inference. Earlier cancellation permissions belong to earlier sessions. See pending-cancellation-decision.json and checkpoint-reference-84730.json. First regular in-request context rebase at50 completed calls: exact input58494tokens, unchanged131072/8192/2048; no external restart/internal inventory resume. All subsequent per-group port observations in port-group-observations.json. Provider snapshot20261109T001237Z: actual9B main72512 busy, task38538 decoded558; production original image/ready verified unchanged. EIPcontrol-v2 terminal FAILED_BEFORE_CONTROL/no socket per Listener report; no retryGO. GENAI4 excluded from other-chat continuation; archived chats untouched. Fullneu9/model/ALLsimulation/trace/fullrelease/exactPASSdelivery and7/7completion remain open.
+
+## 2026-11-08 21:01 UTC – full native reference84730 running
+
+Attempt19 intake99613 regularExit0 and actual process end, normal REVIEW_REQUIRED. Independent literal review verifies all31chapters/15contiguoushashsegments/78facts(4INSTANCE,65REQUIREMENT,9FUNCTION), quantities100S/100A/50C/1G. Originalbytes unchanged,25LIN humananswer separate. Actual product review projection equals previously reviewed18; proposalhashe4da6398cee0367e022bbb7a34a0e7050bf5f3fac8f6aecc4c61fe17c7ff1b65. Only document findings approved, no canonicalmodel. Freshmainprovider21:00:53idle, small9B. Full normal plan-reference84730 nowrunning oncandidate9a75c75c9609, image90d122…,source63e873…,project20261108205442105-86abcb9e,port53416. Monitoractualevents/process/worker; no newinference/tests/build/appchange whilewhole requestactive. No internalresume. Seeattempt19/checkpoint-reference-84730.json andimmutable native-start-state-84730.json. Alloriginal/simulation/fullgate/delivery remainopen.
+
+## 2026-11-08 20:56 UTC – fresh full native intake99613 running
+
+Canonical preparation83205Exit0: PREPARED only, candidate9a75c75c9609, image90d12260531b26c0de921b3687bb74c87ebd378f635b1d0f24eeb26d43ef23bb, source63e8730f6b9a4f15ae6e9cea4d0a9d54807222f3e38bfdba517abba53fbc911d, verificationf3134bbe044fe4264305d1c4e3e97754665e28a04648464c83f064f9fe853d77. Attempt19 project20261108205442105-86abcb9e at127.0.0.1:53416, real DB-DNS/network/image and18empty canonical tables verified. Fresh worker provider-20261108T205538Z idle, qwen3.5:9b; tokenizer13503 healthy; normal known product draft read. Full unchanged11704-byte neu9 native intake99613 running, actual Python71008/30708,15segments. No second inference/tests/build/app edits during original. Immutable native-start-state-99613.json and checkpoint-intake-99613.json inattempt19. Neither original/model/simulation/release acceptance nor deployment yet. GENAI4 remains excluded.
+
+## 2026-11-08 20:51 UTC – owner schema locally and native verified
+
+Private owner/evidence correction verified:47 targeted+codec PASS; adjacent run69048 186PASS/3FAIL from exact old schema-shape assertions, original XML retained; corrected strict alternative expectations rerun19496:4PASS. No single fully-green189 run claimed. Three actual9B grammar cases47282Exit0 PASS, including null and explicit controller ownership for SENSOR/ACTUATOR/PHYSICAL_CONTEXT. Only private schema function changed; public/planner/config unchanged. Source63e8730f6b9a4f15ae6e9cea4d0a9d54807222f3e38bfdba517abba53fbc911d; verificationf3134bbe044fe4264305d1c4e3e97754665e28a04648464c83f064f9fe853d77.36fe stack fully recoverably archived and exact resources retired33606Exit0; no images removed. Completion guard OPEN_REQUIREMENTS only: fullneu9/model/simulation/fullrelease/delivery still pending. Canonical preparation now requested; original62353 remains terminal, no native original active.
+
+## 2026-11-08 20:39 UTC – nullable owner evidence repair
+
+Original62353 is terminal INVALID_INPUT/Exit1, no native original active. Exact raw responses show null owner with forbidden empty function_hosts evidence key. Private schema now uses complete owner alternatives; batch variants share the same preallocated identity. Public validator and planner/model/context/output/timeout unchanged (AST proof). RED corrected fixture6FAIL/6PASS; initial12setup errors preserved. GREEN+codec session58667Exit0:47PASS. Adjacent regression69048 and native9B counter47282 are running; no original/simulation/release acceptance or production delivery. GENAI4 remains excluded. Current repair: nullable-owner-stamp-repair/workload.json.
+
+## 2026-11-08T20:25:25.331070+00:00 — reference62353 naturally terminal INVALID_INPUT/Exit1
+
+Two actual raw responses identical hash3988d7c3…; each new sensor has null owner but function_hosts:[] evidence key. Strict runtime rejects forbidden field even when empty. Client69800/60624 ended, real workeridle, normal GET confirms FAILED and all18canonicaltablesempty/jobs0. Investigate private nullable-owner schema versus unchanged public stamp; no internal resume/manualmodel. Candidate36fe remains PREPARED, productionunchanged; all7/7goals remain open. GENAI4excluded.
+
+## 2026-11-08T20:17:08.846422+00:00 — whole native reference62353 RUNNING
+
+Fresh full request on36fe819f5577/source5ff089; intake66746 Exit0 and source-bound review passed31chapters/15segments/78facts. Actual client69800/60624; mainprovider idle immediately before start. Normal initial worker reload503 was transient: streamed output has begun. No cancellation authorized, duplicate/internalresume, parallel inference/tests/build/app changes. Full model/ALLsimulation/fullgate/exactproduction and all7/7goals remain open. GENAI4excluded.
+
+## 2026-11-08T20:10:21.655284+00:00 — fresh complete native intake66746 RUNNING
+
+
+
+Candidate36fe819f5577 PREPARED/90118Exit0, source5ff089, actual isolation verified, fresh project20261108200829267-8163f0cd. Mainworker82628/72512 qwen3.5:9b idle131072/q8_0/Flash on immediately before start. No parallel inference/tests/build/app changes while whole request active. Source and human25LIN binding unchanged. Full review/reference/apply/ALLsimulation/fullgate/exactdelivery remain; all7/7requirements unchanged. GENAI4 excluded.
+
+
+
+## 2026-11-08T20:04:45.492793+00:00 — space recovered; canonical prepare90118
+
+
+
+Four old artifact directories fully copied/hash-verified to F:, original paths preserved by junctions; no image or receipt removed. Free24,206,680,064bytes exceeds unchanged20GiBguard. Relocation96169Exit0; source/verification recheck34220Exit0 unchanged. Full original/simulation/fullgate/exactdelivery remain; all7/7requirements preserved.
+
+
+
+## 2026-11-08T19:50:02.652747+00:00 — candidate prepare33018 Exit1 before build: disk budget
+
+
+
+I: free13,239,123,968 bytes; required21,474,836,480. Original FAILreceipt fe0493e10554 preserved; no new image or stack. Read-only workspace space scan in progress; no relaxed guards or bulk prune. Source5ff089 and all7/7requirements preserved; no original/simulation/delivery acceptance. GENAI4 remains excluded.
+
+
+
+## 2026-11-08T19:44:38.515603+00:00 — exact finding accumulation checked; candidate preparation33018
+
+
+
+Separate isolated runs4PASS,138PASS,1native-record replayPASS; no single143run. Real9B prompt counters repeated known findings; original FAIL responses preserved. Exact real old/new findings verified through actual product accumulation with surrounding mocked workflow. No full-native original or simulation acceptance. Unchanged token host13503 restored detached; saved full context fits53972/131072 including reserves.790bd stack fully archived/retired95838Exit0; no images removed. Source5ff089eabe11, existing canonical output; full neu9/release/exact production delivery remain, all7/7requirements unchanged. Completion guard OPEN_REQUIREMENTS remains. GENAI4excluded.
+
+
+
+## 2026-11-08T19:23:12.072037+00:00 — 82889 naturally terminal; exact findings repair
+
+
+
+59 validated calls,144 internal ports; normal INVALID_INPUT context guard, Python processes ended, workeridle. Lost toolhandle means exitcode unobserved. Host13503 absent; restarted exact unchanged service detached, full saved context fits53972tokens with reserves.96 findings include63 exact repeated occurrences. Repair accumulation, retain all distinct findings/raw provenance/source/gates; no internal resume or fullmodel acceptance. EIP startup window ended19:21:02UTC Exit1/ownerproofmissing; no competing inference. Production unchanged. All7/7original requirements remain.
+
+
+
+## 2026-11-08T17:49:07.047714+00:00 — Original82889 first port group validated with4ports
+
+
+
+Whole native original remains RUNNING, no abort authorized.33validated/0rejected answers. First four source controllers each selected in same group as historical20549 now have4physical ports total (historicalgroup0). This is actual original stage progress, NOT full semantic/model/simulation acceptance; raw finaldesign still pending. Source inventory100sensors/100actuators already bound. Actual Qwen72512/11580 checked17:45UTC busy131072, task21117/n_decoded419. No parallel inference/tests/build/appchanges; production unchanged. First-stage evidence attempt-17/checkpoint-first-original-ports.json. EIP waits offline for terminal and subsequent concrete coordinated window; GENAI4 excluded.
+
+
+
+## 2026-11-08T16:11:41.118199+00:00 — Fresh whole native reference82889 RUNNING
+
+
+
+Candidate790bd, sourceea689, smallqwen3.5:9b; all31chapters/15nativeintake segments independently reviewed. q8_0/Flash on restored and actualworkeridle131072 verified just beforestart. EIP window consumed terminalbeforelauncher, noresourceclaim. No duplicate/internalresume; no parallel inference/tests/build/appchanges; no cancel authorization for82889. Full semanticreview/apply/ALLsimulation/fullgate/exactproductiondelivery still required; all7/7outcomes/validations unchanged.
+
+
+
+## 2026-11-08T16:09:24.168525+00:00 — Candidate790bd PREPARED; native intake35566 independently reviewed
+
+
+
+All15source segments/31chapters/78literal findings independently verified; proposal and actual product review equal previously reviewed interpretation. Other NIS chat stopped and handed off; no duplicate intake. Provider fast q8_0/Flash on restored13873Exit0; actual main72512/worker11580 idle131072 independently verified, production unchanged. Full reference not started; brief EIP restart coordination window until16:13UTC, no competing inference. All full original/simulation/release/delivery outcomes remain open. GENAI4 excluded from all-chat resume; 43other chats notified.
+
+
+
+## 2026-11-08T15:26:25.894187+00:00 — Stage-focus checks passed; normal candidate preparation43911
+
+
+
+Local isolated138PASS and132PASS in separate runs, native product replay and exact parallel/offline counter terminal Exit0. App source ea6893503f5da230a5498f062d2d09defd9ad1ca97e4967e56279def61becfb1; HEAD132cb977fc5d1384c10f1d181b47350c678a699d. Old cd1506 stack fully recoverably retired40733Exit0; all images and receipt retained. Preparing in canonical output root; no manualbuild. Full original/simulation/release/exactproduction still open and guardOPEN_REQUIREMENTS retained. Production unchanged. No new inference yet.
+
+
+
+## 2026-11-08T15:17:16.301526+00:00 — Port stage focus repaired; native counters verified, regression running
+
+
+
+20549 is canceled with explicit human authorization. Only _reference_context_messages changed: direct current task and selectors at non-inventory stage boundaries. Controlled full neu9-source counter with authored inventory/history: zero ports before, four physical connections after, exact product/control payload parity. Separate authored parallel/offline counter PASS2/1/1/0. No full original/semantic/simulation/release acceptance. Sessions96603/97725 isolated regressions running;40733 exact recoverable cd1506 stack retirement. All images and PREPARED receipt preserved. Production unchanged,75%cap lifted for this NIS task. Next: complete local checks/freeze, prepare matching normal candidate, fresh full neu9 then complete release/exact deployment.
+
+
+
+## 2026-11-08T14:43:52.198010+00:00 — 20549 regularly CANCELED; port diagnosis active
+
+
+
+Explicit human authorization applied to20549 only. ClientExit1/Python63628+68272 ended; normal serverREFERENCE_CANCELED/CANCELED; mainworkeridle; canonicaltablesempty/nojobs. Eleven controllergroups/44ECUs planned0ports. Exact per-group rawrationales not retained; do not invent. General causal diagnosis under port-stage-context-repair, no app change yet. Both prior decoderfixes/localnativeproofs retained. Candidatecd1506 PREPARED, productionunchanged. Fullneu9/simulation/fullrelease/exactdelivery stillrequired.75%caplifted.
+
+
+
+## 2026-11-08T14:35:28.572021+00:00 — reference20549 RUNNING; cancellation decision pending
+
+
+
+Human75%cap lifted for NIS. Both finding/function repairs locally and native9B verified; full neu9 request20549 still running on cd1506e6e74b PREPARED. 8 controller groups completed with port counts [0, 0, 0, 0, 0, 0, 0, 0]; semantic concern, no accepted model. Human asked whether to regularly cancel THIS request and investigate/repair; NO answer yet, NO cancellation. No inference/tests/build/app edits while request active. EIP ended isolated test use, no claim on NIS main worker. Continue only20549 until explicit reply or actual terminal; then source-bound review/complete simulation/full release/exact production remain. Evidence attempt-16/pending-cancellation-decision.json.
+
+
+
+## 2026-11-08T14:00:51.172217+00:00 — reference20549 hardware planning RUNNING
+
+
+
+All251source devices internally bound (100S/100A/50ECU/1G),28completed model answers; no model acceptance. Actual native hardware stage scope1of5 producing output; exact model/tokenizer-bound admission77593input tokens, limitsunchanged. Candidate cd1506e6e74b remains PREPARED only. Python63628/68272 and mainQwen77356/port52076 last observed; discover fresh actual state before any followup. No other inference/tests/build/app edits while full requestactive; no abortauthorized. Full review/simulation/release/exactproduction stillpending. 75%budgetcap liftedforNIS; otherchatbudgetdoesnotreplacehumanNISinstruction.
+
+
+
+## 2026-11-08T12:27:43.355410+00:00 — fresh complete reference20549 RUNNING
+
+
+
+Intake53498 naturally Exit0, all15segments/31chapters/sourcequotes/quantities reviewed. Fresh whole normal reference, no internal inventory resume. Prepared cd1506e6e74b, coordinated9B, idle before start. No other inference/tests/build/app edits during native request. Normal model review/ALLsimulation/full release/exact production delivery remain. No cancellation authorization for this new request. Weekly cap lifted for this task.
+
+
+
+## 2026-11-08T12:22:21.140974+00:00 — fresh complete intake53498 RUNNING
+
+
+
+Prepared cd1506e6e74b/Exit0, isolated58247, project20261108122104712-74740ee9. Coordinated small9B; actual worker idle before start. No additional inference/tests/build/app edits during native request. All full reference/review/simulation/release/delivery remain. Production unchanged.
+
+
+
+## 2026-11-08T12:16:00.633982+00:00 — local and native repair PASS; preparing fresh original candidate
+
+
+
+Final runtime182PASS, focused33PASS, schema expectation1PASS; native qwen3.5:9b two actual requests PASS. Broad pre-final356PASS/1FAIL retained; no single fully green broad run claimed. Both decoder repairs frozen; old5a6c stack recoverably retired, no images removed. Full fresh neu9 intake/reference/review/simulation and complete release/deployment remain. Weekly75%limit lifted by human for this task. Production unchanged.
+
+
+
+## 2026-11-08T11:40:02.861978+00:00 — human lifted task budget cap; repair resumed
+
+
+
+91549 remains naturally terminal. Repair redundant finding output and invalid function decoder choices, targeted RED/GREEN and native small-model counter, then full neu9 through simulation and exact PASS-receipt production delivery. Prior STOP75 entries are historical. No new inference yet.
+
+
+
+## 2026-11-08T10:27:16.099613+00:00 — STOP75%;91549 naturally terminal
+
+
+
+STOPPED at explicit75%weeklylimit.91549 naturally terminal INVALID_INPUT/Exit1, actualclientprocessesended/mainworkeridle; no abort.281valid/1rejected, output8192tokenlimit in runaway unresolved.message. Firstprofile rejectedinvalidCOMPOSITE. No apprepair/test afterterminal; no Original/simulation/fullgate/deploymentPASS.
+
+
+
+Authoritative: attempt-15/checkpoint-stop75-terminal91549.json with hashes/rawoutput/processproof and nextsteps. Corrected literalreviewmetadata bound onlyafterterminal; priorstate retained. EIP END delivered; Layout/Lieferklar END rejected by automaticapprovalreview, no bypass. Postterminal canonicalGETstillpending. No automaticrestart/resume/newinference. Diagnostic13503bridge remains;productionunchanged. All acceptance/delivery goalsremainopen.
+
+
+
 ## 2026-11-08T07:44:36.783633+00:00 — human chose to continue91549
+
+
 
 Human explicitly chose to continue whole reference91549. Actual Python47376/3020 and Qwen69912 alive;231 prior answers, fachliche Kommunikation producing output. No cancellation/duplicate/new inference/tests/build/app edits while active. Weekly74%,stop75%. No accepted complete model/simulation/fullgate/deployment; production unchanged.
 
+
+
 Evidence: attempt-15/human-continue-91549.json. Prior cancellation question is resolved: do not abort. After terminal verify RESULT/process end and bind corrected literalreviewmetadata before fullreview/apply.
+
+
 
 ## 2026-11-08T01:24:52.722472+00:00 — cancellation decision pending; request remains active
 
+
+
 Reference91549 stillRUNNING,107 internallyvalidated/0rejected calls, current sensor measurements. Cancellation decision pending direct user reply; no cancellation performed. Port stage235devices0ports,16ports forlast16actuators onlyaftercontextrebase; causaldiagnosis pending. Exact token repair locally/nativeverified, notfullOriginalPASS and notdelivered. Weekly74%,stop75%.
+
+
 
 Evidence: attempt-15/pending-cancellation-decision.json. No END resource release sent; mainprovider NIS window staysreserved until request actuallyends. Fresh actualevents/process/usage beforeanyfollowup.
 
+
+
 ## 2026-11-08T01:12:49.522389+00:00 — context rebase/first ports observed
+
+
 
 Reference91549 RUNNING: all251 primary devices; full port traversal yielded16 ports only foractuators85-100, prior235participants0ports. First16ports coincidewith normal full-state context rebase120482->48379tokens; correlation,not causalproof. Parameter stage now active. No complete response/model/simulation/fullgate/delivery acceptance. Weekly74%,stop75%; no cancellationpermission.
 
+
+
 Evidence: attempt-15/context-rebase-port-correlation.json. Continue existing91549 only; afterterminal bind corrected literalreviewmetadata, inspect complete rawrationales/unresolved and normalfullvalidation beforeanyapply.
+
+
 
 ## 2026-11-07T22:53:15.779752+00:00 — live reference checkpoint, weekly74%
 
+
+
 Whole fresh native reference91549 RUNNING; latest 50 prior model answers. Actual Python47376/3020 and main Qwen69912 alive. Port stage reports zero ports for completed controller/gateway/sensor groups; incomplete semantic finding, no approved model. Exact token admission active. Weekly74%, stop75%. Candidate5a6c PREPARED only, production unchanged.
+
+
 
 Evidence: attempt-15/checkpoint-usage74-native91549.json. No additional inference/tests/build/app edits while whole request runs. After terminal correct the review metadata binding as documented below.
 
+
+
 ## 2026-11-07T22:12:58.818874+00:00 — full native reference91549: port requirements
+
+
 
 Whole fresh neu9 reference91549 RUNNING; actual Python47376/3020.33 validated/0rejected calls,251 internaldevices(100S100A50ECU1G),five functional hardware source scopes completed; now full port requirements. Exact admission passed native postvalidation beyond bytebound; mainworker prefix reuse76106tokens+1487processed evidenced. No canonical model/simulation/fullgate acceptance. Candidate5a6c PREPARED only;production unchanged. No other inference/tests/build/app edits while whole request active. Stop75%weekly;last72%.
 
+
+
 After terminal bind corrected literal review cbad6c0 from intake/literal-source-review-current-source.json into state; original record preserved. No cancellation authorization for91549. Whole review/apply/ALLsimulation/traces/fullgate/exactPASSproduction still required.
+
+
 
 ## 2026-11-07T20:28:21.128091+00:00 — full native neu9 reference91549 RUNNING
 
+
+
 Whole fresh neu9 reference91549 RUNNING; actual PIDs47376/3020. Intake19188 Exit0, full15segments/31chapters/quantities/literalquotes verified. Corrected immutable review metadata cbad6c0; actual candidate source correct throughout. Candidate5a6c PREPARED only. No additional inference/tests/build/app edits while whole request active. Normal review/apply/ALLsimulation/fullgate/exactPASSproduction pending. Weekly71%,stop75%.
+
+
 
 After terminal bind corrected review file into state; original record retained for audit. Production unchanged,13503 tested token bridge active/13502 old. No cancellation permission for this new reference.
 
+
+
 ## 2026-11-07T20:22:52.7005444Z — fresh full native intake19188 RUNNING
+
+
 
 Fresh full neu9 intake19188 RUNNING on prepared5a6c803ad790; coordinated9B, actualmainidle and9knownproductionprojects without active run/workload beforestart. Two historical proposals retained, not active inference. No other inference/tests/build/app edits while whole request active. Reference/review/ALLsimulation/fullgate/exactPASSdelivery remain. Weekly71%,stop75%.
 
+
+
 Attempt15/state.json and intake/events.ndjson authoritative. Exact new image b37aaa/sourcebaacd3; PREPARED86311 Exit0 only. Actual driver PIDs: 62420,16768. Production unchanged. No cancellation authorization for this new request. Existing13503 tested token bridge active; production13502 unchanged.
+
+
 
 ## 2026-11-07T20:12:11.405379+00:00 — frozen exact-token repair, old stack retired
 
+
+
 Exact repair baacd3faccab frozen;262 distinct cases PASS across runs, final native20976 PASS. Old250177 fully recoverably archived/retired72834 Exit0,23 imageblobs verified/no image removal. Canonical new candidate preparation just started; no duplicate. Production unchanged. Complete fresh neu9, normal review/ALLsimulation/fullgate/exactdelivery remain.
+
+
 
 Source baacd3faccab09f8669ffc45f0b159fbc76b2df048465c50d94d9395deb20688; verification0e3dc29477954e73aca43c889e1e35604a6e2272b617ad928b30fb76cc25b493. Explicit candidate token endpoint host.docker.internal:13503/tokenize-chat, qwen3.5:9b. Diagnostic host75727 remains active; production13502 unchanged. Child completion guard correctly reports delivery not yet verified, NOT missing human permission. Weekly70%, stop75%.
 
+
+
 ## 2026-11-07T20:04:37.939626+00:00 — final native token-binding counter PASS
+
+
 
 Final native Qwen3.5:9b exact-token counter20976 PASS/Exit0;8/8 owners,251 preserved,40205 exacttokens; reused prompt0.482s vs30.684s, total115s.58 targeted host/token/release checks PASS; integrated237-case regression63090 still running. No original/simulation/release acceptance.
 
+
+
 The preliminary final-binding directory has a metadata-only TypeError before any generation; preserved admission-failure.json. read_provider now uses exact main-listener/direct-child binding, not a scan over unrelated providers. New source is not frozen yet. Finish regression, freeze exact-tokens via existing freeze_repair.py, recoverably retire250177, prepare normal candidate with explicit NIS_LOCAL_TOKENIZER_URL=http://host.docker.internal:13503/tokenize-chat; then fresh complete neu9 intake/reference/review/ALLsimulation, fullgate, exactPASSdeployment and own13502host-service update/identity check. Production unaffected.
+
+
 
 ## 2026-11-07T19:52:23.409152+00:00 — exact token admission authorized and under verification
 
+
+
 Exact token counting: three historical native counts match; 45 focused cases PASS after test-assert placement fix (38PASS/7FAIL preserved). Native uncompressed251-record small-model counter60182 finishing; integrated regressions63090 active. Production unchanged; no original acceptance.
+
+
 
 Limits131072/8192/2048 and fullsources preserved. Host bridge isolated13503/session51221; production13502 untouched. Mainprovider diagnostic/NIS window coordinated all3peers. Windows listenerState0 observed, unique local no-peer endpoint+actualPID/direct-child binds provider; no restarts. Weekly69%, stop75%. Next native actualparity+semanticresult, hostdelivery identity, regressions; only afterward new exactcandidate and complete neu9→review/apply→ALLsimulation→fullPASSgate/exactdeployment.
 
+
+
 ## 2026-11-07 18:55 UTC — rejected codecs restored; exact-token decision pending
+
+
 
 13024 remains naturally terminal INVALID_INPUT/Exit1; no canonical model/jobs. Numeric dictionaries:195 localPASS but native66577FAIL(all8wrongowners). Keyed dictionaries:56 localPASS but native50335FAIL(all8wrongowners). Named identity records:56PASS/1FAIL(existing800line positive exceeds bytebound); no third modelcall. All failed responses/sources/XML retained under column-dictionary-repair. Exact pre-column sixfiles restored and checked against entire prior frozen_files; no newcandidate/build/deployment. Retained250177 remains PREPARED.
 
+
+
 Read-only real mainworker tokenization: complete plain a30043 context227549UTF8bytes,69958actualtokens with worker chat template,80198including8192+2048reserves; configuredmaximum131072 unchanged. Evidence actual-tokenizer-diagnosis.json. This is NOT Ollama template parity/prod token admission/model acceptance. Mainprovider11434 /api/version works; /tokenize,/api/tokenize,/apply-template reset connections; only transient actualworker loopback supports endpoints. Other EIPchat confirms no proven stable Docker-reachable tokenizer/binding. No provider changed/generation requested.
+
+
 
 Pending explicit human decision to supplement bytefallback with exact model/tokenizer/template-bound admission, strict fallback if unverified. Do not infer permission from elapsedtime. If authorized, implement and prove stable reachable model-bound token-count adapter using existingprovider; no context/output/timeout increase, no sourcecut, no privateprovider access/restart. Fresh native smallmodel/complete neu9→canonical review/apply→ALLsimulation/fulltraces→fullmatchingPASSrelease→exactimageproduction remain mandatory. Root7/7unchanged. Usage68%, stop75%.
 
+
+
 ## 2026-11-07 18:33 UTC — terminal13024; column dictionaries under validation
+
+
 
 13024 ended normally with INVALID_INPUT/Exit1 and verified process absence. Full native context a30043 retained;251devices/128ports/116unresolved. No canonical model/jobs accepted. New lossless private column dictionaries preserve all content; canonical replay old132392 required fails/new104996 passes unchanged131072. Native wire ordering differs from canonical replay, nativeobserved131118 separately recorded.56focusedPASS,195-case regression41351 running. qwen3.5:9b counter66577 running after main-provider release/idle. No deployment; production unchanged. Next: verify regression/counter, freeze exact source, recoverably retire250177 stack, prepare one normal candidate, fresh full neu9→review→ALL simulation→PASS release/deploy.
 
+
+
 # Current verified state 2026-11-07T18:01:38.882637+00:00
+
+
 
 Reference13024 RUNNING: complete251quantity inventory, all5functionalhardware scopes, ports for50ECUs/1gateway/100sensors traversed; currently actuator ports,73 completedresponses. No accepted model/simulation. Actual state/events attempt14 authoritative; Python69644/65968 and session13024. No other inference/tests/build/app edits, no cancellation permission. Main qwen3.5:9b exclusive NIS window remains; provider173113 actualbusy. Candidate250177 PREPARED only, production unchanged. Full normal review/apply/ALLsimulation/fulltrace/fullgate/exactPASSdelivery required. Weekly last67%, stop75%.
 
+
+
 # Current verified state 2026-11-07T14:53:27.969386+00:00
+
+
 
 Whole native neu9 reference13024 RUNNING; actual Python69644/65968. Attempt14 events/state authoritative. Intake94259 regular Exit0 and actualprocessend; fresh full15segments/31chapters/quotes/counts reviewed, literal review5f597cef5853f9819027836c75df39648ec7c7e13d69ec32efb1c92ebbf7d061. Candidate250177 PREPARED only; sourceaf52/image dd1dc,actual9B/131072/1200 checked. Main46668 actualworkeridle and9knownproductprojects idle beforeSTART; peers informed fullrunwindow. No other inference/tests/build/app edits until actualterminal. No cancellation permission for13024. Complete source-bound model/Wizard/apply/ALLsimulation/fulltrace/fullgate/exactPASSdelivery remain. Production unchanged. Weekly66%, stop75%.
 
+
+
 # Current verified state 2026-11-07T14:47:54.857205+00:00
+
+
 
 Fresh complete neu9 intake94259 RUNNING; actual Python66316/20096. Attempt14 state/events authoritative, no duplicate. Candidate25017762e569/image dd1dc11841993/source af52a02c752e4, PREPARED14934 Exit0 only. Effective actual image qwen3.5:9b,131072max,1200readtimeout verified; source hash matches native counter. Main46668 empty/idle,9 known production projects idle before START; three existing peers informed. 192 tests and real counter70287 PASS. Old809419 exact stack recoverably archived/retired8024, no image removal. Whole native request: no other inference/tests/build/app edits. Root7/7 unchanged; literal review/reference/Wizard/apply/ALLsimulation/fullgate/exactPASSdelivery still required. Production unchanged. Weekly66%, stop75%.
 
+
+
 # Current verified state 2026-11-07T14:38:10.873711+00:00
+
+
 
 Source af52a02c752e45197f0986417dfdbc4888c3a9aa08f40f0e230f7b04463ce3bf frozen31722 Exit0; verification7eb31b31159356d1d6ee760ec39ea3da30b0beca5bb92592eea46f269fbe9506. Inventory-view-deduplication:192 current tests PASS91238 and real qwen3.5:9b counter70287 PASS (8correct owner decisions,251preserved authored records,18928prompttokens). No Original/simulation acceptance. Old809419 fully recoverably archived and exactstack retired8024 Exit0,23imageblobs verified,no images removed. Canonical normal candidate preparation14934 RUNNING, not duplicated. Production unchanged. Next finish prepare, new attempt14 fresh complete neu9 intake/reference/review/apply/ALLsimulation/fullgate/exactPASSdeploy. Original and25LIN source bindings unchanged; root7/7 unchanged. Weekly66%, stop75%.
 
+
+
 # Current verified state 2026-11-07T14:17:59.272217+00:00
+
+
 
 51532 whole neu9 reference naturally FAILED/Exit1; actual Python26028/71816 absent/mainQwenidle. Exact same context hash c5ee0cd2ab07 and122951inputbytes as19307,191internaldevices/48unresolved/19valid0rejected. Full native context not retained; no exact replay. Canonicalempty/jobs[] normal GETs. No original/simulation acceptance, candidate809419 PREPARED only, production unchanged. New inventory-view-deduplication-repair planned: two derived inventory views repeat complete current_candidate.devices; replace views with explicit references to latest full context, no source/model/limits/gates weakening. Fresh guard/RED/GREEN/native tests before next source freeze. No new native request active; peers END informed. Root7/7 preserved. Weekly65%, stop75%.
 
+
+
 # Current verified state 2026-11-07T12:58:53.154740+00:00
+
+
 
 Whole native neu9 reference51532 RUNNING, actual Python26028/71816. Attempt-13 state/events authoritative. Intake66986 regular Exit0; all15 source segments and fresh hash-bound literal review c6e9527ad7fb verified. Candidate809419479a65 PREPARED only, sourcec3fd32a80e5363/imagebdf9eafd6631, qwen3.5:9b. Fresh main worker46668/12692 idle and9 known production projects without active request before start. All3 coordinating chats informed. No additional inference/tests/build/release/app edits while whole native request runs. No cancellation authorization for this new request. Original/reference/Wizard/review/apply/ALLsimulation/traces/fullgate/exactPASSdelivery remain mandatory. Production unchanged. Root7/7 unchanged. Weekly64%; stop75%.
 
+
+
 # Current verified state 2026-11-07T12:49:23.732496+00:00
+
+
 
 Fresh neu9 attempt13 intake66986 is RUNNING, qwen3.5:9b. State and events under attempt-13 are authoritative. Candidate809419479a65 PREPARED only, sourcec3fd32a80e53, imagebdf9eafd6631, isolated127.0.0.1:63923, project20261107124753604-a89f7246. Prepare13315 Exit0. All frozen hashes and actual image/model/context/timeout/isolation checked. Old83efa fully recoverably archived and exactstack retired7803 Exit0; no images deleted. Production unchanged. Read this newest entry before historical running markers. Complete actual intake then fresh literal review, whole native reference, review/apply/ALLsimulation/fullgate/deploy mandatory. No further inference/tests/build/app edits while whole native request runs. Latest weekly usage63%; stop at75%.
 
+
+
 # Current verified state 2026-11-07T12:34:32.152217+00:00
+
+
 
 Whole request19307 is terminal FAILED with normal RESULT/Exit1 and actual Python61924/55644 absent. Worker idle verified. Sensor finite closure succeeded:100sensors+40actuators+50controllers+1gateway internally,19valid0rejected. Before20th inference strict unchanged context guard rejected122951inputbytes+10240reserve>131072. Normal GETs confirm canonicalempty and jobs[]. Exact last native context was not retained; bounded diagnostics retained.
 
+
+
 New inventory-segment-capacity-repair considers all per-column contiguous run partitions; same codec/protocol/context/validation, no truncation. Independently authored191/251cases RED before fix. Current isolated regression26697 RUNNING. Native counter71249 ended Exit1: found correct owner248 first, then incorrectly incremented; fullFAILresponse preserved. Clarified shared-owner counter33402 RUNNING, same8assertions/251devices/limits, no expected ID in instruction. No Original/simulation/fullgate acceptance. Candidate83efa remains PREPARED and undeployed; production unchanged. Next: verify currenttests and actualcounter, then freeze and recoverably retire exact oldstack before normalcandidate. Root7/7remain. Stop at75%weeklyconsumed (latest62%).
+
+
 
 # Current verified state 2026-11-07T11:12:04.108209+00:00
 
+
+
 Whole normal neu9 reference19307 is RUNNING, actual Python61924/55644. Attempt12 state/events are authoritative; no second inference, app edit, tests, build or release while active. Intake26064 ended Exit0,15/15segments, fresh hash-bound literal review. Candidate83efa PREPARED only; image6aaa47d95e99, source6d8afe849806. Closure repair195 current local tests plus2 actual Qwen counterexamples PASS; no Original/model/simulation acceptance. Old7711 ended INVALID_INPUT/Exit1; old17d247 stack fully recoverably archived/retired26863, no image removal. Production remains unchanged. See attempt-12/native-reference-19307-start.json and inventory-closure-repair/source-scope-proof.json. Weekly usage62%, stop at75% consumed.
+
+
 
 # Private Inventarausgabe – Korrektur in Prüfung
 
+
+
 72009 wurde nach ausdrücklichem menschlichen Auftrag regulär abgebrochen (Client Exit1, Server CANCELED, Prozesse beendet, tatsächlicher Worker idle). Originalstate und PREPAREDreceipt bleiben erhalten. Kein nativer Fehler und keine Originalabnahme.
+
+
 
 Die neue gemeinsame private Ausgabe überträgt bei benannten NEW-Plätzen nur noch offene Felder. Exakt im angebotenen Schema festgelegte Identität/Quelle/Menge werden aus einer ausschließlich request-lokalen Zuordnung vor den unveränderten öffentlichen und Merge-Prüfungen ergänzt. Owner, Zweck, Begründung, Referenzen, variable physische Kontextart und Stückzahl bleiben native Entscheidungen. EXISTING und unbenannte/funktionale Hardwarepfade behalten ihre Auswahl.
 
+
+
 RED: 1 echte normale Planungsgegenprobe gegen redundante Felder fehlgeschlagen; separate15 anfängliche strukturelle Missing-helper-Fälle werden nicht als15 Verhaltensfehler behauptet. GREEN: erste33 gezielte Fälle bestanden. Anschließend nur Promptausrichtung und zwei Randfälle ergänzt; endgültige gemeinsame614-Fälle-Regression Session38180 läuft. Native Codec-Gegenprobe noch ausstehend; keine Zeit-/Tokenersparnis als gemessen behauptet.
+
+
 
 Alle bisherigen test_reference_reasoner-Assertions sind AST-identisch. Before/After/Diff und Scope-Prüfung werden beim finalen Freeze gebunden. Originaldatei und menschliche25LIN-Ergänzung unverändert. Kleine aktivierte llama3.1:8b, Kontextmaximum131072, Ausgabe8192, Timeout1200 unverändert. Produktionc7 enthält diese Korrektur noch nicht.
 
+
+
 ---
+
 Historische vorherige Berichte:
+
+
 
 # Vollständige neu9-Prüfung mit kleiner LLM – in Arbeit
 
+
+
 Aktueller Stand nach dem zweiten echten Intake: Der normale Kandidat
+
 de5bdb227444 / Image bdf248c700f2… ist PREPARED, Source de0e8e0b09ab…;
+
 Session20786 regulär Exit0. Neuer isolierter Originalversuch Session78797
+
 mit derselben vollständigen Quelle und derselben kleinen LLM hat die ersten
+
 fünf von14 Abschnitten bestanden, endet dann regulär INVALID_INPUT/Exit1 in
+
 Abschnitt6. Der frisch geprüfte Worker ist idle. Keine Modell-/Jobübernahme und
+
 keine Simulation; beide EIP-Chats erhielten die terminale Fenster-Rückgabe.
 
+
+
 Diesmal ist die exakte Rohantwort durch die neue Diagnose tatsächlich erhalten:
+
 attempt-02/backend-terminal.log und native-terminal-diagnostics.json,
+
 SHA480c1cc5b3fe88c28b82badabe3e13f84517acbc8c78d6dc5c934ed9a525bd7f.
+
 Der vollständige unabhängige private/public Audit über alle14 vorbereiteten
+
 Abschnitte ist ohne Inferenz abgeschlossen, Quelle vollständig und zusammenhängend,
+
 alle Schlüsselsets höchstens24. Er findet genau vier ungültige Referenzen,
+
 alle in Abschnitt6: R0001.F02 bis R0004.F02 mit leerem Quelltext. Die Kommas
+
 am Ende der vier Gateway-Funktionsbulletzeilen erzeugen eine zusätzliche leere
+
 Klausel. Der private Decoder bietet diese fälschlich an, der strikte öffentliche
+
 Resolver weist sie korrekt zurück. Die LLM hat dabei einen angebotenen Schlüssel
+
 verwendet; die Ursache liegt im Quellenparser. Keine Quell- oder Validatorgrenze
+
 wird gelockert. Weitere unabhängige Delimiter- und vollständige Quellenproben
+
 laufen vor einer minimalen allgemeinen Parserreparatur. Alle ersten Freeze- und
+
 Fehlernachweise bleiben unverändert in freeze-01 erhalten. Folgende Absätze
+
 beschreiben die bisherigen Zwischenstände, keine heutige Gesamtfreigabe.
 
+
+
 Der neue ausdrückliche Auftrag umfasst die vollständige unveränderte Quelle bis
+
 zum gespeicherten kanonischen Modell, allen neun Workflowstufen und erfolgreicher
+
 ALL-Scope-Simulation mit nachgewiesener Abdeckung und vollständigen Traces.
+
 Die aktuelle echte Modellwahl ist llama3.1:8b; keine anderen Modelle wurden
+
 aktiviert oder als Fallback verwendet. Modellunabhängigkeit bedeutet hier
+
 allgemeine Quellen-/Decoder-/Validierungsregeln, keine Markensonderbehandlung.
 
+
+
 Die Quelle hat 11704 Bytes, 11578 Zeichen und SHA256
+
 32c864c91ac85c2884ef0c3c9e62456e6ade59cc2a22cae384bdfe5a2e2eff60.
+
 Der Nutzer löste die echte Kollision zwischen Abschnitt1 und31 ausdrücklich auf:
+
 25 LIN-Netze gemäß Systemumfang. Diese Antwort bleibt eine gehashte, feldgebundene
+
 USER_CLARIFICATION; die Originaldatei wurde nicht bearbeitet. 100 Sensoren,
+
 100 Aktoren, 50 Funktions-ECUs, ein Gateway, 10 CAN-FD und fünf Ethernet-Netze
+
 sowie fünf bis zwanzig Signale je Funktions-ECU bleiben verbindlich.
 
+
+
 Beide bestehenden EIP-Chats bestätigten vor der ersten Inferenz Nichtbelegung;
+
 der Layout-/Listenerchat gab das Hauptproviderfenster ausdrücklich bis zur
+
 terminalen Rückmeldung frei. Hauptprovider und echte direkte Kindworker wurden
+
 frisch geprüft: lokales GGUF, llama3.1:8b, 131072 Modellmaximum; vor Start kein
+
 geladener Worker oder eigener/anderer beobachteter Hauptslot. Der private
+
 EIP-Provider wurde nicht abgefragt. Beide Anwendungen bleiben im normalen
+
 UI/API-Betrieb parallel verfügbar. Die Zusage ist keine technische Sperre
+
 manueller Fremdaktionen.
 
+
+
 Erste tatsächliche vollständige Dokumentanfrage: Session36954, normaler
+
 API-RESULT INVALID_INPUT/success=false, Driver Exit1. Fehler nach der regulären
+
 Korrektur im ersten Abschnitt: mehr als 24 Komponenten. Die letzte exakte native
+
 Rohantwort wurde in diesem Pfad nicht gespeichert; ihre genaue Auswahl wird
+
 nicht erfunden. Nach Ende war der tatsächliche Hauptslot Task940 idle. Normale
+
 GETs belegen alle kanonischen Quelllisten leer und keine Jobs. Keine Übernahme,
+
 keine erfolgreiche Original- oder Simulationsabnahme. Das Inferenzfenster wurde
+
 beiden EIP-Chats terminal zurückgegeben und ist vor der nächsten echten Probe
+
 erneut frisch abzustimmen.
 
+
+
 Die allgemeine Ursache ist unabhängig im unveränderten privaten Produktpayload
+
 reproduziert: 23 Pflichtschlüssel, aber 25 auswählbare Komponentenschlüssel bei
+
 maxProperties24. Der bisherige Aufteiler prüfte nur die Pflichtmenge; der echte
+
 Provider erreichte die korrekte Laufzeitabweisung >24. Ein unabhängiger kleiner
+
 Gegenfall und das erhaltene vollständige Original belegen denselben Fehler.
+
 Der neue Aufteiler begrenzt alle auswählbaren Schlüssel durch weitere verlustfreie
+
 zusammenhängende Abschnitte. Dichte kurze Quellen können ebenfalls geteilt werden.
+
 Keine Quelle, Pflichtmenge, Validatorgrenze, Technologiegrenze, Modellidentität,
+
 Kontext-, Ausgabe- oder Timeoutkonfiguration wird gelockert.
 
+
+
 Terminal ungültige Dokumentantworten werden künftig lokal mit Rohinhalt, Hash,
+
 Modell, Abschnitt, Versuch und Zählwerten protokolliert. Die Antwort wird weiterhin
+
 abgewiesen. Gezielte RED-Runde drei FAIL; danach drei PASS. Angrenzende isolierte
+
 Regression: 294 PASS, null FAIL, eine bekannte Feldnamenwarnung, Exit0. Alle
+
 ursprünglichen Assertions und die übrige Reasoner-AST sind unverändert; verändert
+
 ist nur interpret_document. Zwei Produkt-/Testdateien sind mit Before/After/Diff
+
 und Hashbelegen eingefroren, siehe intake-cardinality-repair/source-scope-proof.json.
 
+
+
 Neue eingefrorene Source:
+
 de0e8e0b09ab24e77c398fa090d1fe048ad2c95dcbb70501501e125f132261d0.
+
 Verification c2f2ce7d53b5af792ab08175895ffeafd153352f70ad9f09c09f380dc3c2b44b.
+
 Normaler kanonischer Prepare Session20786 läuft. Ein neuer normaler Kandidat ist
+
 ausschließlich wegen dieser tatsächlichen Appänderung erforderlich. Die vorherigen
+
 Diagnosestacks dd9 und bbed sind exakt recoverbar gesichert und retired;
+
 Originalreceipts, Images und Produktion bleiben erhalten. Beim tmpfs-DB-Stack
+
 wurde erst nach verifiziertem vollständigem Dump/Archiv gestoppt.
 
+
+
 Produktion läuft weiterhin auf dem vorherigen vollständig geprüften Image c7ed…
+
 mit Quelle45147bdc…; die neue Intakekorrektur ist noch nicht produktiv. Ein neues
+
 PREPARED wird keine vollständige Original- oder Releaseabnahme ersetzen.
+
 Noch offen: erneute vollständige native neu9-Prüfung, tatsächliche Modellübernahme,
+
 alle Workflow-/Simulationsnachweise, vollständiges passendes Releasegate und die
+
 autorisierte exakte produktive Übernahme. Alle sieben Ziele und sieben
+
 Validierungen bleiben erhalten. Kein Gesamtabschluss, kein Shutdown.
 
 
+
+
+
 Quellenreferenzreparatur nach zweitem nativem Versuch (06.11.2026):
+
 Die echte gespeicherte Llama-Antwort in attempt-02/backend-terminal.log und native-terminal-diagnostics.json wurde mit ihrem SHA256 gebunden. Der unveränderte strikte Resolver verwirft R0001.F02. Die reine Vorbereitung aller vollständigen 14 Originalabschnitte enthält genau vier leere .F02-Klauseln in Abschnitt6, erzeugt durch abschließende Kommas in Gateway-Bulletzeilen. Ein anderer Modellname behebt diese Inkonsistenz zwischen privater Grammatik und öffentlicher Quellenvalidierung nicht.
+
 Minimaler Fix ausschließlich document_component_sources: leere Klauseln und alleinige Listenmarker werden nicht als eigene Aussage angeboten. Ganze Originalzeilen und alle 11578 Quellzeichen bleiben vorhanden; gültige Hardware-/Funktions-/Anforderungsquellen, Typ-/Mengen-/Identitätsgates und sämtliche Budgetgrenzen bleiben unverändert.
+
 Drei unabhängige Delimiterfälle waren vor Fix RED. Der vollständige positive Produktpfad benötigte zunächst die vom öffentlichen Vertrag verlangte sichtbare Rückfrage für unquantifizierte Kategorien; diese reine Fixturekorrektur ist separat gespeichert. Danach reproduzierte er exakt denselben Abschnitt6-/R0001.F02-Fehler als eigenständiges RED. Beide ursprünglichen XMLs bleiben unverändert. GREEN: 4PASS, Session40783 regulär Exit0,60.34s. Die reine Vollquellen-Nachprüfung Session26347 regulär Exit0 bestätigt nun keine einzige ungültige Referenz bei vollständiger zusammenhängender Quelle und gebundenen Schlüsselmengen. Dies sind kontrollierte lokale Produktprüfungen, noch keine native Originalmodell- oder Simulationsabnahme.
+
+
+
 
 
 Fachliche Review des nativ protokollgrünen15389-Vorschlags wurde abgelehnt:604Mengen statt251,50FunktionsECUs nicht erkannt,Signal-/Gatewayparameter alsHardware. Keine Referenz-/Modellfreigabe. Gemeinsame Quellenpolicy und Vokabular samt exakter Browserprojektion allgemein korrigiert; 13neueRED→GREEN,6GrenzfallRED→GREEN/28gemeinsameScope-GREEN. Vollregression316PASS, danach322PASS. Reine tatsächliche private→öffentliche→Wizardprojektion zählt nun251Geräte in4Gruppen,0echteInferenz. Weitere sichtbare Funktionsquellfragmente führten zu8zusätzlichenRED mit1grünemNegativkontrollfall; allgemeinerEllipse-/MUSS-/Listenfix anschließend37gezieltePASS. Der endgültigegebündelte331-Suite-Lauf ist noch aktiv52724, keine vorweggenommene Abnahme. Alle31Originalabschnitte undalleQuellzeichen bleiben erhalten.
 
+
+
 18:22UTC: Phase4 gezielte8PASS; required-only kontrollierter voller Produktpfad bestätigt251/9Funktionen/volleQuelle/0echteInferenz. Finale349+3 Regression98788läuftnoch. d2 vollständiges read-only Backup verifiziert; nach nachgereichtem AGENTS-Generalressourcenbeleg hat AutoReview exakt denselben Retireplan zugelassen.94125normalExit0, recoverbar archivierte eigene App/DB/Netz/Runtime stillgelegt, keine Images entfernt, OriginalPREPAREDreceipt und Produktc7 erhalten. ErsteAutoReviewAblehnungunverändertgesichert; keinFAILerfunden. Wochenverbrauchfrisch28%,Stop75%.
+

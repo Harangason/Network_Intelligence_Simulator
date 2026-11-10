@@ -1,0 +1,289 @@
+{
+  "goal_id": "neu9-port-completeness-repair",
+  "kind": "repair",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "modify_code": true,
+  "allow_repair": true,
+  "status": "LOCALLY_AND_NATIVE_COUNTER_VERIFIED",
+  "required_outcomes": [
+    "no_silent_empty_complete_port_group",
+    "explicit_open_decision_without_invented_port",
+    "native_small_model_counter_verified"
+  ],
+  "validation_requirements": [
+    "red_green",
+    "adjacent_regression",
+    "native_counter",
+    "source_scope"
+  ],
+  "revision_before": {
+    "backend/nis/agent/orchestration/local_reasoner.py": "4ab5a6dbdd8475f1f6022ccf5fd09529dba2ae37b8b1a8bb86d60b55aae504ee",
+    "backend/tests/test_reference_port_group_completion.py": "8b131e33995f4140d849bbf3dfbc87fa31c9f254590a5fac493f6f992336c6e4",
+    "backend/tests/test_reference_port_completeness.py": "1d76ffb819eea6617c0f86ae0b8929e97c9192b7384cc7ccb00b7bb069554315"
+  },
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "first_failing_layer": "Private physical port-group completion schema and runtime decoder",
+    "root_cause": "Every device key is required but its connections list may be empty; a nonempty rationale is treated as proof of no connection demand. The complete flag remains true. No technical obligation is created, and later parameter planning cannot add omitted device ports.",
+    "reproduction": "Native37035 validated first four ECUs with7 ports, then next four with only1 total while port_plan_complete=true. At least3 active ECUs therefore have no physical connection despite the unchanged source requiring per-ECU communication. Low-level authored counter to follow. Isolated84804 Exit1: all3 authored counterexamples fail for the exact expected defect, including normal planner advancing rather than retrying.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\attempt-20\\port-completeness-finding-37035.json",
+        "sha256": "4b639d173826ccc6eefda90615c4703ecfa6eaf369216e199e6b2cae9abe67bc"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\attempt-20\\cancellation-37035.json",
+        "sha256": "86c425da6295e003cde6fdcf27ec2f9b50de1afcc07e623eb3540374c92b4af3"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\document-function-owner-cross-reference-20261017\\reference-source-review\\neu 9.txt",
+        "sha256": "32c864c91ac85c2884ef0c3c9e62456e6ade59cc2a22cae384bdfe5a2e2eff60"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\red.xml",
+        "sha256": "9291355404b1be924bd392862d1827914ea0b6c0877e15156fd82e0e0c2bc1fb"
+      }
+    ],
+    "weaken_assertions_to_pass": false,
+    "affected_files": [
+      "backend/nis/agent/orchestration/local_reasoner.py",
+      "backend/tests/test_reference_port_group_completion.py",
+      "backend/tests/test_reference_port_completeness.py"
+    ],
+    "acceptance_criteria": [
+      "A complete active physical participant group cannot silently omit a selected device connection.",
+      "Native grammar retains an explicit incomplete decision with targeted unresolved findings; no technology or hardware is inferred to force PASS.",
+      "Public proposal schema, original input, quantities, model/context/output/timeouts and full release gates unchanged."
+    ],
+    "targeted_tests": [
+      "Native schema complete/empty and explicit unresolved branches",
+      "Independent runtime four-owner/one-port counter",
+      "Actual normal planner feedback before invalid closure",
+      "Small model multi-participant counter"
+    ]
+  },
+  "files_changed": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_port_group_completion.py",
+    "backend/tests/test_reference_port_completeness.py"
+  ],
+  "implementation_plan": [
+    "Retain normal finite port grouping and parallel port counts.",
+    "Encode complete nonempty-per-participant versus explicitly incomplete targeted-decision alternatives.",
+    "Reject empty complete groups in the existing runtime decoder; preserve genuine open decisions in diagnostic feedback.",
+    "Verify RED/GREEN and adjacent regression, then actual9B counter and full unchanged neu9 workflow."
+  ],
+  "constraints": [
+    "No manual model/ports/routes",
+    "No source or gate weakening",
+    "No shared model use until freshly coordinated",
+    "No silent acceptance of genuine open decisions"
+  ],
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\before\\local_reasoner.py",
+      "sha256": "32ff983ce74067ea34c2f4d37cb99b446713b30c9ddf1d1ba0b51d8e3ca63f1d"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\before\\test_reference_port_group_completion.py",
+      "sha256": "490b565a2bb8622361bb98c9c9bb4f04a7b8d7d2aa8e9f26ea4a994eb64ed8bb"
+    }
+  ],
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\after\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "4ab5a6dbdd8475f1f6022ccf5fd09529dba2ae37b8b1a8bb86d60b55aae504ee"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\after\\backend\\tests\\test_reference_port_group_completion.py",
+      "sha256": "8b131e33995f4140d849bbf3dfbc87fa31c9f254590a5fac493f6f992336c6e4"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\after\\backend\\tests\\test_reference_port_completeness.py",
+      "sha256": "89cfe23224b10b4243ce1945744a4bf532c81c92463579b77b2204581a5b445a"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\change.diff",
+      "sha256": "e3db38fa9962fbc99a5b280ff715fd5f9ab81860b736aec797027aa7e4749a49"
+    }
+  ],
+  "tests": [
+    {
+      "session": 84804,
+      "exit_code": 1,
+      "purpose": "Expected RED",
+      "passed": 0,
+      "failed": 3,
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\red.xml",
+          "sha256": "9291355404b1be924bd392862d1827914ea0b6c0877e15156fd82e0e0c2bc1fb"
+        }
+      ]
+    },
+    {
+      "purpose": "Targeted GREEN",
+      "passed": 37,
+      "failed": 0,
+      "skipped": 0,
+      "client_exit_code": null,
+      "note": "XML and absence of matching test process observed after compaction; original process handle unavailable, no invented exit code.",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\green.xml",
+          "sha256": "657fec504b2d9ffd2177d242b1285db906b6adb95bcd07135f0fab02f531b987"
+        }
+      ]
+    },
+    {
+      "session": 52420,
+      "exit_code": 0,
+      "passed": 340,
+      "failed": 0,
+      "skipped": 0,
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\regression.xml",
+          "sha256": "f381c49c657b1d6cc20e7e8d51ecad98c52332d54b4ce70a670b54635cdb922d"
+        }
+      ]
+    }
+  ],
+  "outcomes": {
+    "no_silent_empty_complete_port_group": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\regression-aggregate.json",
+          "sha256": "7ba62118353ccb3fedef6ce45510798487ace77bedd12c7351bedbca64d765f0"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\source-scope-proof.json",
+          "sha256": "e7ef95b302e347d0d26152bd671bbe409512b3c75010769f9494bff6f08f3146"
+        }
+      ]
+    },
+    "explicit_open_decision_without_invented_port": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\regression-aggregate.json",
+          "sha256": "7ba62118353ccb3fedef6ce45510798487ace77bedd12c7351bedbca64d765f0"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\source-scope-proof.json",
+          "sha256": "e7ef95b302e347d0d26152bd671bbe409512b3c75010769f9494bff6f08f3146"
+        }
+      ]
+    },
+    "native_small_model_counter_verified": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\regression-aggregate.json",
+          "sha256": "7ba62118353ccb3fedef6ce45510798487ace77bedd12c7351bedbca64d765f0"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\source-scope-proof.json",
+          "sha256": "e7ef95b302e347d0d26152bd671bbe409512b3c75010769f9494bff6f08f3146"
+        }
+      ]
+    }
+  },
+  "validations": {
+    "red_green": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\regression-aggregate.json",
+          "sha256": "7ba62118353ccb3fedef6ce45510798487ace77bedd12c7351bedbca64d765f0"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\source-scope-proof.json",
+          "sha256": "e7ef95b302e347d0d26152bd671bbe409512b3c75010769f9494bff6f08f3146"
+        }
+      ]
+    },
+    "adjacent_regression": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\regression-aggregate.json",
+          "sha256": "7ba62118353ccb3fedef6ce45510798487ace77bedd12c7351bedbca64d765f0"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\source-scope-proof.json",
+          "sha256": "e7ef95b302e347d0d26152bd671bbe409512b3c75010769f9494bff6f08f3146"
+        }
+      ]
+    },
+    "native_counter": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\regression-aggregate.json",
+          "sha256": "7ba62118353ccb3fedef6ce45510798487ace77bedd12c7351bedbca64d765f0"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\source-scope-proof.json",
+          "sha256": "e7ef95b302e347d0d26152bd671bbe409512b3c75010769f9494bff6f08f3146"
+        }
+      ]
+    },
+    "source_scope": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\regression-aggregate.json",
+          "sha256": "7ba62118353ccb3fedef6ce45510798487ace77bedd12c7351bedbca64d765f0"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\port-completeness-repair\\source-scope-proof.json",
+          "sha256": "e7ef95b302e347d0d26152bd671bbe409512b3c75010769f9494bff6f08f3146"
+        }
+      ]
+    }
+  },
+  "unresolved_decisions": [],
+  "completion_status": "NOT_COMPLETED",
+  "active_regression": {
+    "session": 52420,
+    "scope": "Seven relevant reference/port modules via isolated SQL wrapper",
+    "status": "PASS",
+    "exit_code": 0,
+    "passed": 340,
+    "failed": 0,
+    "skipped": 0
+  },
+  "active_native_counter": {
+    "session": 30641,
+    "model": "qwen3.5:9b",
+    "scope": "Four authored active CAN-FD controllers; one individually assigned function; stop before parameter request",
+    "status": "PASS",
+    "main_eip_coordination": "Direct main EIP reply released currently unclaimed window before start; terminal idle will be reported.",
+    "exit_code": 0,
+    "actual_native_requests": 3,
+    "actual_ports": 4,
+    "worker_idle_evidence": "docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\provider-20261109T121041Z.json"
+  },
+  "host_input_validation_failures": {
+    "count": 2,
+    "native_requests": 0,
+    "cause": "Authored evidence envelope first exceeded fact name maximum, then failed strict literal source classification; corrected explicit IDs and REQ-001 quote, no product changes.",
+    "preserved_directories": [
+      "native-counter-input-validation-failed",
+      "native-counter-source-validation-failed"
+    ]
+  },
+  "remaining_findings": [
+    "Full neu9, successful ALL simulation, full gate and exact production delivery remain open."
+  ],
+  "freeze": {
+    "session": 25625,
+    "exit_code": 0,
+    "status": "COMPLETED_NORMALLY",
+    "note": "Final output was already Exit0 when cancellation diagnostic was attempted; no interruption or failure claimed."
+  }
+}

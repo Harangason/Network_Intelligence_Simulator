@@ -91,10 +91,11 @@ def test_total_public_port_limit_includes_already_planned_ports():
     assert existing == before
 
 
-def test_explicit_no_connection_decision_is_not_an_implicit_default():
+def test_free_prose_cannot_close_an_empty_physical_participant():
     value = groups(1)
     value['owner-b']['connections'] = []
-    assert len(expand([], value)) == 1
+    with pytest.raises(ValueError):
+        expand([], value)
     value['owner-b']['rationale'] = ''
     with pytest.raises(ValueError):
         expand([], value)

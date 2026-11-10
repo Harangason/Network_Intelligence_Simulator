@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="30.013" timestamp="2026-11-09T08:49:13.143580+01:00" hostname="Haranga"><testcase classname="tests.test_reference_port_function_context" name="test_physical_port_planning_receives_completed_original_function_ownership" time="16.428"><failure message="AssertionError: assert set() == {'F05b5bf7435...529de96dd573'}&#10;  &#10;  Extra items in the right set:&#10;  'F43a2bc676eed'&#10;  'F529de96dd573'&#10;  'F05b5bf743577'&#10;  Use -v to get more diff">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001D26C544D60&gt;
+
+    def test_physical_port_planning_receives_completed_original_function_ownership(monkeypatch):
+        instance, prepared, observed = reasoner_with_transport(monkeypatch)
+        result = run_reference(instance, prepared)
+        required = {key for key, fact in prepared['facts'].items() if fact['kind'] == 'FUNCTION'}
+        demand = [row for row in observed if row['device_ids_for_this_stage']
+                  and row['output_fields_for_this_stage'] == ['ports'] and not row['port_ids_for_this_stage']]
+        assert demand
+        for request in demand:
+            functions = request['current_candidate']['functions']
+&gt;           assert {row['source_fact_id'] for row in functions} == required
+E           AssertionError: assert set() == {'F05b5bf7435...529de96dd573'}
+E             
+E             Extra items in the right set:
+E             'F43a2bc676eed'
+E             'F529de96dd573'
+E             'F05b5bf743577'
+E             Use -v to get more diff
+
+backend\tests\test_reference_port_function_context.py:16: AssertionError</failure></testcase><testcase classname="tests.test_reference_port_function_context" name="test_selected_port_context_preserves_atomic_and_parent_composite_source_facts" time="12.446"><failure message="KeyError: 'selected_port_function_context'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001D274CD5A70&gt;
+
+    def test_selected_port_context_preserves_atomic_and_parent_composite_source_facts(monkeypatch):
+        instance, prepared, observed = reasoner_with_transport(monkeypatch)
+        run_reference(instance, prepared)
+        demands = [row for row in observed if row['device_ids_for_this_stage']
+                   and row['output_fields_for_this_stage'] == ['ports'] and not row['port_ids_for_this_stage']]
+        for request in demands:
+            selected = request['device_ids_for_this_stage']
+&gt;           focus = request['selected_port_function_context']
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'selected_port_function_context'
+
+backend\tests\test_reference_port_function_context.py:28: KeyError</failure></testcase></testsuite></testsuites>

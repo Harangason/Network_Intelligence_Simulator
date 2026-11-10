@@ -1,0 +1,856 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="21" skipped="0" tests="42" time="6.209" timestamp="2026-11-09T17:37:07.848407+01:00" hostname="Haranga"><testcase classname="tests.test_reference_decision_order" name="test_private_task_fields_precede_questions_in_every_native_alternative[allowed0-options0-port_groups_by_device]" time="0.025"><failure message="ModuleNotFoundError: No module named 'psycopg'">allowed = {'ports'}
+options = {'device_ids': ('owner-a', 'owner-b'), 'port_groups': True}
+first = 'port_groups_by_device'
+
+    @pytest.mark.parametrize(('allowed', 'options', 'first'), [
+        ({'ports'}, {'port_groups': True, 'device_ids': ('owner-a', 'owner-b')}, 'port_groups_by_device'),
+        ({'ports'}, {'port_intent': True, 'device_ids': ('owner-a', 'owner-b')}, 'port_intents'),
+        ({'ports'}, {'port_ids': ('port-1',)}, 'port_parameters'),
+        ({'functions', 'functional_dependencies'}, {'function_ids': ('fact-1',)}, 'functions_by_fact'),
+    ])
+    def test_private_task_fields_precede_questions_in_every_native_alternative(allowed, options, first):
+&gt;       prepared, _ = prepared_schema()
+                      ^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_decision_order.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_port_intent_allocation.py:19: in prepared_schema
+    prepared = intake.prepare_reference_design(fixture_request(references=[reference(('ports',))]))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\project_intake.py:1486: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:4: in &lt;module&gt;
+    from backend.nis.knowledge.semantic_vocabulary import engineering_phrase_match
+backend\nis\knowledge\__init__.py:16: in &lt;module&gt;
+    from backend.nis.knowledge.sources import PostgresSourceAdapter
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Provider-neutral source adapters and staging for engineering knowledge."""
+    
+    from __future__ import annotations
+    
+    from abc import ABC, abstractmethod
+    from collections import defaultdict
+    from dataclasses import dataclass, field
+    import csv
+    import io
+    import json
+    from pathlib import Path
+    import re
+    import sqlite3
+    import tempfile
+    from typing import Any, Iterable
+    from urllib.parse import urlparse
+    from urllib.request import Request, urlopen
+    import xml.etree.ElementTree as ET
+    
+&gt;   import psycopg
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\knowledge\sources.py:20: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_decision_order" name="test_private_task_fields_precede_questions_in_every_native_alternative[allowed1-options1-port_intents]" time="0.009"><failure message="ModuleNotFoundError: No module named 'psycopg'">allowed = {'ports'}
+options = {'device_ids': ('owner-a', 'owner-b'), 'port_intent': True}
+first = 'port_intents'
+
+    @pytest.mark.parametrize(('allowed', 'options', 'first'), [
+        ({'ports'}, {'port_groups': True, 'device_ids': ('owner-a', 'owner-b')}, 'port_groups_by_device'),
+        ({'ports'}, {'port_intent': True, 'device_ids': ('owner-a', 'owner-b')}, 'port_intents'),
+        ({'ports'}, {'port_ids': ('port-1',)}, 'port_parameters'),
+        ({'functions', 'functional_dependencies'}, {'function_ids': ('fact-1',)}, 'functions_by_fact'),
+    ])
+    def test_private_task_fields_precede_questions_in_every_native_alternative(allowed, options, first):
+&gt;       prepared, _ = prepared_schema()
+                      ^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_decision_order.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_port_intent_allocation.py:19: in prepared_schema
+    prepared = intake.prepare_reference_design(fixture_request(references=[reference(('ports',))]))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\project_intake.py:1486: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_decision_order" name="test_private_task_fields_precede_questions_in_every_native_alternative[allowed2-options2-port_parameters]" time="0.007"><failure message="ModuleNotFoundError: No module named 'psycopg'">allowed = {'ports'}, options = {'port_ids': ('port-1',)}
+first = 'port_parameters'
+
+    @pytest.mark.parametrize(('allowed', 'options', 'first'), [
+        ({'ports'}, {'port_groups': True, 'device_ids': ('owner-a', 'owner-b')}, 'port_groups_by_device'),
+        ({'ports'}, {'port_intent': True, 'device_ids': ('owner-a', 'owner-b')}, 'port_intents'),
+        ({'ports'}, {'port_ids': ('port-1',)}, 'port_parameters'),
+        ({'functions', 'functional_dependencies'}, {'function_ids': ('fact-1',)}, 'functions_by_fact'),
+    ])
+    def test_private_task_fields_precede_questions_in_every_native_alternative(allowed, options, first):
+&gt;       prepared, _ = prepared_schema()
+                      ^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_decision_order.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_port_intent_allocation.py:19: in prepared_schema
+    prepared = intake.prepare_reference_design(fixture_request(references=[reference(('ports',))]))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\project_intake.py:1486: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_decision_order" name="test_private_task_fields_precede_questions_in_every_native_alternative[allowed3-options3-functions_by_fact]" time="0.008"><failure message="ModuleNotFoundError: No module named 'psycopg'">allowed = {'functional_dependencies', 'functions'}
+options = {'function_ids': ('fact-1',)}, first = 'functions_by_fact'
+
+    @pytest.mark.parametrize(('allowed', 'options', 'first'), [
+        ({'ports'}, {'port_groups': True, 'device_ids': ('owner-a', 'owner-b')}, 'port_groups_by_device'),
+        ({'ports'}, {'port_intent': True, 'device_ids': ('owner-a', 'owner-b')}, 'port_intents'),
+        ({'ports'}, {'port_ids': ('port-1',)}, 'port_parameters'),
+        ({'functions', 'functional_dependencies'}, {'function_ids': ('fact-1',)}, 'functions_by_fact'),
+    ])
+    def test_private_task_fields_precede_questions_in_every_native_alternative(allowed, options, first):
+&gt;       prepared, _ = prepared_schema()
+                      ^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_decision_order.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_port_intent_allocation.py:19: in prepared_schema
+    prepared = intake.prepare_reference_design(fixture_request(references=[reference(('ports',))]))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\project_intake.py:1486: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_decision_order" name="test_reordered_complete_and_open_port_branches_keep_all_strict_counterexamples" time="0.006"><failure message="ModuleNotFoundError: No module named 'psycopg'">def test_reordered_complete_and_open_port_branches_keep_all_strict_counterexamples():
+&gt;       prepared, _ = prepared_schema()
+                      ^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_decision_order.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_port_intent_allocation.py:19: in prepared_schema
+    prepared = intake.prepare_reference_design(fixture_request(references=[reference(('ports',))]))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\project_intake.py:1486: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_port_group_completion" name="test_native_group_schema_requires_complete_exact_owner_scope" time="0.007"><failure message="ModuleNotFoundError: No module named 'psycopg'">def test_native_group_schema_requires_complete_exact_owner_scope():
+&gt;       prepared, _ = prepared_schema()
+                      ^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_port_group_completion.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_port_intent_allocation.py:19: in prepared_schema
+    prepared = intake.prepare_reference_design(fixture_request(references=[reference(('ports',))]))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\project_intake.py:1486: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_port_group_completion" name="test_explicit_identical_parallel_ports_are_all_preserved_without_deduplication" time="0.017" /><testcase classname="tests.test_reference_port_group_completion" name="test_runtime_rejects_invalid_or_unbounded_native_counts[None]" time="0.009" /><testcase classname="tests.test_reference_port_group_completion" name="test_runtime_rejects_invalid_or_unbounded_native_counts[True]" time="0.007" /><testcase classname="tests.test_reference_port_group_completion" name="test_runtime_rejects_invalid_or_unbounded_native_counts[False]" time="0.007" /><testcase classname="tests.test_reference_port_group_completion" name="test_runtime_rejects_invalid_or_unbounded_native_counts[0]" time="0.007" /><testcase classname="tests.test_reference_port_group_completion" name="test_runtime_rejects_invalid_or_unbounded_native_counts[-1]" time="0.007" /><testcase classname="tests.test_reference_port_group_completion" name="test_runtime_rejects_invalid_or_unbounded_native_counts[17]" time="0.008" /><testcase classname="tests.test_reference_port_group_completion" name="test_runtime_rejects_invalid_or_unbounded_native_counts[1.0]" time="0.006" /><testcase classname="tests.test_reference_port_group_completion" name="test_runtime_rejects_invalid_or_unbounded_native_counts[10001]" time="0.006" /><testcase classname="tests.test_reference_port_group_completion" name="test_runtime_cannot_accept_an_unclosed_native_scope[False]" time="0.001" /><testcase classname="tests.test_reference_port_group_completion" name="test_runtime_cannot_accept_an_unclosed_native_scope[None]" time="0.001" /><testcase classname="tests.test_reference_port_group_completion" name="test_runtime_cannot_accept_an_unclosed_native_scope[1]" time="0.001" /><testcase classname="tests.test_reference_port_group_completion" name="test_runtime_cannot_accept_an_unclosed_native_scope[true]" time="0.001" /><testcase classname="tests.test_reference_port_group_completion" name="test_runtime_requires_all_and_only_selected_owners" time="0.001" /><testcase classname="tests.test_reference_port_group_completion" name="test_total_public_port_limit_includes_already_planned_ports" time="0.024" /><testcase classname="tests.test_reference_port_group_completion" name="test_free_prose_cannot_close_an_empty_physical_participant" time="0.012" /><testcase classname="tests.test_reference_port_group_completion" name="test_group_cannot_supply_identity_owner_or_early_parameters[id-invented]" time="0.007" /><testcase classname="tests.test_reference_port_group_completion" name="test_group_cannot_supply_identity_owner_or_early_parameters[device_id-foreign]" time="0.007" /><testcase classname="tests.test_reference_port_group_completion" name="test_group_cannot_supply_identity_owner_or_early_parameters[parameters-value2]" time="0.008" /><testcase classname="tests.test_reference_port_group_completion" name="test_actual_planner_closes_finite_demand_instead_of_ordinal_only_paging" time="0.006"><failure message="ModuleNotFoundError: No module named 'psycopg'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001FBB8A62780&gt;
+
+    def test_actual_planner_closes_finite_demand_instead_of_ordinal_only_paging(monkeypatch):
+        def design(prepared):
+            value = complete_design(prepared)
+            value['ports'].extend({**deepcopy(value['ports'][0]), 'id': f'parallel-{i}'}
+                                  for i in range(16))
+            return value
+    
+&gt;       instance, prepared, observed = reasoner_with_transport(monkeypatch, design_factory=design)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_port_group_completion.py:120: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_reasoner.py:123: in reasoner_with_transport
+    prepared = intake.prepare_reference_design(request or fixture_request())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\project_intake.py:1486: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_port_completeness" name="test_native_grammar_rejects_complete_four_participant_scope_with_one_port" time="0.006"><failure message="ModuleNotFoundError: No module named 'psycopg'">def test_native_grammar_rejects_complete_four_participant_scope_with_one_port():
+&gt;       prepared, _ = prepared_schema()
+                      ^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_port_completeness.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_port_intent_allocation.py:19: in prepared_schema
+    prepared = intake.prepare_reference_design(fixture_request(references=[reference(('ports',))]))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\project_intake.py:1486: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_port_completeness" name="test_runtime_rejects_empty_complete_participant_despite_nonempty_rationale" time="0.009" /><testcase classname="tests.test_reference_port_completeness" name="test_native_grammar_preserves_explicit_open_decision_without_inventing_ports" time="0.007"><failure message="ModuleNotFoundError: No module named 'psycopg'">def test_native_grammar_preserves_explicit_open_decision_without_inventing_ports():
+&gt;       prepared, _ = prepared_schema()
+                      ^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_port_completeness.py:48: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_port_intent_allocation.py:19: in prepared_schema
+    prepared = intake.prepare_reference_design(fixture_request(references=[reference(('ports',))]))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\project_intake.py:1486: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_port_completeness" name="test_complete_scope_keeps_all_authored_parallel_ports_and_public_schema" time="0.006"><failure message="ModuleNotFoundError: No module named 'psycopg'">def test_complete_scope_keeps_all_authored_parallel_ports_and_public_schema():
+&gt;       prepared, _ = prepared_schema()
+                      ^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_port_completeness.py:68: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_port_intent_allocation.py:19: in prepared_schema
+    prepared = intake.prepare_reference_design(fixture_request(references=[reference(('ports',))]))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\project_intake.py:1486: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_port_completeness" name="test_normal_planner_retries_missing_connection_before_advancing_participants" time="0.006"><failure message="ModuleNotFoundError: No module named 'psycopg'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001FBB8350510&gt;
+
+    def test_normal_planner_retries_missing_connection_before_advancing_participants(monkeypatch):
+&gt;       instance, prepared, _ = reasoner_with_transport(monkeypatch)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_port_completeness.py:81: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_reasoner.py:123: in reasoner_with_transport
+    prepared = intake.prepare_reference_design(request or fixture_request())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\project_intake.py:1486: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_port_function_context" name="test_physical_port_planning_receives_completed_original_function_ownership" time="0.007"><failure message="ModuleNotFoundError: No module named 'psycopg'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001FBB5DDAD50&gt;
+
+    def test_physical_port_planning_receives_completed_original_function_ownership(monkeypatch):
+&gt;       instance, prepared, observed = reasoner_with_transport(monkeypatch)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_port_function_context.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_reasoner.py:123: in reasoner_with_transport
+    prepared = intake.prepare_reference_design(request or fixture_request())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\project_intake.py:1486: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_port_function_context" name="test_selected_port_context_preserves_atomic_and_parent_composite_source_facts" time="0.006"><failure message="ModuleNotFoundError: No module named 'psycopg'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001FBB8964AF0&gt;
+
+    def test_selected_port_context_preserves_atomic_and_parent_composite_source_facts(monkeypatch):
+&gt;       instance, prepared, observed = reasoner_with_transport(monkeypatch)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_port_function_context.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_reasoner.py:123: in reasoner_with_transport
+    prepared = intake.prepare_reference_design(request or fixture_request())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\project_intake.py:1486: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_port_function_context" name="test_owner_functions_are_separate_from_sensor_ownership_and_projection_is_lossless" time="0.006"><failure message="ModuleNotFoundError: No module named 'psycopg'">def test_owner_functions_are_separate_from_sensor_ownership_and_projection_is_lossless():
+&gt;       prepared = intake.prepare_reference_design(fixture_request())
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_port_function_context.py:54: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\nis\agent\orchestration\project_intake.py:1486: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_port_function_context" name="test_invalid_function_graph_cannot_become_port_context[foreign_selection]" time="0.006"><failure message="ModuleNotFoundError: No module named 'psycopg'">corruption = 'foreign_selection'
+
+    @pytest.mark.parametrize('corruption', ['foreign_selection', 'foreign_executor', 'foreign_child',
+                                          'foreign_fact', 'duplicate_function', 'cycle', 'unknown_owner'])
+    def test_invalid_function_graph_cannot_become_port_context(corruption):
+&gt;       prepared = intake.prepare_reference_design(fixture_request())
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_port_function_context.py:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\nis\agent\orchestration\project_intake.py:1486: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_port_function_context" name="test_invalid_function_graph_cannot_become_port_context[foreign_executor]" time="0.006"><failure message="ModuleNotFoundError: No module named 'psycopg'">corruption = 'foreign_executor'
+
+    @pytest.mark.parametrize('corruption', ['foreign_selection', 'foreign_executor', 'foreign_child',
+                                          'foreign_fact', 'duplicate_function', 'cycle', 'unknown_owner'])
+    def test_invalid_function_graph_cannot_become_port_context(corruption):
+&gt;       prepared = intake.prepare_reference_design(fixture_request())
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_port_function_context.py:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\nis\agent\orchestration\project_intake.py:1486: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_port_function_context" name="test_invalid_function_graph_cannot_become_port_context[foreign_child]" time="0.007"><failure message="ModuleNotFoundError: No module named 'psycopg'">corruption = 'foreign_child'
+
+    @pytest.mark.parametrize('corruption', ['foreign_selection', 'foreign_executor', 'foreign_child',
+                                          'foreign_fact', 'duplicate_function', 'cycle', 'unknown_owner'])
+    def test_invalid_function_graph_cannot_become_port_context(corruption):
+&gt;       prepared = intake.prepare_reference_design(fixture_request())
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_port_function_context.py:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\nis\agent\orchestration\project_intake.py:1486: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_port_function_context" name="test_invalid_function_graph_cannot_become_port_context[foreign_fact]" time="0.006"><failure message="ModuleNotFoundError: No module named 'psycopg'">corruption = 'foreign_fact'
+
+    @pytest.mark.parametrize('corruption', ['foreign_selection', 'foreign_executor', 'foreign_child',
+                                          'foreign_fact', 'duplicate_function', 'cycle', 'unknown_owner'])
+    def test_invalid_function_graph_cannot_become_port_context(corruption):
+&gt;       prepared = intake.prepare_reference_design(fixture_request())
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_port_function_context.py:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\nis\agent\orchestration\project_intake.py:1486: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_port_function_context" name="test_invalid_function_graph_cannot_become_port_context[duplicate_function]" time="0.005"><failure message="ModuleNotFoundError: No module named 'psycopg'">corruption = 'duplicate_function'
+
+    @pytest.mark.parametrize('corruption', ['foreign_selection', 'foreign_executor', 'foreign_child',
+                                          'foreign_fact', 'duplicate_function', 'cycle', 'unknown_owner'])
+    def test_invalid_function_graph_cannot_become_port_context(corruption):
+&gt;       prepared = intake.prepare_reference_design(fixture_request())
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_port_function_context.py:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\nis\agent\orchestration\project_intake.py:1486: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_port_function_context" name="test_invalid_function_graph_cannot_become_port_context[cycle]" time="0.005"><failure message="ModuleNotFoundError: No module named 'psycopg'">corruption = 'cycle'
+
+    @pytest.mark.parametrize('corruption', ['foreign_selection', 'foreign_executor', 'foreign_child',
+                                          'foreign_fact', 'duplicate_function', 'cycle', 'unknown_owner'])
+    def test_invalid_function_graph_cannot_become_port_context(corruption):
+&gt;       prepared = intake.prepare_reference_design(fixture_request())
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_port_function_context.py:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\nis\agent\orchestration\project_intake.py:1486: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_port_function_context" name="test_invalid_function_graph_cannot_become_port_context[unknown_owner]" time="0.006"><failure message="ModuleNotFoundError: No module named 'psycopg'">corruption = 'unknown_owner'
+
+    @pytest.mark.parametrize('corruption', ['foreign_selection', 'foreign_executor', 'foreign_child',
+                                          'foreign_fact', 'duplicate_function', 'cycle', 'unknown_owner'])
+    def test_invalid_function_graph_cannot_become_port_context(corruption):
+&gt;       prepared = intake.prepare_reference_design(fixture_request())
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend\tests\test_reference_port_function_context.py:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\nis\agent\orchestration\project_intake.py:1486: in prepare_reference_design
+    from backend.nis.agent.tools.wizard_generation import reference_design_catalog
+backend\nis\agent\tools\wizard_generation.py:15: in &lt;module&gt;
+    from backend.nis.agent.tools import model as model
+backend\nis\agent\tools\model.py:7: in &lt;module&gt;
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
+    
+    Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
+    ``engineering_hardware_interfaces``, ``engineering_interfaces``,
+    ``engineering_messages``, ``engineering_signals``)
+    teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
+    ``source``, ``provenance``, ``confidence``, ``review_state``,
+    ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
+    Diese generische Schicht kapselt CRUD- und Versionierungs-Logik einmalig,
+    statt sie für jede Entität zu duplizieren.
+    """
+    
+    from __future__ import annotations
+    
+    import uuid
+    from dataclasses import dataclass
+    from typing import Any
+    
+&gt;   from psycopg import sql
+E   ModuleNotFoundError: No module named 'psycopg'
+
+backend\nis\infrastructure\persistence\repository.py:19: ModuleNotFoundError</failure></testcase><testcase classname="tests.test_reference_port_function_context" name="test_project_without_declared_functions_does_not_invent_function_or_transport" time="0.001" /></testsuite></testsuites>

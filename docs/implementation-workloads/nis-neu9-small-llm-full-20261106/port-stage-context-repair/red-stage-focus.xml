@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="7" time="1.688" timestamp="2026-11-08T16:06:06.485463+01:00" hostname="Haranga"><testcase classname="tests.test_reference_stage_focus" name="test_current_non_inventory_stage_is_literal_after_the_exact_cached_history[Physical port demand-ports-device_ids_for_this_stage-selected0]" time="0.176"><failure message="KeyError: 'nis_current_selection'">stage = 'Physical port demand', field = 'ports'
+selector = 'device_ids_for_this_stage'
+selected = ['controller-a', 'offline-controller']
+
+    @pytest.mark.parametrize('stage,field,selector,selected', [
+        ('Physical port demand', 'ports', SELECTORS[0], ['controller-a', 'offline-controller']),
+        ('Port parameters', 'ports', SELECTORS[1], ['p1', 'p2']),
+        ('Sensor measurements', 'measurements', SELECTORS[0], ['sensor-a']),
+        ('Actuator commands', 'commands', SELECTORS[0], ['actuator-a']),
+        ('Functional realization', 'functions', SELECTORS[2], ['F1', 'F2']),
+        ('Producer communication', 'communication', SELECTORS[3], ['controller-a']),
+    ])
+    def test_current_non_inventory_stage_is_literal_after_the_exact_cached_history(stage, field, selector, selected):
+        first, history, current = stage_change(stage, field, selector, selected)
+        before = deepcopy((first, history, current))
+        messages, full, rebased = r._reference_context_messages(history, first, current, 'Authored stage protocol', 131072,
+                                                              anchor=(history, first))
+        assert messages[:-1] == history and not rebased
+        assert effective_reference_context(messages) == current
+        assert effective_reference_context(full) == current
+&gt;       focus = json.loads(messages[-1]['content'])['nis_current_selection']
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'nis_current_selection'
+
+backend\tests\test_reference_stage_focus.py:50: KeyError</failure></testcase><testcase classname="tests.test_reference_stage_focus" name="test_current_non_inventory_stage_is_literal_after_the_exact_cached_history[Port parameters-ports-port_ids_for_this_stage-selected1]" time="0.005"><failure message="KeyError: 'nis_current_selection'">stage = 'Port parameters', field = 'ports', selector = 'port_ids_for_this_stage'
+selected = ['p1', 'p2']
+
+    @pytest.mark.parametrize('stage,field,selector,selected', [
+        ('Physical port demand', 'ports', SELECTORS[0], ['controller-a', 'offline-controller']),
+        ('Port parameters', 'ports', SELECTORS[1], ['p1', 'p2']),
+        ('Sensor measurements', 'measurements', SELECTORS[0], ['sensor-a']),
+        ('Actuator commands', 'commands', SELECTORS[0], ['actuator-a']),
+        ('Functional realization', 'functions', SELECTORS[2], ['F1', 'F2']),
+        ('Producer communication', 'communication', SELECTORS[3], ['controller-a']),
+    ])
+    def test_current_non_inventory_stage_is_literal_after_the_exact_cached_history(stage, field, selector, selected):
+        first, history, current = stage_change(stage, field, selector, selected)
+        before = deepcopy((first, history, current))
+        messages, full, rebased = r._reference_context_messages(history, first, current, 'Authored stage protocol', 131072,
+                                                              anchor=(history, first))
+        assert messages[:-1] == history and not rebased
+        assert effective_reference_context(messages) == current
+        assert effective_reference_context(full) == current
+&gt;       focus = json.loads(messages[-1]['content'])['nis_current_selection']
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'nis_current_selection'
+
+backend\tests\test_reference_stage_focus.py:50: KeyError</failure></testcase><testcase classname="tests.test_reference_stage_focus" name="test_current_non_inventory_stage_is_literal_after_the_exact_cached_history[Sensor measurements-measurements-device_ids_for_this_stage-selected2]" time="0.005"><failure message="KeyError: 'nis_current_selection'">stage = 'Sensor measurements', field = 'measurements'
+selector = 'device_ids_for_this_stage', selected = ['sensor-a']
+
+    @pytest.mark.parametrize('stage,field,selector,selected', [
+        ('Physical port demand', 'ports', SELECTORS[0], ['controller-a', 'offline-controller']),
+        ('Port parameters', 'ports', SELECTORS[1], ['p1', 'p2']),
+        ('Sensor measurements', 'measurements', SELECTORS[0], ['sensor-a']),
+        ('Actuator commands', 'commands', SELECTORS[0], ['actuator-a']),
+        ('Functional realization', 'functions', SELECTORS[2], ['F1', 'F2']),
+        ('Producer communication', 'communication', SELECTORS[3], ['controller-a']),
+    ])
+    def test_current_non_inventory_stage_is_literal_after_the_exact_cached_history(stage, field, selector, selected):
+        first, history, current = stage_change(stage, field, selector, selected)
+        before = deepcopy((first, history, current))
+        messages, full, rebased = r._reference_context_messages(history, first, current, 'Authored stage protocol', 131072,
+                                                              anchor=(history, first))
+        assert messages[:-1] == history and not rebased
+        assert effective_reference_context(messages) == current
+        assert effective_reference_context(full) == current
+&gt;       focus = json.loads(messages[-1]['content'])['nis_current_selection']
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'nis_current_selection'
+
+backend\tests\test_reference_stage_focus.py:50: KeyError</failure></testcase><testcase classname="tests.test_reference_stage_focus" name="test_current_non_inventory_stage_is_literal_after_the_exact_cached_history[Actuator commands-commands-device_ids_for_this_stage-selected3]" time="0.006"><failure message="KeyError: 'nis_current_selection'">stage = 'Actuator commands', field = 'commands'
+selector = 'device_ids_for_this_stage', selected = ['actuator-a']
+
+    @pytest.mark.parametrize('stage,field,selector,selected', [
+        ('Physical port demand', 'ports', SELECTORS[0], ['controller-a', 'offline-controller']),
+        ('Port parameters', 'ports', SELECTORS[1], ['p1', 'p2']),
+        ('Sensor measurements', 'measurements', SELECTORS[0], ['sensor-a']),
+        ('Actuator commands', 'commands', SELECTORS[0], ['actuator-a']),
+        ('Functional realization', 'functions', SELECTORS[2], ['F1', 'F2']),
+        ('Producer communication', 'communication', SELECTORS[3], ['controller-a']),
+    ])
+    def test_current_non_inventory_stage_is_literal_after_the_exact_cached_history(stage, field, selector, selected):
+        first, history, current = stage_change(stage, field, selector, selected)
+        before = deepcopy((first, history, current))
+        messages, full, rebased = r._reference_context_messages(history, first, current, 'Authored stage protocol', 131072,
+                                                              anchor=(history, first))
+        assert messages[:-1] == history and not rebased
+        assert effective_reference_context(messages) == current
+        assert effective_reference_context(full) == current
+&gt;       focus = json.loads(messages[-1]['content'])['nis_current_selection']
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'nis_current_selection'
+
+backend\tests\test_reference_stage_focus.py:50: KeyError</failure></testcase><testcase classname="tests.test_reference_stage_focus" name="test_current_non_inventory_stage_is_literal_after_the_exact_cached_history[Functional realization-functions-function_fact_ids_for_this_stage-selected4]" time="0.004"><failure message="KeyError: 'nis_current_selection'">stage = 'Functional realization', field = 'functions'
+selector = 'function_fact_ids_for_this_stage', selected = ['F1', 'F2']
+
+    @pytest.mark.parametrize('stage,field,selector,selected', [
+        ('Physical port demand', 'ports', SELECTORS[0], ['controller-a', 'offline-controller']),
+        ('Port parameters', 'ports', SELECTORS[1], ['p1', 'p2']),
+        ('Sensor measurements', 'measurements', SELECTORS[0], ['sensor-a']),
+        ('Actuator commands', 'commands', SELECTORS[0], ['actuator-a']),
+        ('Functional realization', 'functions', SELECTORS[2], ['F1', 'F2']),
+        ('Producer communication', 'communication', SELECTORS[3], ['controller-a']),
+    ])
+    def test_current_non_inventory_stage_is_literal_after_the_exact_cached_history(stage, field, selector, selected):
+        first, history, current = stage_change(stage, field, selector, selected)
+        before = deepcopy((first, history, current))
+        messages, full, rebased = r._reference_context_messages(history, first, current, 'Authored stage protocol', 131072,
+                                                              anchor=(history, first))
+        assert messages[:-1] == history and not rebased
+        assert effective_reference_context(messages) == current
+        assert effective_reference_context(full) == current
+&gt;       focus = json.loads(messages[-1]['content'])['nis_current_selection']
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'nis_current_selection'
+
+backend\tests\test_reference_stage_focus.py:50: KeyError</failure></testcase><testcase classname="tests.test_reference_stage_focus" name="test_current_non_inventory_stage_is_literal_after_the_exact_cached_history[Producer communication-communication-producer_device_ids_for_this_stage-selected5]" time="0.005"><failure message="KeyError: 'nis_current_selection'">stage = 'Producer communication', field = 'communication'
+selector = 'producer_device_ids_for_this_stage', selected = ['controller-a']
+
+    @pytest.mark.parametrize('stage,field,selector,selected', [
+        ('Physical port demand', 'ports', SELECTORS[0], ['controller-a', 'offline-controller']),
+        ('Port parameters', 'ports', SELECTORS[1], ['p1', 'p2']),
+        ('Sensor measurements', 'measurements', SELECTORS[0], ['sensor-a']),
+        ('Actuator commands', 'commands', SELECTORS[0], ['actuator-a']),
+        ('Functional realization', 'functions', SELECTORS[2], ['F1', 'F2']),
+        ('Producer communication', 'communication', SELECTORS[3], ['controller-a']),
+    ])
+    def test_current_non_inventory_stage_is_literal_after_the_exact_cached_history(stage, field, selector, selected):
+        first, history, current = stage_change(stage, field, selector, selected)
+        before = deepcopy((first, history, current))
+        messages, full, rebased = r._reference_context_messages(history, first, current, 'Authored stage protocol', 131072,
+                                                              anchor=(history, first))
+        assert messages[:-1] == history and not rebased
+        assert effective_reference_context(messages) == current
+        assert effective_reference_context(full) == current
+&gt;       focus = json.loads(messages[-1]['content'])['nis_current_selection']
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'nis_current_selection'
+
+backend\tests\test_reference_stage_focus.py:50: KeyError</failure></testcase><testcase classname="tests.test_reference_stage_focus" name="test_fresh_non_inventory_context_has_the_same_complete_literal_task_and_limits" time="0.004"><failure message="KeyError: 'nis_current_selection'">def test_fresh_non_inventory_context_has_the_same_complete_literal_task_and_limits():
+        _, _, current = stage_change('Physical port demand', 'ports', SELECTORS[0], ['controller-a'])
+        messages, _, _ = r._reference_context_messages([], None, current, 'Authored stage protocol', 131072)
+        assert effective_reference_context(messages) == current
+&gt;       focus = json.loads(messages[-1]['content'])['nis_current_selection']
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'nis_current_selection'
+
+backend\tests\test_reference_stage_focus.py:67: KeyError</failure></testcase></testsuite></testsuites>

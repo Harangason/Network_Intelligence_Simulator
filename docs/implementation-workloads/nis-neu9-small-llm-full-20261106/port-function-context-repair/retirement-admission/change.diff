@@ -1,0 +1,40 @@
+--- before/retire_dd9.py
++++ after/retire_dd9.py
+@@ -82,7 +82,36 @@
+     if PLAN:
+         state = json.loads(Path(PLAN['state']).read_text(encoding='utf-8'))
+         assert state['image_id'] == IMAGE and state['containers'] == NAMES
+-        if state['status'] == 'OPERATOR_VERIFIED_REFERENCE_CANCELED':
++        if PLAN.get('reason') == 'VERIFIED_SERVER_CANCELED_CLIENT_EXIT_UNKNOWN':
++            # A lost stream can leave the original client state stale. Admit only
++            # the independently bound terminal server generation, never relabel
++            # it a human cancellation, native failure, or release FAIL.
++            from urllib.request import Request, build_opener, ProxyHandler
++            evidence = PLAN['terminal_evidence']
++            proof_path = Path(evidence['path']).resolve(strict=True)
++            assert proof_path.is_relative_to(Path(__file__).resolve().parent)
++            assert ref(proof_path)['sha256'] == evidence['sha256']
++            terminal = json.loads(proof_path.read_text(encoding='utf-8'))
++            assert terminal['server_generation']['status'] == 'CANCELED'
++            assert terminal['server_draft_status'] == 'REFERENCE_CANCELED'
++            assert terminal['actual_native_driver_processes'] == []
++            assert terminal['client_exit_code'] is None and terminal['normal_client_result_available'] is False
++            assert terminal['canonical_model_empty'] is True and terminal['simulation_jobs'] == 0
++            assert state['base_url'] == receipt['base_url']
++            observed = {}
++            for key, endpoint in [('draft', '/api/engineering/agent/project-draft'),
++                                  ('export', '/api/engineering/projects/export'),
++                                  ('jobs', '/api/simulations')]:
++                query = Request(receipt['base_url'] + endpoint, headers={'X-Project-ID': state['project_id']})
++                with build_opener(ProxyHandler({})).open(query, timeout=20) as response:
++                    observed[key] = json.load(response)
++            current = observed['draft']['data']
++            assert current['reference_generation'] == terminal['server_generation']
++            assert current['reference_generation']['source_sha256'] == state['original_sha256']
++            assert current['status'] == 'REFERENCE_CANCELED' and not current.get('reference_design')
++            assert not any(observed['export']['source_data'].values()) and observed['jobs']['jobs'] == []
++            save('fresh-server-terminal-precheck.json', observed)
++        elif state['status'] == 'OPERATOR_VERIFIED_REFERENCE_CANCELED':
+             # A human-requested cancellation is not a failed-model receipt.
+             # Bind its saved evidence and re-read the normal isolated project API.
+             from urllib.request import Request, build_opener, ProxyHandler

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="5" time="14.608" timestamp="2026-11-09T17:32:57.634900+01:00" hostname="Haranga"><testcase classname="tests.test_reference_decision_order" name="test_private_task_fields_precede_questions_in_every_native_alternative[allowed0-options0-port_groups_by_device]" time="5.746"><failure message="AssertionError: assert 'devices' == 'port_groups_by_device'&#10;  &#10;  - port_groups_by_device&#10;  + devices">allowed = {'ports'}
+options = {'port_groups': True, 'device_ids': ('owner-a', 'owner-b')}
+first = 'port_groups_by_device'
+
+    @pytest.mark.parametrize(('allowed', 'options', 'first'), [
+        ({'ports'}, {'port_groups': True, 'device_ids': ('owner-a', 'owner-b')}, 'port_groups_by_device'),
+        ({'ports'}, {'port_intent': True, 'device_ids': ('owner-a', 'owner-b')}, 'port_intents'),
+        ({'ports'}, {'port_ids': ('port-1',)}, 'port_parameters'),
+        ({'functions', 'functional_dependencies'}, {'function_ids': ('fact-1',)}, 'functions_by_fact'),
+    ])
+    def test_private_task_fields_precede_questions_in_every_native_alternative(allowed, options, first):
+        prepared, _ = prepared_schema()
+        public_before = intake.reference_model_output_schema(prepared)
+        schema = reasoner._reference_schema_for_stage(prepared, allowed, **options)
+        for node in [schema, *schema.get('anyOf', [])]:
+            keys = list(node['properties'])
+&gt;           assert keys[0] == first
+E           AssertionError: assert 'devices' == 'port_groups_by_device'
+E             
+E             - port_groups_by_device
+E             + devices
+
+backend\tests\test_reference_decision_order.py:25: AssertionError</failure></testcase><testcase classname="tests.test_reference_decision_order" name="test_private_task_fields_precede_questions_in_every_native_alternative[allowed1-options1-port_intents]" time="1.820"><failure message="AssertionError: assert 'devices' == 'port_intents'&#10;  &#10;  - port_intents&#10;  + devices">allowed = {'ports'}
+options = {'port_intent': True, 'device_ids': ('owner-a', 'owner-b')}
+first = 'port_intents'
+
+    @pytest.mark.parametrize(('allowed', 'options', 'first'), [
+        ({'ports'}, {'port_groups': True, 'device_ids': ('owner-a', 'owner-b')}, 'port_groups_by_device'),
+        ({'ports'}, {'port_intent': True, 'device_ids': ('owner-a', 'owner-b')}, 'port_intents'),
+        ({'ports'}, {'port_ids': ('port-1',)}, 'port_parameters'),
+        ({'functions', 'functional_dependencies'}, {'function_ids': ('fact-1',)}, 'functions_by_fact'),
+    ])
+    def test_private_task_fields_precede_questions_in_every_native_alternative(allowed, options, first):
+        prepared, _ = prepared_schema()
+        public_before = intake.reference_model_output_schema(prepared)
+        schema = reasoner._reference_schema_for_stage(prepared, allowed, **options)
+        for node in [schema, *schema.get('anyOf', [])]:
+            keys = list(node['properties'])
+&gt;           assert keys[0] == first
+E           AssertionError: assert 'devices' == 'port_intents'
+E             
+E             - port_intents
+E             + devices
+
+backend\tests\test_reference_decision_order.py:25: AssertionError</failure></testcase><testcase classname="tests.test_reference_decision_order" name="test_private_task_fields_precede_questions_in_every_native_alternative[allowed2-options2-port_parameters]" time="2.000"><failure message="AssertionError: assert 'devices' == 'port_parameters'&#10;  &#10;  - port_parameters&#10;  + devices">allowed = {'ports'}, options = {'port_ids': ('port-1',)}
+first = 'port_parameters'
+
+    @pytest.mark.parametrize(('allowed', 'options', 'first'), [
+        ({'ports'}, {'port_groups': True, 'device_ids': ('owner-a', 'owner-b')}, 'port_groups_by_device'),
+        ({'ports'}, {'port_intent': True, 'device_ids': ('owner-a', 'owner-b')}, 'port_intents'),
+        ({'ports'}, {'port_ids': ('port-1',)}, 'port_parameters'),
+        ({'functions', 'functional_dependencies'}, {'function_ids': ('fact-1',)}, 'functions_by_fact'),
+    ])
+    def test_private_task_fields_precede_questions_in_every_native_alternative(allowed, options, first):
+        prepared, _ = prepared_schema()
+        public_before = intake.reference_model_output_schema(prepared)
+        schema = reasoner._reference_schema_for_stage(prepared, allowed, **options)
+        for node in [schema, *schema.get('anyOf', [])]:
+            keys = list(node['properties'])
+&gt;           assert keys[0] == first
+E           AssertionError: assert 'devices' == 'port_parameters'
+E             
+E             - port_parameters
+E             + devices
+
+backend\tests\test_reference_decision_order.py:25: AssertionError</failure></testcase><testcase classname="tests.test_reference_decision_order" name="test_private_task_fields_precede_questions_in_every_native_alternative[allowed3-options3-functions_by_fact]" time="1.846"><failure message="AssertionError: assert 'devices' == 'functions_by_fact'&#10;  &#10;  - functions_by_fact&#10;  + devices">allowed = {'functional_dependencies', 'functions'}
+options = {'function_ids': ('fact-1',)}, first = 'functions_by_fact'
+
+    @pytest.mark.parametrize(('allowed', 'options', 'first'), [
+        ({'ports'}, {'port_groups': True, 'device_ids': ('owner-a', 'owner-b')}, 'port_groups_by_device'),
+        ({'ports'}, {'port_intent': True, 'device_ids': ('owner-a', 'owner-b')}, 'port_intents'),
+        ({'ports'}, {'port_ids': ('port-1',)}, 'port_parameters'),
+        ({'functions', 'functional_dependencies'}, {'function_ids': ('fact-1',)}, 'functions_by_fact'),
+    ])
+    def test_private_task_fields_precede_questions_in_every_native_alternative(allowed, options, first):
+        prepared, _ = prepared_schema()
+        public_before = intake.reference_model_output_schema(prepared)
+        schema = reasoner._reference_schema_for_stage(prepared, allowed, **options)
+        for node in [schema, *schema.get('anyOf', [])]:
+            keys = list(node['properties'])
+&gt;           assert keys[0] == first
+E           AssertionError: assert 'devices' == 'functions_by_fact'
+E             
+E             - functions_by_fact
+E             + devices
+
+backend\tests\test_reference_decision_order.py:25: AssertionError</failure></testcase><testcase classname="tests.test_reference_decision_order" name="test_reordered_complete_and_open_port_branches_keep_all_strict_counterexamples" time="1.846" /></testsuite></testsuites>

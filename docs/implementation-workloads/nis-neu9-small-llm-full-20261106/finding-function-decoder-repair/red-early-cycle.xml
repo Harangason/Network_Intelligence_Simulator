@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="25.962" timestamp="2026-11-08T12:56:11.324563+01:00" hostname="Haranga"><testcase classname="tests.test_reference_finding_function_decoder" name="test_cycle_is_retried_in_same_function_stage_before_downstream_planning" time="25.009"><failure message="AssertionError: Do not plan communication or restart source inventory before correcting this cycle.&#10;assert 'functions_by_fact' in {'devices': {'items': {'$ref': '#/$defs/ReferenceDevice'}, 'title': 'Devices', 'type': 'array', 'maxItems': 0}, 'funct...ts': {'items': {'$ref': '#/$defs/ReferenceMeasurement'}, 'title': 'Measurements', 'type': 'array', 'maxItems': 0}, ...}">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000016BEF17E190&gt;
+
+    def test_cycle_is_retried_in_same_function_stage_before_downstream_planning(monkeypatch):
+        import json
+        import httpx
+        from backend.tests.test_reference_reasoner import reasoner_with_transport, run_reference, effective_reference_context
+    
+        captured = []
+        instance, prepared, _ = reasoner_with_transport(monkeypatch, capture=captured)
+        provider = instance.client._transport.handler
+        changed = False
+        bad_raw = None
+    
+        def respond(request):
+            nonlocal changed, bad_raw
+            response = provider(request)
+            if not request.url.path.endswith('/show') and not changed and 'functions_by_fact' in captured[-1]['format']['properties']:
+                changed = True
+                body = response.json()
+                value = json.loads(body['message']['content'])
+                keys = list(value['functions_by_fact'])
+                for index in (0, 1):
+                    value['functions_by_fact'][keys[index]].update(realization='COMPOSITE', executor_device_ids=[], realized_by_fact_ids=[keys[1-index]])
+                bad_raw = json.dumps(value)
+                return httpx.Response(200, json={**body, 'message': {'content': bad_raw}})
+            return response
+    
+        monkeypatch.setattr(instance.client._transport, 'handler', respond)
+        result = run_reference(instance, prepared)
+        first = next(i for i, row in enumerate(captured) if 'functions_by_fact' in row['format']['properties'])
+        initial, retry = captured[first:first+2]
+&gt;       assert 'functions_by_fact' in retry['format']['properties'], 'Do not plan communication or restart source inventory before correcting this cycle.'
+E       AssertionError: Do not plan communication or restart source inventory before correcting this cycle.
+E       assert 'functions_by_fact' in {'devices': {'items': {'$ref': '#/$defs/ReferenceDevice'}, 'title': 'Devices', 'type': 'array', 'maxItems': 0}, 'funct...ts': {'items': {'$ref': '#/$defs/ReferenceMeasurement'}, 'title': 'Measurements', 'type': 'array', 'maxItems': 0}, ...}
+
+backend\tests\test_reference_finding_function_decoder.py:110: AssertionError</failure></testcase></testsuite></testsuites>

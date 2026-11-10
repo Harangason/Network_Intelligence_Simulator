@@ -1,0 +1,44 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -232,6 +232,13 @@
+     def item(field):
+         definition = schema['properties'][field]['items']
+         return schema['$defs'][definition['$ref'].rsplit('/', 1)[-1]]
++
++    # Findings are individual questions, not another copy of the inventory.
++    # Bound prose at decoding time; retain every finding and its full target.
++    finding = item('unresolved')['properties']
++    finding['code']['maxLength'] = 120
++    finding['target_ref']['maxLength'] = 2000
++    finding['message']['maxLength'] = 240
+ 
+     def keyed_selection(field, private_field, identity_field, identities, mutable=None):
+         if not identities or len(identities) != len(set(identities)):
+@@ -318,6 +325,27 @@
+                         ('parameters', 'rationale', 'field_references'))
+     if function_ids:
+         keyed_selection('functions', 'functions_by_fact', 'source_fact_id', function_ids)
++        choices = schema['properties']['functions_by_fact']['properties']
++        for identity, definition in choices.items():
++            # Complete object alternatives are supported by the native grammar;
++            # independent field enums would still permit contradictory choices.
++            atomic = deepcopy(definition)
++            atomic['required'] = list(dict.fromkeys([*atomic['required'], 'executor_device_ids']))
++            atomic['properties']['realization']['enum'] = ['ATOMIC']
++            atomic['properties']['executor_device_ids']['minItems'] = 1
++            atomic['properties']['realized_by_fact_ids'].update(minItems=0, maxItems=0)
++            children = [key for key, fact in prepared['facts'].items()
++                        if fact['kind'] == 'FUNCTION' and key != identity]
++            alternatives = [atomic]
++            if children:
++                composite = deepcopy(definition)
++                composite['required'] = list(dict.fromkeys([*composite['required'], 'realized_by_fact_ids']))
++                composite['properties']['realization']['enum'] = ['COMPOSITE']
++                composite['properties']['executor_device_ids'].update(minItems=0, maxItems=0)
++                composite['properties']['realized_by_fact_ids'].update(
++                    minItems=1, items={'type': 'string', 'enum': children})
++                alternatives.append(composite)
++            choices[identity] = {'anyOf': alternatives}
+         item('functional_dependencies')['properties']['producer_fact_id']['enum'] = list(function_ids)
+     if inventory_target or derivation_fact_ids is not None:
+         from copy import deepcopy

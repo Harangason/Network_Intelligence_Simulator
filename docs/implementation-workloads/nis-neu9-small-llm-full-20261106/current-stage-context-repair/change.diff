@@ -1,0 +1,272 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -660,6 +660,21 @@
+                     shared_fields[identity] = fields[field]
+                 fields[field] = {'$ref': '#/$defs/' + field_names[key]}
+     schema['$defs'].update(shared_fields)
++    # Native constrained decoders follow property order. Decide the selected
++    # task before emitting questions about it; JSON Schema semantics and all
++    # completion/open-decision constraints remain unchanged.
++    task_fields = ('inventory_choices', 'inventory_complete',
++                   'port_groups_by_device', 'port_plan_complete',
++                   'port_intents', 'port_intents_complete', 'port_parameters',
++                   'functions_by_fact')
++    for node in (schema, *schema.get('anyOf', ())):
++        properties = node.get('properties', {})
++        ordered = [key for key in task_fields if key in properties]
++        ordered.extend(key for key in properties
++                       if key not in task_fields and key != 'unresolved')
++        if 'unresolved' in properties:
++            ordered.append('unresolved')
++        node['properties'] = {key: properties[key] for key in ordered}
+     return schema
+ 
+ 
+@@ -1332,7 +1347,12 @@
+         'Bei einer Fortsetzung zuerst sämtliche Kontextpatches anwenden und danach diese Verweise '
+         'auflösen; nie eine alte Bestandsliste aus einer vorherigen Nachricht verwenden. '
+         'Die letzte Nutzernachricht bestimmt die Auswahl. Die Verweise ersetzen nur doppelte '
+-        'Bestandskopien, niemals die vollständigen Quellen, Gerätedaten oder Prüfungen.')
++        'Bestandskopien, niemals die vollständigen Quellen, Gerätedaten oder Prüfungen. '
++        'selected_devices und selected_port_function_context in nis_current_selection sind '
++        'unveränderte, direkt lesbare Ausschnitte des aktuellen Kontextes. '
++        'inventory_counts_by_kind zählt ausschließlich dessen vorhandene Geräte, nicht '
++        'Sollmengen oder Geräte pro ausgewähltem Controller. Diese Ansichten ersetzen '
++        'weder den vollständigen Bestand noch offene Befunde oder Quellenprüfungen.')
+ 
+     def wire(context):
+         packed = _reference_context_snapshot(context)
+@@ -1362,6 +1382,19 @@
+                     'function_fact_ids_for_this_stage', 'producer_device_ids_for_this_stage',
+                 ) if key in current
+             }
++            if current.get('selected_port_function_context') is not None:
++                # Read the authoritative current snapshot, never the old anchor
++                # or the wire argument (which may only contain a patch). Keep
++                # the small operative selection literal for native readers.
++                devices = current['current_candidate']['devices']
++                by_id = {row['id']: row for row in devices}
++                counts = {}
++                for row in devices:
++                    counts[row['kind']] = counts.get(row['kind'], 0) + 1
++                packed['nis_current_selection'].update(
++                    selected_devices=[deepcopy(by_id[key]) for key in current['device_ids_for_this_stage']],
++                    inventory_counts_by_kind=counts,
++                    selected_port_function_context=deepcopy(current['selected_port_function_context']))
+         return json.dumps(packed, ensure_ascii=False, separators=(',', ':'))
+ 
+     full = [{'role': 'system', 'content': system + protocol},
+@@ -1999,6 +2032,14 @@
+                                  'Geplante Stückzahlen sind zu prüfende Auslegungsannahmen, niemals Hardwarequalifikationsbelege. '
+                                  'Fehlende einzeln zugeordnete FUNCTION-Fakten bedeuten nicht fehlenden Kommunikationsbedarf: '
+                                  'ursprüngliche Geräteaufgaben und REQUIREMENT-Fakten gelten weiterhin für alle Teilnehmer. '
++                                 'Der vollständige aktuelle Gerätebestand ist bereits vorhanden; '
++                                 'nis_current_selection zeigt seine Istanzahlen nach Geräteart sowie die ausgewählten '
++                                 'Geräte und Funktionsbezüge direkt. Eine Gesamtmenge der Quelle gilt nicht erneut '
++                                 'je Controller. Fehlende Geräte nur gegen diesen aktuellen Bestand belegen. '
++                                 'Parameter, Messgrößen, Stellbefehle und Kommunikations-/Routingplanung folgen '
++                                 'in eigenen Stufen. Dass ihre Ergebnislisten jetzt noch leer sind, ist keine '
++                                 'offene Anschlussentscheidung. Echte fehlende Quellenangaben für den physischen '
++                                 'Transport bleiben dagegen konkrete unresolved-Befunde. '
+                                  'port_plan_complete=true verlangt mindestens einen quellengebundenen physischen Anschluss '
+                                  'je ausgewähltem elektronischem Teilnehmer. Fehlt eine echte Auslegungsentscheidung oder '
+                                  'soll ein Teilnehmer ausdrücklich ohne externe Kommunikation bleiben, keine Anschlüsse '
+@@ -2336,8 +2377,18 @@
+                                         'response_sha256': calls[-1]['response_sha256']}, ensure_ascii=False))
+                         if attempt:
+                             raise ValueError(f'Kein gültiger strukturierter Referenzvorschlag: {error}') from error
++                        correction = f'Validierungsfehler: {error}. Vollständigen JSON-Entwurf dieser Stufe korrigieren, keine Quellen ändern.'
++                        if port_groups:
++                            correction += (
++                                ' Die abgelehnte Antwort ist keine bestätigte Bestands- oder Quellenfeststellung. '
++                                'Prüfe jede Behauptung gegen nis_current_selection der letzten Planungsvorgabe: '
++                                'selected_devices, inventory_counts_by_kind und selected_port_function_context '
++                                'stammen aus dem aktuellen geprüften Zwischenstand. Gesamtmengen nicht je '
++                                'Controller wiederholen. Noch ausstehende Parameter-/IO-/Kommunikationsstufen '
++                                'nicht als fehlende Quellenentscheidung melden. Tatsächlich unbelegte physische '
++                                'Anschlussentscheidungen weiterhin explizit offenlassen; keine Defaults erfinden.')
+                         payload['messages'] = [*messages, {'role': 'assistant', 'content': native_content},
+-                                               {'role': 'user', 'content': f'Validierungsfehler: {error}. Vollständigen JSON-Entwurf dieser Stufe korrigieren, keine Quellen ändern.'}]
++                                               {'role': 'user', 'content': correction}]
+                 raise AssertionError('Reference inference did not return')
+             async def plan_profile(feedback=None):
+                 nonlocal reference_messages, reference_prompt, reference_anchor, reference_anchors
+--- before/backend/tests/test_reference_current_stage_context.py
++++ after/backend/tests/test_reference_current_stage_context.py
+@@ -0,0 +1,65 @@
++"""Independent current-stage wire checks; no Original model or acceptance data."""
++from copy import deepcopy
++import json
++
++import pytest
++
++from backend.nis.agent.orchestration import local_reasoner as reasoner
++from backend.tests.test_reference_inventory_context_capacity import authored_cohort_context
++from backend.tests.test_reference_reasoner import effective_reference_context
++
++
++def authored_port_context():
++    context = authored_cohort_context(251, 50)
++    context.update(inventory_target_for_this_stage=None,
++                   derivation_fact_ids_for_this_stage=None,
++                   planning_stage='Physical connections of selected participants',
++                   output_fields_for_this_stage=['ports'],
++                   device_ids_for_this_stage=['authored-device-024', 'authored-device-025'],
++                   instruction='Plan all selected physical connections; no invented qualification.')
++    context['current_candidate']['unresolved'] = [
++        {'code': 'UNKNOWN_PHY', 'target_ref': 'authored-device-024', 'message': 'Qualification is unknown.'}]
++    context['selected_port_function_context'] = {
++        'authored-device-024': {'literal_function': 'Receive µ state; retain /~ identity.'}}
++    return context
++
++
++@pytest.mark.parametrize('transition', ['fresh', 'append', 'rebase'])
++def test_selected_current_records_are_directly_readable_after_each_context_transition(transition):
++    current = authored_port_context()
++    early = deepcopy(current)
++    early['current_candidate']['devices'] = early['current_candidate']['devices'][:51]
++    early['device_ids_for_this_stage'] = ['authored-device-000']
++    messages, _, _ = reasoner._reference_context_messages([], None, early, 'Independent', 131072)
++    anchor = ([*messages, {'role': 'assistant', 'content': '{"authored":true}'}], early)
++    history = anchor[0] if transition != 'fresh' else []
++    if transition == 'rebase':
++        history = [*history, {'role': 'user', 'content': 'overflow' * 17000}]
++    before = deepcopy((current, early, history))
++    result, _, rebased = reasoner._reference_context_messages(
++        history, early if history else None, current, 'Independent', 131072,
++        anchor=anchor if history else None)
++    if transition == 'rebase':
++        assert rebased
++    selection = json.loads(result[-1]['content'])['nis_current_selection']
++    actual = current['current_candidate']['devices']
++    expected = [row for identity in current['device_ids_for_this_stage']
++                for row in actual if row['id'] == identity]
++    assert selection['selected_devices'] == expected
++    assert selection['inventory_counts_by_kind'] == {
++        'CONTROLLER': 50, 'GATEWAY': 1, 'SENSOR': 100, 'ACTUATOR': 100}
++    assert selection['selected_port_function_context'] == current['selected_port_function_context']
++    assert effective_reference_context(result) == current
++    assert (current, early, history) == before
++    selection['selected_devices'][0]['purpose'] = 'Do not mutate original'
++    assert current == before[0]
++
++
++def test_current_projection_does_not_fill_missing_members_or_resolve_real_findings():
++    context = authored_port_context()
++    context['current_candidate']['devices'] = context['current_candidate']['devices'][:151]
++    messages, _, _ = reasoner._reference_context_messages([], None, context, 'Independent', 131072)
++    selection = json.loads(messages[-1]['content'])['nis_current_selection']
++    assert selection['inventory_counts_by_kind'].get('ACTUATOR', 0) == 0
++    assert effective_reference_context(messages)['current_candidate']['unresolved'] == context['current_candidate']['unresolved']
++    assert effective_reference_context(messages) == context
+--- before/backend/tests/test_reference_cache_output.py
++++ after/backend/tests/test_reference_cache_output.py
+@@ -14,7 +14,8 @@
+ 
+ def anchor_fixture():
+     early = {'original_source': 'Original\r\nµ 🦾 /~' + 's' * 30000,
+-             'current_candidate': {'devices': []}, 'typed': [False, 0, None]}
++             'current_candidate': {'devices': []}, 'typed': [False, 0, None],
++             'planning_stage': 'Initial source planning'}
+     messages, _, _ = reasoner._reference_context_messages([], None, early, 'system', 131072)
+     older = ([*messages, {'role': 'assistant', 'content': ' {"unit_actual_reply":true}\n'}], early)
+     latest = deepcopy(early)
+@@ -45,7 +46,13 @@
+     # The fresh complete snapshot reuses almost all of the latest native
+     # request, whereas the older anchor diverges before its 65000-char notes.
+     assert len(messages) == 2
+-    assert messages[1]['content'].startswith(newer[0][1]['content'][:-1])
++    # Both snapshots have the normal stage envelope. The task changes only
++    # after the large unchanged source/candidate prefix, before the repeated
++    # selection view; compare that prefix rather than the whole wrapper.
++    left, right = messages[1]['content'], newer[0][1]['content']
++    common = next((i for i, pair in enumerate(zip(left, right)) if pair[0] != pair[1]),
++                  min(len(left), len(right)))
++    assert common > 90000
+     assert len(newer[0][1]['content']) > len(older[0][1]['content'])
+     assert effective_reference_context(messages) == current
+     assert reasoner._reference_context_window(messages, 131072) == 131072
+@@ -207,12 +214,13 @@
+     from backend.tests.test_reference_reasoner import reasoner_with_transport, run_reference
+     actual_builder = reasoner._reference_context_messages
+     observed = []
+-    def fresh(history, previous, current, system, maximum, *, anchor=None, anchors=()):
++    def fresh(history, previous, current, system, maximum, *, anchor=None, anchors=(), capacity_check=None):
+         observed.append(deepcopy((anchor, anchors)))
+         if history:
+-            messages, full, _ = actual_builder([], None, current, system, maximum)
++            messages, full, _ = actual_builder([], None, current, system, maximum, capacity_check=capacity_check)
+             return messages, full, True
+-        return actual_builder(history, previous, current, system, maximum, anchor=anchor, anchors=anchors)
++        return actual_builder(history, previous, current, system, maximum, anchor=anchor, anchors=anchors,
++                              capacity_check=capacity_check)
+     monkeypatch.setattr(reasoner, '_reference_context_messages', fresh)
+     instance, prepared, _ = reasoner_with_transport(monkeypatch, wire_padding=True)
+     result = run_reference(instance, prepared)
+--- before/backend/tests/test_reference_decision_order.py
++++ after/backend/tests/test_reference_decision_order.py
+@@ -0,0 +1,64 @@
++"""Native decision order is deliberate; accepted schema language stays strict."""
++from copy import deepcopy
++
++import pytest
++from jsonschema import Draft202012Validator
++
++from backend.nis.agent.orchestration import local_reasoner as reasoner
++from backend.nis.agent.orchestration import project_intake as intake
++from backend.tests.test_reference_port_intent_allocation import prepared_schema
++from backend.tests.test_reference_port_group_completion import groups
++from backend.tests.test_reference_planning_throughput import existing_batch_fixture
++
++
++def test_inventory_decisions_precede_questions_without_reordering_identity_bindings():
++    _, _, _, _, schema, _ = existing_batch_fixture()
++    for node in [schema, *schema.get('anyOf', [])]:
++        keys = list(node['properties'])
++        assert keys[:2] == ['inventory_choices', 'inventory_complete']
++        assert keys[-1] == 'unresolved'
++    bindings = [node for name, node in schema['$defs'].items()
++                if name.startswith('NativeReferenceBinding_')]
++    assert bindings
++    for node in bindings:
++        assert node['anyOf']
++        assert all(len(alternative['properties']) == 1 for alternative in node['anyOf'])
++
++
++@pytest.mark.parametrize(('allowed', 'options', 'first'), [
++    ({'ports'}, {'port_groups': True, 'device_ids': ('owner-a', 'owner-b')}, 'port_groups_by_device'),
++    ({'ports'}, {'port_intent': True, 'device_ids': ('owner-a', 'owner-b')}, 'port_intents'),
++    ({'ports'}, {'port_ids': ('port-1',)}, 'port_parameters'),
++    ({'functions', 'functional_dependencies'}, {'function_ids': ('fact-1',)}, 'functions_by_fact'),
++])
++def test_private_task_fields_precede_questions_in_every_native_alternative(allowed, options, first):
++    prepared, _ = prepared_schema()
++    public_before = intake.reference_model_output_schema(prepared)
++    schema = reasoner._reference_schema_for_stage(prepared, allowed, **options)
++    for node in [schema, *schema.get('anyOf', [])]:
++        keys = list(node['properties'])
++        assert keys[0] == first
++        assert keys[-1] == 'unresolved'
++        assert node['properties']['unresolved']
++    assert intake.reference_model_output_schema(prepared) == public_before
++
++
++def test_reordered_complete_and_open_port_branches_keep_all_strict_counterexamples():
++    prepared, _ = prepared_schema()
++    owners = ('owner-a', 'owner-b')
++    schema = reasoner._reference_schema_for_stage(prepared, {'ports'}, port_groups=True, device_ids=owners)
++    value = {**intake.ReferenceDesignProposal().model_dump(mode='json'),
++             'port_groups_by_device': groups(3, owners), 'port_plan_complete': True}
++    check = Draft202012Validator(schema)
++    assert check.is_valid(value)
++    invalid = deepcopy(value)
++    invalid['port_groups_by_device'][owners[1]]['connections'] = []
++    assert not check.is_valid(invalid)
++    invalid['port_plan_complete'] = False
++    assert not check.is_valid(invalid)
++    invalid['unresolved'] = [{'code': 'PHY_UNKNOWN', 'target_ref': owners[1],
++                              'message': 'The physical source does not specify an external connection.'}]
++    assert check.is_valid(invalid)
++    invalid['unresolved'][0]['target_ref'] = 'foreign-owner'
++    assert not check.is_valid(invalid)
++    assert schema['properties']['port_plan_complete'] == {'type': 'boolean'}

@@ -1,0 +1,184 @@
+--- 
++++ 
+@@ -801,4 +801,29 @@
+ 
+ 
++def _reference_port_source_context(devices, facts, device_ids, visible_fact_ids):
++    """Keep literal device sources and shared profile requirements distinct."""
++    from copy import deepcopy
++    by_device = {row['id']: row for row in devices}
++    visible = set(visible_fact_ids)
++    selected = set(device_ids)
++    if not selected <= by_device.keys() or not visible <= facts.keys():
++        raise ValueError('Anschlussquellen benötigen vorhandene Teilnehmer und Quellenbefunde.')
++    selected.update(by_device[key]['owner_device_id'] for key in device_ids
++                    if by_device[key].get('owner_device_id') is not None)
++    if not selected <= by_device.keys():
++        raise ValueError('Anschlussquellen enthalten einen unbekannten Geräteowner.')
++    sources = {}
++    for key, device in by_device.items():
++        if key not in selected:
++            continue
++        bound = device['source_fact_ids']
++        if not set(bound) <= visible:
++            raise ValueError('Anschlussquellen eines Teilnehmers gehören zu einem fremden Quellenprofil.')
++        sources[key] = {fact_id: deepcopy(facts[fact_id]) for fact_id in bound}
++    return {'device_sources': sources,
++            'requirements': {key: deepcopy(fact) for key, fact in facts.items()
++                             if key in visible and fact['kind'] == 'REQUIREMENT'}}
++
++
+ def _reference_expand_port_groups(existing_ports, groups, device_ids, complete):
+     """Expand only a complete native physical demand; never deduplicate ports."""
+@@ -1349,6 +1374,10 @@
+         'Die letzte Nutzernachricht bestimmt die Auswahl. Die Verweise ersetzen nur doppelte '
+         'Bestandskopien, niemals die vollständigen Quellen, Gerätedaten oder Prüfungen. '
+-        'selected_devices und selected_port_function_context in nis_current_selection sind '
++        'selected_devices, selected_port_function_context und selected_port_source_context '
++        'in nis_current_selection sind '
+         'unveränderte, direkt lesbare Ausschnitte des aktuellen Kontextes. '
++        'device_sources erhält tatsächliche Quellenbindungen; requirements enthält die '
++        'vollständigen gemeinsamen Anforderungen des sichtbaren Profils. Diese sind '
++        'Planungskontext, keine automatische Bindung jeder Anforderung an jedes Gerät. '
+         'inventory_counts_by_kind zählt ausschließlich dessen vorhandene Geräte, nicht '
+         'Sollmengen oder Geräte pro ausgewähltem Controller. Diese Ansichten ersetzen '
+@@ -1396,4 +1425,10 @@
+                     inventory_counts_by_kind=counts,
+                     selected_port_function_context=deepcopy(current['selected_port_function_context']))
++                if current.get('selected_port_source_context') is not None:
++                    packed['nis_current_selection']['selected_port_source_context'] = deepcopy(
++                        current['selected_port_source_context'])
++                if 'source_technologies' in current.get('registered_catalogs', {}):
++                    packed['nis_current_selection']['source_technologies'] = deepcopy(
++                        current['registered_catalogs']['source_technologies'])
+         return json.dumps(packed, ensure_ascii=False, separators=(',', ':'))
+ 
+@@ -1450,37 +1485,12 @@
+         capacity_check(full, maximum)
+     except ValueError:
+-        import hashlib
+         input_bytes = sum(len(row['content'].encode('utf8')) for row in full)
+         candidate = current.get('current_candidate') or {}
+-        context_bytes = json.dumps(current, ensure_ascii=False, sort_keys=True,
+-                                   separators=(',', ':')).encode('utf8')
+-        context_hash = hashlib.sha256(context_bytes).hexdigest()
+-        artifact, artifact_status = None, 'SIZE_LIMIT'
+-        # Terminal evidence only: bounded local runtime storage, never a model
+-        # checkpoint or a source payload in ordinary logs. Preserve old evidence.
+-        if len(context_bytes) <= 4 * 1024 * 1024:
+-            try:
+-                from backend.nis.infrastructure.paths import BACKEND_ROOT, runtime_root_for
+-                runtime = runtime_root_for(BACKEND_ROOT)
+-                directory = runtime / 'diagnostics' / 'reference-context'
+-                directory.mkdir(parents=True, exist_ok=True)
+-                target = directory / (context_hash + '.json')
+-                artifact_status = 'COUNT_LIMIT'
+-                if target.exists() or len(list(directory.glob('*.json'))) < 16:
+-                    if not target.exists():
+-                        with target.open('xb') as stream:
+-                            stream.write(context_bytes)
+-                    if hashlib.sha256(target.read_bytes()).hexdigest() == context_hash:
+-                        artifact = target.relative_to(runtime).as_posix()
+-                        artifact_status = 'SAVED'
+-                    else:
+-                        artifact_status = 'HASH_MISMATCH'
+-            except OSError:
+-                artifact_status = 'IO_ERROR'
++        evidence = _reference_context_artifact(current)
+         logging.getLogger(__name__).warning('Native reference context guard rejected complete input: %s',
+             json.dumps({'planning_stage': current.get('planning_stage'), 'maximum': maximum,
+                 'input_utf8_bytes': input_bytes, 'required_utf8_upper_bound': input_bytes + 8192 + 2048,
+-                'complete_context_sha256': context_hash,
+-                'context_artifact': artifact, 'context_artifact_status': artifact_status,
++                'complete_context_sha256': evidence['sha256'],
++                'context_artifact': evidence['artifact'], 'context_artifact_status': evidence['status'],
+                 'candidate_counts': {key: len(value) for key, value in candidate.items()
+                     if key in ('devices', 'ports', 'functions', 'measurements', 'commands',
+@@ -1494,4 +1504,32 @@
+         raise
+     return full, full, bool(history)
++
++
++def _reference_context_artifact(value):
++    """Bounded local failure evidence; never a resumable model checkpoint."""
++    import hashlib
++    content = json.dumps(value, ensure_ascii=False, sort_keys=True,
++                         separators=(',', ':')).encode('utf8')
++    digest = hashlib.sha256(content).hexdigest()
++    artifact, status = None, 'SIZE_LIMIT'
++    if len(content) <= 4 * 1024 * 1024:
++        try:
++            from backend.nis.infrastructure.paths import BACKEND_ROOT, runtime_root_for
++            runtime = runtime_root_for(BACKEND_ROOT)
++            directory = runtime / 'diagnostics' / 'reference-context'
++            directory.mkdir(parents=True, exist_ok=True)
++            target = directory / (digest + '.json')
++            status = 'COUNT_LIMIT'
++            if target.exists() or len(list(directory.glob('*.json'))) < 16:
++                if not target.exists():
++                    with target.open('xb') as stream:
++                        stream.write(content)
++                if hashlib.sha256(target.read_bytes()).hexdigest() == digest:
++                    artifact, status = target.relative_to(runtime).as_posix(), 'SAVED'
++                else:
++                    status = 'HASH_MISMATCH'
++        except OSError:
++            status = 'IO_ERROR'
++    return {'sha256': digest, 'artifact': artifact, 'status': status}
+ 
+ 
+@@ -1918,4 +1956,7 @@
+                 'layer', 'hardware_interface', 'physical_layer_profile_id', 'implementation_status',
+                 'rate_model', 'default_stack') if key in definition}
++            from dataclasses import asdict
++            physical = DEFAULT_TECHNOLOGY_REGISTRY.physical_profile(technology)
++            source_technologies[technology]['physical_profile'] = json.loads(json.dumps(asdict(physical))) if physical else None
+         catalog['source_technologies'] = source_technologies
+ 
+@@ -1997,4 +2038,6 @@
+                           'selected_port_function_context': _reference_port_function_context(
+                               current['devices'], current['functions'], prepared['facts'], device_ids) if port_groups else None,
++                          'selected_port_source_context': _reference_port_source_context(
++                              current['devices'], prepared['facts'], device_ids, visible_facts) if port_groups else None,
+                           'function_fact_ids_for_this_stage': list(function_ids),
+                           'inventory_target_for_this_stage': inventory_target,
+@@ -2013,4 +2056,9 @@
+                                  'selected_port_function_context bindet die bereits geplanten eigenen Funktionen und '
+                                  'getrennt die Funktionen des Geräteowners an ihre unveränderten ursprünglichen Quellenbefunde. '
++                                 'selected_port_source_context zeigt zusätzlich die wörtlichen Gerätequellen und '
++                                 'alle gemeinsamen REQUIREMENT-Fakten des sichtbaren Profils. Den Bedarf aus diesen '
++                                 'Quellen ebenfalls prüfen, auch wenn einem Teilnehmer keine einzelne FUNCTION '
++                                 'zugeordnet ist. Gemeinsame Anforderungen nicht pauschal als individuelle '
++                                 'Funktions-, Empfänger- oder Hardwarebestätigung auslegen. '
+                                  'Alle daraus erforderlichen Transportwege und Protokollübergänge jetzt physisch abdecken; '
+                                  'eine Funktion oder ein Owner ersetzt keinen eigenen Anschluss. Mehrere benötigte '
+@@ -2029,5 +2077,12 @@
+                                  'keine zusätzlichen physischen Anschlüsse. Jede Stückzahl anhand tatsächlich verschiedener '
+                                  'physischer Verbindungen oder expliziten parallelen Bedarfs begründen; reine Umnummerierung '
+-                                 'ist kein neuer Bedarf. Quellen und feldgebundene Referenzen vollständig erhalten. '
++                                 'ist kein neuer Bedarf. source_technologies zeigt das registrierte PhysicalLayerProfile '
++                                 'mit erlaubten Topologien und Mediumzugriff. Ein Anschluss an ein gemeinsam genutztes '
++                                 'Busmedium bedient mehrere Gegenstellen und beide Kommunikationsrichtungen. Die Anzahl '
++                                 'von Gegenstellen, Signalen oder Sender-/Empfängerrichtungen ist keine physische Portanzahl. '
++                                 'Zusätzliche unabhängige Medien oder ausdrücklich benötigte parallele physische Anschlüsse '
++                                 'getrennt begründen und vollständig erhalten. Profilmöglichkeiten sind keine bestätigte '
++                                 'Hardware oder gewählte PHY-Variante; fehlende Quellentscheidungen bleiben offen. '
++                                 'Quellen und feldgebundene Referenzen vollständig erhalten. '
+                                  'Geplante Stückzahlen sind zu prüfende Auslegungsannahmen, niemals Hardwarequalifikationsbelege. '
+                                  'Fehlende einzeln zugeordnete FUNCTION-Fakten bedeuten nicht fehlenden Kommunikationsbedarf: '
+@@ -2369,4 +2424,7 @@
+                     except (ValueError, TypeError, KeyError) as error:
+                         report_validation(error)
++                        terminal_input = (_reference_context_artifact({
++                            'context': prompt, 'request': payload, 'response': raw, 'error': str(error)
++                        }) if attempt else None)
+                         logging.getLogger(__name__).warning(
+                             'Native reference validation failed: %s',
+@@ -2375,5 +2433,6 @@
+                                         'derivation_fact_ids': derivation_fact_ids,
+                                         'error': str(error), 'response': raw,
+-                                        'response_sha256': calls[-1]['response_sha256']}, ensure_ascii=False))
++                                        'response_sha256': calls[-1]['response_sha256'],
++                                        'terminal_input': terminal_input}, ensure_ascii=False))
+                         if attempt:
+                             raise ValueError(f'Kein gültiger strukturierter Referenzvorschlag: {error}') from error

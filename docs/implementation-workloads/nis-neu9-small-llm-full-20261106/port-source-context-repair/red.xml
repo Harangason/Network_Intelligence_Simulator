@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="5" time="17.108" timestamp="2026-11-09T20:26:32.434377+01:00" hostname="Haranga"><testcase classname="tests.test_reference_port_source_context" name="test_port_focus_preserves_literal_shared_requirements_without_inventing_per_device_bindings" time="0.006"><failure message="AssertionError: Missing literal source facts at port decision&#10;assert False&#10; +  where False = hasattr(reasoner, '_reference_port_source_context')">def test_port_focus_preserves_literal_shared_requirements_without_inventing_per_device_bindings():
+        devices, facts = source_fixture()
+        before = deepcopy((devices, facts))
+&gt;       assert hasattr(reasoner, '_reference_port_source_context'), 'Missing literal source facts at port decision'
+E       AssertionError: Missing literal source facts at port decision
+E       assert False
+E        +  where False = hasattr(reasoner, '_reference_port_source_context')
+
+backend\tests\test_reference_port_source_context.py:31: AssertionError</failure></testcase><testcase classname="tests.test_reference_port_source_context" name="test_port_source_focus_survives_context_transitions_without_overriding_unknowns[fresh]" time="0.144"><failure message="KeyError: 'selected_port_source_context'">transition = 'fresh'
+
+    @pytest.mark.parametrize('transition', ['fresh', 'append', 'rebase'])
+    def test_port_source_focus_survives_context_transitions_without_overriding_unknowns(transition):
+        current = authored_port_context()
+        current['selected_port_source_context'] = {
+            'device_sources': {'authored-device-024': {'F': {'source_quote': '50 Geräte'}}},
+            'requirements': {'R': {'kind': 'REQUIREMENT', 'source_quote': 'Alle Geräte senden Status.\r\nPHY bleibt offen.'}}}
+        early = deepcopy(current)
+        early['selected_port_source_context']['requirements']['R']['source_quote'] = 'Earlier context'
+        anchor_messages, _, _ = reasoner._reference_context_messages([], None, early, 'Authored', 131072)
+        anchor = ([*anchor_messages, {'role': 'assistant', 'content': '{}'}], early)
+        history = anchor[0] if transition != 'fresh' else []
+        if transition == 'rebase':
+            history = [*history, {'role': 'user', 'content': 'overflow' * 17000}]
+        before = deepcopy(current)
+        messages, _, rebased = reasoner._reference_context_messages(history, early if history else None,
+            current, 'Authored', 131072, anchor=anchor if history else None)
+        if transition == 'rebase':
+            assert rebased
+&gt;       assert json.loads(messages[-1]['content'])['nis_current_selection']['selected_port_source_context'] == current['selected_port_source_context']
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'selected_port_source_context'
+
+backend\tests\test_reference_port_source_context.py:60: KeyError</failure></testcase><testcase classname="tests.test_reference_port_source_context" name="test_port_source_focus_survives_context_transitions_without_overriding_unknowns[append]" time="0.154"><failure message="KeyError: 'selected_port_source_context'">transition = 'append'
+
+    @pytest.mark.parametrize('transition', ['fresh', 'append', 'rebase'])
+    def test_port_source_focus_survives_context_transitions_without_overriding_unknowns(transition):
+        current = authored_port_context()
+        current['selected_port_source_context'] = {
+            'device_sources': {'authored-device-024': {'F': {'source_quote': '50 Geräte'}}},
+            'requirements': {'R': {'kind': 'REQUIREMENT', 'source_quote': 'Alle Geräte senden Status.\r\nPHY bleibt offen.'}}}
+        early = deepcopy(current)
+        early['selected_port_source_context']['requirements']['R']['source_quote'] = 'Earlier context'
+        anchor_messages, _, _ = reasoner._reference_context_messages([], None, early, 'Authored', 131072)
+        anchor = ([*anchor_messages, {'role': 'assistant', 'content': '{}'}], early)
+        history = anchor[0] if transition != 'fresh' else []
+        if transition == 'rebase':
+            history = [*history, {'role': 'user', 'content': 'overflow' * 17000}]
+        before = deepcopy(current)
+        messages, _, rebased = reasoner._reference_context_messages(history, early if history else None,
+            current, 'Authored', 131072, anchor=anchor if history else None)
+        if transition == 'rebase':
+            assert rebased
+&gt;       assert json.loads(messages[-1]['content'])['nis_current_selection']['selected_port_source_context'] == current['selected_port_source_context']
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'selected_port_source_context'
+
+backend\tests\test_reference_port_source_context.py:60: KeyError</failure></testcase><testcase classname="tests.test_reference_port_source_context" name="test_port_source_focus_survives_context_transitions_without_overriding_unknowns[rebase]" time="0.155"><failure message="KeyError: 'selected_port_source_context'">transition = 'rebase'
+
+    @pytest.mark.parametrize('transition', ['fresh', 'append', 'rebase'])
+    def test_port_source_focus_survives_context_transitions_without_overriding_unknowns(transition):
+        current = authored_port_context()
+        current['selected_port_source_context'] = {
+            'device_sources': {'authored-device-024': {'F': {'source_quote': '50 Geräte'}}},
+            'requirements': {'R': {'kind': 'REQUIREMENT', 'source_quote': 'Alle Geräte senden Status.\r\nPHY bleibt offen.'}}}
+        early = deepcopy(current)
+        early['selected_port_source_context']['requirements']['R']['source_quote'] = 'Earlier context'
+        anchor_messages, _, _ = reasoner._reference_context_messages([], None, early, 'Authored', 131072)
+        anchor = ([*anchor_messages, {'role': 'assistant', 'content': '{}'}], early)
+        history = anchor[0] if transition != 'fresh' else []
+        if transition == 'rebase':
+            history = [*history, {'role': 'user', 'content': 'overflow' * 17000}]
+        before = deepcopy(current)
+        messages, _, rebased = reasoner._reference_context_messages(history, early if history else None,
+            current, 'Authored', 131072, anchor=anchor if history else None)
+        if transition == 'rebase':
+            assert rebased
+&gt;       assert json.loads(messages[-1]['content'])['nis_current_selection']['selected_port_source_context'] == current['selected_port_source_context']
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'selected_port_source_context'
+
+backend\tests\test_reference_port_source_context.py:60: KeyError</failure></testcase><testcase classname="tests.test_reference_port_source_context" name="test_normal_port_stage_receives_original_quotes_from_prepared_source" time="15.813"><failure message="KeyError: 'selected_port_source_context'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001A053965810&gt;
+
+    def test_normal_port_stage_receives_original_quotes_from_prepared_source(monkeypatch):
+        instance, prepared, observed = reasoner_with_transport(monkeypatch)
+        run_reference(instance, prepared)
+        demands = [row for row in observed if row.get('selected_port_function_context') is not None]
+        assert demands
+        expected = {key: fact for key, fact in prepared['facts'].items() if fact['kind'] == 'REQUIREMENT'}
+        for request in demands:
+&gt;           view = request['selected_port_source_context']
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'selected_port_source_context'
+
+backend\tests\test_reference_port_source_context.py:73: KeyError</failure></testcase></testsuite></testsuites>

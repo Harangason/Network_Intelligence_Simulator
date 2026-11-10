@@ -1,0 +1,28 @@
+{
+  "at": "2026-11-08T20:26:57.446480+00:00",
+  "owner": "PROJECT_PRODUCT",
+  "first_failing_layer": "Private native inventory schema for nullable ownership",
+  "root_cause": "NEW_SENSOR/ACTUATOR/PHYSICAL_CONTEXT retain owner_device_id anyOf(string,null). Evidence keys permit function_hosts until owner type is exactly null. A native null owner plus function_hosts:[] therefore passes private schema but strict public stamp rejects the key. No reference IDs were attached; the forbidden empty key itself triggers rejection.",
+  "reproduction": "Two identical genuine 9B responses in original62353, hash3988d7c3f16f5316f2dd83fef4164ed493e5a892ad653c9b37461a1fa1afb956, eight null-owner sensors with function_hosts:[], runtime rejected both.",
+  "evidence": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\attempt-18\\terminal-62353\\terminal-proof.json",
+      "sha256": "b3ad0457dc59613d0826d07158a8511104c8a3265987209f4ec693ab7deecc32"
+    }
+  ],
+  "weaken_assertions_to_pass": false,
+  "affected_files": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_owner_evidence_schema.py"
+  ],
+  "acceptance_criteria": [
+    "Decoder forbids function_hosts key for null owner, including empty list",
+    "Explicit non-null owner and permitted field evidence remain available for sensors, actuators and physical contexts",
+    "Public validator, source/identity/quantity and all limits unchanged; raw failed responses retained"
+  ],
+  "targeted_tests": [
+    "backend/tests/test_reference_owner_evidence_schema.py",
+    "Inventory codec/batch/binding/reasoner regressions",
+    "Actual small-model nullable-owner grammar counter"
+  ]
+}

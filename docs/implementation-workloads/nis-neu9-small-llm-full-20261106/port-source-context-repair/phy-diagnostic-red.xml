@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="3" time="30.148" timestamp="2026-11-09T20:40:50.138210+01:00" hostname="Haranga"><testcase classname="tests.test_reference_port_source_context" name="test_port_planner_receives_authoritative_physical_profiles_without_selecting_a_phy" time="18.701"><failure message="assert {}">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x00000197FBE95940&gt;
+
+    def test_port_planner_receives_authoritative_physical_profiles_without_selecting_a_phy(monkeypatch):
+        from dataclasses import asdict
+        from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
+        instance, prepared, observed = reasoner_with_transport(monkeypatch)
+        run_reference(instance, prepared)
+        requests = [row for row in observed if row.get('selected_port_function_context') is not None]
+        assert requests
+        for request in requests:
+            technologies = request['registered_catalogs']['source_technologies']
+&gt;           assert technologies
+E           assert {}
+
+backend\tests\test_reference_port_source_context.py:90: AssertionError</failure></testcase><testcase classname="tests.test_reference_port_source_context" name="test_terminal_rejection_preserves_exact_input_response_and_failure" time="10.519"><failure message="KeyError: 'terminal_input'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000019784706FD0&gt;
+caplog = &lt;_pytest.logging.LogCaptureFixture object at 0x00000197FB6DD550&gt;
+tmp_path = WindowsPath('C:/Users/marti/AppData/Local/Temp/nis-pytest-pq5brskj/test_terminal_rejection_preser0')
+
+    def test_terminal_rejection_preserves_exact_input_response_and_failure(monkeypatch, caplog, tmp_path):
+        import hashlib
+        monkeypatch.setenv('NIS_RUNTIME_DIR', str(tmp_path))
+        def no_progress(candidate, content, payload, prepared):
+            assert not list(tmp_path.rglob('*.json')), 'Only the terminal rejection should create evidence'
+            candidate.update(devices=[], inventory_complete=False)
+        instance, prepared, observed = reasoner_with_transport(monkeypatch, derivation_mutator=no_progress)
+        with pytest.raises(ValueError, match='keine fehlende ursprüngliche Geräteabdeckung'):
+            run_reference(instance, prepared)
+        records = [json.loads(row.args[0]) for row in caplog.records
+                   if row.msg == 'Native reference validation failed: %s']
+        assert [row['attempt'] for row in records] == [1, 2]
+        assert records[0].get('terminal_input') is None
+&gt;       diagnostic = records[-1]['terminal_input']
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'terminal_input'
+
+backend\tests\test_reference_port_source_context.py:114: KeyError</failure></testcase><testcase classname="tests.test_reference_port_source_context" name="test_reference_artifact_limits_and_existing_hash_are_preserved" time="0.003"><failure message="AssertionError: assert False&#10; +  where False = hasattr(reasoner, '_reference_context_artifact')">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000019784894290&gt;
+tmp_path = WindowsPath('C:/Users/marti/AppData/Local/Temp/nis-pytest-pq5brskj/test_reference_artifact_limits0')
+
+    def test_reference_artifact_limits_and_existing_hash_are_preserved(monkeypatch, tmp_path):
+        import hashlib
+        monkeypatch.setenv('NIS_RUNTIME_DIR', str(tmp_path))
+&gt;       assert hasattr(reasoner, '_reference_context_artifact')
+E       AssertionError: assert False
+E        +  where False = hasattr(reasoner, '_reference_context_artifact')
+
+backend\tests\test_reference_port_source_context.py:131: AssertionError</failure></testcase></testsuite></testsuites>

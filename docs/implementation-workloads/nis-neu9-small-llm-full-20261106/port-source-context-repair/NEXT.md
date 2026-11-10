@@ -1,0 +1,49 @@
+# Aktuell: PAUSED_POWER_OUTAGE – verspäteter Sicherungsaufruf am10.11.2026
+
+Automation erreichte diesen Chat erst10:27Berlin. Windows protokolliert manuellen Shutdownauftrag06:39:57; geplanter07:00Task wurde nicht ausgeführt. Kein verspäteter Shutdown, kein neuer Test/Modellrequest. Native56584 war schon00:43:55Berlin normal mit RESULT INVALID_INPUT terminal: Anschlussplanung ECU25–28 fehlte nach zweiter Antwort (45Calls/40internvalidiert/5abgewiesen). Kein aktiver eigener nativer Pythonprozess; Kandidatenapp beendet. Toolsession verloren, Exitcode nicht nachträglich behaupten. Endstate/response/events/logs und exakter terminaler Eingabekontext SHA5c9a88ebb0e4b9470fa8f5229b8a616d2d6604a24b774f3af0def654f755c140 gesichert und gehasht unter ../poweroff-20261110/post-deadline-checkpoint.json.
+
+Fortsetzung erst nach Wiederaufnahme: tatsächliche Ressourcenlage abstimmen; exakten Fehlerkontext der Anschlüsse und offene purpose-Längengrenze allgemein reparieren, RED/GREEN/echte kleineLLM-Gegenprobe, neue eingefrorene Quelle und vollständiges neu9 bis ALL-Simulation, danach vollständiges Gate und exakte produktive Übernahme. 405 lokalePASS bleiben historisch quellengebunden; keine Original-/Releaseabnahme. Keine internen Inventare übernehmen. Alle früheren RUNNING-Einträge unten sind historisch.
+
+# Verbindlicher Sicherheitsstopp: 10.11.2026 um 07:00 Europe/Berlin
+
+Menschlicher Auftrag: alle Arbeiten sichern und Rechner vor Stromabschaltung08:00 herunterfahren. Sicherungsvorlauf06:40, eigene Requests normal beenden und Checkpoints bis06:55 sichern. Windows-Task NIS-Poweroff-20261110-0700 einmalig07:00, normal shutdown /s /t0 ohne /f; Registrierung in ../poweroff-20261110/schedule.json. Automation arbeiten-vor-stromabschaltung-sichern-10-november aktiv. NIS arbeitet bis Sicherungsvorlauf weiter; keine fachliche Fertigstellung behaupten. Beim Pausieren Status PAUSED_POWER_OUTAGE und exakte Fortsetzung speichern. EIP-, Datagen- und Layoutchat informiert.
+
+# Current additional finding: private purpose bound missing; request56584 still RUNNING
+
+Actualfirstrawreplyf7c2775d634bc19d7e407925b620a2ed57d78f23da87845af82948d4302bacab:6purpose strings508-544 exceed public500. live-rejection-1.json andpurpose-length-finding.json inattempt23preserveproof. Code reference_model_output_schema removespositivebounds, bound_choices restoresrationaleonly; no concatenationneeded. Ordinarysecondresponse accepted8sensors, nextbatchactive. Noapp/testmutation/abort. Afteractualterminaladdressgeneraldecoderpurposebound withRED/GREEN/nativecheck beforefinalrelease; keepallpublic/source/modelgates. RequestandallremainingOriginal/model/ALLsimulation/gate/deliveryopen.
+
+# Current: full native neu9 reference56584 RUNNING
+
+Intake85155 regularExit0,15/15completehashedsegments,11578characters/78facts/100S100A50C1G. ActualWizardprojection matches independentliteralreview; reviewedproposal3f64b082c6af336a6fe4add3d1db954538aa5044fb67e6a925809a04fd821a9a, productprojection3de993e3eff7c5b762ed315149178bc6e9819d05e4543cffa5a668ccd58747bf. Provider20261109T203431Z actualslotidle. Freshnormalcompleteplan-reference56584 nowRUNNING,attempt23/state.json,project20261109202932383-e08c039e/base64987/PREPARED3941934e88d7/image6f45af5ccc357f56b55feea43da143bfa079b4403efc203cc957983c8eba1eef/source7fe7eaea2bf6. No duplicateinference/appchanges/tests/builds whilewholeOriginalrequestactive. Actualevents plan-reference/events.ndjson; inspecttrueworkerandprocessbeforeterminalfollowup. FullOriginal/model/ALLsimulation/release/delivery remainsopen.
+
+# Current: full native neu9 intake85155 RUNNING
+
+Prepare92375 Exit0/PREPARED3941934e88d7,image6f45af5ccc357f56b55feea43da143bfa079b4403efc203cc957983c8eba1eef,source7fe7eaea2bf6,verification267f73b627ec4. Attempt23 project20261109202932383-e08c039e isolated64987; actual18canonicaltables/jobs empty and exactDBDNS verified. Provider20261109T202947Z:main72512,actual9B loaded,n_ctx131072,slotidle. Emptyload97811 Exit0/done_reasonload. Fullnormalintake85155 RUNNING; do not duplicate, mutateapp, run tests/build while wholeOriginalrequestactive. Afterregularterminalsuccess createactualfrontendreviewprojection, reviewfreshliteralproposal; matchingreviewonlyif genuinelyequal, thenfreshprovidercheckandcompleteplan-reference. NoOriginal/simulation/releaseacceptanceyet.
+
+# Current: preparation92375 running after verified storage recovery
+
+56626 Exit1 beforebuild: source-volume free20.186GB below20GiBminimum, FAILreceipt61d7b1b3ccd6 preserved.29535 Exit0: exactly199 historical completed studio-toolbar-trace-defaults files (2.215GB) copied toF, allhashes verified, legacyjunction retained, noimage/data loss.22.402GBfree. New canonicalprepare92375 running, same frozen7fe7source/267fverification; no duplicatebuild. NextactualPREPAREDthenattempt23 fullintake/isolation/provider.
+
+# Current: 405 regression PASS; normal candidate preparation56626 running
+
+90321 regular Exit0,405/405 PASS in1362.49s. Freeze64895 Exit0: source7fe7eaea2bf68038a5673b0a682cae7e4e97ec3598ae68486f51ffe44d6c5be1,verification267f73b627ec4dc9767b75637c528a1b02e88fe4ef01b0bfe5d203eea93943c2,HEAD132cb977fc5d1384c10f1d181b47350c678a699d. Source-scope-proof and regression-aggregate frozen. Completionguard correctly OPEN_REQUIREMENTS: complete Original/simulation/release/delivery still outstanding. Canonical normalprepare56626 is RUNNING in usual output; no duplicate preparation. Oldcd0 retirement66618 already complete. EIP reconfirmed no modelwindow/reservation; continue neu9 without waiting, NIS retains mainworker and13503/13502. After PREPARED receipt verify exactsource, initialize freshattempt23 and verifyisolation/provider before fullnativeintake. Never resume oldinventories.
+
+# Current: retirement66618 complete; regression90321 still running
+
+66618 regularExit0,exactcd0stack recoverablyarchived and retired,23OCIblobsverified,noimageremoved,PREPAREDreceiptpreserved. Never repeatretirement.21178 nativeportcounterPASS remainsnarrowportscope.13-module regression90321 remainsRUNNING. EIP replied no preparedmodeltests/noreservation; NIS mustcontinuewithoutwaitingforEIP. Newhuman commontechnicalfoundation received and scoped in FOUNDATION-MATRIX.md; fullOriginal/release/liveacceptance remainsopen.
+
+# Latest: native counter PASS; regression90321 and retirement66618 active
+
+21178 regularExit0:6 real9B replies,4owners/4ports afterfullcontextrebase. Three earlier hardware-binding findings remain stored; port-stage response itself unresolved[]. Narrow port-scope PASS only.13-module complete regression90321 RUNNING, expected405cases. Exact obsolete cd0stack archival/retirement66618 RUNNING via retire-cd0-plan.json; preserveimage/PREPAREDreceipt, noimageremoval. Do not repeat either operation. After actualbothterminalsuccess run freeze.py, childguard, canonicalprepare, freshOriginalattempt23. EIP has been told a modelwindow may be available duringregression but NO handoff yet; await concrete request and confirm before sharedprovideruse.
+
+# Current: combined source/PHY view and terminal diagnostic under real small-model verification
+
+Native authored counter21178 is RUNNING in native-counter-physical. Check its actual session and events/result; no duplicate model request or application mutation while it runs. qwen3.5:9b,131072/8192/2048/1200 unchanged.52 targeted tests PASS, session59130 regularExit0. Previous source-only counter11559 regularExit1: all4 owners had connections but C1 count3 confused3 logical peers with3 physical attachments on shared CAN-FD segmentS;6ports instead of4. Rawrequest6/response6 and failure-verified.json preserved. Local2 diagnostic RED plus corrected-physical-fixture RED are retained; initialphysical test had no source transport and its fixture error is documented. No Original/simulation acceptance.
+
+Source changes remain only local_reasoner.py plus test_reference_port_source_context.py. Existing authoritative physical profiles are now projected from the registry without choosing hardware/PHY or limiting genuine parallel count. Existing bounded16files/4MiB diagnostic writer is reused for terminal second-invalid-reply exact request/context/response/error; no full input in ordinary logs. Both test and native proof must remain bound to final source.
+
+After native PASS, run the complete relevant regression: the12 modules listed by current-stage-context-repair/regression.xml plus test_reference_port_source_context.py. Use only backend/.venv/Scripts/python.exe scripts/run-isolated-tests.py; write new regression.xml here. Then freeze.py verifies source, original hash, all tests and actual native streams and freezes source/verification. Do not run freeze if native/result.json lacks PASS. Prior 397-pass run belongs to the previous source, not the current bundle.
+
+Only obsolete retained stack cd0fda902355 remains at54636, PREPARED (neverFAIL/PASS). NativeOriginal50404 is terminal INVALID_INPUT/Exit1, drivers gone and workeridle verified; terminalmanifest in attempt-22/terminal-50404-verified. Exact retirement plan retire-cd0-plan.json is saved but NOT EXECUTED. Use existing ../retire_dd9.py --plan after checks; archive and verify all data/image layers/logs, preserve image and originalreceipt; no image removal. Then canonicalprepare one normal candidate for changedsource, same release output backend/test-output/release-gates/neu9-small-native-20261106. New complete Original attempt23; never resume internalinventory.
+
+Fresh provider/read coordination before inference; NISmain reservation retained, EIP terminal/privatecleanupreported. Source neu9SHA32c864c91ac85c2884ef0c3c9e62456e6ade59cc2a22cae384bdfe5a2e2eff60 and25LINhuman quantity-only clarification remain. Productionimagec7edda... unchanged. Fullnativeintake/reference/review/apply/nine-stages/ALLsimulation/fulltrace/fullreleasegate/exactrelease-and-deploy stillopen. No final completion until all accepted.

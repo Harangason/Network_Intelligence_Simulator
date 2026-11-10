@@ -1,0 +1,278 @@
+{
+  "goal_id": "finding-function-decoder-repair",
+  "kind": "repair",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "modify_code": true,
+  "allow_repair": true,
+  "status": "LOCALLY_VERIFIED_PENDING_FULL_ORIGINAL_AND_DELIVERY",
+  "required_outcomes": [
+    "bounded_native_findings",
+    "valid_function_choices",
+    "native_small_model_verification"
+  ],
+  "validation_requirements": [
+    "red_green",
+    "adjacent_regression",
+    "native_counter"
+  ],
+  "revision_before": {
+    "backend/nis/agent/orchestration/local_reasoner.py": "955cd015855078767790efdf2455a2f4dd3b57b6800260de34acaf84bbabc3e8",
+    "backend/tests/test_reference_finding_function_decoder.py": "9bc7250e833f2fa8e79028cd98b5146cf4abe9fb1d44b3facc12c5a5e85ae4d1",
+    "docs/implementation-workloads/nis-neu9-small-llm-full-20261106/finding-function-decoder-repair/probe_native.py": "f097c1e3252ebcf91fcf355bd89bf55e7af1f630f28c72b57a7ff88cb814b93a",
+    "backend/tests/test_reference_selected_identity.py": "28e050b7c6eae395aab51ef34f45a0b9ef497c83704e2123f9d2616c8e2f1021",
+    "backend/tests/test_reference_design.py": "d7e7339713abf6aa8bc93d5148902a15c8b288025759fcf9367fb57d72da199b"
+  },
+  "repair": {
+    "finding_ids": [
+      "RUNAWAY_REFERENCE_FINDING",
+      "INVALID_COMPOSITE_FUNCTION"
+    ],
+    "owner": "PROJECT_PRODUCT",
+    "first_failing_layer": "Private native decoder permits outputs forbidden by public structural/semantic validation",
+    "root_cause": "Positive text bounds are projected away, including unresolved.message. Function realization and executor/child cardinalities are independent in the private decoder; invalid combinations reach final validation after all downstream planning. Native control additionally proves cyclic composite choices despite atomic rationale. Public cycle gate rejects; reject and retry within function stage before downstream communication.",
+    "reproduction": "Real 91549: full-profile composite validation rejection; correction inventory output consumed 8192 tokens in repeated unresolved.message. Independently authored schema counterexamples will establish each invalid combination before app edits; exact first invalid native function was not retained.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\attempt-15\\terminal-91549-truncated-output.json",
+        "sha256": "8800515b4bad1ea51302ef54133afdc10fe0217895f66ee9f41f1089a188f5cc"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\attempt-15\\terminal-91549-raw-response.txt",
+        "sha256": "0cc8caf16a7ea5cb41ffea7b999acb9af4a3e135b1af1c3d2d1f498c2c614602"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\attempt-15\\checkpoint-stop75-terminal91549.json",
+        "sha256": "ac448813fe5dc4e48cfb598a60681f15c871488db2cec023c8cec9bce9830f87"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\red.xml",
+        "sha256": "9e526fc6c33263f1803009d63bdd2758cf0597581ef9450976371dd0cf51069a"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\native-target-projection-control\\functions-response.json",
+        "sha256": "43ceda7add20784ee88bc19ee610981654df675211a42d580437b3a0bf990359"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\red-early-cycle.xml",
+        "sha256": "1b8ddb396eb172f20df721bdbb4a31736126db49d29f3ba9c3347ea0b9cfa01b"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\native-http-diagnostic\\inventory-finding-http-error.json",
+        "sha256": "e716a0acfa983712d62a13fa5a978dcc55928be2137103d8f2a2658323ff7886"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\native-function-order-control\\functions-response.json",
+        "sha256": "b4fd650ce8810a3e6c994de8520cf7bc3141d6269625a3d78e82bd5f03f2fe18"
+      }
+    ],
+    "affected_files": [
+      "backend/nis/agent/orchestration/local_reasoner.py",
+      "backend/tests/test_reference_finding_function_decoder.py",
+      "docs/implementation-workloads/nis-neu9-small-llm-full-20261106/finding-function-decoder-repair/probe_native.py",
+      "backend/tests/test_reference_selected_identity.py",
+      "backend/tests/test_reference_design.py"
+    ],
+    "affected_services": [
+      "native reference decoder"
+    ],
+    "acceptance_criteria": [
+      "Bound native finding prose without dropping findings or changing public limits",
+      "Only structurally valid atomic/composite alternatives, retaining full source identities and runtime gates",
+      "Targeted and adjacent regression plus native small-model counter"
+    ],
+    "targeted_tests": [
+      "backend/tests/test_reference_finding_function_decoder.py"
+    ],
+    "regression_scope": [
+      "reference selected identities",
+      "inventory schemas",
+      "reference reasoner",
+      "function validation"
+    ],
+    "weaken_assertions_to_pass": false,
+    "fixture_adjustment": "Only traverse all complete function alternatives for the existing no-source-identity assertion. Preserve accepted omitted empty arrays; require only the active realization array. No negative assertion removed.",
+    "target_projection_correction": "The initial target_ref native maxLength=2000 extension is out of prose scope and fails native grammar initialization. Restore baseline target projection; retain public 2000 bound and add exact long-reference preservation test. No public gate weakened. Initial 9-failure RED includes this rejected target-bound experiment; 8 relevant initial REDs plus cycle RED remain repair criteria.",
+    "schema_expectation_update": "The broad pre-final run:356PASS/1FAIL. Existing full schema equality fixture lacks the newly required concise finding code/message bounds. Add only those two expected bounds; preserve exact full schema equality and original oversized-response rejection with two attempts. Original FAIL XML retained."
+  },
+  "production_delivery": {
+    "authorized": true,
+    "status": "PENDING_FULL_RELEASE"
+  },
+  "outcomes": {
+    "bounded_native_findings": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\native-final\\result.json",
+          "sha256": "dc938a454f7b5a9f2db19fccd34c9b641bcf2299b417a5f7855ea32f325516dd"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\final-scope-review.json",
+          "sha256": "7bc60898f2da3dec668182356d29367b502a3089d3e87a048f39e84e10080708"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\green-final-focused.xml",
+          "sha256": "b474502ce6f6b623a9d88b89030591e331b352676646212fcfc52ba7ffa62c4c"
+        }
+      ]
+    },
+    "valid_function_choices": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\native-final\\result.json",
+          "sha256": "dc938a454f7b5a9f2db19fccd34c9b641bcf2299b417a5f7855ea32f325516dd"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\final-scope-review.json",
+          "sha256": "7bc60898f2da3dec668182356d29367b502a3089d3e87a048f39e84e10080708"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\green-final-focused.xml",
+          "sha256": "b474502ce6f6b623a9d88b89030591e331b352676646212fcfc52ba7ffa62c4c"
+        }
+      ]
+    },
+    "native_small_model_verification": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\native-final\\result.json",
+          "sha256": "dc938a454f7b5a9f2db19fccd34c9b641bcf2299b417a5f7855ea32f325516dd"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\final-scope-review.json",
+          "sha256": "7bc60898f2da3dec668182356d29367b502a3089d3e87a048f39e84e10080708"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\green-final-focused.xml",
+          "sha256": "b474502ce6f6b623a9d88b89030591e331b352676646212fcfc52ba7ffa62c4c"
+        }
+      ]
+    }
+  },
+  "validations": {
+    "red_green": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\regression-aggregate.json",
+          "sha256": "8ffa1a8d1029dac13965e06234e78cd64e99ed60fbae49fe0468e11f147ed9ab"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\native-final\\result.json",
+          "sha256": "dc938a454f7b5a9f2db19fccd34c9b641bcf2299b417a5f7855ea32f325516dd"
+        }
+      ]
+    },
+    "adjacent_regression": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\regression-aggregate.json",
+          "sha256": "8ffa1a8d1029dac13965e06234e78cd64e99ed60fbae49fe0468e11f147ed9ab"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\native-final\\result.json",
+          "sha256": "dc938a454f7b5a9f2db19fccd34c9b641bcf2299b417a5f7855ea32f325516dd"
+        }
+      ]
+    },
+    "native_counter": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\regression-aggregate.json",
+          "sha256": "8ffa1a8d1029dac13965e06234e78cd64e99ed60fbae49fe0468e11f147ed9ab"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\native-final\\result.json",
+          "sha256": "dc938a454f7b5a9f2db19fccd34c9b641bcf2299b417a5f7855ea32f325516dd"
+        }
+      ]
+    }
+  },
+  "tests": [
+    {
+      "session": 49625,
+      "exit_code": 1,
+      "failed": 9,
+      "passed": 3,
+      "phase": "RED"
+    },
+    {
+      "session": 68719,
+      "exit_code": 1,
+      "passed": 356,
+      "failed": 1,
+      "source_phase": "pre-final schema version"
+    }
+  ],
+  "native_probe_initial": {
+    "session": 60716,
+    "exit_code": 1,
+    "http_status": 400,
+    "accepted_native_response": false,
+    "original_acceptance": false
+  },
+  "files_changed": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_finding_function_decoder.py",
+    "docs/implementation-workloads/nis-neu9-small-llm-full-20261106/finding-function-decoder-repair/probe_native.py",
+    "backend/tests/test_reference_selected_identity.py",
+    "backend/tests/test_reference_design.py"
+  ],
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\before\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "04cc1f24219e19f7f60ef6af26acce3bbdff4301a97b01794fa05cad01083571"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\before\\backend\\tests\\test_reference_selected_identity.py",
+      "sha256": "7a47fa6c39b4fefdbb11752981e1f2a74c05248b6cdf28b7f5e15ef2e52d88c2"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\before\\backend\\tests\\test_reference_design.py",
+      "sha256": "d7e7339713abf6aa8bc93d5148902a15c8b288025759fcf9367fb57d72da199b"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\before\\absent-files.json",
+      "sha256": "5abf07d1594c6aba6f247aae6642de3f21e2fe3ed1bd75d9712706587ba0511f"
+    }
+  ],
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\after\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "955cd015855078767790efdf2455a2f4dd3b57b6800260de34acaf84bbabc3e8"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\after\\backend\\tests\\test_reference_finding_function_decoder.py",
+      "sha256": "9bc7250e833f2fa8e79028cd98b5146cf4abe9fb1d44b3facc12c5a5e85ae4d1"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\after\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\probe_native.py",
+      "sha256": "f097c1e3252ebcf91fcf355bd89bf55e7af1f630f28c72b57a7ff88cb814b93a"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\after\\backend\\tests\\test_reference_selected_identity.py",
+      "sha256": "28e050b7c6eae395aab51ef34f45a0b9ef497c83704e2123f9d2616c8e2f1021"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\after\\backend\\tests\\test_reference_design.py",
+      "sha256": "90ebf6b0587cb0e6735b2591b493c02456ed4da0b0d80c172428442dc72e42c6"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-function-decoder-repair\\final-change.diff",
+      "sha256": "975bb58e87c3e7416493db78b5130f01d99e224830115ef4456da30c9fcfa663"
+    }
+  ],
+  "delivery": {
+    "decision": "YES",
+    "authorization": "Standing AGENTS rule and latest direct human request; 75% limit lifted for this task",
+    "target": "Canonical production NIS port 13500",
+    "status": "PENDING_FULL_ORIGINAL_AND_RELEASE",
+    "checks": {}
+  }
+}

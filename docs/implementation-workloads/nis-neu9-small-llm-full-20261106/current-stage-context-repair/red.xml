@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="4" time="1.434" timestamp="2026-11-09T17:08:47.078820+01:00" hostname="Haranga"><testcase classname="tests.test_reference_current_stage_context" name="test_selected_current_records_are_directly_readable_after_each_context_transition[fresh]" time="0.107"><failure message="KeyError: 'selected_devices'">transition = 'fresh'
+
+    @pytest.mark.parametrize('transition', ['fresh', 'append', 'rebase'])
+    def test_selected_current_records_are_directly_readable_after_each_context_transition(transition):
+        current = authored_port_context()
+        early = deepcopy(current)
+        early['current_candidate']['devices'] = early['current_candidate']['devices'][:51]
+        early['device_ids_for_this_stage'] = ['authored-device-000']
+        messages, _, _ = reasoner._reference_context_messages([], None, early, 'Independent', 131072)
+        anchor = ([*messages, {'role': 'assistant', 'content': '{"authored":true}'}], early)
+        history = anchor[0] if transition != 'fresh' else []
+        if transition == 'rebase':
+            history = [*history, {'role': 'user', 'content': 'overflow' * 17000}]
+        before = deepcopy((current, early, history))
+        result, _, rebased = reasoner._reference_context_messages(
+            history, early if history else None, current, 'Independent', 131072,
+            anchor=anchor if history else None)
+        if transition == 'rebase':
+            assert rebased
+        selection = json.loads(result[-1]['content'])['nis_current_selection']
+        actual = current['current_candidate']['devices']
+        expected = [row for identity in current['device_ids_for_this_stage']
+                    for row in actual if row['id'] == identity]
+&gt;       assert selection['selected_devices'] == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'selected_devices'
+
+backend\tests\test_reference_current_stage_context.py:48: KeyError</failure></testcase><testcase classname="tests.test_reference_current_stage_context" name="test_selected_current_records_are_directly_readable_after_each_context_transition[append]" time="0.218"><failure message="KeyError: 'selected_devices'">transition = 'append'
+
+    @pytest.mark.parametrize('transition', ['fresh', 'append', 'rebase'])
+    def test_selected_current_records_are_directly_readable_after_each_context_transition(transition):
+        current = authored_port_context()
+        early = deepcopy(current)
+        early['current_candidate']['devices'] = early['current_candidate']['devices'][:51]
+        early['device_ids_for_this_stage'] = ['authored-device-000']
+        messages, _, _ = reasoner._reference_context_messages([], None, early, 'Independent', 131072)
+        anchor = ([*messages, {'role': 'assistant', 'content': '{"authored":true}'}], early)
+        history = anchor[0] if transition != 'fresh' else []
+        if transition == 'rebase':
+            history = [*history, {'role': 'user', 'content': 'overflow' * 17000}]
+        before = deepcopy((current, early, history))
+        result, _, rebased = reasoner._reference_context_messages(
+            history, early if history else None, current, 'Independent', 131072,
+            anchor=anchor if history else None)
+        if transition == 'rebase':
+            assert rebased
+        selection = json.loads(result[-1]['content'])['nis_current_selection']
+        actual = current['current_candidate']['devices']
+        expected = [row for identity in current['device_ids_for_this_stage']
+                    for row in actual if row['id'] == identity]
+&gt;       assert selection['selected_devices'] == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'selected_devices'
+
+backend\tests\test_reference_current_stage_context.py:48: KeyError</failure></testcase><testcase classname="tests.test_reference_current_stage_context" name="test_selected_current_records_are_directly_readable_after_each_context_transition[rebase]" time="0.219"><failure message="KeyError: 'selected_devices'">transition = 'rebase'
+
+    @pytest.mark.parametrize('transition', ['fresh', 'append', 'rebase'])
+    def test_selected_current_records_are_directly_readable_after_each_context_transition(transition):
+        current = authored_port_context()
+        early = deepcopy(current)
+        early['current_candidate']['devices'] = early['current_candidate']['devices'][:51]
+        early['device_ids_for_this_stage'] = ['authored-device-000']
+        messages, _, _ = reasoner._reference_context_messages([], None, early, 'Independent', 131072)
+        anchor = ([*messages, {'role': 'assistant', 'content': '{"authored":true}'}], early)
+        history = anchor[0] if transition != 'fresh' else []
+        if transition == 'rebase':
+            history = [*history, {'role': 'user', 'content': 'overflow' * 17000}]
+        before = deepcopy((current, early, history))
+        result, _, rebased = reasoner._reference_context_messages(
+            history, early if history else None, current, 'Independent', 131072,
+            anchor=anchor if history else None)
+        if transition == 'rebase':
+            assert rebased
+        selection = json.loads(result[-1]['content'])['nis_current_selection']
+        actual = current['current_candidate']['devices']
+        expected = [row for identity in current['device_ids_for_this_stage']
+                    for row in actual if row['id'] == identity]
+&gt;       assert selection['selected_devices'] == expected
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'selected_devices'
+
+backend\tests\test_reference_current_stage_context.py:48: KeyError</failure></testcase><testcase classname="tests.test_reference_current_stage_context" name="test_current_projection_does_not_fill_missing_members_or_resolve_real_findings" time="0.049"><failure message="KeyError: 'inventory_counts_by_kind'">def test_current_projection_does_not_fill_missing_members_or_resolve_real_findings():
+        context = authored_port_context()
+        context['current_candidate']['devices'] = context['current_candidate']['devices'][:151]
+        messages, _, _ = reasoner._reference_context_messages([], None, context, 'Independent', 131072)
+        selection = json.loads(messages[-1]['content'])['nis_current_selection']
+&gt;       assert selection['inventory_counts_by_kind'].get('ACTUATOR', 0) == 0
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'inventory_counts_by_kind'
+
+backend\tests\test_reference_current_stage_context.py:63: KeyError</failure></testcase></testsuite></testsuites>

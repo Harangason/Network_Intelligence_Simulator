@@ -197,8 +197,9 @@ def test_selected_function_keys_preserve_each_original_fact_without_guessing_dat
     Draft202012Validator(schema).validate(body)
     assert reasoner._reference_expand_selected_functions(values, identities) == rows
     assert values == before
-    assert all('source_fact_id' not in value['properties'] for value in
-               schema['properties']['functions_by_fact']['properties'].values())
+    assert all('source_fact_id' not in alternative['properties'] for value in
+               schema['properties']['functions_by_fact']['properties'].values()
+               for alternative in value['anyOf'])
 
 
 @pytest.mark.parametrize('corruption', ['missing', 'foreign', 'source_fact_id'])

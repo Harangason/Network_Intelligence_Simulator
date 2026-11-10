@@ -1,0 +1,357 @@
+--- before/backend/nis/agent/orchestration/local_reasoner.py
++++ after/backend/nis/agent/orchestration/local_reasoner.py
+@@ -232,6 +232,12 @@
+     def item(field):
+         definition = schema['properties'][field]['items']
+         return schema['$defs'][definition['$ref'].rsplit('/', 1)[-1]]
++
++    # Findings are individual questions, not another copy of the inventory.
++    # Bound prose at decoding time; retain every finding and its full target.
++    finding = item('unresolved')['properties']
++    finding['code']['maxLength'] = 120
++    finding['message']['maxLength'] = 240
+ 
+     def keyed_selection(field, private_field, identity_field, identities, mutable=None):
+         if not identities or len(identities) != len(set(identities)):
+@@ -318,6 +324,30 @@
+                         ('parameters', 'rationale', 'field_references'))
+     if function_ids:
+         keyed_selection('functions', 'functions_by_fact', 'source_fact_id', function_ids)
++        choices = schema['properties']['functions_by_fact']['properties']
++        for identity, definition in choices.items():
++            # Complete object alternatives are supported by the native grammar;
++            # independent field enums would still permit contradictory choices.
++            atomic = deepcopy(definition)
++            atomic['required'] = list(dict.fromkeys([*atomic['required'], 'executor_device_ids']))
++            atomic['properties']['realization']['enum'] = ['ATOMIC']
++            atomic['properties']['executor_device_ids']['minItems'] = 1
++            atomic['properties']['realized_by_fact_ids'].update(minItems=0, maxItems=0)
++            children = [key for key, fact in prepared['facts'].items()
++                        if fact['kind'] == 'FUNCTION' and key != identity]
++            alternatives = [atomic]
++            if children:
++                composite = deepcopy(definition)
++                composite['required'] = list(dict.fromkeys([*composite['required'], 'realized_by_fact_ids']))
++                composite['properties']['realization']['enum'] = ['COMPOSITE']
++                composite['properties']['executor_device_ids'].update(minItems=0, maxItems=0)
++                composite['properties']['realized_by_fact_ids'].update(
++                    minItems=1, items={'type': 'string', 'enum': children})
++                alternatives.append(composite)
++            for alternative in alternatives:
++                fields = alternative['properties']
++                alternative['properties'] = {'realization': fields['realization'], **fields}
++            choices[identity] = {'anyOf': alternatives}
+         item('functional_dependencies')['properties']['producer_fact_id']['enum'] = list(function_ids)
+     if inventory_target or derivation_fact_ids is not None:
+         from copy import deepcopy
+@@ -2096,6 +2126,11 @@
+                             if decoded.get('functions', []) != []:
+                                 raise ValueError('Die Funktionsstufe muss genau ihre ursprünglichen Funktions-FactIDs '
+                                                  'über functions_by_fact abdecken; keine fremden Senderabhängigkeiten.')
++                            from jsonschema import Draft202012Validator
++                            choice_schema = {'$defs': payload['format']['$defs'],
++                                **payload['format']['properties']['functions_by_fact']}
++                            if next(Draft202012Validator(choice_schema).iter_errors(decoded.get('functions_by_fact')), None):
++                                raise ValueError('Funktionsentscheidung verletzt die gewählte atomare oder zusammengesetzte Realisierung. Atomar: Ausführer, keine Teilfunktionen. Zusammengesetzt: gültige andere Funktions-FactIDs, kein eigener Ausführer.')
+                             decoded['functions'] = _reference_expand_selected_functions(
+                                 decoded.pop('functions_by_fact'), function_ids)
+                         result = ReferenceDesignProposal.model_validate(decoded).model_dump(mode='json')
+@@ -2135,6 +2170,12 @@
+                             if (len(actual) != len(set(actual)) or set(actual) != set(function_ids)
+                                     or any(row['producer_fact_id'] not in function_ids for row in result['functional_dependencies'])):
+                                 raise ValueError('Die Funktionsstufe muss genau ihre ursprünglichen Funktions-FactIDs abdecken; keine fremden Senderabhängigkeiten.')
++                            from backend.nis.agent.orchestration.project_intake import _reference_acyclic
++                            # Reuse the public graph check before accepting this
++                            # stage. Future groups may be referenced; already
++                            # visible cycles must be corrected before communication.
++                            _reference_acyclic({row['source_fact_id']: row.get('realized_by_fact_ids', [])
++                                for row in [*current['functions'], *result['functions']]}, 'Funktionsabdeckung')
+                         if inventory_stage:
+                             result['inventory_complete'] = inventory_complete
+                             calls[-1]['inventory_complete'] = inventory_complete
+--- before/backend/tests/test_reference_finding_function_decoder.py
++++ after/backend/tests/test_reference_finding_function_decoder.py
+@@ -0,0 +1,128 @@
++"""Independent decoder/validator parity cases from terminal native failures."""
++from copy import deepcopy
++
++import pytest
++from jsonschema import Draft202012Validator, ValidationError
++
++from backend.nis.agent.orchestration import local_reasoner as reasoner
++from backend.nis.agent.orchestration import project_intake as intake
++from backend.tests.test_reference_design import fixture_request, fixture_design
++
++
++def function_case():
++    prepared = intake.prepare_reference_design(fixture_request())
++    design = intake.ReferenceDesignProposal.model_validate(fixture_design(prepared)).model_dump(mode='json')
++    identities = [row['source_fact_id'] for row in design['functions']]
++    schema = reasoner._reference_schema_for_stage(prepared, {'functions'}, function_ids=identities)
++    body = intake.ReferenceDesignProposal().model_dump(mode='json')
++    body['functions_by_fact'] = {row['source_fact_id']: {
++        key: deepcopy(value) for key, value in row.items() if key != 'source_fact_id'
++    } for row in design['functions']}
++    return prepared, design, schema, body, identities
++
++
++@pytest.mark.parametrize('realization,executors,children', [
++    ('COMPOSITE', ['C'], ['child']), ('COMPOSITE', [], []),
++    ('COMPOSITE', [], ['unknown']), ('COMPOSITE', [], ['self']),
++    ('ATOMIC', [], []), ('ATOMIC', ['C'], ['child']),
++])
++def test_decoder_rejects_function_choices_already_forbidden_by_public_validator(realization, executors, children):
++    prepared, design, schema, body, identities = function_case()
++    children = [identities[1] if key == 'child' else identities[0] if key == 'self' else key for key in children]
++    change = dict(realization=realization, executor_device_ids=executors, realized_by_fact_ids=children)
++    design['functions'][0].update(change)
++    with pytest.raises(ValueError):
++        intake.validate_reference_design(design, prepared)
++    body['functions_by_fact'][identities[0]].update(change)
++    with pytest.raises(ValidationError):
++        Draft202012Validator(schema).validate(body)
++
++
++@pytest.mark.parametrize('composite', [False, True])
++def test_valid_atomic_and_composite_choices_preserve_source_bound_public_contract(composite):
++    prepared, design, schema, body, identities = function_case()
++    before = deepcopy(intake.reference_design_schema(prepared))
++    if composite:
++        change = dict(realization='COMPOSITE', executor_device_ids=[], realized_by_fact_ids=identities[1:])
++        body['functions_by_fact'][identities[0]].update(change)
++        design['functions'][0].update(change)
++    Draft202012Validator(schema).validate(body)
++    result = intake.validate_reference_design(design, prepared)
++    assert result['canonical_writes'] is False
++    assert intake.reference_design_schema(prepared) == before
++
++
++@pytest.mark.parametrize('field,size', [('message', 2001), ('code', 121)])
++def test_native_finding_cannot_spend_output_on_publicly_invalid_unbounded_strings(field, size):
++    prepared = intake.prepare_reference_design(fixture_request())
++    schema = reasoner._reference_schema_for_stage(prepared, {'devices'})
++    body = intake.ReferenceDesignProposal().model_dump(mode='json')
++    finding = {'code': 'MISSING_HARDWARE_EVIDENCE', 'target_ref': '/devices/C', 'message': 'A real unresolved question.'}
++    finding[field] = 'x' * size
++    body['unresolved'] = [finding]
++    with pytest.raises(ValueError):
++        intake.ReferenceDesignProposal.model_validate(body)
++    with pytest.raises(ValidationError):
++        Draft202012Validator(schema).validate(body)
++
++
++def test_full_target_identity_keeps_original_projection_and_strict_public_length_gate():
++    prepared = intake.prepare_reference_design(fixture_request())
++    schema = reasoner._reference_schema_for_stage(prepared, {'devices'})
++    body = intake.ReferenceDesignProposal().model_dump(mode='json')
++    body['unresolved'] = [{'code': 'MISSING_EVIDENCE', 'target_ref': '/' + 'x' * 1999, 'message': 'Missing evidence.'}]
++    Draft202012Validator(schema).validate(body)
++    assert intake.ReferenceDesignProposal.model_validate(body).unresolved[0].target_ref == body['unresolved'][0]['target_ref']
++    body['unresolved'][0]['target_ref'] += 'x'
++    with pytest.raises(ValueError):
++        intake.ReferenceDesignProposal.model_validate(body)
++
++
++def test_many_distinct_concise_findings_remain_available_without_source_truncation():
++    prepared = intake.prepare_reference_design(fixture_request())
++    before = deepcopy(prepared)
++    schema = reasoner._reference_schema_for_stage(prepared, {'devices'})
++    body = intake.ReferenceDesignProposal().model_dump(mode='json')
++    body['unresolved'] = [{'code': 'MISSING_EVIDENCE', 'target_ref': f'/devices/D{n}',
++        'message': f'Hardware evidence for independently required device {n} is absent.'} for n in range(80)]
++    Draft202012Validator(schema).validate(body)
++    assert intake.ReferenceDesignProposal.model_validate(body).model_dump(mode='json')['unresolved'] == body['unresolved']
++    assert prepared == before
++
++
++def test_cycle_is_retried_in_same_function_stage_before_downstream_planning(monkeypatch):
++    import json
++    import httpx
++    from backend.tests.test_reference_reasoner import reasoner_with_transport, run_reference, effective_reference_context
++
++    captured = []
++    instance, prepared, _ = reasoner_with_transport(monkeypatch, capture=captured)
++    provider = instance.client._transport.handler
++    changed = False
++    bad_raw = None
++
++    def respond(request):
++        nonlocal changed, bad_raw
++        response = provider(request)
++        if not request.url.path.endswith('/show') and not changed and 'functions_by_fact' in captured[-1]['format']['properties']:
++            changed = True
++            body = response.json()
++            value = json.loads(body['message']['content'])
++            keys = list(value['functions_by_fact'])
++            for index in (0, 1):
++                value['functions_by_fact'][keys[index]].update(realization='COMPOSITE', executor_device_ids=[], realized_by_fact_ids=[keys[1-index]])
++            bad_raw = json.dumps(value)
++            return httpx.Response(200, json={**body, 'message': {'content': bad_raw}})
++        return response
++
++    monkeypatch.setattr(instance.client._transport, 'handler', respond)
++    result = run_reference(instance, prepared)
++    first = next(i for i, row in enumerate(captured) if 'functions_by_fact' in row['format']['properties'])
++    initial, retry = captured[first:first+2]
++    assert 'functions_by_fact' in retry['format']['properties'], 'Do not plan communication or restart source inventory before correcting this cycle.'
++    assert retry['messages'][:-2] == initial['messages']
++    assert retry['messages'][-2] == {'role': 'assistant', 'content': bad_raw}
++    assert 'zyklische' in retry['messages'][-1]['content']
++    assert effective_reference_context(initial['messages']) == effective_reference_context(retry['messages'])
++    assert initial['format'] == retry['format'] and initial['options'] == retry['options']
++    assert result['canonical_writes'] is False
+--- before/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/finding-function-decoder-repair/probe_native.py
++++ after/docs/implementation-workloads/nis-neu9-small-llm-full-20261106/finding-function-decoder-repair/probe_native.py
+@@ -0,0 +1,127 @@
++"""Two authored native decoder probes; no original acceptance or canonical writes."""
++import asyncio
++import argparse
++from copy import deepcopy
++from datetime import datetime, timezone
++import hashlib
++import json
++from pathlib import Path
++import subprocess
++import sys
++
++import httpx
++from jsonschema import Draft202012Validator
++
++ROOT = Path.cwd()
++sys.path.insert(0, str(ROOT))
++from backend.nis.agent.orchestration import local_reasoner as r, project_intake as intake
++from backend.tests.test_reference_design import fixture_request, fixture_design
++from backend.tests.test_reference_inventory_batch import batch_case
++
++DIR = Path(__file__).resolve().parent
++GOAL = DIR.parent
++parser = argparse.ArgumentParser()
++parser.add_argument('--output-name', default='native-counter')
++parser.add_argument('--original-target-projection-control', action='store_true')
++parser.add_argument('--function-discriminator-first-control', action='store_true')
++parser.add_argument('--functions-only', action='store_true')
++args = parser.parse_args()
++OUT = DIR / args.output_name
++assert OUT.resolve().parent == DIR.resolve()
++
++
++def save(name, value):
++    (OUT / name).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
++
++
++async def main():
++    OUT.mkdir(exist_ok=False)
++    model = 'qwen3.5:9b'
++    decision = GOAL / 'human-small-model-decision-20261107.json'
++    assert json.loads(decision.read_text(encoding='utf-8'))['verified_directly']
++    save('authorization.json', {'path': str(decision), 'sha256': hashlib.sha256(decision.read_bytes()).hexdigest()})
++    admission = json.loads(subprocess.check_output([sys.executable, str(GOAL / 'read_provider.py'), '--model', model], text=True))
++    assert admission['busy_slots'] == 0 and admission['loaded_models'] in ([], [model])
++    save('admission.json', admission)
++    prepared, target, full_schema, _ = batch_case(8)
++    schema, codec = r._reference_compact_inventory_schema(full_schema)
++    inventory_context = {'synthetic_original': prepared['facts'], 'target': target,
++        'instruction': 'Synthetic grammar test, not real hardware. Provide all eight requested NEW_SENSOR choices with null owner and purpose, short rationale and empty field references. '
++        'Set inventory_complete=true and devices=[]. Keep exactly one unresolved finding: code=MISSING_HARDWARE_EVIDENCE, target_ref=/synthetic/transceiver, '
++        'message briefly asks for the missing transceiver evidence. Do not repeat the inventory or enumerate examples in the question. Other arrays empty.'}
++    cases = [('inventory-finding', prepared, schema, inventory_context, target, codec)]
++    prepared = intake.prepare_reference_design(fixture_request())
++    design = intake.ReferenceDesignProposal.model_validate(fixture_design(prepared)).model_dump(mode='json')
++    identities = [row['source_fact_id'] for row in design['functions']]
++    schema = r._reference_schema_for_stage(prepared, {'functions'}, function_ids=identities)
++    context = {'synthetic_original': prepared['source_evidence'], 'facts': prepared['facts'], 'devices': design['devices'],
++        'instruction': f'Synthetic grammar test, not real hardware. In functions_by_fact realize {identities[0]} and {identities[1]} atomically on controller C. '
++        f'Realize {identities[2]} as a composite of exactly those two functions, with no own executor. '
++        'Use concise rationale, empty field_references and all ordinary arrays empty. Explicitly include both executor_device_ids and realized_by_fact_ids in every decision.'}
++    cases.append(('functions', prepared, schema, context, design, identities))
++    if args.functions_only:
++        cases = [cases[-1]]
++    results = []
++    for name, prepared, schema, context, expected, codec in cases:
++        if args.original_target_projection_control:
++            original = deepcopy(schema)
++            schema['$defs']['ReferenceFinding']['properties']['target_ref'].pop('maxLength')
++            restored = deepcopy(schema)
++            restored['$defs']['ReferenceFinding']['properties']['target_ref']['maxLength'] = 2000
++            assert restored == original
++            save(name + '-independent-control.json', {'only_change': 'Restore existing public-to-native target_ref projection; public 2000 bound remains unchanged.', 'product_code_changed': False})
++        if args.function_discriminator_first_control and name == 'functions':
++            before = deepcopy(schema)
++            for choice in schema['properties']['functions_by_fact']['properties'].values():
++                for alternative in choice['anyOf']:
++                    fields = alternative['properties']
++                    alternative['properties'] = {'realization': fields['realization'], **fields}
++            assert schema == before  # dictionary order changes, accepted JSON language does not
++            save(name + '-order-control.json', {'only_change': 'Discriminator precedes free rationale; equal JSON Schema object.', 'product_code_changed': False})
++        messages = [{'role': 'system', 'content': 'Independent synthetic decoder counterprobe. Return only JSON matching the supplied schema. No physical or safety qualification.'},
++                    {'role': 'user', 'content': json.dumps(context, ensure_ascii=False)}]
++        payload = dict(model=model, messages=messages, format=schema, think=False, stream=True, keep_alive='10m',
++                       options=dict(temperature=0, num_predict=8192, num_ctx=r._reference_context_window(messages, 131072)))
++        save(name + '-request.json', payload)
++        with (OUT / (name + '-events.ndjson')).open('w', encoding='utf-8') as log:
++            def report(value):
++                log.write(json.dumps({'at': datetime.now(timezone.utc).isoformat(), **value}) + '\n'); log.flush()
++            async def capture_error(response):
++                if response.status_code != 200:
++                    raw = await response.aread()
++                    save(name + '-http-error.json', {'status': response.status_code, 'body': raw.decode('utf-8', errors='replace')})
++            async with httpx.AsyncClient(timeout=1200, trust_env=False, event_hooks={'response': [capture_error]}) as client:
++                body = await r._reference_stream_response(client, 'http://127.0.0.1:11434/api/chat', payload, report)
++        save(name + '-response.json', body)
++        assert body['done'] is True and body.get('done_reason') != 'length' and body['model'] == model
++        value = intake.document_response_json(body['message']['content'])
++        Draft202012Validator(schema).validate(value)
++        if name == 'inventory-finding':
++            rows = r._reference_expand_inventory_choices([], value['inventory_choices'], inventory_target=expected, inventory_codec=codec)
++            expanded = intake.ReferenceDesignProposal.model_validate({'devices': rows, 'unresolved': value['unresolved']}).model_dump(mode='json')
++            assert len(expanded['devices']) == 8 and value['inventory_complete'] is True
++            assert len(value['unresolved']) == 1 and value['unresolved'][0]['code'] == 'MISSING_HARDWARE_EVIDENCE'
++            assert value['unresolved'][0]['target_ref'] == '/synthetic/transceiver'
++            assert len(value['unresolved'][0]['message']) <= 240
++        else:
++            functions = r._reference_expand_selected_functions(value['functions_by_fact'], codec)
++            candidate = deepcopy(expected); candidate['functions'] = functions
++            checked = intake.validate_reference_design(candidate, prepared)
++            assert checked['canonical_writes'] is False
++            by_id = {row['source_fact_id']: row for row in functions}
++            assert all(by_id[key]['realization'] == 'ATOMIC' and by_id[key]['executor_device_ids'] == ['C'] for key in codec[:2])
++            assert by_id[codec[2]]['realization'] == 'COMPOSITE' and by_id[codec[2]]['executor_device_ids'] == []
++            assert set(by_id[codec[2]]['realized_by_fact_ids']) == set(codec[:2])
++        results.append({'case': name, 'status': 'PASS', 'metrics': {key: body.get(key) for key in
++            ('eval_count', 'prompt_eval_count', 'prompt_eval_duration', 'eval_duration', 'total_duration')}})
++        save('progress.json', results)
++        print(json.dumps(results[-1]), flush=True)
++    result = {'status': 'PASS', 'model': model, 'actual_inference_requests': len(results), 'results': results,
++        'source_sha256': hashlib.sha256((ROOT / 'backend/nis/agent/orchestration/local_reasoner.py').read_bytes()).hexdigest(),
++        'diagnostic_target_projection_control': args.original_target_projection_control,
++        'original_acceptance': False, 'simulation_acceptance': False, 'canonical_writes': False}
++    save('result.json', result)
++    print(json.dumps(result), flush=True)
++
++
++asyncio.run(main())
+--- before/backend/tests/test_reference_selected_identity.py
++++ after/backend/tests/test_reference_selected_identity.py
+@@ -197,8 +197,9 @@
+     Draft202012Validator(schema).validate(body)
+     assert reasoner._reference_expand_selected_functions(values, identities) == rows
+     assert values == before
+-    assert all('source_fact_id' not in value['properties'] for value in
+-               schema['properties']['functions_by_fact']['properties'].values())
++    assert all('source_fact_id' not in alternative['properties'] for value in
++               schema['properties']['functions_by_fact']['properties'].values()
++               for alternative in value['anyOf'])
+ 
+ 
+ @pytest.mark.parametrize('corruption', ['missing', 'foreign', 'source_fact_id'])
+--- before/backend/tests/test_reference_design.py
++++ after/backend/tests/test_reference_design.py
+@@ -988,6 +988,8 @@
+     # Private output is a strict concise, field-bound subset. Public response
+     # validation still rejects2001 characters above; no public bound changes.
+     assert prepared['reference_sources'] == {}
++    expected['$defs']['ReferenceFinding']['properties']['code']['maxLength'] = 120
++    expected['$defs']['ReferenceFinding']['properties']['message']['maxLength'] = 240
+     fields_by_definition = {
+         'ReferenceDevice': ('quantity', 'device_type', 'function_hosts'),
+         'ReferenceFunction': ('function_hosts',), 'ReferencePort': ('ports',),

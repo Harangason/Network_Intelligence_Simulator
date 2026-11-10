@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="3" time="24.596" timestamp="2026-11-09T12:54:26.499168+01:00" hostname="Haranga"><testcase classname="tests.test_reference_port_completeness" name="test_native_grammar_rejects_complete_four_participant_scope_with_one_port" time="7.514"><failure message="AssertionError: assert not True&#10; +  where True = is_valid({'devices': [], 'functions': [], 'ports': [], 'measurements': [], ...})&#10; +    where is_valid = Draft202012Validator(schema={'$defs': {'ReferenceCommand': {'additionalProperties': False, 'properties': {'definition'...ncies', 'type': 'array'}, ...}, 'required': ['port_groups_by_device', 'port_plan_complete'], ...}, format_checker=None).is_valid&#10; +      where Draft202012Validator(schema={'$defs': {'ReferenceCommand': {'additionalProperties': False, 'properties': {'definition'...ncies', 'type': 'array'}, ...}, 'required': ['port_groups_by_device', 'port_plan_complete'], ...}, format_checker=None) = Draft202012Validator({'$defs': {'ReferenceCommand': {'additionalProperties': False, 'properties': {'rationale': {'minLength': 1, 'title': '...Measurement'}, 'title': 'Measurements', 'type': 'array', 'maxItems': 0}, ...}, 'title': 'ReferenceDesignProposal', ...})">def test_native_grammar_rejects_complete_four_participant_scope_with_one_port():
+        prepared, _ = prepared_schema()
+        schema = reasoner._reference_schema_for_stage(
+            prepared, {'ports'}, port_groups=True, device_ids=OWNERS)
+        wire = {**intake.ReferenceDesignProposal().model_dump(mode='json'),
+                'port_groups_by_device': one_port_for_four_participants(),
+                'port_plan_complete': True}
+&gt;       assert not Draft202012Validator(schema).is_valid(wire)
+E       AssertionError: assert not True
+E        +  where True = is_valid({'devices': [], 'functions': [], 'ports': [], 'measurements': [], ...})
+E        +    where is_valid = Draft202012Validator(schema={'$defs': {'ReferenceCommand': {'additionalProperties': False, 'properties': {'definition'...ncies', 'type': 'array'}, ...}, 'required': ['port_groups_by_device', 'port_plan_complete'], ...}, format_checker=None).is_valid
+E        +      where Draft202012Validator(schema={'$defs': {'ReferenceCommand': {'additionalProperties': False, 'properties': {'definition'...ncies', 'type': 'array'}, ...}, 'required': ['port_groups_by_device', 'port_plan_complete'], ...}, format_checker=None) = Draft202012Validator({'$defs': {'ReferenceCommand': {'additionalProperties': False, 'properties': {'rationale': {'minLength': 1, 'title': '...Measurement'}, 'title': 'Measurements', 'type': 'array', 'maxItems': 0}, ...}, 'title': 'ReferenceDesignProposal', ...})
+
+backend\tests\test_reference_port_completeness.py:36: AssertionError</failure></testcase><testcase classname="tests.test_reference_port_completeness" name="test_runtime_rejects_empty_complete_participant_despite_nonempty_rationale" time="0.012"><failure message="Failed: DID NOT RAISE ValueError">def test_runtime_rejects_empty_complete_participant_despite_nonempty_rationale():
+        value = one_port_for_four_participants()
+        before = deepcopy(value)
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+backend\tests\test_reference_port_completeness.py:42: Failed</failure></testcase><testcase classname="tests.test_reference_port_completeness" name="test_normal_planner_retries_missing_connection_before_advancing_participants" time="15.509"><failure message="AssertionError: assert (2 == 2 and ['source-cc9c...71f738a2e3ea'] == ['derived-6aa...9eba881599b1']&#10; +  where 2 = len([['source-cc9cfd15a66c71f738a2e3ea'], ['derived-6aabb6b707cc9eba881599b1']])&#10;  &#10;  At index 0 diff: 'source-cc9cfd15a66c71f738a2e3ea' != 'derived-6aabb6b707cc9eba881599b1'&#10;  Use -v to get more diff)">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000002825D97EB10&gt;
+
+    def test_normal_planner_retries_missing_connection_before_advancing_participants(monkeypatch):
+        instance, prepared, _ = reasoner_with_transport(monkeypatch)
+        original = instance.client._transport
+        selections = []
+    
+        class CapturedNextPortRequest(Exception):
+            pass
+    
+        async def provider(request):
+            if request.url.path.endswith('/show'):
+                return await original.handle_async_request(request)
+            payload = json.loads(request.content)
+            if 'port_groups_by_device' not in payload['format']['properties']:
+                return await original.handle_async_request(request)
+            context = effective_reference_context(payload['messages'])
+            owners = context['device_ids_for_this_stage']
+            selections.append(deepcopy(owners))
+            if len(selections) == 2:
+                raise CapturedNextPortRequest
+            body = {'port_plan_complete': True, 'port_groups_by_device': {
+                owner: {'connections': [], 'rationale': 'No individually mapped function; no port.'}
+                for owner in owners}}
+            return httpx.Response(200, json={'message': {'content': json.dumps(body)},
+                'done': True, 'done_reason': 'stop', 'prompt_eval_count': 500, 'eval_count': 100})
+    
+        instance.client._transport = httpx.MockTransport(provider)
+        from backend.nis.engineering.goal_execution.progress import sink
+        progress = []
+        token = sink.set(progress.append)
+        try:
+            with pytest.raises(CapturedNextPortRequest):
+                run_reference(instance, prepared)
+        finally:
+            sink.reset(token)
+&gt;       assert len(selections) == 2 and selections[0] == selections[1]
+E       AssertionError: assert (2 == 2 and ['source-cc9c...71f738a2e3ea'] == ['derived-6aa...9eba881599b1']
+E        +  where 2 = len([['source-cc9cfd15a66c71f738a2e3ea'], ['derived-6aabb6b707cc9eba881599b1']])
+E         
+E         At index 0 diff: 'source-cc9cfd15a66c71f738a2e3ea' != 'derived-6aabb6b707cc9eba881599b1'
+E         Use -v to get more diff)
+
+backend\tests\test_reference_port_completeness.py:81: AssertionError</failure></testcase></testsuite></testsuites>

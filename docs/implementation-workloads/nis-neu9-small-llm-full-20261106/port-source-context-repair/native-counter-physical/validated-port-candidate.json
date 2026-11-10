@@ -1,0 +1,179 @@
+{
+  "devices": [
+    {
+      "field_references": {},
+      "kind": "CONTROLLER",
+      "context_kind": null,
+      "quantity": 1,
+      "source_member_bindings": {},
+      "owner_device_id": null,
+      "purpose": null,
+      "contained_device_ids": [],
+      "rationale": "Steuergerät C1 ist für die Koordination des Anlagenzustands und die Verarbeitung von Statusmeldungen erforderlich.",
+      "id": "source-f23ad5025644d198f161a3d1",
+      "name": "Steuergerät ID: C1",
+      "source_fact_ids": [
+        "Fe50abddc71ba",
+        "Fa13b950ad48f"
+      ]
+    },
+    {
+      "field_references": {},
+      "kind": "CONTROLLER",
+      "context_kind": null,
+      "quantity": 1,
+      "source_member_bindings": {},
+      "owner_device_id": null,
+      "purpose": null,
+      "contained_device_ids": [],
+      "rationale": "Steuergerät C2 ist für die Überwachung und Koordination des Energiezustands erforderlich.",
+      "id": "source-c3ac1a059aa07e0c5ce7d431",
+      "name": "Steuergerät ID: C2",
+      "source_fact_ids": [
+        "Fe6a311f91fa1",
+        "F5e8a5e53ecaa"
+      ]
+    },
+    {
+      "field_references": {},
+      "kind": "CONTROLLER",
+      "context_kind": null,
+      "quantity": 1,
+      "source_member_bindings": {},
+      "owner_device_id": null,
+      "purpose": null,
+      "contained_device_ids": [],
+      "rationale": "Steuergerät C3 ist für die Überwachung und Koordination des Wartungszustands erforderlich.",
+      "id": "source-b88732dbe26ae2198867d1a3",
+      "name": "Steuergerät ID: C3",
+      "source_fact_ids": [
+        "F41af81812920",
+        "Fa13b950ad48f"
+      ]
+    },
+    {
+      "field_references": {},
+      "kind": "CONTROLLER",
+      "context_kind": null,
+      "quantity": 1,
+      "source_member_bindings": {},
+      "owner_device_id": null,
+      "purpose": null,
+      "contained_device_ids": [],
+      "rationale": "Steuergerät C4 ist für die Koordination der Prozessfreigabe erforderlich.",
+      "id": "source-b0a1ce75bbe7d2a8b5c8026a",
+      "name": "Steuergerät ID: C4",
+      "source_fact_ids": [
+        "Fdae41837e305",
+        "F5e8a5e53ecaa"
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "rationale": "C1 verarbeitet die empfangenen Statusmeldungen zur Koordination des Anlagenzustands.",
+      "field_references": {},
+      "source_fact_id": "Fa13b950ad48f",
+      "realization": "ATOMIC",
+      "executor_device_ids": [
+        "source-f23ad5025644d198f161a3d1"
+      ],
+      "realized_by_fact_ids": []
+    }
+  ],
+  "ports": [
+    {
+      "rationale": "Steuergerät C1 benötigt Statusdaten von C2, C3 und C4 zur Koordination des Anlagenzustands (REQ-001).",
+      "field_references": {},
+      "id": "port-30b561c8a1bd837ece56513a-1",
+      "device_id": "source-f23ad5025644d198f161a3d1",
+      "technology": "can_fd",
+      "role": "BACKBONE",
+      "network_scope": "SEGMENT_S",
+      "parameters": {}
+    },
+    {
+      "rationale": "Steuergerät C2 benötigt Statusdaten von C1, C3 und C4 zur Koordination des Energiezustands (REQ-001).",
+      "field_references": {},
+      "id": "port-622d705993f79ab4e0e7cfbd-1",
+      "device_id": "source-c3ac1a059aa07e0c5ce7d431",
+      "technology": "can_fd",
+      "role": "BACKBONE",
+      "network_scope": "SEGMENT_S",
+      "parameters": {}
+    },
+    {
+      "rationale": "Steuergerät C3 benötigt Statusdaten von C1, C2 und C4 zur Koordination des Wartungszustands (REQ-001).",
+      "field_references": {},
+      "id": "port-79566f552936c5e4695475eb-1",
+      "device_id": "source-b88732dbe26ae2198867d1a3",
+      "technology": "can_fd",
+      "role": "BACKBONE",
+      "network_scope": "SEGMENT_S",
+      "parameters": {}
+    },
+    {
+      "rationale": "Steuergerät C4 benötigt Statusdaten von C1, C2 und C3 zur Koordination der Prozessfreigabe (REQ-001).",
+      "field_references": {},
+      "id": "port-14b7bb96084c6cef3f82c050-1",
+      "device_id": "source-b0a1ce75bbe7d2a8b5c8026a",
+      "technology": "can_fd",
+      "role": "BACKBONE",
+      "network_scope": "SEGMENT_S",
+      "parameters": {}
+    }
+  ],
+  "measurements": [],
+  "commands": [],
+  "functional_dependencies": [
+    {
+      "rationale": "C1 benötigt Statusdaten von C2, C3 und C4 zur Koordination des Anlagenzustands.",
+      "field_references": {},
+      "id": "Fd-001",
+      "producer_fact_id": "Fa13b950ad48f",
+      "consumer_fact_ids": [
+        "F5e8a5e53ecaa"
+      ],
+      "executor_device_id": "source-c3ac1a059aa07e0c5ce7d431",
+      "signal_name": "status_anlage_zustand",
+      "encoding": {
+        "length_bits": 64,
+        "data_type": "unsigned",
+        "unit": "code",
+        "factor": 1.0,
+        "offset_value": 0.0,
+        "min_value": null,
+        "max_value": null,
+        "byte_order": "little_endian",
+        "semantic": {
+          "semantic_type": "BOOLEAN",
+          "meaning": "Anlagenzustand koordiniert"
+        },
+        "data": {
+          "enum_values": {
+            "COORDINATED": 1,
+            "UNCOORDINATED": 0
+          },
+          "default_value": "UNCOORDINATED"
+        }
+      }
+    }
+  ],
+  "unresolved": [
+    {
+      "code": "REQ-001",
+      "target_ref": "Steuergerät ID: C2",
+      "message": "Fehlende Hardwarebindung für Steuergerät C2 (Energiezustand) in der aktuellen Auswahl."
+    },
+    {
+      "code": "REQ-001",
+      "target_ref": "Steuergerät ID: C3",
+      "message": "Fehlende Hardwarebindung für Steuergerät C3 (Wartungszustand) in der aktuellen Auswahl."
+    },
+    {
+      "code": "REQ-001",
+      "target_ref": "Steuergerät ID: C4",
+      "message": "Fehlende Hardwarebindung für Steuergerät C4 (Prozessfreigabe) in der aktuellen Auswahl."
+    }
+  ]
+}

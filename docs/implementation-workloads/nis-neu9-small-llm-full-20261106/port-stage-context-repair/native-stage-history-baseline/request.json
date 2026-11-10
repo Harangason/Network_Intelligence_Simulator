@@ -1,0 +1,2032 @@
+{
+  "model": "qwen3.5:9b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Independent NIS native stage-switch test. Follow the current planning stage and the complete authored source; return only schema-valid JSON. NIS-Kontextfortsetzung: Die erste Nutzernachricht enthält den vollständigen Planungskontext. Nachrichten mit nis_context_patch aktualisieren diesen vollständig nach RFC6902; nicht genannte Werte bleiben unverändert. Maßgeblich ist der daraus rekonstruierte aktuelle NIS-Kontext mit planning_stage und output_fields_for_this_stage. Vorherige Modellantworten sind Vorschläge; nur die NIS-Kontextupdates bestätigen den serverseitig geprüften Zwischenstand. Keine ursprünglichen Fakten, Teilnehmer oder offenen Quellenbereiche verwerfen. Weiter ausschließlich im aktuellen Antwortschema antworten. Verlustfreie Tabellendarstellung: Enthält eine Nachricht nis_context_snapshot, ist dies ihr vollständiger Dateninhalt in kompakter Darstellung. An jedem JSON-Pointer in nis_context_tables steht eine Tabelle: columns benennt die variablen Felder; jede rows-Zeile enthält deren Werte in derselben Reihenfolge. constants gelten unverändert für jede Zeile. Mit keys entsteht ein Objekt keys[i] -> Zeile[i], sonst eine Liste von Datensätzen. Eine Tabelle mit segments enthält stattdessen mehrere solche columns/constants/rows-Tabellen: ihre vollständig rekonstruierten Zeilen in der angegebenen Reihenfolge aneinanderhängen, ohne Sortierung oder Auslassung. Ein äußeres keys ordnet erst danach allen Zeilen ihre Schlüssel zu. Konstanten eines Segments gelten ausschließlich für seine eigenen Zeilen. Zuerst alle Tabellen rekonstruieren, danach nis_context_copies der Reihe nach als RFC6902-Operationen ausführen: copy setzt eine vollständige tiefe Kopie von from an path ein; ein folgendes replace ersetzt das vorhandene Feld an path exakt durch value. Frühere Kopien und Änderungen behalten auch die exakte skalare Schreibweise: value_json_literal enthält bei Skalarersetzungen zusätzlich das ursprüngliche JSON-Literal als Zeichenkette, zum Beispiel \"-0.0\". Es beschreibt denselben typisierten value, ist kein anderer Wert und kein Override. Beim Lesen von Literalzeichen zählt diese exakte Schreibweise einschließlich Vorzeichen. Diese Angaben bleiben auch bei späteren tiefen Kopien erhalten. Frühere Kopien und Änderungen gelten für spätere Kopien als Basis. Bei JSON-Pointern das führende / als Wurzelmarker überspringen und danach an / in Segmente zerlegen; innerhalb jedes Segments zuerst ~1 zu / und dann ~0 zu ~ dekodieren. a~1b~0c bezeichnet den EINEN Schlüssel a/b~c, ein abschließendes / den leeren Schlüssel. JSON-Skalartypen und Literalvorzeichen exakt erhalten, niemals normalisieren oder runden: false ist nicht 0, und -0.0 behält sein Minuszeichen gegenüber 0.0. Maßgeblich ist stets der konkrete rekonstruierte Wert, kein Beispielstandard. Das ist keine Kürzung; sämtliche Quellen, Felder und Werte bleiben exakt erhalten. Enthält die rekonstruierte Nachricht nis_context_patch, diese Operationen anschließend auf den aktuellen Planungskontext anwenden, nicht auf die Tabellendarstellung. Bei einem Anker-Neustand gilt der Patch ab dem ursprünglichen Kontext der ersten Nachricht; zwischenzeitliche Vorschläge sind durch diesen vollständigen aktuellen Neustand ersetzt. nis_current_selection wiederholt die aktuelle Auswahl direkt lesbar außerhalb der Tabellen. Ihr existing_inventory ist der JSON-Pointer /current_candidate/devices in den vollständig rekonstruierten AKTUELLEN NIS-Kontext, nicht in den ursprünglichen Anker oder die rohe Tabelle. Er bezeichnet die vollständige geordnete Geräteliste einschließlich aller Identitäten, Namen, Arten, Quellenbindungen und technischen Felder; kein Gerät wird ausgelassen. Auch existing_inventory_for_this_stage verweist auf diese eine vollständige Liste. Bei einer Fortsetzung zuerst sämtliche Kontextpatches anwenden und danach diese Verweise auflösen; nie eine alte Bestandsliste aus einer vorherigen Nachricht verwenden. Die letzte Nutzernachricht bestimmt die Auswahl. Die Verweise ersetzen nur doppelte Bestandskopien, niemals die vollständigen Quellen, Gerätedaten oder Prüfungen."
+    },
+    {
+      "role": "user",
+      "content": "{\"nis_context_snapshot\":{\"original_source\":\"Independent authored test, not real hardware: controller-a requires exactly two parallel physical CAN connections to bench-a; controller-b requires one physical CAN connection to bench-b; controller-c requires one physical CAN connection to bench-c. All use LOCAL role. controller-offline performs local computation only and explicitly has no physical network connections. These are synthetic planning requirements, never physical qualification evidence.\",\"original_facts\":{\"columns\":[\"name\",\"kind\",\"role\",\"quantity\",\"source_quote\"],\"constants\":{\"source_context\":[]},\"rows\":[[\"Controller (ECU)\",\"INSTANCE\",\"CONTROLLER\",1,\"Controller (ECU)\"],[\"Sensorik (Temperatursensoren)\",\"CATEGORY\",\"SENSOR\",null,\"Sensorik (Temperatursensoren)\"],[\"Aktorik (Ventile)\",\"CATEGORY\",\"ACTUATOR\",null,\"Aktorik (Ventile)\"],[\"Regelung\",\"FUNCTION\",\"OTHER\",null,\"Funktion: Regelung\"],[\"Diagnose\",\"FUNCTION\",\"OTHER\",null,\"Funktion: Diagnose\"],[\"Gesamtfunktion\",\"FUNCTION\",\"OTHER\",null,\"Funktion: Gesamtfunktion\"],[\"REQ-001\",\"REQUIREMENT\",\"OTHER\",null,\"REQ-001: Das System MUSS diagnostizierbar sein.\"]],\"keys\":[\"Fc609c6ef02e8\",\"F0d13bdd245f9\",\"Fb14d14502074\",\"F05b5bf743577\",\"F529de96dd573\",\"F43a2bc676eed\",\"Fa0bd7609b4d2\"]},\"planning_stage\":\"Inventar der deklarierten Teilnehmer\",\"inventory_target_for_this_stage\":{\"fact_id\":\"authored-inventory\",\"names\":[\"authored-other-112\",\"authored-other-113\",\"authored-other-114\",\"authored-other-115\",\"authored-other-116\",\"authored-other-117\",\"authored-other-118\",\"authored-other-119\"]},\"derivation_fact_ids_for_this_stage\":null,\"output_fields_for_this_stage\":[\"devices\"],\"device_ids_for_this_stage\":[],\"port_ids_for_this_stage\":[],\"function_fact_ids_for_this_stage\":[],\"producer_device_ids_for_this_stage\":[],\"current_candidate\":{\"devices\":{\"segments\":[{\"columns\":[\"id\",\"name\"],\"constants\":{\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":null,\"rationale\":\"Authored counter participant.\",\"field_references\":{}},\"rows\":[[\"controller-a\",\"controller-a\"],[\"controller-b\",\"controller-b\"],[\"controller-c\",\"controller-c\"],[\"controller-offline\",\"controller-offline\"]]},{\"columns\":[\"id\",\"name\"],\"constants\":{\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}},\"rows\":[[\"authored-other-0\",\"authored-other-0\"],[\"authored-other-1\",\"authored-other-1\"],[\"authored-other-2\",\"authored-other-2\"],[\"authored-other-3\",\"authored-other-3\"],[\"authored-other-4\",\"authored-other-4\"],[\"authored-other-5\",\"authored-other-5\"],[\"authored-other-6\",\"authored-other-6\"],[\"authored-other-7\",\"authored-other-7\"],[\"authored-other-8\",\"authored-other-8\"],[\"authored-other-9\",\"authored-other-9\"],[\"authored-other-10\",\"authored-other-10\"],[\"authored-other-11\",\"authored-other-11\"],[\"authored-other-12\",\"authored-other-12\"],[\"authored-other-13\",\"authored-other-13\"],[\"authored-other-14\",\"authored-other-14\"],[\"authored-other-15\",\"authored-other-15\"],[\"authored-other-16\",\"authored-other-16\"],[\"authored-other-17\",\"authored-other-17\"],[\"authored-other-18\",\"authored-other-18\"],[\"authored-other-19\",\"authored-other-19\"],[\"authored-other-20\",\"authored-other-20\"],[\"authored-other-21\",\"authored-other-21\"],[\"authored-other-22\",\"authored-other-22\"],[\"authored-other-23\",\"authored-other-23\"],[\"authored-other-24\",\"authored-other-24\"],[\"authored-other-25\",\"authored-other-25\"],[\"authored-other-26\",\"authored-other-26\"],[\"authored-other-27\",\"authored-other-27\"],[\"authored-other-28\",\"authored-other-28\"],[\"authored-other-29\",\"authored-other-29\"],[\"authored-other-30\",\"authored-other-30\"],[\"authored-other-31\",\"authored-other-31\"],[\"authored-other-32\",\"authored-other-32\"],[\"authored-other-33\",\"authored-other-33\"],[\"authored-other-34\",\"authored-other-34\"],[\"authored-other-35\",\"authored-other-35\"],[\"authored-other-36\",\"authored-other-36\"],[\"authored-other-37\",\"authored-other-37\"],[\"authored-other-38\",\"authored-other-38\"],[\"authored-other-39\",\"authored-other-39\"],[\"authored-other-40\",\"authored-other-40\"],[\"authored-other-41\",\"authored-other-41\"],[\"authored-other-42\",\"authored-other-42\"],[\"authored-other-43\",\"authored-other-43\"],[\"authored-other-44\",\"authored-other-44\"],[\"authored-other-45\",\"authored-other-45\"],[\"authored-other-46\",\"authored-other-46\"],[\"authored-other-47\",\"authored-other-47\"],[\"authored-other-48\",\"authored-other-48\"],[\"authored-other-49\",\"authored-other-49\"],[\"authored-other-50\",\"authored-other-50\"],[\"authored-other-51\",\"authored-other-51\"],[\"authored-other-52\",\"authored-other-52\"],[\"authored-other-53\",\"authored-other-53\"],[\"authored-other-54\",\"authored-other-54\"],[\"authored-other-55\",\"authored-other-55\"],[\"authored-other-56\",\"authored-other-56\"],[\"authored-other-57\",\"authored-other-57\"],[\"authored-other-58\",\"authored-other-58\"],[\"authored-other-59\",\"authored-other-59\"],[\"authored-other-60\",\"authored-other-60\"],[\"authored-other-61\",\"authored-other-61\"],[\"authored-other-62\",\"authored-other-62\"],[\"authored-other-63\",\"authored-other-63\"],[\"authored-other-64\",\"authored-other-64\"],[\"authored-other-65\",\"authored-other-65\"],[\"authored-other-66\",\"authored-other-66\"],[\"authored-other-67\",\"authored-other-67\"],[\"authored-other-68\",\"authored-other-68\"],[\"authored-other-69\",\"authored-other-69\"],[\"authored-other-70\",\"authored-other-70\"],[\"authored-other-71\",\"authored-other-71\"],[\"authored-other-72\",\"authored-other-72\"],[\"authored-other-73\",\"authored-other-73\"],[\"authored-other-74\",\"authored-other-74\"],[\"authored-other-75\",\"authored-other-75\"],[\"authored-other-76\",\"authored-other-76\"],[\"authored-other-77\",\"authored-other-77\"],[\"authored-other-78\",\"authored-other-78\"],[\"authored-other-79\",\"authored-other-79\"],[\"authored-other-80\",\"authored-other-80\"],[\"authored-other-81\",\"authored-other-81\"],[\"authored-other-82\",\"authored-other-82\"],[\"authored-other-83\",\"authored-other-83\"],[\"authored-other-84\",\"authored-other-84\"],[\"authored-other-85\",\"authored-other-85\"],[\"authored-other-86\",\"authored-other-86\"],[\"authored-other-87\",\"authored-other-87\"],[\"authored-other-88\",\"authored-other-88\"],[\"authored-other-89\",\"authored-other-89\"],[\"authored-other-90\",\"authored-other-90\"],[\"authored-other-91\",\"authored-other-91\"],[\"authored-other-92\",\"authored-other-92\"],[\"authored-other-93\",\"authored-other-93\"],[\"authored-other-94\",\"authored-other-94\"],[\"authored-other-95\",\"authored-other-95\"],[\"authored-other-96\",\"authored-other-96\"],[\"authored-other-97\",\"authored-other-97\"],[\"authored-other-98\",\"authored-other-98\"],[\"authored-other-99\",\"authored-other-99\"],[\"authored-other-100\",\"authored-other-100\"],[\"authored-other-101\",\"authored-other-101\"],[\"authored-other-102\",\"authored-other-102\"],[\"authored-other-103\",\"authored-other-103\"],[\"authored-other-104\",\"authored-other-104\"],[\"authored-other-105\",\"authored-other-105\"],[\"authored-other-106\",\"authored-other-106\"],[\"authored-other-107\",\"authored-other-107\"],[\"authored-other-108\",\"authored-other-108\"],[\"authored-other-109\",\"authored-other-109\"],[\"authored-other-110\",\"authored-other-110\"],[\"authored-other-111\",\"authored-other-111\"],[\"authored-other-112\",\"authored-other-112\"],[\"authored-other-113\",\"authored-other-113\"],[\"authored-other-114\",\"authored-other-114\"],[\"authored-other-115\",\"authored-other-115\"],[\"authored-other-116\",\"authored-other-116\"],[\"authored-other-117\",\"authored-other-117\"],[\"authored-other-118\",\"authored-other-118\"],[\"authored-other-119\",\"authored-other-119\"]]}]},\"functions\":[],\"ports\":[],\"measurements\":[],\"commands\":[],\"communication\":[],\"functional_dependencies\":[],\"unresolved\":[]},\"instruction\":\"Inventory only. All model arrays except devices remain empty. No ports in this inventory stage.\"},\"nis_context_tables\":[\"/original_facts\",\"/current_candidate/devices\"],\"nis_context_copies\":[{\"op\":\"copy\",\"from\":\"/original_source\",\"path\":\"/current_candidate/devices/0/purpose\"},{\"op\":\"copy\",\"from\":\"/original_source\",\"path\":\"/current_candidate/devices/1/purpose\"},{\"op\":\"copy\",\"from\":\"/original_source\",\"path\":\"/current_candidate/devices/2/purpose\"},{\"op\":\"copy\",\"from\":\"/original_source\",\"path\":\"/current_candidate/devices/3/purpose\"}],\"nis_current_selection\":{\"planning_stage\":\"Inventar der deklarierten Teilnehmer\",\"inventory_target\":{\"fact_id\":\"authored-inventory\",\"names\":[\"authored-other-112\",\"authored-other-113\",\"authored-other-114\",\"authored-other-115\",\"authored-other-116\",\"authored-other-117\",\"authored-other-118\",\"authored-other-119\"]},\"derivation_fact_ids\":null,\"existing_inventory\":\"/current_candidate/devices\"}}"
+    },
+    {
+      "role": "assistant",
+      "content": "{\"devices\": [{\"id\": \"authored-other-112\", \"name\": \"authored-other-112\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-113\", \"name\": \"authored-other-113\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-114\", \"name\": \"authored-other-114\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-115\", \"name\": \"authored-other-115\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-116\", \"name\": \"authored-other-116\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-117\", \"name\": \"authored-other-117\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-118\", \"name\": \"authored-other-118\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-119\", \"name\": \"authored-other-119\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}], \"functions\": [], \"ports\": [], \"measurements\": [], \"commands\": [], \"communication\": [], \"functional_dependencies\": [], \"unresolved\": []}"
+    },
+    {
+      "role": "user",
+      "content": "{\"nis_context_snapshot\":{\"nis_context_patch\":{\"segments\":[{\"columns\":[\"path\",\"value\"],\"constants\":{\"op\":\"replace\"},\"rows\":[[\"/inventory_target_for_this_stage/names/0\",\"authored-other-120\"],[\"/inventory_target_for_this_stage/names/1\",\"authored-other-121\"],[\"/inventory_target_for_this_stage/names/2\",\"authored-other-122\"],[\"/inventory_target_for_this_stage/names/3\",\"authored-other-123\"],[\"/inventory_target_for_this_stage/names/4\",\"authored-other-124\"],[\"/inventory_target_for_this_stage/names/5\",\"authored-other-125\"],[\"/inventory_target_for_this_stage/names/6\",\"authored-other-126\"],[\"/inventory_target_for_this_stage/names/7\",\"authored-other-127\"]]},{\"columns\":[\"value\"],\"constants\":{\"op\":\"add\",\"path\":\"/current_candidate/devices/-\"},\"rows\":[[{\"id\":\"authored-other-120\",\"name\":\"authored-other-120\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-121\",\"name\":\"authored-other-121\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-122\",\"name\":\"authored-other-122\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-123\",\"name\":\"authored-other-123\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-124\",\"name\":\"authored-other-124\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-125\",\"name\":\"authored-other-125\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-126\",\"name\":\"authored-other-126\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-127\",\"name\":\"authored-other-127\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}]]}]}},\"nis_context_tables\":[\"/nis_context_patch\"],\"nis_context_copies\":[],\"nis_current_selection\":{\"planning_stage\":\"Inventar der deklarierten Teilnehmer\",\"inventory_target\":{\"fact_id\":\"authored-inventory\",\"names\":[\"authored-other-120\",\"authored-other-121\",\"authored-other-122\",\"authored-other-123\",\"authored-other-124\",\"authored-other-125\",\"authored-other-126\",\"authored-other-127\"]},\"derivation_fact_ids\":null,\"existing_inventory\":\"/current_candidate/devices\"}}"
+    },
+    {
+      "role": "assistant",
+      "content": "{\"devices\": [{\"id\": \"authored-other-120\", \"name\": \"authored-other-120\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-121\", \"name\": \"authored-other-121\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-122\", \"name\": \"authored-other-122\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-123\", \"name\": \"authored-other-123\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-124\", \"name\": \"authored-other-124\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-125\", \"name\": \"authored-other-125\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-126\", \"name\": \"authored-other-126\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-127\", \"name\": \"authored-other-127\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}], \"functions\": [], \"ports\": [], \"measurements\": [], \"commands\": [], \"communication\": [], \"functional_dependencies\": [], \"unresolved\": []}"
+    },
+    {
+      "role": "user",
+      "content": "{\"nis_context_snapshot\":{\"nis_context_patch\":{\"segments\":[{\"columns\":[\"path\",\"value\"],\"constants\":{\"op\":\"replace\"},\"rows\":[[\"/inventory_target_for_this_stage/names/0\",\"authored-other-128\"],[\"/inventory_target_for_this_stage/names/1\",\"authored-other-129\"],[\"/inventory_target_for_this_stage/names/2\",\"authored-other-130\"],[\"/inventory_target_for_this_stage/names/3\",\"authored-other-131\"],[\"/inventory_target_for_this_stage/names/4\",\"authored-other-132\"],[\"/inventory_target_for_this_stage/names/5\",\"authored-other-133\"],[\"/inventory_target_for_this_stage/names/6\",\"authored-other-134\"],[\"/inventory_target_for_this_stage/names/7\",\"authored-other-135\"]]},{\"columns\":[\"value\"],\"constants\":{\"op\":\"add\",\"path\":\"/current_candidate/devices/-\"},\"rows\":[[{\"id\":\"authored-other-128\",\"name\":\"authored-other-128\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-129\",\"name\":\"authored-other-129\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-130\",\"name\":\"authored-other-130\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-131\",\"name\":\"authored-other-131\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-132\",\"name\":\"authored-other-132\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-133\",\"name\":\"authored-other-133\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-134\",\"name\":\"authored-other-134\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-135\",\"name\":\"authored-other-135\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}]]}]}},\"nis_context_tables\":[\"/nis_context_patch\"],\"nis_context_copies\":[],\"nis_current_selection\":{\"planning_stage\":\"Inventar der deklarierten Teilnehmer\",\"inventory_target\":{\"fact_id\":\"authored-inventory\",\"names\":[\"authored-other-128\",\"authored-other-129\",\"authored-other-130\",\"authored-other-131\",\"authored-other-132\",\"authored-other-133\",\"authored-other-134\",\"authored-other-135\"]},\"derivation_fact_ids\":null,\"existing_inventory\":\"/current_candidate/devices\"}}"
+    },
+    {
+      "role": "assistant",
+      "content": "{\"devices\": [{\"id\": \"authored-other-128\", \"name\": \"authored-other-128\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-129\", \"name\": \"authored-other-129\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-130\", \"name\": \"authored-other-130\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-131\", \"name\": \"authored-other-131\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-132\", \"name\": \"authored-other-132\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-133\", \"name\": \"authored-other-133\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-134\", \"name\": \"authored-other-134\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-135\", \"name\": \"authored-other-135\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}], \"functions\": [], \"ports\": [], \"measurements\": [], \"commands\": [], \"communication\": [], \"functional_dependencies\": [], \"unresolved\": []}"
+    },
+    {
+      "role": "user",
+      "content": "{\"nis_context_snapshot\":{\"nis_context_patch\":{\"segments\":[{\"columns\":[\"path\",\"value\"],\"constants\":{\"op\":\"replace\"},\"rows\":[[\"/inventory_target_for_this_stage/names/0\",\"authored-other-136\"],[\"/inventory_target_for_this_stage/names/1\",\"authored-other-137\"],[\"/inventory_target_for_this_stage/names/2\",\"authored-other-138\"],[\"/inventory_target_for_this_stage/names/3\",\"authored-other-139\"],[\"/inventory_target_for_this_stage/names/4\",\"authored-other-140\"],[\"/inventory_target_for_this_stage/names/5\",\"authored-other-141\"],[\"/inventory_target_for_this_stage/names/6\",\"authored-other-142\"],[\"/inventory_target_for_this_stage/names/7\",\"authored-other-143\"]]},{\"columns\":[\"value\"],\"constants\":{\"op\":\"add\",\"path\":\"/current_candidate/devices/-\"},\"rows\":[[{\"id\":\"authored-other-136\",\"name\":\"authored-other-136\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-137\",\"name\":\"authored-other-137\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-138\",\"name\":\"authored-other-138\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-139\",\"name\":\"authored-other-139\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-140\",\"name\":\"authored-other-140\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-141\",\"name\":\"authored-other-141\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-142\",\"name\":\"authored-other-142\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-143\",\"name\":\"authored-other-143\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}]]}]}},\"nis_context_tables\":[\"/nis_context_patch\"],\"nis_context_copies\":[],\"nis_current_selection\":{\"planning_stage\":\"Inventar der deklarierten Teilnehmer\",\"inventory_target\":{\"fact_id\":\"authored-inventory\",\"names\":[\"authored-other-136\",\"authored-other-137\",\"authored-other-138\",\"authored-other-139\",\"authored-other-140\",\"authored-other-141\",\"authored-other-142\",\"authored-other-143\"]},\"derivation_fact_ids\":null,\"existing_inventory\":\"/current_candidate/devices\"}}"
+    },
+    {
+      "role": "assistant",
+      "content": "{\"devices\": [{\"id\": \"authored-other-136\", \"name\": \"authored-other-136\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-137\", \"name\": \"authored-other-137\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-138\", \"name\": \"authored-other-138\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-139\", \"name\": \"authored-other-139\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-140\", \"name\": \"authored-other-140\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-141\", \"name\": \"authored-other-141\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-142\", \"name\": \"authored-other-142\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-143\", \"name\": \"authored-other-143\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}], \"functions\": [], \"ports\": [], \"measurements\": [], \"commands\": [], \"communication\": [], \"functional_dependencies\": [], \"unresolved\": []}"
+    },
+    {
+      "role": "user",
+      "content": "{\"nis_context_snapshot\":{\"nis_context_patch\":{\"segments\":[{\"columns\":[\"path\",\"value\"],\"constants\":{\"op\":\"replace\"},\"rows\":[[\"/inventory_target_for_this_stage/names/0\",\"authored-other-144\"],[\"/inventory_target_for_this_stage/names/1\",\"authored-other-145\"],[\"/inventory_target_for_this_stage/names/2\",\"authored-other-146\"],[\"/inventory_target_for_this_stage/names/3\",\"authored-other-147\"],[\"/inventory_target_for_this_stage/names/4\",\"authored-other-148\"],[\"/inventory_target_for_this_stage/names/5\",\"authored-other-149\"],[\"/inventory_target_for_this_stage/names/6\",\"authored-other-150\"],[\"/inventory_target_for_this_stage/names/7\",\"authored-other-151\"]]},{\"columns\":[\"value\"],\"constants\":{\"op\":\"add\",\"path\":\"/current_candidate/devices/-\"},\"rows\":[[{\"id\":\"authored-other-144\",\"name\":\"authored-other-144\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-145\",\"name\":\"authored-other-145\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-146\",\"name\":\"authored-other-146\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-147\",\"name\":\"authored-other-147\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-148\",\"name\":\"authored-other-148\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-149\",\"name\":\"authored-other-149\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-150\",\"name\":\"authored-other-150\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-151\",\"name\":\"authored-other-151\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}]]}]}},\"nis_context_tables\":[\"/nis_context_patch\"],\"nis_context_copies\":[],\"nis_current_selection\":{\"planning_stage\":\"Inventar der deklarierten Teilnehmer\",\"inventory_target\":{\"fact_id\":\"authored-inventory\",\"names\":[\"authored-other-144\",\"authored-other-145\",\"authored-other-146\",\"authored-other-147\",\"authored-other-148\",\"authored-other-149\",\"authored-other-150\",\"authored-other-151\"]},\"derivation_fact_ids\":null,\"existing_inventory\":\"/current_candidate/devices\"}}"
+    },
+    {
+      "role": "assistant",
+      "content": "{\"devices\": [{\"id\": \"authored-other-144\", \"name\": \"authored-other-144\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-145\", \"name\": \"authored-other-145\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-146\", \"name\": \"authored-other-146\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-147\", \"name\": \"authored-other-147\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-148\", \"name\": \"authored-other-148\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-149\", \"name\": \"authored-other-149\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-150\", \"name\": \"authored-other-150\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-151\", \"name\": \"authored-other-151\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}], \"functions\": [], \"ports\": [], \"measurements\": [], \"commands\": [], \"communication\": [], \"functional_dependencies\": [], \"unresolved\": []}"
+    },
+    {
+      "role": "user",
+      "content": "{\"nis_context_snapshot\":{\"nis_context_patch\":{\"segments\":[{\"columns\":[\"path\",\"value\"],\"constants\":{\"op\":\"replace\"},\"rows\":[[\"/inventory_target_for_this_stage/names/0\",\"authored-other-152\"],[\"/inventory_target_for_this_stage/names/1\",\"authored-other-153\"],[\"/inventory_target_for_this_stage/names/2\",\"authored-other-154\"],[\"/inventory_target_for_this_stage/names/3\",\"authored-other-155\"],[\"/inventory_target_for_this_stage/names/4\",\"authored-other-156\"],[\"/inventory_target_for_this_stage/names/5\",\"authored-other-157\"],[\"/inventory_target_for_this_stage/names/6\",\"authored-other-158\"],[\"/inventory_target_for_this_stage/names/7\",\"authored-other-159\"]]},{\"columns\":[\"value\"],\"constants\":{\"op\":\"add\",\"path\":\"/current_candidate/devices/-\"},\"rows\":[[{\"id\":\"authored-other-152\",\"name\":\"authored-other-152\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-153\",\"name\":\"authored-other-153\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-154\",\"name\":\"authored-other-154\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-155\",\"name\":\"authored-other-155\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-156\",\"name\":\"authored-other-156\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-157\",\"name\":\"authored-other-157\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-158\",\"name\":\"authored-other-158\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-159\",\"name\":\"authored-other-159\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}]]}]}},\"nis_context_tables\":[\"/nis_context_patch\"],\"nis_context_copies\":[],\"nis_current_selection\":{\"planning_stage\":\"Inventar der deklarierten Teilnehmer\",\"inventory_target\":{\"fact_id\":\"authored-inventory\",\"names\":[\"authored-other-152\",\"authored-other-153\",\"authored-other-154\",\"authored-other-155\",\"authored-other-156\",\"authored-other-157\",\"authored-other-158\",\"authored-other-159\"]},\"derivation_fact_ids\":null,\"existing_inventory\":\"/current_candidate/devices\"}}"
+    },
+    {
+      "role": "assistant",
+      "content": "{\"devices\": [{\"id\": \"authored-other-152\", \"name\": \"authored-other-152\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-153\", \"name\": \"authored-other-153\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-154\", \"name\": \"authored-other-154\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-155\", \"name\": \"authored-other-155\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-156\", \"name\": \"authored-other-156\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-157\", \"name\": \"authored-other-157\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-158\", \"name\": \"authored-other-158\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-159\", \"name\": \"authored-other-159\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}], \"functions\": [], \"ports\": [], \"measurements\": [], \"commands\": [], \"communication\": [], \"functional_dependencies\": [], \"unresolved\": []}"
+    },
+    {
+      "role": "user",
+      "content": "{\"nis_context_snapshot\":{\"nis_context_patch\":{\"segments\":[{\"columns\":[\"path\",\"value\"],\"constants\":{\"op\":\"replace\"},\"rows\":[[\"/inventory_target_for_this_stage/names/0\",\"authored-other-160\"],[\"/inventory_target_for_this_stage/names/1\",\"authored-other-161\"],[\"/inventory_target_for_this_stage/names/2\",\"authored-other-162\"],[\"/inventory_target_for_this_stage/names/3\",\"authored-other-163\"],[\"/inventory_target_for_this_stage/names/4\",\"authored-other-164\"],[\"/inventory_target_for_this_stage/names/5\",\"authored-other-165\"],[\"/inventory_target_for_this_stage/names/6\",\"authored-other-166\"],[\"/inventory_target_for_this_stage/names/7\",\"authored-other-167\"]]},{\"columns\":[\"value\"],\"constants\":{\"op\":\"add\",\"path\":\"/current_candidate/devices/-\"},\"rows\":[[{\"id\":\"authored-other-160\",\"name\":\"authored-other-160\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-161\",\"name\":\"authored-other-161\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-162\",\"name\":\"authored-other-162\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-163\",\"name\":\"authored-other-163\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-164\",\"name\":\"authored-other-164\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-165\",\"name\":\"authored-other-165\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-166\",\"name\":\"authored-other-166\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-167\",\"name\":\"authored-other-167\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}]]}]}},\"nis_context_tables\":[\"/nis_context_patch\"],\"nis_context_copies\":[],\"nis_current_selection\":{\"planning_stage\":\"Inventar der deklarierten Teilnehmer\",\"inventory_target\":{\"fact_id\":\"authored-inventory\",\"names\":[\"authored-other-160\",\"authored-other-161\",\"authored-other-162\",\"authored-other-163\",\"authored-other-164\",\"authored-other-165\",\"authored-other-166\",\"authored-other-167\"]},\"derivation_fact_ids\":null,\"existing_inventory\":\"/current_candidate/devices\"}}"
+    },
+    {
+      "role": "assistant",
+      "content": "{\"devices\": [{\"id\": \"authored-other-160\", \"name\": \"authored-other-160\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-161\", \"name\": \"authored-other-161\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-162\", \"name\": \"authored-other-162\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-163\", \"name\": \"authored-other-163\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-164\", \"name\": \"authored-other-164\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-165\", \"name\": \"authored-other-165\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-166\", \"name\": \"authored-other-166\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-167\", \"name\": \"authored-other-167\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}], \"functions\": [], \"ports\": [], \"measurements\": [], \"commands\": [], \"communication\": [], \"functional_dependencies\": [], \"unresolved\": []}"
+    },
+    {
+      "role": "user",
+      "content": "{\"nis_context_snapshot\":{\"nis_context_patch\":{\"segments\":[{\"columns\":[\"path\",\"value\"],\"constants\":{\"op\":\"replace\"},\"rows\":[[\"/inventory_target_for_this_stage/names/0\",\"authored-other-168\"],[\"/inventory_target_for_this_stage/names/1\",\"authored-other-169\"],[\"/inventory_target_for_this_stage/names/2\",\"authored-other-170\"],[\"/inventory_target_for_this_stage/names/3\",\"authored-other-171\"],[\"/inventory_target_for_this_stage/names/4\",\"authored-other-172\"],[\"/inventory_target_for_this_stage/names/5\",\"authored-other-173\"],[\"/inventory_target_for_this_stage/names/6\",\"authored-other-174\"],[\"/inventory_target_for_this_stage/names/7\",\"authored-other-175\"]]},{\"columns\":[\"value\"],\"constants\":{\"op\":\"add\",\"path\":\"/current_candidate/devices/-\"},\"rows\":[[{\"id\":\"authored-other-168\",\"name\":\"authored-other-168\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-169\",\"name\":\"authored-other-169\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-170\",\"name\":\"authored-other-170\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-171\",\"name\":\"authored-other-171\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-172\",\"name\":\"authored-other-172\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-173\",\"name\":\"authored-other-173\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-174\",\"name\":\"authored-other-174\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-175\",\"name\":\"authored-other-175\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}]]}]}},\"nis_context_tables\":[\"/nis_context_patch\"],\"nis_context_copies\":[],\"nis_current_selection\":{\"planning_stage\":\"Inventar der deklarierten Teilnehmer\",\"inventory_target\":{\"fact_id\":\"authored-inventory\",\"names\":[\"authored-other-168\",\"authored-other-169\",\"authored-other-170\",\"authored-other-171\",\"authored-other-172\",\"authored-other-173\",\"authored-other-174\",\"authored-other-175\"]},\"derivation_fact_ids\":null,\"existing_inventory\":\"/current_candidate/devices\"}}"
+    },
+    {
+      "role": "assistant",
+      "content": "{\"devices\": [{\"id\": \"authored-other-168\", \"name\": \"authored-other-168\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-169\", \"name\": \"authored-other-169\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-170\", \"name\": \"authored-other-170\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-171\", \"name\": \"authored-other-171\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-172\", \"name\": \"authored-other-172\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-173\", \"name\": \"authored-other-173\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-174\", \"name\": \"authored-other-174\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-175\", \"name\": \"authored-other-175\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}], \"functions\": [], \"ports\": [], \"measurements\": [], \"commands\": [], \"communication\": [], \"functional_dependencies\": [], \"unresolved\": []}"
+    },
+    {
+      "role": "user",
+      "content": "{\"nis_context_snapshot\":{\"nis_context_patch\":{\"segments\":[{\"columns\":[\"path\",\"value\"],\"constants\":{\"op\":\"replace\"},\"rows\":[[\"/inventory_target_for_this_stage/names/0\",\"authored-other-176\"],[\"/inventory_target_for_this_stage/names/1\",\"authored-other-177\"],[\"/inventory_target_for_this_stage/names/2\",\"authored-other-178\"],[\"/inventory_target_for_this_stage/names/3\",\"authored-other-179\"],[\"/inventory_target_for_this_stage/names/4\",\"authored-other-180\"],[\"/inventory_target_for_this_stage/names/5\",\"authored-other-181\"],[\"/inventory_target_for_this_stage/names/6\",\"authored-other-182\"],[\"/inventory_target_for_this_stage/names/7\",\"authored-other-183\"]]},{\"columns\":[\"value\"],\"constants\":{\"op\":\"add\",\"path\":\"/current_candidate/devices/-\"},\"rows\":[[{\"id\":\"authored-other-176\",\"name\":\"authored-other-176\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-177\",\"name\":\"authored-other-177\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-178\",\"name\":\"authored-other-178\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-179\",\"name\":\"authored-other-179\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-180\",\"name\":\"authored-other-180\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-181\",\"name\":\"authored-other-181\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-182\",\"name\":\"authored-other-182\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-183\",\"name\":\"authored-other-183\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}]]}]}},\"nis_context_tables\":[\"/nis_context_patch\"],\"nis_context_copies\":[],\"nis_current_selection\":{\"planning_stage\":\"Inventar der deklarierten Teilnehmer\",\"inventory_target\":{\"fact_id\":\"authored-inventory\",\"names\":[\"authored-other-176\",\"authored-other-177\",\"authored-other-178\",\"authored-other-179\",\"authored-other-180\",\"authored-other-181\",\"authored-other-182\",\"authored-other-183\"]},\"derivation_fact_ids\":null,\"existing_inventory\":\"/current_candidate/devices\"}}"
+    },
+    {
+      "role": "assistant",
+      "content": "{\"devices\": [{\"id\": \"authored-other-176\", \"name\": \"authored-other-176\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-177\", \"name\": \"authored-other-177\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-178\", \"name\": \"authored-other-178\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-179\", \"name\": \"authored-other-179\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-180\", \"name\": \"authored-other-180\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-181\", \"name\": \"authored-other-181\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-182\", \"name\": \"authored-other-182\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-183\", \"name\": \"authored-other-183\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}], \"functions\": [], \"ports\": [], \"measurements\": [], \"commands\": [], \"communication\": [], \"functional_dependencies\": [], \"unresolved\": []}"
+    },
+    {
+      "role": "user",
+      "content": "{\"nis_context_snapshot\":{\"nis_context_patch\":{\"segments\":[{\"columns\":[\"path\",\"value\"],\"constants\":{\"op\":\"replace\"},\"rows\":[[\"/inventory_target_for_this_stage/names/0\",\"authored-other-184\"],[\"/inventory_target_for_this_stage/names/1\",\"authored-other-185\"],[\"/inventory_target_for_this_stage/names/2\",\"authored-other-186\"],[\"/inventory_target_for_this_stage/names/3\",\"authored-other-187\"],[\"/inventory_target_for_this_stage/names/4\",\"authored-other-188\"],[\"/inventory_target_for_this_stage/names/5\",\"authored-other-189\"],[\"/inventory_target_for_this_stage/names/6\",\"authored-other-190\"],[\"/inventory_target_for_this_stage/names/7\",\"authored-other-191\"]]},{\"columns\":[\"value\"],\"constants\":{\"op\":\"add\",\"path\":\"/current_candidate/devices/-\"},\"rows\":[[{\"id\":\"authored-other-184\",\"name\":\"authored-other-184\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-185\",\"name\":\"authored-other-185\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-186\",\"name\":\"authored-other-186\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-187\",\"name\":\"authored-other-187\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-188\",\"name\":\"authored-other-188\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-189\",\"name\":\"authored-other-189\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-190\",\"name\":\"authored-other-190\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-191\",\"name\":\"authored-other-191\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}]]}]}},\"nis_context_tables\":[\"/nis_context_patch\"],\"nis_context_copies\":[],\"nis_current_selection\":{\"planning_stage\":\"Inventar der deklarierten Teilnehmer\",\"inventory_target\":{\"fact_id\":\"authored-inventory\",\"names\":[\"authored-other-184\",\"authored-other-185\",\"authored-other-186\",\"authored-other-187\",\"authored-other-188\",\"authored-other-189\",\"authored-other-190\",\"authored-other-191\"]},\"derivation_fact_ids\":null,\"existing_inventory\":\"/current_candidate/devices\"}}"
+    },
+    {
+      "role": "assistant",
+      "content": "{\"devices\": [{\"id\": \"authored-other-184\", \"name\": \"authored-other-184\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-185\", \"name\": \"authored-other-185\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-186\", \"name\": \"authored-other-186\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-187\", \"name\": \"authored-other-187\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-188\", \"name\": \"authored-other-188\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-189\", \"name\": \"authored-other-189\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-190\", \"name\": \"authored-other-190\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-191\", \"name\": \"authored-other-191\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}], \"functions\": [], \"ports\": [], \"measurements\": [], \"commands\": [], \"communication\": [], \"functional_dependencies\": [], \"unresolved\": []}"
+    },
+    {
+      "role": "user",
+      "content": "{\"nis_context_snapshot\":{\"nis_context_patch\":{\"segments\":[{\"columns\":[\"path\",\"value\"],\"constants\":{\"op\":\"replace\"},\"rows\":[[\"/inventory_target_for_this_stage/names/0\",\"authored-other-192\"],[\"/inventory_target_for_this_stage/names/1\",\"authored-other-193\"],[\"/inventory_target_for_this_stage/names/2\",\"authored-other-194\"],[\"/inventory_target_for_this_stage/names/3\",\"authored-other-195\"],[\"/inventory_target_for_this_stage/names/4\",\"authored-other-196\"],[\"/inventory_target_for_this_stage/names/5\",\"authored-other-197\"],[\"/inventory_target_for_this_stage/names/6\",\"authored-other-198\"],[\"/inventory_target_for_this_stage/names/7\",\"authored-other-199\"]]},{\"columns\":[\"value\"],\"constants\":{\"op\":\"add\",\"path\":\"/current_candidate/devices/-\"},\"rows\":[[{\"id\":\"authored-other-192\",\"name\":\"authored-other-192\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-193\",\"name\":\"authored-other-193\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-194\",\"name\":\"authored-other-194\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-195\",\"name\":\"authored-other-195\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-196\",\"name\":\"authored-other-196\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-197\",\"name\":\"authored-other-197\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-198\",\"name\":\"authored-other-198\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-199\",\"name\":\"authored-other-199\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}]]}]}},\"nis_context_tables\":[\"/nis_context_patch\"],\"nis_context_copies\":[],\"nis_current_selection\":{\"planning_stage\":\"Inventar der deklarierten Teilnehmer\",\"inventory_target\":{\"fact_id\":\"authored-inventory\",\"names\":[\"authored-other-192\",\"authored-other-193\",\"authored-other-194\",\"authored-other-195\",\"authored-other-196\",\"authored-other-197\",\"authored-other-198\",\"authored-other-199\"]},\"derivation_fact_ids\":null,\"existing_inventory\":\"/current_candidate/devices\"}}"
+    },
+    {
+      "role": "assistant",
+      "content": "{\"devices\": [{\"id\": \"authored-other-192\", \"name\": \"authored-other-192\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-193\", \"name\": \"authored-other-193\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-194\", \"name\": \"authored-other-194\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-195\", \"name\": \"authored-other-195\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-196\", \"name\": \"authored-other-196\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-197\", \"name\": \"authored-other-197\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-198\", \"name\": \"authored-other-198\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-199\", \"name\": \"authored-other-199\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}], \"functions\": [], \"ports\": [], \"measurements\": [], \"commands\": [], \"communication\": [], \"functional_dependencies\": [], \"unresolved\": []}"
+    },
+    {
+      "role": "user",
+      "content": "{\"nis_context_snapshot\":{\"nis_context_patch\":{\"segments\":[{\"columns\":[\"path\",\"value\"],\"constants\":{\"op\":\"replace\"},\"rows\":[[\"/inventory_target_for_this_stage/names/0\",\"authored-other-200\"],[\"/inventory_target_for_this_stage/names/1\",\"authored-other-201\"],[\"/inventory_target_for_this_stage/names/2\",\"authored-other-202\"],[\"/inventory_target_for_this_stage/names/3\",\"authored-other-203\"],[\"/inventory_target_for_this_stage/names/4\",\"authored-other-204\"],[\"/inventory_target_for_this_stage/names/5\",\"authored-other-205\"],[\"/inventory_target_for_this_stage/names/6\",\"authored-other-206\"],[\"/inventory_target_for_this_stage/names/7\",\"authored-other-207\"]]},{\"columns\":[\"value\"],\"constants\":{\"op\":\"add\",\"path\":\"/current_candidate/devices/-\"},\"rows\":[[{\"id\":\"authored-other-200\",\"name\":\"authored-other-200\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-201\",\"name\":\"authored-other-201\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-202\",\"name\":\"authored-other-202\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-203\",\"name\":\"authored-other-203\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-204\",\"name\":\"authored-other-204\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-205\",\"name\":\"authored-other-205\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-206\",\"name\":\"authored-other-206\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-207\",\"name\":\"authored-other-207\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}]]}]}},\"nis_context_tables\":[\"/nis_context_patch\"],\"nis_context_copies\":[],\"nis_current_selection\":{\"planning_stage\":\"Inventar der deklarierten Teilnehmer\",\"inventory_target\":{\"fact_id\":\"authored-inventory\",\"names\":[\"authored-other-200\",\"authored-other-201\",\"authored-other-202\",\"authored-other-203\",\"authored-other-204\",\"authored-other-205\",\"authored-other-206\",\"authored-other-207\"]},\"derivation_fact_ids\":null,\"existing_inventory\":\"/current_candidate/devices\"}}"
+    },
+    {
+      "role": "assistant",
+      "content": "{\"devices\": [{\"id\": \"authored-other-200\", \"name\": \"authored-other-200\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-201\", \"name\": \"authored-other-201\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-202\", \"name\": \"authored-other-202\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-203\", \"name\": \"authored-other-203\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-204\", \"name\": \"authored-other-204\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-205\", \"name\": \"authored-other-205\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-206\", \"name\": \"authored-other-206\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-207\", \"name\": \"authored-other-207\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}], \"functions\": [], \"ports\": [], \"measurements\": [], \"commands\": [], \"communication\": [], \"functional_dependencies\": [], \"unresolved\": []}"
+    },
+    {
+      "role": "user",
+      "content": "{\"nis_context_snapshot\":{\"nis_context_patch\":{\"segments\":[{\"columns\":[\"path\",\"value\"],\"constants\":{\"op\":\"replace\"},\"rows\":[[\"/inventory_target_for_this_stage/names/0\",\"authored-other-208\"],[\"/inventory_target_for_this_stage/names/1\",\"authored-other-209\"],[\"/inventory_target_for_this_stage/names/2\",\"authored-other-210\"],[\"/inventory_target_for_this_stage/names/3\",\"authored-other-211\"],[\"/inventory_target_for_this_stage/names/4\",\"authored-other-212\"],[\"/inventory_target_for_this_stage/names/5\",\"authored-other-213\"],[\"/inventory_target_for_this_stage/names/6\",\"authored-other-214\"],[\"/inventory_target_for_this_stage/names/7\",\"authored-other-215\"]]},{\"columns\":[\"value\"],\"constants\":{\"op\":\"add\",\"path\":\"/current_candidate/devices/-\"},\"rows\":[[{\"id\":\"authored-other-208\",\"name\":\"authored-other-208\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-209\",\"name\":\"authored-other-209\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-210\",\"name\":\"authored-other-210\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-211\",\"name\":\"authored-other-211\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-212\",\"name\":\"authored-other-212\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-213\",\"name\":\"authored-other-213\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-214\",\"name\":\"authored-other-214\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-215\",\"name\":\"authored-other-215\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}]]}]}},\"nis_context_tables\":[\"/nis_context_patch\"],\"nis_context_copies\":[],\"nis_current_selection\":{\"planning_stage\":\"Inventar der deklarierten Teilnehmer\",\"inventory_target\":{\"fact_id\":\"authored-inventory\",\"names\":[\"authored-other-208\",\"authored-other-209\",\"authored-other-210\",\"authored-other-211\",\"authored-other-212\",\"authored-other-213\",\"authored-other-214\",\"authored-other-215\"]},\"derivation_fact_ids\":null,\"existing_inventory\":\"/current_candidate/devices\"}}"
+    },
+    {
+      "role": "assistant",
+      "content": "{\"devices\": [{\"id\": \"authored-other-208\", \"name\": \"authored-other-208\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-209\", \"name\": \"authored-other-209\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-210\", \"name\": \"authored-other-210\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-211\", \"name\": \"authored-other-211\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-212\", \"name\": \"authored-other-212\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-213\", \"name\": \"authored-other-213\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-214\", \"name\": \"authored-other-214\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-215\", \"name\": \"authored-other-215\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}], \"functions\": [], \"ports\": [], \"measurements\": [], \"commands\": [], \"communication\": [], \"functional_dependencies\": [], \"unresolved\": []}"
+    },
+    {
+      "role": "user",
+      "content": "{\"nis_context_snapshot\":{\"nis_context_patch\":{\"segments\":[{\"columns\":[\"path\",\"value\"],\"constants\":{\"op\":\"replace\"},\"rows\":[[\"/inventory_target_for_this_stage/names/0\",\"authored-other-216\"],[\"/inventory_target_for_this_stage/names/1\",\"authored-other-217\"],[\"/inventory_target_for_this_stage/names/2\",\"authored-other-218\"],[\"/inventory_target_for_this_stage/names/3\",\"authored-other-219\"],[\"/inventory_target_for_this_stage/names/4\",\"authored-other-220\"],[\"/inventory_target_for_this_stage/names/5\",\"authored-other-221\"],[\"/inventory_target_for_this_stage/names/6\",\"authored-other-222\"],[\"/inventory_target_for_this_stage/names/7\",\"authored-other-223\"]]},{\"columns\":[\"value\"],\"constants\":{\"op\":\"add\",\"path\":\"/current_candidate/devices/-\"},\"rows\":[[{\"id\":\"authored-other-216\",\"name\":\"authored-other-216\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-217\",\"name\":\"authored-other-217\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-218\",\"name\":\"authored-other-218\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-219\",\"name\":\"authored-other-219\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-220\",\"name\":\"authored-other-220\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-221\",\"name\":\"authored-other-221\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-222\",\"name\":\"authored-other-222\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}],[{\"id\":\"authored-other-223\",\"name\":\"authored-other-223\",\"kind\":\"CONTROLLER\",\"quantity\":1,\"source_fact_ids\":[],\"source_member_bindings\":{},\"owner_device_id\":null,\"context_kind\":null,\"contained_device_ids\":[],\"purpose\":\"Independent additional inventory participant; its demand is outside the selected four-device group.\",\"rationale\":\"Authored counter participant.\",\"field_references\":{}}]]}]}},\"nis_context_tables\":[\"/nis_context_patch\"],\"nis_context_copies\":[],\"nis_current_selection\":{\"planning_stage\":\"Inventar der deklarierten Teilnehmer\",\"inventory_target\":{\"fact_id\":\"authored-inventory\",\"names\":[\"authored-other-216\",\"authored-other-217\",\"authored-other-218\",\"authored-other-219\",\"authored-other-220\",\"authored-other-221\",\"authored-other-222\",\"authored-other-223\"]},\"derivation_fact_ids\":null,\"existing_inventory\":\"/current_candidate/devices\"}}"
+    },
+    {
+      "role": "assistant",
+      "content": "{\"devices\": [{\"id\": \"authored-other-216\", \"name\": \"authored-other-216\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-217\", \"name\": \"authored-other-217\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-218\", \"name\": \"authored-other-218\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-219\", \"name\": \"authored-other-219\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-220\", \"name\": \"authored-other-220\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-221\", \"name\": \"authored-other-221\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-222\", \"name\": \"authored-other-222\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}, {\"id\": \"authored-other-223\", \"name\": \"authored-other-223\", \"kind\": \"CONTROLLER\", \"quantity\": 1, \"source_fact_ids\": [], \"source_member_bindings\": {}, \"owner_device_id\": null, \"context_kind\": null, \"contained_device_ids\": [], \"purpose\": \"Independent additional inventory participant; its demand is outside the selected four-device group.\", \"rationale\": \"Authored counter participant.\", \"field_references\": {}}], \"functions\": [], \"ports\": [], \"measurements\": [], \"commands\": [], \"communication\": [], \"functional_dependencies\": [], \"unresolved\": []}"
+    },
+    {
+      "role": "user",
+      "content": "{\"nis_context_snapshot\":{\"nis_context_patch\":{\"segments\":[{\"columns\":[\"path\",\"value\"],\"constants\":{\"op\":\"replace\"},\"rows\":[[\"/planning_stage\",\"Vollständiger Anschlussbedarf der ausgewählten Teilnehmer\"],[\"/inventory_target_for_this_stage\",null],[\"/output_fields_for_this_stage/0\",\"ports\"]]},{\"columns\":[\"value\"],\"constants\":{\"op\":\"add\",\"path\":\"/device_ids_for_this_stage/-\"},\"rows\":[[\"controller-a\"],[\"controller-b\"],[\"controller-c\"],[\"controller-offline\"]]},{\"columns\":[],\"constants\":{\"op\":\"replace\",\"path\":\"/instruction\",\"value\":\"For ALL four selected devices now return complete physical port_groups_by_device and port_plan_complete=true. Preserve the exact authored connection counts and network scopes from original_source. parameters remains {}; use technology can, role LOCAL and empty field_references. Empty connections is correct ONLY for the explicitly offline participant. All ordinary model arrays remain empty.\"},\"rows\":[[]]}]}},\"nis_context_tables\":[\"/nis_context_patch\"],\"nis_context_copies\":[]}"
+    }
+  ],
+  "format": {
+    "$defs": {
+      "ReferenceCommand": {
+        "additionalProperties": false,
+        "properties": {
+          "rationale": {
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string",
+            "maxLength": 240
+          },
+          "field_references": {
+            "type": "object",
+            "properties": {
+              "commands": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "device_id": {
+            "title": "Device Id",
+            "type": "string"
+          },
+          "definition": {
+            "$ref": "#/$defs/ReferenceWireDefinition"
+          }
+        },
+        "required": [
+          "rationale",
+          "device_id",
+          "definition"
+        ],
+        "title": "ReferenceCommand",
+        "type": "object"
+      },
+      "ReferenceCommunication": {
+        "additionalProperties": false,
+        "properties": {
+          "rationale": {
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string",
+            "maxLength": 240
+          },
+          "field_references": {
+            "type": "object",
+            "properties": {
+              "communication": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "producer_device_id": {
+            "title": "Producer Device Id",
+            "type": "string"
+          },
+          "consumer_device_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Consumer Device Ids",
+            "type": "array"
+          },
+          "producer_fact_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Producer Fact Id"
+          },
+          "consumer_fact_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Consumer Fact Ids",
+            "type": "array"
+          },
+          "source_port_id": {
+            "title": "Source Port Id",
+            "type": "string"
+          },
+          "consumer_port_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Consumer Port Ids",
+            "type": "array"
+          },
+          "scope": {
+            "enum": [
+              "LOCAL_IO",
+              "DEVICE_IO",
+              "FUNCTION_OUTPUT"
+            ],
+            "title": "Scope",
+            "type": "string"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "enum": [
+                  "MEASUREMENT",
+                  "COMMAND",
+                  "FEEDBACK",
+                  "STATUS",
+                  "FUNCTION_OUTPUT"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Role"
+          },
+          "signal_name": {
+            "minLength": 1,
+            "title": "Signal Name",
+            "type": "string"
+          },
+          "encoding": {
+            "$ref": "#/$defs/ReferenceWireDefinition"
+          },
+          "transmission_mode": {
+            "enum": [
+              "CYCLIC",
+              "EVENT",
+              "ON_REQUEST",
+              "MIXED"
+            ],
+            "title": "Transmission Mode",
+            "type": "string"
+          },
+          "cycle_ms": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cycle Ms"
+          },
+          "min_interval_ms": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Min Interval Ms"
+          },
+          "trigger": {
+            "anyOf": [
+              {
+                "enum": [
+                  "on_change",
+                  "explicit"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Trigger"
+          },
+          "trigger_description": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Trigger Description"
+          },
+          "release_times_ms": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Release Times Ms"
+          },
+          "request_source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "bus_message",
+                  "external_application"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Request Source"
+          },
+          "request_communication_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Request Communication Id"
+          },
+          "response_processing_ms": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Response Processing Ms"
+          },
+          "request_times_ms": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Request Times Ms"
+          }
+        },
+        "required": [
+          "rationale",
+          "id",
+          "producer_device_id",
+          "consumer_device_ids",
+          "source_port_id",
+          "consumer_port_ids",
+          "scope",
+          "signal_name",
+          "encoding",
+          "transmission_mode"
+        ],
+        "title": "ReferenceCommunication",
+        "type": "object"
+      },
+      "ReferenceDevice": {
+        "additionalProperties": false,
+        "properties": {
+          "rationale": {
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string",
+            "maxLength": 240
+          },
+          "field_references": {
+            "type": "object",
+            "properties": {
+              "quantity": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 0
+              },
+              "device_type": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 0
+              },
+              "function_hosts": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "CONTROLLER",
+              "GATEWAY",
+              "SENSOR",
+              "ACTUATOR",
+              "PHYSICAL_CONTEXT"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "context_kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "PASSIVE",
+                  "ASSEMBLY",
+                  "SOFTWARE_SERVICE"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Context Kind"
+          },
+          "quantity": {
+            "maximum": 1000,
+            "minimum": 1,
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "source_fact_ids": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "Fc609c6ef02e8",
+                "F0d13bdd245f9",
+                "Fb14d14502074",
+                "F05b5bf743577",
+                "F529de96dd573",
+                "F43a2bc676eed",
+                "Fa0bd7609b4d2"
+              ]
+            },
+            "minItems": 1,
+            "title": "Source Fact Ids",
+            "type": "array"
+          },
+          "source_member_bindings": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Source Member Bindings",
+            "type": "object"
+          },
+          "owner_device_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Owner Device Id"
+          },
+          "purpose": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Purpose"
+          },
+          "contained_device_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Contained Device Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rationale",
+          "id",
+          "name",
+          "kind",
+          "quantity",
+          "source_fact_ids"
+        ],
+        "title": "ReferenceDevice",
+        "type": "object"
+      },
+      "ReferenceFinding": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "minLength": 1,
+            "title": "Code",
+            "type": "string",
+            "maxLength": 120
+          },
+          "target_ref": {
+            "minLength": 1,
+            "title": "Target Ref",
+            "type": "string"
+          },
+          "message": {
+            "minLength": 1,
+            "title": "Message",
+            "type": "string",
+            "maxLength": 240
+          }
+        },
+        "required": [
+          "code",
+          "target_ref",
+          "message"
+        ],
+        "title": "ReferenceFinding",
+        "type": "object"
+      },
+      "ReferenceFunction": {
+        "additionalProperties": false,
+        "properties": {
+          "rationale": {
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string",
+            "maxLength": 240
+          },
+          "field_references": {
+            "type": "object",
+            "properties": {
+              "function_hosts": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "source_fact_id": {
+            "title": "Source Fact Id",
+            "type": "string",
+            "enum": [
+              "F05b5bf743577",
+              "F529de96dd573",
+              "F43a2bc676eed"
+            ]
+          },
+          "realization": {
+            "enum": [
+              "ATOMIC",
+              "COMPOSITE"
+            ],
+            "title": "Realization",
+            "type": "string"
+          },
+          "executor_device_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Executor Device Ids",
+            "type": "array"
+          },
+          "realized_by_fact_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Realized By Fact Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rationale",
+          "source_fact_id",
+          "realization"
+        ],
+        "title": "ReferenceFunction",
+        "type": "object"
+      },
+      "ReferenceFunctionalDependency": {
+        "additionalProperties": false,
+        "properties": {
+          "rationale": {
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string",
+            "maxLength": 240
+          },
+          "field_references": {
+            "type": "object",
+            "properties": {
+              "communication": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "producer_fact_id": {
+            "title": "Producer Fact Id",
+            "type": "string"
+          },
+          "consumer_fact_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Consumer Fact Ids",
+            "type": "array"
+          },
+          "executor_device_id": {
+            "title": "Executor Device Id",
+            "type": "string"
+          },
+          "signal_name": {
+            "minLength": 1,
+            "title": "Signal Name",
+            "type": "string"
+          },
+          "encoding": {
+            "$ref": "#/$defs/ReferenceWireDefinition"
+          }
+        },
+        "required": [
+          "rationale",
+          "id",
+          "producer_fact_id",
+          "consumer_fact_ids",
+          "executor_device_id",
+          "signal_name",
+          "encoding"
+        ],
+        "title": "ReferenceFunctionalDependency",
+        "type": "object"
+      },
+      "ReferenceMeasurement": {
+        "additionalProperties": false,
+        "properties": {
+          "rationale": {
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string",
+            "maxLength": 240
+          },
+          "field_references": {
+            "type": "object",
+            "properties": {
+              "measurements": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "device_id": {
+            "title": "Device Id",
+            "type": "string"
+          },
+          "measurement_id": {
+            "minLength": 1,
+            "title": "Measurement Id",
+            "type": "string",
+            "enum": [
+              "object_list",
+              "image_frame",
+              "point_cloud",
+              "inertial_vector",
+              "radar_detections",
+              "navigation_fix",
+              "selector_state",
+              "linear_speed",
+              "relative_position",
+              "safety_state",
+              "temperature",
+              "speed",
+              "torque",
+              "pressure",
+              "flow",
+              "current",
+              "voltage",
+              "position",
+              "angle",
+              "force",
+              "suspension_travel",
+              "wheel_load",
+              "tire_wear",
+              "angular_rate",
+              "humidity",
+              "co2",
+              "presence",
+              "ph",
+              "conductivity",
+              "fill_level",
+              "distance",
+              "acceleration"
+            ]
+          }
+        },
+        "required": [
+          "rationale",
+          "device_id",
+          "measurement_id"
+        ],
+        "title": "ReferenceMeasurement",
+        "type": "object"
+      },
+      "ReferencePort": {
+        "additionalProperties": false,
+        "properties": {
+          "rationale": {
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string",
+            "maxLength": 240
+          },
+          "field_references": {
+            "type": "object",
+            "properties": {
+              "ports": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "R1"
+                  ]
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "device_id": {
+            "title": "Device Id",
+            "type": "string",
+            "enum": [
+              "controller-a",
+              "controller-b",
+              "controller-c",
+              "controller-offline"
+            ]
+          },
+          "technology": {
+            "minLength": 1,
+            "title": "Technology",
+            "type": "string",
+            "enum": [
+              "5g",
+              "adc",
+              "afdx",
+              "amqp",
+              "arinc429",
+              "avb",
+              "bacnet_ip",
+              "bacnet_mstp",
+              "bacnet_sc",
+              "bluetooth_le",
+              "can",
+              "can_aerospace",
+              "can_fd",
+              "can_xl",
+              "canopen",
+              "cc_link",
+              "cc_link_ie",
+              "ccp",
+              "cip_safety",
+              "coap",
+              "custom_binary",
+              "custom_protocol",
+              "custom_tcp",
+              "custom_text",
+              "custom_udp",
+              "dac",
+              "dali",
+              "dds",
+              "devicenet",
+              "dnp3",
+              "doip",
+              "etb",
+              "ethercat",
+              "ethernet",
+              "ethernet_ip",
+              "flexray",
+              "foundation_fieldbus_h1",
+              "fsoe",
+              "generic_can",
+              "generic_ethernet",
+              "generic_serial",
+              "goose",
+              "gpio",
+              "hart",
+              "http",
+              "i2c",
+              "i3c",
+              "iec60870_5_101",
+              "iec60870_5_104",
+              "iec61162",
+              "iec61850",
+              "interbus",
+              "io_link",
+              "io_link_wireless",
+              "ip",
+              "isobus",
+              "j1939",
+              "knx_ip",
+              "knx_rf",
+              "knx_tp",
+              "lin",
+              "lonworks",
+              "lorawan",
+              "lte_m",
+              "lvds",
+              "m_bus",
+              "matter",
+              "mil_std_1553",
+              "mipi_csi2",
+              "mipi_dsi",
+              "mms",
+              "modbus_ascii",
+              "modbus_rtu",
+              "modbus_tcp",
+              "most",
+              "mqtt",
+              "mqtt_sn",
+              "mvb",
+              "nb_iot",
+              "nfc",
+              "nmea0183",
+              "nmea2000",
+              "obd2",
+              "ocpp",
+              "one_wire",
+              "opc_ua",
+              "opc_ua_pubsub",
+              "opensafety",
+              "pcie",
+              "powerlink",
+              "profibus_dp",
+              "profibus_pa",
+              "profinet",
+              "profisafe",
+              "pwm",
+              "rfid",
+              "ros2",
+              "rs232",
+              "rs422",
+              "rs485",
+              "sampled_values",
+              "sercos_iii",
+              "someip",
+              "someip_sd",
+              "spacewire",
+              "sparkplug_b",
+              "spi",
+              "sunspec_modbus",
+              "tcp",
+              "thread",
+              "trdp",
+              "tsn",
+              "tte",
+              "uart",
+              "udp",
+              "uds",
+              "usb",
+              "uwb",
+              "websocket",
+              "wifi",
+              "wireless_m_bus",
+              "wirelesshart",
+              "wtb",
+              "xcp",
+              "zigbee"
+            ]
+          },
+          "role": {
+            "enum": [
+              "LOCAL",
+              "BACKBONE"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "network_scope": {
+            "minLength": 1,
+            "title": "Network Scope",
+            "type": "string"
+          },
+          "parameters": {
+            "additionalProperties": true,
+            "title": "Parameters",
+            "type": "object"
+          }
+        },
+        "required": [
+          "rationale",
+          "id",
+          "device_id",
+          "technology",
+          "role",
+          "network_scope"
+        ],
+        "title": "ReferencePort",
+        "type": "object"
+      },
+      "ReferenceWireDefinition": {
+        "additionalProperties": false,
+        "properties": {
+          "length_bits": {
+            "maximum": 524288,
+            "minimum": 1,
+            "title": "Length Bits",
+            "type": "integer"
+          },
+          "data_type": {
+            "enum": [
+              "unsigned",
+              "signed",
+              "float",
+              "double",
+              "float32",
+              "float64"
+            ],
+            "title": "Data Type",
+            "type": "string"
+          },
+          "unit": {
+            "minLength": 1,
+            "title": "Unit",
+            "type": "string"
+          },
+          "factor": {
+            "title": "Factor",
+            "type": "number"
+          },
+          "offset_value": {
+            "default": 0,
+            "title": "Offset Value",
+            "type": "number"
+          },
+          "min_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Min Value"
+          },
+          "max_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Max Value"
+          },
+          "byte_order": {
+            "default": "little_endian",
+            "enum": [
+              "little_endian",
+              "big_endian"
+            ],
+            "title": "Byte Order",
+            "type": "string"
+          },
+          "semantic": {
+            "additionalProperties": true,
+            "title": "Semantic",
+            "type": "object"
+          },
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          }
+        },
+        "required": [
+          "length_bits",
+          "data_type",
+          "unit",
+          "factor",
+          "semantic",
+          "data"
+        ],
+        "title": "ReferenceWireDefinition",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "devices": {
+        "items": {
+          "$ref": "#/$defs/ReferenceDevice"
+        },
+        "title": "Devices",
+        "type": "array",
+        "maxItems": 0
+      },
+      "functions": {
+        "items": {
+          "$ref": "#/$defs/ReferenceFunction"
+        },
+        "title": "Functions",
+        "type": "array",
+        "maxItems": 0
+      },
+      "ports": {
+        "items": {
+          "$ref": "#/$defs/ReferencePort"
+        },
+        "title": "Ports",
+        "type": "array",
+        "minItems": 0,
+        "maxItems": 0
+      },
+      "measurements": {
+        "items": {
+          "$ref": "#/$defs/ReferenceMeasurement"
+        },
+        "title": "Measurements",
+        "type": "array",
+        "maxItems": 0
+      },
+      "commands": {
+        "items": {
+          "$ref": "#/$defs/ReferenceCommand"
+        },
+        "title": "Commands",
+        "type": "array",
+        "maxItems": 0
+      },
+      "communication": {
+        "items": {
+          "$ref": "#/$defs/ReferenceCommunication"
+        },
+        "title": "Communication",
+        "type": "array",
+        "maxItems": 0
+      },
+      "functional_dependencies": {
+        "items": {
+          "$ref": "#/$defs/ReferenceFunctionalDependency"
+        },
+        "title": "Functional Dependencies",
+        "type": "array",
+        "maxItems": 0
+      },
+      "unresolved": {
+        "items": {
+          "$ref": "#/$defs/ReferenceFinding"
+        },
+        "title": "Unresolved",
+        "type": "array"
+      },
+      "port_groups_by_device": {
+        "type": "object",
+        "properties": {
+          "controller-a": {
+            "type": "object",
+            "properties": {
+              "connections": {
+                "type": "array",
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "rationale": {
+                      "minLength": 1,
+                      "title": "Rationale",
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "field_references": {
+                      "type": "object",
+                      "properties": {
+                        "ports": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "R1"
+                            ]
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "technology": {
+                      "minLength": 1,
+                      "title": "Technology",
+                      "type": "string",
+                      "enum": [
+                        "5g",
+                        "adc",
+                        "afdx",
+                        "amqp",
+                        "arinc429",
+                        "avb",
+                        "bacnet_ip",
+                        "bacnet_mstp",
+                        "bacnet_sc",
+                        "bluetooth_le",
+                        "can",
+                        "can_aerospace",
+                        "can_fd",
+                        "can_xl",
+                        "canopen",
+                        "cc_link",
+                        "cc_link_ie",
+                        "ccp",
+                        "cip_safety",
+                        "coap",
+                        "custom_binary",
+                        "custom_protocol",
+                        "custom_tcp",
+                        "custom_text",
+                        "custom_udp",
+                        "dac",
+                        "dali",
+                        "dds",
+                        "devicenet",
+                        "dnp3",
+                        "doip",
+                        "etb",
+                        "ethercat",
+                        "ethernet",
+                        "ethernet_ip",
+                        "flexray",
+                        "foundation_fieldbus_h1",
+                        "fsoe",
+                        "generic_can",
+                        "generic_ethernet",
+                        "generic_serial",
+                        "goose",
+                        "gpio",
+                        "hart",
+                        "http",
+                        "i2c",
+                        "i3c",
+                        "iec60870_5_101",
+                        "iec60870_5_104",
+                        "iec61162",
+                        "iec61850",
+                        "interbus",
+                        "io_link",
+                        "io_link_wireless",
+                        "ip",
+                        "isobus",
+                        "j1939",
+                        "knx_ip",
+                        "knx_rf",
+                        "knx_tp",
+                        "lin",
+                        "lonworks",
+                        "lorawan",
+                        "lte_m",
+                        "lvds",
+                        "m_bus",
+                        "matter",
+                        "mil_std_1553",
+                        "mipi_csi2",
+                        "mipi_dsi",
+                        "mms",
+                        "modbus_ascii",
+                        "modbus_rtu",
+                        "modbus_tcp",
+                        "most",
+                        "mqtt",
+                        "mqtt_sn",
+                        "mvb",
+                        "nb_iot",
+                        "nfc",
+                        "nmea0183",
+                        "nmea2000",
+                        "obd2",
+                        "ocpp",
+                        "one_wire",
+                        "opc_ua",
+                        "opc_ua_pubsub",
+                        "opensafety",
+                        "pcie",
+                        "powerlink",
+                        "profibus_dp",
+                        "profibus_pa",
+                        "profinet",
+                        "profisafe",
+                        "pwm",
+                        "rfid",
+                        "ros2",
+                        "rs232",
+                        "rs422",
+                        "rs485",
+                        "sampled_values",
+                        "sercos_iii",
+                        "someip",
+                        "someip_sd",
+                        "spacewire",
+                        "sparkplug_b",
+                        "spi",
+                        "sunspec_modbus",
+                        "tcp",
+                        "thread",
+                        "trdp",
+                        "tsn",
+                        "tte",
+                        "uart",
+                        "udp",
+                        "uds",
+                        "usb",
+                        "uwb",
+                        "websocket",
+                        "wifi",
+                        "wireless_m_bus",
+                        "wirelesshart",
+                        "wtb",
+                        "xcp",
+                        "zigbee"
+                      ]
+                    },
+                    "role": {
+                      "enum": [
+                        "LOCAL",
+                        "BACKBONE"
+                      ],
+                      "title": "Role",
+                      "type": "string"
+                    },
+                    "network_scope": {
+                      "minLength": 1,
+                      "title": "Network Scope",
+                      "type": "string"
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "properties": {},
+                      "additionalProperties": false
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000
+                    }
+                  },
+                  "required": [
+                    "rationale",
+                    "technology",
+                    "role",
+                    "network_scope",
+                    "count",
+                    "parameters"
+                  ],
+                  "title": "ReferencePort",
+                  "type": "object"
+                },
+                "maxItems": 10000
+              },
+              "rationale": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              }
+            },
+            "required": [
+              "connections",
+              "rationale"
+            ],
+            "additionalProperties": false
+          },
+          "controller-b": {
+            "type": "object",
+            "properties": {
+              "connections": {
+                "type": "array",
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "rationale": {
+                      "minLength": 1,
+                      "title": "Rationale",
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "field_references": {
+                      "type": "object",
+                      "properties": {
+                        "ports": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "R1"
+                            ]
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "technology": {
+                      "minLength": 1,
+                      "title": "Technology",
+                      "type": "string",
+                      "enum": [
+                        "5g",
+                        "adc",
+                        "afdx",
+                        "amqp",
+                        "arinc429",
+                        "avb",
+                        "bacnet_ip",
+                        "bacnet_mstp",
+                        "bacnet_sc",
+                        "bluetooth_le",
+                        "can",
+                        "can_aerospace",
+                        "can_fd",
+                        "can_xl",
+                        "canopen",
+                        "cc_link",
+                        "cc_link_ie",
+                        "ccp",
+                        "cip_safety",
+                        "coap",
+                        "custom_binary",
+                        "custom_protocol",
+                        "custom_tcp",
+                        "custom_text",
+                        "custom_udp",
+                        "dac",
+                        "dali",
+                        "dds",
+                        "devicenet",
+                        "dnp3",
+                        "doip",
+                        "etb",
+                        "ethercat",
+                        "ethernet",
+                        "ethernet_ip",
+                        "flexray",
+                        "foundation_fieldbus_h1",
+                        "fsoe",
+                        "generic_can",
+                        "generic_ethernet",
+                        "generic_serial",
+                        "goose",
+                        "gpio",
+                        "hart",
+                        "http",
+                        "i2c",
+                        "i3c",
+                        "iec60870_5_101",
+                        "iec60870_5_104",
+                        "iec61162",
+                        "iec61850",
+                        "interbus",
+                        "io_link",
+                        "io_link_wireless",
+                        "ip",
+                        "isobus",
+                        "j1939",
+                        "knx_ip",
+                        "knx_rf",
+                        "knx_tp",
+                        "lin",
+                        "lonworks",
+                        "lorawan",
+                        "lte_m",
+                        "lvds",
+                        "m_bus",
+                        "matter",
+                        "mil_std_1553",
+                        "mipi_csi2",
+                        "mipi_dsi",
+                        "mms",
+                        "modbus_ascii",
+                        "modbus_rtu",
+                        "modbus_tcp",
+                        "most",
+                        "mqtt",
+                        "mqtt_sn",
+                        "mvb",
+                        "nb_iot",
+                        "nfc",
+                        "nmea0183",
+                        "nmea2000",
+                        "obd2",
+                        "ocpp",
+                        "one_wire",
+                        "opc_ua",
+                        "opc_ua_pubsub",
+                        "opensafety",
+                        "pcie",
+                        "powerlink",
+                        "profibus_dp",
+                        "profibus_pa",
+                        "profinet",
+                        "profisafe",
+                        "pwm",
+                        "rfid",
+                        "ros2",
+                        "rs232",
+                        "rs422",
+                        "rs485",
+                        "sampled_values",
+                        "sercos_iii",
+                        "someip",
+                        "someip_sd",
+                        "spacewire",
+                        "sparkplug_b",
+                        "spi",
+                        "sunspec_modbus",
+                        "tcp",
+                        "thread",
+                        "trdp",
+                        "tsn",
+                        "tte",
+                        "uart",
+                        "udp",
+                        "uds",
+                        "usb",
+                        "uwb",
+                        "websocket",
+                        "wifi",
+                        "wireless_m_bus",
+                        "wirelesshart",
+                        "wtb",
+                        "xcp",
+                        "zigbee"
+                      ]
+                    },
+                    "role": {
+                      "enum": [
+                        "LOCAL",
+                        "BACKBONE"
+                      ],
+                      "title": "Role",
+                      "type": "string"
+                    },
+                    "network_scope": {
+                      "minLength": 1,
+                      "title": "Network Scope",
+                      "type": "string"
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "properties": {},
+                      "additionalProperties": false
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000
+                    }
+                  },
+                  "required": [
+                    "rationale",
+                    "technology",
+                    "role",
+                    "network_scope",
+                    "count",
+                    "parameters"
+                  ],
+                  "title": "ReferencePort",
+                  "type": "object"
+                },
+                "maxItems": 10000
+              },
+              "rationale": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              }
+            },
+            "required": [
+              "connections",
+              "rationale"
+            ],
+            "additionalProperties": false
+          },
+          "controller-c": {
+            "type": "object",
+            "properties": {
+              "connections": {
+                "type": "array",
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "rationale": {
+                      "minLength": 1,
+                      "title": "Rationale",
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "field_references": {
+                      "type": "object",
+                      "properties": {
+                        "ports": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "R1"
+                            ]
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "technology": {
+                      "minLength": 1,
+                      "title": "Technology",
+                      "type": "string",
+                      "enum": [
+                        "5g",
+                        "adc",
+                        "afdx",
+                        "amqp",
+                        "arinc429",
+                        "avb",
+                        "bacnet_ip",
+                        "bacnet_mstp",
+                        "bacnet_sc",
+                        "bluetooth_le",
+                        "can",
+                        "can_aerospace",
+                        "can_fd",
+                        "can_xl",
+                        "canopen",
+                        "cc_link",
+                        "cc_link_ie",
+                        "ccp",
+                        "cip_safety",
+                        "coap",
+                        "custom_binary",
+                        "custom_protocol",
+                        "custom_tcp",
+                        "custom_text",
+                        "custom_udp",
+                        "dac",
+                        "dali",
+                        "dds",
+                        "devicenet",
+                        "dnp3",
+                        "doip",
+                        "etb",
+                        "ethercat",
+                        "ethernet",
+                        "ethernet_ip",
+                        "flexray",
+                        "foundation_fieldbus_h1",
+                        "fsoe",
+                        "generic_can",
+                        "generic_ethernet",
+                        "generic_serial",
+                        "goose",
+                        "gpio",
+                        "hart",
+                        "http",
+                        "i2c",
+                        "i3c",
+                        "iec60870_5_101",
+                        "iec60870_5_104",
+                        "iec61162",
+                        "iec61850",
+                        "interbus",
+                        "io_link",
+                        "io_link_wireless",
+                        "ip",
+                        "isobus",
+                        "j1939",
+                        "knx_ip",
+                        "knx_rf",
+                        "knx_tp",
+                        "lin",
+                        "lonworks",
+                        "lorawan",
+                        "lte_m",
+                        "lvds",
+                        "m_bus",
+                        "matter",
+                        "mil_std_1553",
+                        "mipi_csi2",
+                        "mipi_dsi",
+                        "mms",
+                        "modbus_ascii",
+                        "modbus_rtu",
+                        "modbus_tcp",
+                        "most",
+                        "mqtt",
+                        "mqtt_sn",
+                        "mvb",
+                        "nb_iot",
+                        "nfc",
+                        "nmea0183",
+                        "nmea2000",
+                        "obd2",
+                        "ocpp",
+                        "one_wire",
+                        "opc_ua",
+                        "opc_ua_pubsub",
+                        "opensafety",
+                        "pcie",
+                        "powerlink",
+                        "profibus_dp",
+                        "profibus_pa",
+                        "profinet",
+                        "profisafe",
+                        "pwm",
+                        "rfid",
+                        "ros2",
+                        "rs232",
+                        "rs422",
+                        "rs485",
+                        "sampled_values",
+                        "sercos_iii",
+                        "someip",
+                        "someip_sd",
+                        "spacewire",
+                        "sparkplug_b",
+                        "spi",
+                        "sunspec_modbus",
+                        "tcp",
+                        "thread",
+                        "trdp",
+                        "tsn",
+                        "tte",
+                        "uart",
+                        "udp",
+                        "uds",
+                        "usb",
+                        "uwb",
+                        "websocket",
+                        "wifi",
+                        "wireless_m_bus",
+                        "wirelesshart",
+                        "wtb",
+                        "xcp",
+                        "zigbee"
+                      ]
+                    },
+                    "role": {
+                      "enum": [
+                        "LOCAL",
+                        "BACKBONE"
+                      ],
+                      "title": "Role",
+                      "type": "string"
+                    },
+                    "network_scope": {
+                      "minLength": 1,
+                      "title": "Network Scope",
+                      "type": "string"
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "properties": {},
+                      "additionalProperties": false
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000
+                    }
+                  },
+                  "required": [
+                    "rationale",
+                    "technology",
+                    "role",
+                    "network_scope",
+                    "count",
+                    "parameters"
+                  ],
+                  "title": "ReferencePort",
+                  "type": "object"
+                },
+                "maxItems": 10000
+              },
+              "rationale": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              }
+            },
+            "required": [
+              "connections",
+              "rationale"
+            ],
+            "additionalProperties": false
+          },
+          "controller-offline": {
+            "type": "object",
+            "properties": {
+              "connections": {
+                "type": "array",
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "rationale": {
+                      "minLength": 1,
+                      "title": "Rationale",
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "field_references": {
+                      "type": "object",
+                      "properties": {
+                        "ports": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "R1"
+                            ]
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "technology": {
+                      "minLength": 1,
+                      "title": "Technology",
+                      "type": "string",
+                      "enum": [
+                        "5g",
+                        "adc",
+                        "afdx",
+                        "amqp",
+                        "arinc429",
+                        "avb",
+                        "bacnet_ip",
+                        "bacnet_mstp",
+                        "bacnet_sc",
+                        "bluetooth_le",
+                        "can",
+                        "can_aerospace",
+                        "can_fd",
+                        "can_xl",
+                        "canopen",
+                        "cc_link",
+                        "cc_link_ie",
+                        "ccp",
+                        "cip_safety",
+                        "coap",
+                        "custom_binary",
+                        "custom_protocol",
+                        "custom_tcp",
+                        "custom_text",
+                        "custom_udp",
+                        "dac",
+                        "dali",
+                        "dds",
+                        "devicenet",
+                        "dnp3",
+                        "doip",
+                        "etb",
+                        "ethercat",
+                        "ethernet",
+                        "ethernet_ip",
+                        "flexray",
+                        "foundation_fieldbus_h1",
+                        "fsoe",
+                        "generic_can",
+                        "generic_ethernet",
+                        "generic_serial",
+                        "goose",
+                        "gpio",
+                        "hart",
+                        "http",
+                        "i2c",
+                        "i3c",
+                        "iec60870_5_101",
+                        "iec60870_5_104",
+                        "iec61162",
+                        "iec61850",
+                        "interbus",
+                        "io_link",
+                        "io_link_wireless",
+                        "ip",
+                        "isobus",
+                        "j1939",
+                        "knx_ip",
+                        "knx_rf",
+                        "knx_tp",
+                        "lin",
+                        "lonworks",
+                        "lorawan",
+                        "lte_m",
+                        "lvds",
+                        "m_bus",
+                        "matter",
+                        "mil_std_1553",
+                        "mipi_csi2",
+                        "mipi_dsi",
+                        "mms",
+                        "modbus_ascii",
+                        "modbus_rtu",
+                        "modbus_tcp",
+                        "most",
+                        "mqtt",
+                        "mqtt_sn",
+                        "mvb",
+                        "nb_iot",
+                        "nfc",
+                        "nmea0183",
+                        "nmea2000",
+                        "obd2",
+                        "ocpp",
+                        "one_wire",
+                        "opc_ua",
+                        "opc_ua_pubsub",
+                        "opensafety",
+                        "pcie",
+                        "powerlink",
+                        "profibus_dp",
+                        "profibus_pa",
+                        "profinet",
+                        "profisafe",
+                        "pwm",
+                        "rfid",
+                        "ros2",
+                        "rs232",
+                        "rs422",
+                        "rs485",
+                        "sampled_values",
+                        "sercos_iii",
+                        "someip",
+                        "someip_sd",
+                        "spacewire",
+                        "sparkplug_b",
+                        "spi",
+                        "sunspec_modbus",
+                        "tcp",
+                        "thread",
+                        "trdp",
+                        "tsn",
+                        "tte",
+                        "uart",
+                        "udp",
+                        "uds",
+                        "usb",
+                        "uwb",
+                        "websocket",
+                        "wifi",
+                        "wireless_m_bus",
+                        "wirelesshart",
+                        "wtb",
+                        "xcp",
+                        "zigbee"
+                      ]
+                    },
+                    "role": {
+                      "enum": [
+                        "LOCAL",
+                        "BACKBONE"
+                      ],
+                      "title": "Role",
+                      "type": "string"
+                    },
+                    "network_scope": {
+                      "minLength": 1,
+                      "title": "Network Scope",
+                      "type": "string"
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "properties": {},
+                      "additionalProperties": false
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000
+                    }
+                  },
+                  "required": [
+                    "rationale",
+                    "technology",
+                    "role",
+                    "network_scope",
+                    "count",
+                    "parameters"
+                  ],
+                  "title": "ReferencePort",
+                  "type": "object"
+                },
+                "maxItems": 10000
+              },
+              "rationale": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              }
+            },
+            "required": [
+              "connections",
+              "rationale"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "controller-a",
+          "controller-b",
+          "controller-c",
+          "controller-offline"
+        ],
+        "additionalProperties": false
+      },
+      "port_plan_complete": {
+        "type": "boolean",
+        "enum": [
+          true
+        ]
+      }
+    },
+    "title": "ReferenceDesignProposal",
+    "type": "object",
+    "required": [
+      "port_groups_by_device",
+      "port_plan_complete"
+    ]
+  },
+  "think": false,
+  "stream": true,
+  "keep_alive": "10m",
+  "options": {
+    "temperature": 0,
+    "num_predict": 8192,
+    "num_ctx": 131072
+  }
+}

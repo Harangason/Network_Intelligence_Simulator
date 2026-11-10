@@ -1,0 +1,359 @@
+{
+  "goal_id": "neu9-exact-finding-accumulation-repair",
+  "kind": "repair",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "modify_code": true,
+  "allow_repair": true,
+  "status": "LOCALLY_VERIFIED_FULL_ORIGINAL_PENDING",
+  "required_outcomes": [
+    "distinct_findings_preserved",
+    "repeated_findings_idempotent",
+    "native_counter_verified"
+  ],
+  "validation_requirements": [
+    "red_green",
+    "adjacent_regression",
+    "native_counter",
+    "source_scope"
+  ],
+  "revision_before": {
+    "backend/nis/agent/orchestration/local_reasoner.py": "346ba419dfa76e8105bef844f05bdb426d666bad7fccb448fd72f943f7d99232",
+    "backend/tests/test_reference_finding_accumulation.py": "7b45148fcdcad72cca314081cf580d9abfe4b66b5d6e6df232710a57f4e3dfe7"
+  },
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\before\\local_reasoner.py",
+      "sha256": "4ae17f238e596e5808075ec376be60767b19cdb22a7355beeaef4a52fe801c76"
+    }
+  ],
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "root_cause": "Every native stage appends unresolved rows without idempotency. Identical code/message/target_ref triples recur in the same original candidate. This duplicates questions and inflates subsequent complete contexts.",
+    "first_failing_layer": "Native reference stage result accumulation",
+    "reproduction": "Terminal original82889 contains96 unresolved entries but only33 exact triples, preserved in immutable full context.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\finding.json",
+        "sha256": "3ef52bc9099a9f58c405ab18aeb27cf749884fe90ae60935c72c923417653a8e"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\attempt-17\\terminal-82889\\complete-context.json",
+        "sha256": "bd47fa3b6cd6dd97770475518cc37857d36cdd2b38801a146602da0667ad6182"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\red.xml",
+        "sha256": "9fd3b30ae5cfa9cd9ee331c4ff14dc33b6df1113092b48f979e0ff5d2cf14889"
+      }
+    ],
+    "weaken_assertions_to_pass": false,
+    "affected_files": [
+      "backend/nis/agent/orchestration/local_reasoner.py",
+      "backend/tests/test_reference_finding_accumulation.py"
+    ],
+    "acceptance_criteria": [
+      "Every distinct exact code/message/target remains in first-seen order",
+      "Repeated valid findings do not multiply across stages",
+      "Invalid findings remain rejected; raw model response and hashes unchanged"
+    ],
+    "targeted_tests": [
+      "backend/tests/test_reference_finding_accumulation.py",
+      "backend/tests/test_reference_reasoner.py",
+      "Native small-model finding delta counter"
+    ]
+  },
+  "implementation_plan": [
+    "Deduplicate only exact validated finding triples against current unresolved and within the accepted stage delta. Keep original raw response/hash/cache history and every different code/message/target unchanged.",
+    "Explicitly request new findings only; current findings remain authoritative. Test repeated native stage outputs, target/message distinctions and invalid outputs. Native small-model counter then fresh full original."
+  ],
+  "constraints": [
+    "No source/model/token/output/timeout/public schema changes",
+    "No accepted original/simulation/release claim from a counter",
+    "Production delivery remains required"
+  ],
+  "remaining_findings": [
+    "Native model still repeats existing findings despite instruction; deterministic product accumulation protects state. Original/simulation/full release and exact delivery remain pending."
+  ],
+  "files_changed": [
+    "backend/nis/agent/orchestration/local_reasoner.py",
+    "backend/tests/test_reference_finding_accumulation.py"
+  ],
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\after\\backend\\nis\\agent\\orchestration\\local_reasoner.py",
+      "sha256": "346ba419dfa76e8105bef844f05bdb426d666bad7fccb448fd72f943f7d99232"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\after\\backend\\tests\\test_reference_finding_accumulation.py",
+      "sha256": "8ead92f484eacbb40f8a42808c2bcaaba5fe89146d7c3554397bc67813df574f"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\final-change.diff",
+      "sha256": "1fd1484c202670e4db7e8ef1f342feb7e8a9dd4be6e09b5e24b0d7c93b41db0a"
+    }
+  ],
+  "outcomes": {
+    "distinct_findings_preserved": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\finding.json",
+          "sha256": "3ef52bc9099a9f58c405ab18aeb27cf749884fe90ae60935c72c923417653a8e"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\red.xml",
+          "sha256": "9fd3b30ae5cfa9cd9ee331c4ff14dc33b6df1113092b48f979e0ff5d2cf14889"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\green.xml",
+          "sha256": "b6d28fbd5d4d49941fa39d56116cbc5d69a6acb06e6dab4e856691e5fe89d0e2"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\regression.xml",
+          "sha256": "686cadb5b1c80a9a5a9b7a9d35978ea244e2bd2d1a3b444a048e68547603dd9c"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\regression-aggregate.json",
+          "sha256": "fd2137bc597c4a572f0b520255d4b17ac21d2745f325c30f1f28ddf729172e85"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\native-v3\\response.json",
+          "sha256": "7171b3f72ad16b5f6d457944f377e584b1a9c8886087d0c01f9393bc7d21eed7"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\native-v3\\result.json",
+          "sha256": "8c6d6977fa47e1fec37a6a50699ccb4242862fcafefa951c27a87948b9fa3756"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\native-runtime-replay.json",
+          "sha256": "ebf5b1e62edd7c3bce664c20f76282e681c587d09c4a12d12d58f5a2c91cf847"
+        }
+      ]
+    },
+    "repeated_findings_idempotent": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\finding.json",
+          "sha256": "3ef52bc9099a9f58c405ab18aeb27cf749884fe90ae60935c72c923417653a8e"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\red.xml",
+          "sha256": "9fd3b30ae5cfa9cd9ee331c4ff14dc33b6df1113092b48f979e0ff5d2cf14889"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\green.xml",
+          "sha256": "b6d28fbd5d4d49941fa39d56116cbc5d69a6acb06e6dab4e856691e5fe89d0e2"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\regression.xml",
+          "sha256": "686cadb5b1c80a9a5a9b7a9d35978ea244e2bd2d1a3b444a048e68547603dd9c"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\regression-aggregate.json",
+          "sha256": "fd2137bc597c4a572f0b520255d4b17ac21d2745f325c30f1f28ddf729172e85"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\native-v3\\response.json",
+          "sha256": "7171b3f72ad16b5f6d457944f377e584b1a9c8886087d0c01f9393bc7d21eed7"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\native-v3\\result.json",
+          "sha256": "8c6d6977fa47e1fec37a6a50699ccb4242862fcafefa951c27a87948b9fa3756"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\native-runtime-replay.json",
+          "sha256": "ebf5b1e62edd7c3bce664c20f76282e681c587d09c4a12d12d58f5a2c91cf847"
+        }
+      ]
+    },
+    "native_counter_verified": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\finding.json",
+          "sha256": "3ef52bc9099a9f58c405ab18aeb27cf749884fe90ae60935c72c923417653a8e"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\red.xml",
+          "sha256": "9fd3b30ae5cfa9cd9ee331c4ff14dc33b6df1113092b48f979e0ff5d2cf14889"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\green.xml",
+          "sha256": "b6d28fbd5d4d49941fa39d56116cbc5d69a6acb06e6dab4e856691e5fe89d0e2"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\regression.xml",
+          "sha256": "686cadb5b1c80a9a5a9b7a9d35978ea244e2bd2d1a3b444a048e68547603dd9c"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\regression-aggregate.json",
+          "sha256": "fd2137bc597c4a572f0b520255d4b17ac21d2745f325c30f1f28ddf729172e85"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\native-v3\\response.json",
+          "sha256": "7171b3f72ad16b5f6d457944f377e584b1a9c8886087d0c01f9393bc7d21eed7"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\native-v3\\result.json",
+          "sha256": "8c6d6977fa47e1fec37a6a50699ccb4242862fcafefa951c27a87948b9fa3756"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\native-runtime-replay.json",
+          "sha256": "ebf5b1e62edd7c3bce664c20f76282e681c587d09c4a12d12d58f5a2c91cf847"
+        }
+      ]
+    }
+  },
+  "validations": {
+    "red_green": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\finding.json",
+          "sha256": "3ef52bc9099a9f58c405ab18aeb27cf749884fe90ae60935c72c923417653a8e"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\red.xml",
+          "sha256": "9fd3b30ae5cfa9cd9ee331c4ff14dc33b6df1113092b48f979e0ff5d2cf14889"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\green.xml",
+          "sha256": "b6d28fbd5d4d49941fa39d56116cbc5d69a6acb06e6dab4e856691e5fe89d0e2"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\regression.xml",
+          "sha256": "686cadb5b1c80a9a5a9b7a9d35978ea244e2bd2d1a3b444a048e68547603dd9c"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\regression-aggregate.json",
+          "sha256": "fd2137bc597c4a572f0b520255d4b17ac21d2745f325c30f1f28ddf729172e85"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\native-v3\\response.json",
+          "sha256": "7171b3f72ad16b5f6d457944f377e584b1a9c8886087d0c01f9393bc7d21eed7"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\native-v3\\result.json",
+          "sha256": "8c6d6977fa47e1fec37a6a50699ccb4242862fcafefa951c27a87948b9fa3756"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\native-runtime-replay.json",
+          "sha256": "ebf5b1e62edd7c3bce664c20f76282e681c587d09c4a12d12d58f5a2c91cf847"
+        }
+      ]
+    },
+    "adjacent_regression": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\finding.json",
+          "sha256": "3ef52bc9099a9f58c405ab18aeb27cf749884fe90ae60935c72c923417653a8e"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\red.xml",
+          "sha256": "9fd3b30ae5cfa9cd9ee331c4ff14dc33b6df1113092b48f979e0ff5d2cf14889"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\green.xml",
+          "sha256": "b6d28fbd5d4d49941fa39d56116cbc5d69a6acb06e6dab4e856691e5fe89d0e2"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\regression.xml",
+          "sha256": "686cadb5b1c80a9a5a9b7a9d35978ea244e2bd2d1a3b444a048e68547603dd9c"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\regression-aggregate.json",
+          "sha256": "fd2137bc597c4a572f0b520255d4b17ac21d2745f325c30f1f28ddf729172e85"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\native-v3\\response.json",
+          "sha256": "7171b3f72ad16b5f6d457944f377e584b1a9c8886087d0c01f9393bc7d21eed7"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\native-v3\\result.json",
+          "sha256": "8c6d6977fa47e1fec37a6a50699ccb4242862fcafefa951c27a87948b9fa3756"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\native-runtime-replay.json",
+          "sha256": "ebf5b1e62edd7c3bce664c20f76282e681c587d09c4a12d12d58f5a2c91cf847"
+        }
+      ]
+    },
+    "native_counter": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\finding.json",
+          "sha256": "3ef52bc9099a9f58c405ab18aeb27cf749884fe90ae60935c72c923417653a8e"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\red.xml",
+          "sha256": "9fd3b30ae5cfa9cd9ee331c4ff14dc33b6df1113092b48f979e0ff5d2cf14889"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\green.xml",
+          "sha256": "b6d28fbd5d4d49941fa39d56116cbc5d69a6acb06e6dab4e856691e5fe89d0e2"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\regression.xml",
+          "sha256": "686cadb5b1c80a9a5a9b7a9d35978ea244e2bd2d1a3b444a048e68547603dd9c"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\regression-aggregate.json",
+          "sha256": "fd2137bc597c4a572f0b520255d4b17ac21d2745f325c30f1f28ddf729172e85"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\native-v3\\response.json",
+          "sha256": "7171b3f72ad16b5f6d457944f377e584b1a9c8886087d0c01f9393bc7d21eed7"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\native-v3\\result.json",
+          "sha256": "8c6d6977fa47e1fec37a6a50699ccb4242862fcafefa951c27a87948b9fa3756"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\native-runtime-replay.json",
+          "sha256": "ebf5b1e62edd7c3bce664c20f76282e681c587d09c4a12d12d58f5a2c91cf847"
+        }
+      ]
+    },
+    "source_scope": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\finding.json",
+          "sha256": "3ef52bc9099a9f58c405ab18aeb27cf749884fe90ae60935c72c923417653a8e"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\red.xml",
+          "sha256": "9fd3b30ae5cfa9cd9ee331c4ff14dc33b6df1113092b48f979e0ff5d2cf14889"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\green.xml",
+          "sha256": "b6d28fbd5d4d49941fa39d56116cbc5d69a6acb06e6dab4e856691e5fe89d0e2"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\regression.xml",
+          "sha256": "686cadb5b1c80a9a5a9b7a9d35978ea244e2bd2d1a3b444a048e68547603dd9c"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\regression-aggregate.json",
+          "sha256": "fd2137bc597c4a572f0b520255d4b17ac21d2745f325c30f1f28ddf729172e85"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\native-v3\\response.json",
+          "sha256": "7171b3f72ad16b5f6d457944f377e584b1a9c8886087d0c01f9393bc7d21eed7"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\native-v3\\result.json",
+          "sha256": "8c6d6977fa47e1fec37a6a50699ccb4242862fcafefa951c27a87948b9fa3756"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\nis-neu9-small-llm-full-20261106\\finding-accumulation-repair\\native-runtime-replay.json",
+          "sha256": "ebf5b1e62edd7c3bce664c20f76282e681c587d09c4a12d12d58f5a2c91cf847"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="4" time="32.427" timestamp="2026-11-08T20:24:09.864110+01:00" hostname="Haranga"><testcase classname="tests.test_reference_finding_accumulation" name="test_repeated_native_findings_do_not_multiply_or_hide_distinct_decisions[code]" time="11.360"><failure message="AssertionError: Previously reported identical findings multiplied in planning context&#10;assert 3 == 2&#10; +  where 3 = len(['{&quot;code&quot;: &quot;NEEDS_REVIEW&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing.&quot;, &quot;target_ref&quot;: &quot;source-target&quot;}',...: &quot;NEEDS_REVIEW different&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing.&quot;, &quot;target_ref&quot;: &quot;source-target&quot;}'])&#10; +  and   2 = len({'{&quot;code&quot;: &quot;NEEDS_REVIEW different&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing.&quot;, &quot;target_ref&quot;: &quot;source-..., '{&quot;code&quot;: &quot;NEEDS_REVIEW&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing.&quot;, &quot;target_ref&quot;: &quot;source-target&quot;}'})&#10; +    where {'{&quot;code&quot;: &quot;NEEDS_REVIEW different&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing.&quot;, &quot;target_ref&quot;: &quot;source-..., '{&quot;code&quot;: &quot;NEEDS_REVIEW&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing.&quot;, &quot;target_ref&quot;: &quot;source-target&quot;}'} = set(['{&quot;code&quot;: &quot;NEEDS_REVIEW&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing.&quot;, &quot;target_ref&quot;: &quot;source-target&quot;}',...: &quot;NEEDS_REVIEW different&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing.&quot;, &quot;target_ref&quot;: &quot;source-target&quot;}'])">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001BC43EB0FC0&gt;
+different_field = 'code'
+
+    @pytest.mark.parametrize('different_field', ['code', 'message', 'target_ref'])
+    def test_repeated_native_findings_do_not_multiply_or_hide_distinct_decisions(monkeypatch, different_field):
+        reasoner, prepared, observed = reasoner_with_transport(monkeypatch)
+        original = r._reference_stream_response
+        first = {'code': 'NEEDS_REVIEW', 'message': 'Physical interface evidence remains missing.', 'target_ref': 'source-target'}
+        different = {**first, different_field: first[different_field] + ' different'}
+        replies = []
+    
+        async def repeat(client, url, payload, callback):
+            context = effective_reference_context(payload['messages'])
+            current = context['current_candidate']['unresolved']
+            keys = [json.dumps(row, sort_keys=True) for row in current]
+            assert len(keys) == len(set(keys)), 'Previously reported identical findings multiplied in planning context'
+            if current:
+                assert current == [first, different], 'A distinct open decision was lost or reordered'
+            response = await original(client, url, payload, callback)
+            content = json.loads(response['message']['content'])
+            content['unresolved'] = [deepcopy(first), deepcopy(first), deepcopy(different)]
+            response['message']['content'] = json.dumps(content)
+            replies.append(deepcopy(response))
+            return response
+    
+        monkeypatch.setattr(r, '_reference_stream_response', repeat)
+        # Genuine unresolved findings must still prevent full model acceptance.
+        with pytest.raises(ValueError):
+&gt;           run_reference(reasoner, prepared)
+
+backend\tests\test_reference_finding_accumulation.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_reasoner.py:416: in run_reference
+    return asyncio.run(run())
+           ^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:196: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:119: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\base_events.py:725: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+backend\tests\test_reference_reasoner.py:413: in run
+    return await reasoner.plan_reference_design(prepared)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\local_reasoner.py:2350: in plan_reference_design
+    await plan_profile()
+backend\nis\agent\orchestration\local_reasoner.py:2271: in plan_profile
+    devices = await infer('Physisches Quelleninventar', {'devices'}, feedback=feedback, inventory_target=target)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\local_reasoner.py:2067: in infer
+    body = await _reference_stream_response(self.client, self.chat_url, payload, report_output)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+client = &lt;httpx.AsyncClient object at 0x000001BC4C74DD10&gt;
+url = 'http://127.0.0.1:11434/api/chat'
+payload = {'model': 'qwen3.8:27b', 'messages': [{'role': 'system', 'content': 'Du bist der lokale NIS-Referenzplaner für ausdrüc...: 'Measurements', 'type': 'array', 'maxItems': 0}, ...}, 'title': 'ReferenceDesignProposal', ...}, 'think': False, ...}
+callback = &lt;function LocalEngineeringReasoner.plan_reference_design.&lt;locals&gt;.infer.&lt;locals&gt;.report_output at 0x000001BC4C656CA0&gt;
+
+    async def repeat(client, url, payload, callback):
+        context = effective_reference_context(payload['messages'])
+        current = context['current_candidate']['unresolved']
+        keys = [json.dumps(row, sort_keys=True) for row in current]
+&gt;       assert len(keys) == len(set(keys)), 'Previously reported identical findings multiplied in planning context'
+E       AssertionError: Previously reported identical findings multiplied in planning context
+E       assert 3 == 2
+E        +  where 3 = len(['{"code": "NEEDS_REVIEW", "message": "Physical interface evidence remains missing.", "target_ref": "source-target"}',...: "NEEDS_REVIEW different", "message": "Physical interface evidence remains missing.", "target_ref": "source-target"}'])
+E        +  and   2 = len({'{"code": "NEEDS_REVIEW different", "message": "Physical interface evidence remains missing.", "target_ref": "source-..., '{"code": "NEEDS_REVIEW", "message": "Physical interface evidence remains missing.", "target_ref": "source-target"}'})
+E        +    where {'{"code": "NEEDS_REVIEW different", "message": "Physical interface evidence remains missing.", "target_ref": "source-..., '{"code": "NEEDS_REVIEW", "message": "Physical interface evidence remains missing.", "target_ref": "source-target"}'} = set(['{"code": "NEEDS_REVIEW", "message": "Physical interface evidence remains missing.", "target_ref": "source-target"}',...: "NEEDS_REVIEW different", "message": "Physical interface evidence remains missing.", "target_ref": "source-target"}'])
+
+backend\tests\test_reference_finding_accumulation.py:25: AssertionError</failure></testcase><testcase classname="tests.test_reference_finding_accumulation" name="test_repeated_native_findings_do_not_multiply_or_hide_distinct_decisions[message]" time="7.454"><failure message="AssertionError: Previously reported identical findings multiplied in planning context&#10;assert 3 == 2&#10; +  where 3 = len(['{&quot;code&quot;: &quot;NEEDS_REVIEW&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing.&quot;, &quot;target_ref&quot;: &quot;source-target&quot;}',...: &quot;NEEDS_REVIEW&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing. different&quot;, &quot;target_ref&quot;: &quot;source-target&quot;}'])&#10; +  and   2 = len({'{&quot;code&quot;: &quot;NEEDS_REVIEW&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing. different&quot;, &quot;target_ref&quot;: &quot;source-..., '{&quot;code&quot;: &quot;NEEDS_REVIEW&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing.&quot;, &quot;target_ref&quot;: &quot;source-target&quot;}'})&#10; +    where {'{&quot;code&quot;: &quot;NEEDS_REVIEW&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing. different&quot;, &quot;target_ref&quot;: &quot;source-..., '{&quot;code&quot;: &quot;NEEDS_REVIEW&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing.&quot;, &quot;target_ref&quot;: &quot;source-target&quot;}'} = set(['{&quot;code&quot;: &quot;NEEDS_REVIEW&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing.&quot;, &quot;target_ref&quot;: &quot;source-target&quot;}',...: &quot;NEEDS_REVIEW&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing. different&quot;, &quot;target_ref&quot;: &quot;source-target&quot;}'])">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001BC4CA00180&gt;
+different_field = 'message'
+
+    @pytest.mark.parametrize('different_field', ['code', 'message', 'target_ref'])
+    def test_repeated_native_findings_do_not_multiply_or_hide_distinct_decisions(monkeypatch, different_field):
+        reasoner, prepared, observed = reasoner_with_transport(monkeypatch)
+        original = r._reference_stream_response
+        first = {'code': 'NEEDS_REVIEW', 'message': 'Physical interface evidence remains missing.', 'target_ref': 'source-target'}
+        different = {**first, different_field: first[different_field] + ' different'}
+        replies = []
+    
+        async def repeat(client, url, payload, callback):
+            context = effective_reference_context(payload['messages'])
+            current = context['current_candidate']['unresolved']
+            keys = [json.dumps(row, sort_keys=True) for row in current]
+            assert len(keys) == len(set(keys)), 'Previously reported identical findings multiplied in planning context'
+            if current:
+                assert current == [first, different], 'A distinct open decision was lost or reordered'
+            response = await original(client, url, payload, callback)
+            content = json.loads(response['message']['content'])
+            content['unresolved'] = [deepcopy(first), deepcopy(first), deepcopy(different)]
+            response['message']['content'] = json.dumps(content)
+            replies.append(deepcopy(response))
+            return response
+    
+        monkeypatch.setattr(r, '_reference_stream_response', repeat)
+        # Genuine unresolved findings must still prevent full model acceptance.
+        with pytest.raises(ValueError):
+&gt;           run_reference(reasoner, prepared)
+
+backend\tests\test_reference_finding_accumulation.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_reasoner.py:416: in run_reference
+    return asyncio.run(run())
+           ^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:196: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:119: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\base_events.py:725: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+backend\tests\test_reference_reasoner.py:413: in run
+    return await reasoner.plan_reference_design(prepared)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\local_reasoner.py:2350: in plan_reference_design
+    await plan_profile()
+backend\nis\agent\orchestration\local_reasoner.py:2271: in plan_profile
+    devices = await infer('Physisches Quelleninventar', {'devices'}, feedback=feedback, inventory_target=target)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\local_reasoner.py:2067: in infer
+    body = await _reference_stream_response(self.client, self.chat_url, payload, report_output)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+client = &lt;httpx.AsyncClient object at 0x000001BC4C162FD0&gt;
+url = 'http://127.0.0.1:11434/api/chat'
+payload = {'model': 'qwen3.8:27b', 'messages': [{'role': 'system', 'content': 'Du bist der lokale NIS-Referenzplaner für ausdrüc...: 'Measurements', 'type': 'array', 'maxItems': 0}, ...}, 'title': 'ReferenceDesignProposal', ...}, 'think': False, ...}
+callback = &lt;function LocalEngineeringReasoner.plan_reference_design.&lt;locals&gt;.infer.&lt;locals&gt;.report_output at 0x000001BC4BE3BC40&gt;
+
+    async def repeat(client, url, payload, callback):
+        context = effective_reference_context(payload['messages'])
+        current = context['current_candidate']['unresolved']
+        keys = [json.dumps(row, sort_keys=True) for row in current]
+&gt;       assert len(keys) == len(set(keys)), 'Previously reported identical findings multiplied in planning context'
+E       AssertionError: Previously reported identical findings multiplied in planning context
+E       assert 3 == 2
+E        +  where 3 = len(['{"code": "NEEDS_REVIEW", "message": "Physical interface evidence remains missing.", "target_ref": "source-target"}',...: "NEEDS_REVIEW", "message": "Physical interface evidence remains missing. different", "target_ref": "source-target"}'])
+E        +  and   2 = len({'{"code": "NEEDS_REVIEW", "message": "Physical interface evidence remains missing. different", "target_ref": "source-..., '{"code": "NEEDS_REVIEW", "message": "Physical interface evidence remains missing.", "target_ref": "source-target"}'})
+E        +    where {'{"code": "NEEDS_REVIEW", "message": "Physical interface evidence remains missing. different", "target_ref": "source-..., '{"code": "NEEDS_REVIEW", "message": "Physical interface evidence remains missing.", "target_ref": "source-target"}'} = set(['{"code": "NEEDS_REVIEW", "message": "Physical interface evidence remains missing.", "target_ref": "source-target"}',...: "NEEDS_REVIEW", "message": "Physical interface evidence remains missing. different", "target_ref": "source-target"}'])
+
+backend\tests\test_reference_finding_accumulation.py:25: AssertionError</failure></testcase><testcase classname="tests.test_reference_finding_accumulation" name="test_repeated_native_findings_do_not_multiply_or_hide_distinct_decisions[target_ref]" time="6.588"><failure message="AssertionError: Previously reported identical findings multiplied in planning context&#10;assert 3 == 2&#10; +  where 3 = len(['{&quot;code&quot;: &quot;NEEDS_REVIEW&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing.&quot;, &quot;target_ref&quot;: &quot;source-target&quot;}',...: &quot;NEEDS_REVIEW&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing.&quot;, &quot;target_ref&quot;: &quot;source-target different&quot;}'])&#10; +  and   2 = len({'{&quot;code&quot;: &quot;NEEDS_REVIEW&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing.&quot;, &quot;target_ref&quot;: &quot;source-target dif..., '{&quot;code&quot;: &quot;NEEDS_REVIEW&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing.&quot;, &quot;target_ref&quot;: &quot;source-target&quot;}'})&#10; +    where {'{&quot;code&quot;: &quot;NEEDS_REVIEW&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing.&quot;, &quot;target_ref&quot;: &quot;source-target dif..., '{&quot;code&quot;: &quot;NEEDS_REVIEW&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing.&quot;, &quot;target_ref&quot;: &quot;source-target&quot;}'} = set(['{&quot;code&quot;: &quot;NEEDS_REVIEW&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing.&quot;, &quot;target_ref&quot;: &quot;source-target&quot;}',...: &quot;NEEDS_REVIEW&quot;, &quot;message&quot;: &quot;Physical interface evidence remains missing.&quot;, &quot;target_ref&quot;: &quot;source-target different&quot;}'])">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001BC4C76A0F0&gt;
+different_field = 'target_ref'
+
+    @pytest.mark.parametrize('different_field', ['code', 'message', 'target_ref'])
+    def test_repeated_native_findings_do_not_multiply_or_hide_distinct_decisions(monkeypatch, different_field):
+        reasoner, prepared, observed = reasoner_with_transport(monkeypatch)
+        original = r._reference_stream_response
+        first = {'code': 'NEEDS_REVIEW', 'message': 'Physical interface evidence remains missing.', 'target_ref': 'source-target'}
+        different = {**first, different_field: first[different_field] + ' different'}
+        replies = []
+    
+        async def repeat(client, url, payload, callback):
+            context = effective_reference_context(payload['messages'])
+            current = context['current_candidate']['unresolved']
+            keys = [json.dumps(row, sort_keys=True) for row in current]
+            assert len(keys) == len(set(keys)), 'Previously reported identical findings multiplied in planning context'
+            if current:
+                assert current == [first, different], 'A distinct open decision was lost or reordered'
+            response = await original(client, url, payload, callback)
+            content = json.loads(response['message']['content'])
+            content['unresolved'] = [deepcopy(first), deepcopy(first), deepcopy(different)]
+            response['message']['content'] = json.dumps(content)
+            replies.append(deepcopy(response))
+            return response
+    
+        monkeypatch.setattr(r, '_reference_stream_response', repeat)
+        # Genuine unresolved findings must still prevent full model acceptance.
+        with pytest.raises(ValueError):
+&gt;           run_reference(reasoner, prepared)
+
+backend\tests\test_reference_finding_accumulation.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\tests\test_reference_reasoner.py:416: in run_reference
+    return asyncio.run(run())
+           ^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:196: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\runners.py:119: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\asyncio\base_events.py:725: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+backend\tests\test_reference_reasoner.py:413: in run
+    return await reasoner.plan_reference_design(prepared)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\local_reasoner.py:2350: in plan_reference_design
+    await plan_profile()
+backend\nis\agent\orchestration\local_reasoner.py:2271: in plan_profile
+    devices = await infer('Physisches Quelleninventar', {'devices'}, feedback=feedback, inventory_target=target)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\nis\agent\orchestration\local_reasoner.py:2067: in infer
+    body = await _reference_stream_response(self.client, self.chat_url, payload, report_output)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+client = &lt;httpx.AsyncClient object at 0x000001BC4C813D10&gt;
+url = 'http://127.0.0.1:11434/api/chat'
+payload = {'model': 'qwen3.8:27b', 'messages': [{'role': 'system', 'content': 'Du bist der lokale NIS-Referenzplaner für ausdrüc...: 'Measurements', 'type': 'array', 'maxItems': 0}, ...}, 'title': 'ReferenceDesignProposal', ...}, 'think': False, ...}
+callback = &lt;function LocalEngineeringReasoner.plan_reference_design.&lt;locals&gt;.infer.&lt;locals&gt;.report_output at 0x000001BC4BE3BF60&gt;
+
+    async def repeat(client, url, payload, callback):
+        context = effective_reference_context(payload['messages'])
+        current = context['current_candidate']['unresolved']
+        keys = [json.dumps(row, sort_keys=True) for row in current]
+&gt;       assert len(keys) == len(set(keys)), 'Previously reported identical findings multiplied in planning context'
+E       AssertionError: Previously reported identical findings multiplied in planning context
+E       assert 3 == 2
+E        +  where 3 = len(['{"code": "NEEDS_REVIEW", "message": "Physical interface evidence remains missing.", "target_ref": "source-target"}',...: "NEEDS_REVIEW", "message": "Physical interface evidence remains missing.", "target_ref": "source-target different"}'])
+E        +  and   2 = len({'{"code": "NEEDS_REVIEW", "message": "Physical interface evidence remains missing.", "target_ref": "source-target dif..., '{"code": "NEEDS_REVIEW", "message": "Physical interface evidence remains missing.", "target_ref": "source-target"}'})
+E        +    where {'{"code": "NEEDS_REVIEW", "message": "Physical interface evidence remains missing.", "target_ref": "source-target dif..., '{"code": "NEEDS_REVIEW", "message": "Physical interface evidence remains missing.", "target_ref": "source-target"}'} = set(['{"code": "NEEDS_REVIEW", "message": "Physical interface evidence remains missing.", "target_ref": "source-target"}',...: "NEEDS_REVIEW", "message": "Physical interface evidence remains missing.", "target_ref": "source-target different"}'])
+
+backend\tests\test_reference_finding_accumulation.py:25: AssertionError</failure></testcase><testcase classname="tests.test_reference_finding_accumulation" name="test_invalid_repeated_finding_is_rejected_before_accumulation" time="5.134" /></testsuite></testsuites>

@@ -233,6 +233,12 @@ def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=
         definition = schema['properties'][field]['items']
         return schema['$defs'][definition['$ref'].rsplit('/', 1)[-1]]
 
+    # Findings are individual questions, not another copy of the inventory.
+    # Bound prose at decoding time; retain every finding and its full target.
+    finding = item('unresolved')['properties']
+    finding['code']['maxLength'] = 120
+    finding['message']['maxLength'] = 240
+
     def keyed_selection(field, private_field, identity_field, identities, mutable=None):
         if not identities or len(identities) != len(set(identities)):
             raise ValueError('Die private Auswahl benötigt eindeutige bestehende Identitäten.')
@@ -292,9 +298,24 @@ def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=
         schema['properties']['port_groups_by_device'] = {'type': 'object',
             'properties': {identity: deepcopy(record) for identity in device_ids},
             'required': list(device_ids), 'additionalProperties': False}
-        schema['properties']['port_plan_complete'] = {'type': 'boolean', 'enum': [True]}
+        schema['properties']['port_plan_complete'] = {'type': 'boolean'}
         schema.setdefault('required', []).extend(['port_groups_by_device', 'port_plan_complete'])
         schema['properties']['ports'].update(minItems=0, maxItems=0)
+        # A populated participant key and free prose do not prove physical
+        # connectivity. Complete means every selected electronic participant
+        # has a connection. Keep an honest, explicitly incomplete alternative
+        # for missing source decisions instead of forcing invented hardware.
+        complete = deepcopy({key: value for key, value in schema.items() if key != '$defs'})
+        complete['properties']['port_plan_complete'] = {'type': 'boolean', 'enum': [True]}
+        for participant in complete['properties']['port_groups_by_device']['properties'].values():
+            participant['properties']['connections']['minItems'] = 1
+        incomplete = deepcopy({key: value for key, value in schema.items() if key != '$defs'})
+        incomplete['properties']['port_plan_complete'] = {'type': 'boolean', 'enum': [False]}
+        open_finding = deepcopy(item('unresolved'))
+        open_finding['properties']['target_ref'] = {'type': 'string', 'enum': list(device_ids)}
+        incomplete['properties']['unresolved'].update(minItems=1, items=open_finding)
+        incomplete['required'] = list(dict.fromkeys([*incomplete['required'], 'unresolved']))
+        schema['anyOf'] = [complete, incomplete]
     if port_intent:
         definition = deepcopy(item('ports'))
         fields = definition['properties']
@@ -318,6 +339,30 @@ def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=
                         ('parameters', 'rationale', 'field_references'))
     if function_ids:
         keyed_selection('functions', 'functions_by_fact', 'source_fact_id', function_ids)
+        choices = schema['properties']['functions_by_fact']['properties']
+        for identity, definition in choices.items():
+            # Complete object alternatives are supported by the native grammar;
+            # independent field enums would still permit contradictory choices.
+            atomic = deepcopy(definition)
+            atomic['required'] = list(dict.fromkeys([*atomic['required'], 'executor_device_ids']))
+            atomic['properties']['realization']['enum'] = ['ATOMIC']
+            atomic['properties']['executor_device_ids']['minItems'] = 1
+            atomic['properties']['realized_by_fact_ids'].update(minItems=0, maxItems=0)
+            children = [key for key, fact in prepared['facts'].items()
+                        if fact['kind'] == 'FUNCTION' and key != identity]
+            alternatives = [atomic]
+            if children:
+                composite = deepcopy(definition)
+                composite['required'] = list(dict.fromkeys([*composite['required'], 'realized_by_fact_ids']))
+                composite['properties']['realization']['enum'] = ['COMPOSITE']
+                composite['properties']['executor_device_ids'].update(minItems=0, maxItems=0)
+                composite['properties']['realized_by_fact_ids'].update(
+                    minItems=1, items={'type': 'string', 'enum': children})
+                alternatives.append(composite)
+            for alternative in alternatives:
+                fields = alternative['properties']
+                alternative['properties'] = {'realization': fields['realization'], **fields}
+            choices[identity] = {'anyOf': alternatives}
         item('functional_dependencies')['properties']['producer_fact_id']['enum'] = list(function_ids)
     if inventory_target or derivation_fact_ids is not None:
         from copy import deepcopy
@@ -365,7 +410,20 @@ def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=
                 properties['contained_device_ids']['maxItems'] = 0
                 if kind in {'CONTROLLER', 'GATEWAY'}:
                     properties['owner_device_id'] = {'type': 'null'}
-            variants.append(variant)
+            owner_options = properties['owner_device_id'].get('anyOf')
+            if owner_options:
+                # Ownership and its evidence keys form one native decision.
+                # Public stamp validation forbids function_hosts even as an
+                # empty list when owner is null. Complete alternatives also
+                # encode that dependency in providers without if/then support.
+                variant['required'] = list(dict.fromkeys([
+                    *variant.get('required', []), 'owner_device_id']))
+                for owner_option in owner_options:
+                    owned = deepcopy(variant)
+                    owned['properties']['owner_device_id'] = deepcopy(owner_option)
+                    variants.append(owned)
+            else:
+                variants.append(variant)
         schema['$defs'][schema['properties']['devices']['items']['$ref'].rsplit('/', 1)[-1]] = {'anyOf': variants}
         schema['properties']['devices'].update(minItems=0, maxItems=0)
         binding_properties = {key: deepcopy(definition['properties'][key])
@@ -423,6 +481,7 @@ def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=
             known_names = {row['id']: row['name'] for row in existing_devices}
             for name in batch_names:
                 alternatives = []
+                identities_by_kind = {}
                 for choice in choices:
                     variant = deepcopy(choice)
                     properties = variant['properties']
@@ -430,9 +489,12 @@ def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=
                         if known_names[properties['device_id']['enum'][0]] != name:
                             continue
                     else:
-                        identity = _reference_fresh_inventory_id(
-                            prepared, properties['kind']['enum'][0], available, occupied)
-                        occupied.add(identity)
+                        kind = properties['kind']['enum'][0]
+                        if kind not in identities_by_kind:
+                            identity = _reference_fresh_inventory_id(prepared, kind, available, occupied)
+                            occupied.add(identity)
+                            identities_by_kind[kind] = identity
+                        identity = identities_by_kind[kind]
                         properties['id']['enum'] = [identity]
                         properties['name']['enum'] = [name]
                     alternatives.append(variant)
@@ -598,6 +660,21 @@ def _reference_schema_for_stage(prepared, allowed, *, port_ids=(), function_ids=
                     shared_fields[identity] = fields[field]
                 fields[field] = {'$ref': '#/$defs/' + field_names[key]}
     schema['$defs'].update(shared_fields)
+    # Native constrained decoders follow property order. Decide the selected
+    # task before emitting questions about it; JSON Schema semantics and all
+    # completion/open-decision constraints remain unchanged.
+    task_fields = ('inventory_choices', 'inventory_complete',
+                   'port_groups_by_device', 'port_plan_complete',
+                   'port_intents', 'port_intents_complete', 'port_parameters',
+                   'functions_by_fact')
+    for node in (schema, *schema.get('anyOf', ())):
+        properties = node.get('properties', {})
+        ordered = [key for key in task_fields if key in properties]
+        ordered.extend(key for key in properties
+                       if key not in task_fields and key != 'unresolved')
+        if 'unresolved' in properties:
+            ordered.append('unresolved')
+        node['properties'] = {key: properties[key] for key in ordered}
     return schema
 
 
@@ -683,6 +760,71 @@ def _reference_expand_port_intents(existing_ports, intents, device_ids):
     return result
 
 
+def _reference_port_function_context(devices, functions, facts, device_ids):
+    """Project native functional ownership for port planning without inventing IO."""
+    from copy import deepcopy
+    from backend.nis.agent.orchestration.project_intake import _reference_acyclic
+    by_device = {row['id']: row for row in devices}
+    by_function = {row['source_fact_id']: row for row in functions}
+    if len(by_function) != len(functions) or any(key not in by_device for key in device_ids):
+        raise ValueError('Anschlusskontext benötigt eindeutige Funktionen und vorhandene Teilnehmer.')
+    parents = {key: set() for key in by_function}
+    for key, row in by_function.items():
+        if (key not in facts or facts[key]['kind'] != 'FUNCTION'
+                or any(owner not in by_device for owner in row['executor_device_ids'])
+                or any(child not in by_function for child in row['realized_by_fact_ids'])):
+            raise ValueError('Anschlusskontext benötigt vollständige ursprüngliche Funktionszuordnungen.')
+        for child in row['realized_by_fact_ids']:
+            parents[child].add(key)
+    _reference_acyclic({key: row['realized_by_fact_ids'] for key, row in by_function.items()}, 'Funktionsabdeckung')
+
+    def selected_functions(owner):
+        selected = {key for key, row in by_function.items() if owner in row['executor_device_ids']}
+        pending = list(selected)
+        while pending:
+            for parent in parents[pending.pop()] - selected:
+                selected.add(parent)
+                pending.append(parent)
+        return {key: {'source_fact': deepcopy(facts[key]), 'realization': deepcopy(row)}
+                for key, row in by_function.items() if key in selected}
+
+    result = {}
+    for key in device_ids:
+        device = by_device[key]
+        owner = device.get('owner_device_id')
+        if owner is not None and owner not in by_device:
+            raise ValueError('Anschlusskontext enthält einen unbekannten funktionalen Geräteowner.')
+        result[key] = {'device': deepcopy(device), 'functions': selected_functions(key),
+                       'owner_device': deepcopy(by_device[owner]) if owner is not None else None,
+                       'owner_functions': selected_functions(owner) if owner is not None else {}}
+    return result
+
+
+def _reference_port_source_context(devices, facts, device_ids, visible_fact_ids):
+    """Keep literal device sources and shared profile requirements distinct."""
+    from copy import deepcopy
+    by_device = {row['id']: row for row in devices}
+    visible = set(visible_fact_ids)
+    selected = set(device_ids)
+    if not selected <= by_device.keys() or not visible <= facts.keys():
+        raise ValueError('Anschlussquellen benötigen vorhandene Teilnehmer und Quellenbefunde.')
+    selected.update(by_device[key]['owner_device_id'] for key in device_ids
+                    if by_device[key].get('owner_device_id') is not None)
+    if not selected <= by_device.keys():
+        raise ValueError('Anschlussquellen enthalten einen unbekannten Geräteowner.')
+    sources = {}
+    for key, device in by_device.items():
+        if key not in selected:
+            continue
+        bound = device['source_fact_ids']
+        if not set(bound) <= visible:
+            raise ValueError('Anschlussquellen eines Teilnehmers gehören zu einem fremden Quellenprofil.')
+        sources[key] = {fact_id: deepcopy(facts[fact_id]) for fact_id in bound}
+    return {'device_sources': sources,
+            'requirements': {key: deepcopy(fact) for key, fact in facts.items()
+                             if key in visible and fact['kind'] == 'REQUIREMENT'}}
+
+
 def _reference_expand_port_groups(existing_ports, groups, device_ids, complete):
     """Expand only a complete native physical demand; never deduplicate ports."""
     from copy import deepcopy
@@ -704,6 +846,11 @@ def _reference_expand_port_groups(existing_ports, groups, device_ids, complete):
                 or not isinstance(record['rationale'], str) or not record['rationale'].strip()
                 or len(record['rationale']) > 240 or not isinstance(record['connections'], list)):
             raise ValueError('Jeder Teilnehmer benötigt seinen vollständigen begründeten physischen Anschlussbedarf.')
+        if not record['connections']:
+            raise ValueError(f'Teilnehmer {owner!r} hat keinen physischen Anschluss. Eine freie Begründung '
+                             'schließt seinen Kommunikationsbedarf nicht ab. Quellgebundenen Anschlussbedarf '
+                             'planen; fehlt eine echte Auslegungsentscheidung, port_plan_complete=false und '
+                             'einen gezielten unresolved-Befund liefern, keinen Anschluss erfinden.')
         for group in record['connections']:
             if (not isinstance(group, dict) or 'count' not in group
                     or set(group) - {'count'} - fields or not required <= set(group)
@@ -1225,7 +1372,16 @@ def _reference_context_messages(history, previous, current, system, maximum, *, 
         'Bei einer Fortsetzung zuerst sämtliche Kontextpatches anwenden und danach diese Verweise '
         'auflösen; nie eine alte Bestandsliste aus einer vorherigen Nachricht verwenden. '
         'Die letzte Nutzernachricht bestimmt die Auswahl. Die Verweise ersetzen nur doppelte '
-        'Bestandskopien, niemals die vollständigen Quellen, Gerätedaten oder Prüfungen.')
+        'Bestandskopien, niemals die vollständigen Quellen, Gerätedaten oder Prüfungen. '
+        'selected_devices, selected_port_function_context und selected_port_source_context '
+        'in nis_current_selection sind '
+        'unveränderte, direkt lesbare Ausschnitte des aktuellen Kontextes. '
+        'device_sources erhält tatsächliche Quellenbindungen; requirements enthält die '
+        'vollständigen gemeinsamen Anforderungen des sichtbaren Profils. Diese sind '
+        'Planungskontext, keine automatische Bindung jeder Anforderung an jedes Gerät. '
+        'inventory_counts_by_kind zählt ausschließlich dessen vorhandene Geräte, nicht '
+        'Sollmengen oder Geräte pro ausgewähltem Controller. Diese Ansichten ersetzen '
+        'weder den vollständigen Bestand noch offene Befunde oder Quellenprüfungen.')
 
     def wire(context):
         packed = _reference_context_snapshot(context)
@@ -1242,6 +1398,38 @@ def _reference_context_messages(history, previous, current, system, maximum, *, 
                 # input on every continuation without adding any source fact.
                 'existing_inventory': '/current_candidate/devices',
             }
+        elif current.get('planning_stage') is not None:
+            if 'nis_context_snapshot' not in packed:
+                packed = {'nis_context_snapshot': packed, 'nis_context_tables': [], 'nis_context_copies': []}
+            # A stage boundary must expose its operative task directly, just
+            # like inventory selection. The complete authoritative context and
+            # preceding cached messages remain unchanged; no facts are omitted.
+            packed['nis_current_selection'] = {
+                key: deepcopy(current[key]) for key in (
+                    'planning_stage', 'instruction', 'output_fields_for_this_stage',
+                    'device_ids_for_this_stage', 'port_ids_for_this_stage',
+                    'function_fact_ids_for_this_stage', 'producer_device_ids_for_this_stage',
+                ) if key in current
+            }
+            if current.get('selected_port_function_context') is not None:
+                # Read the authoritative current snapshot, never the old anchor
+                # or the wire argument (which may only contain a patch). Keep
+                # the small operative selection literal for native readers.
+                devices = current['current_candidate']['devices']
+                by_id = {row['id']: row for row in devices}
+                counts = {}
+                for row in devices:
+                    counts[row['kind']] = counts.get(row['kind'], 0) + 1
+                packed['nis_current_selection'].update(
+                    selected_devices=[deepcopy(by_id[key]) for key in current['device_ids_for_this_stage']],
+                    inventory_counts_by_kind=counts,
+                    selected_port_function_context=deepcopy(current['selected_port_function_context']))
+                if current.get('selected_port_source_context') is not None:
+                    packed['nis_current_selection']['selected_port_source_context'] = deepcopy(
+                        current['selected_port_source_context'])
+                if 'source_technologies' in current.get('registered_catalogs', {}):
+                    packed['nis_current_selection']['source_technologies'] = deepcopy(
+                        current['registered_catalogs']['source_technologies'])
         return json.dumps(packed, ensure_ascii=False, separators=(',', ':'))
 
     full = [{'role': 'system', 'content': system + protocol},
@@ -1296,39 +1484,14 @@ def _reference_context_messages(history, previous, current, system, maximum, *, 
     try:
         capacity_check(full, maximum)
     except ValueError:
-        import hashlib
         input_bytes = sum(len(row['content'].encode('utf8')) for row in full)
         candidate = current.get('current_candidate') or {}
-        context_bytes = json.dumps(current, ensure_ascii=False, sort_keys=True,
-                                   separators=(',', ':')).encode('utf8')
-        context_hash = hashlib.sha256(context_bytes).hexdigest()
-        artifact, artifact_status = None, 'SIZE_LIMIT'
-        # Terminal evidence only: bounded local runtime storage, never a model
-        # checkpoint or a source payload in ordinary logs. Preserve old evidence.
-        if len(context_bytes) <= 4 * 1024 * 1024:
-            try:
-                from backend.nis.infrastructure.paths import BACKEND_ROOT, runtime_root_for
-                runtime = runtime_root_for(BACKEND_ROOT)
-                directory = runtime / 'diagnostics' / 'reference-context'
-                directory.mkdir(parents=True, exist_ok=True)
-                target = directory / (context_hash + '.json')
-                artifact_status = 'COUNT_LIMIT'
-                if target.exists() or len(list(directory.glob('*.json'))) < 16:
-                    if not target.exists():
-                        with target.open('xb') as stream:
-                            stream.write(context_bytes)
-                    if hashlib.sha256(target.read_bytes()).hexdigest() == context_hash:
-                        artifact = target.relative_to(runtime).as_posix()
-                        artifact_status = 'SAVED'
-                    else:
-                        artifact_status = 'HASH_MISMATCH'
-            except OSError:
-                artifact_status = 'IO_ERROR'
+        evidence = _reference_context_artifact(current)
         logging.getLogger(__name__).warning('Native reference context guard rejected complete input: %s',
             json.dumps({'planning_stage': current.get('planning_stage'), 'maximum': maximum,
                 'input_utf8_bytes': input_bytes, 'required_utf8_upper_bound': input_bytes + 8192 + 2048,
-                'complete_context_sha256': context_hash,
-                'context_artifact': artifact, 'context_artifact_status': artifact_status,
+                'complete_context_sha256': evidence['sha256'],
+                'context_artifact': evidence['artifact'], 'context_artifact_status': evidence['status'],
                 'candidate_counts': {key: len(value) for key, value in candidate.items()
                     if key in ('devices', 'ports', 'functions', 'measurements', 'commands',
                                'communication', 'functional_dependencies', 'unresolved') and isinstance(value, list)},
@@ -1340,6 +1503,34 @@ def _reference_context_messages(history, previous, current, system, maximum, *, 
                     if isinstance(current.get(key), list)}}, ensure_ascii=False))
         raise
     return full, full, bool(history)
+
+
+def _reference_context_artifact(value):
+    """Bounded local failure evidence; never a resumable model checkpoint."""
+    import hashlib
+    content = json.dumps(value, ensure_ascii=False, sort_keys=True,
+                         separators=(',', ':')).encode('utf8')
+    digest = hashlib.sha256(content).hexdigest()
+    artifact, status = None, 'SIZE_LIMIT'
+    if len(content) <= 4 * 1024 * 1024:
+        try:
+            from backend.nis.infrastructure.paths import BACKEND_ROOT, runtime_root_for
+            runtime = runtime_root_for(BACKEND_ROOT)
+            directory = runtime / 'diagnostics' / 'reference-context'
+            directory.mkdir(parents=True, exist_ok=True)
+            target = directory / (digest + '.json')
+            status = 'COUNT_LIMIT'
+            if target.exists() or len(list(directory.glob('*.json'))) < 16:
+                if not target.exists():
+                    with target.open('xb') as stream:
+                        stream.write(content)
+                if hashlib.sha256(target.read_bytes()).hexdigest() == digest:
+                    artifact, status = target.relative_to(runtime).as_posix(), 'SAVED'
+                else:
+                    status = 'HASH_MISMATCH'
+        except OSError:
+            status = 'IO_ERROR'
+    return {'sha256': digest, 'artifact': artifact, 'status': status}
 
 
 def _reference_expand_selected_ports(ports, values, selected):
@@ -1764,6 +1955,9 @@ class LocalEngineeringReasoner:
             source_technologies[technology] = {key: deepcopy(definition[key]) for key in (
                 'layer', 'hardware_interface', 'physical_layer_profile_id', 'implementation_status',
                 'rate_model', 'default_stack') if key in definition}
+            from dataclasses import asdict
+            physical = DEFAULT_TECHNOLOGY_REGISTRY.physical_profile(technology)
+            source_technologies[technology]['physical_profile'] = json.loads(json.dumps(asdict(physical))) if physical else None
         catalog['source_technologies'] = source_technologies
 
         def technology_schemas_for(technologies):
@@ -1841,6 +2035,10 @@ class LocalEngineeringReasoner:
                           'producer_device_ids_for_this_stage': list(producer_ids),
                           'port_ids_for_this_stage': list(port_ids),
                           'device_ids_for_this_stage': list(device_ids),
+                          'selected_port_function_context': _reference_port_function_context(
+                              current['devices'], current['functions'], prepared['facts'], device_ids) if port_groups else None,
+                          'selected_port_source_context': _reference_port_source_context(
+                              current['devices'], prepared['facts'], device_ids, visible_facts) if port_groups else None,
                           'function_fact_ids_for_this_stage': list(function_ids),
                           'inventory_target_for_this_stage': inventory_target,
                           'derivation_fact_ids_for_this_stage': list(derivation_fact_ids) if derivation_fact_ids is not None else None,
@@ -1851,10 +2049,23 @@ class LocalEngineeringReasoner:
                               + 'Nur den ausdrücklich ausgewählten Stufenbereich vollständig liefern; vorhandene eindeutige IDs erhalten. '
                               'Jede Auswahl in rationale mit einem kurzen fachlichen Satz und höchstens 240 Zeichen begründen; '
                               'Quellenbindungen und technische Entscheidungen vollständig in ihren eigenen Feldern erhalten. '
-                              'Echte offene Auslegung explizit unresolved halten. '
+                              'Echte offene Auslegung explizit unresolved halten. Bereits in current_candidate.unresolved gespeicherte identische Befunde bleiben offen und werden nicht erneut ausgegeben; nur neue oder inhaltlich andere Befunde ergänzen. '
                               + ('Zunächst ausschließlich konkrete Portabsicht über port_intents statt ports planen: Teilnehmer und alle technischen Felder vollständig wählen, aber keine id vorgeben. Je Antwort höchstens EINEN noch fehlenden physischen Anschluss planen. Vorhandene Anschlüsse in current_candidate.ports erhalten; weitere notwendige Anschlüsse mit port_intents_complete=false für die normale nächste Antwort offenhalten. port_intents_complete bewertet alle ausgewählten Teilnehmer und ist erst true, wenn sämtliche benötigten Anschlüsse geplant sind. Leeres port_intents ist nur mit true zulässig. Die Gesamtzahl benötigter Anschlüsse ist durch diese Antwortaufteilung nicht begrenzt. Keine bereits geplanten Anschlüsse erneut deklarieren; technisch identische parallele Anschlüsse nur bei tatsächlich weiterem physischem Bedarf. Die Begründung kurz und fachlich konkret formulieren. NIS vergibt anschließend eindeutige neue Port-IDs; bestehende Ports bleiben unverändert. parameters bleibt {}. Die folgende eigene Parameterstufe legt jeden Anschluss aus; diese Zwischenstufe ist keine vollständige Prüfung. ' if port_intent else '')
                               + ('Jetzt EINEN vollständigen physischen Anschlussbedarf für ALLE ausgewählten Teilnehmer '
                                  'über port_groups_by_device liefern; ports und alle anderen Modelllisten bleiben leer. '
+                                 'selected_port_function_context bindet die bereits geplanten eigenen Funktionen und '
+                                 'getrennt die Funktionen des Geräteowners an ihre unveränderten ursprünglichen Quellenbefunde. '
+                                 'selected_port_source_context zeigt zusätzlich die wörtlichen Gerätequellen und '
+                                 'alle gemeinsamen REQUIREMENT-Fakten des sichtbaren Profils. Den Bedarf aus diesen '
+                                 'Quellen ebenfalls prüfen, auch wenn einem Teilnehmer keine einzelne FUNCTION '
+                                 'zugeordnet ist. Gemeinsame Anforderungen nicht pauschal als individuelle '
+                                 'Funktions-, Empfänger- oder Hardwarebestätigung auslegen. '
+                                 'Alle daraus erforderlichen Transportwege und Protokollübergänge jetzt physisch abdecken; '
+                                 'eine Funktion oder ein Owner ersetzt keinen eigenen Anschluss. Mehrere benötigte '
+                                 'Technologien und tatsächlich getrennte physische Segmente als getrennte Anschlussgruppen '
+                                 'planen, nicht durch einen einzelnen beliebigen Port als erledigt betrachten. '
+                                 'Zusammengesetzte Funktionen bleiben Anforderungen ihrer tatsächlichen Teilausführer; '
+                                 'die Kontextansicht erzeugt weder zusätzliche Hardware noch einen neuen Funktionsowner. '
                                  'Jeder vorgegebene Teilnehmer-ID-Schlüssel hat connections und eine kurze rationale. '
                                  'connections gruppiert nur vollständig gleiche technische Anschlussentscheidungen: '
                                  'technology, role, network_scope, leere parameters, rationale, field_references und count '
@@ -1865,11 +2076,31 @@ class LocalEngineeringReasoner:
                                  'VLANs, logische Segmentierung, Funktionsanzahl oder unterstützte Knotenkapazität begründen '
                                  'keine zusätzlichen physischen Anschlüsse. Jede Stückzahl anhand tatsächlich verschiedener '
                                  'physischer Verbindungen oder expliziten parallelen Bedarfs begründen; reine Umnummerierung '
-                                 'ist kein neuer Bedarf. Quellen und feldgebundene Referenzen vollständig erhalten. '
+                                 'ist kein neuer Bedarf. source_technologies zeigt das registrierte PhysicalLayerProfile '
+                                 'mit erlaubten Topologien und Mediumzugriff. Ein Anschluss an ein gemeinsam genutztes '
+                                 'Busmedium bedient mehrere Gegenstellen und beide Kommunikationsrichtungen. Die Anzahl '
+                                 'von Gegenstellen, Signalen oder Sender-/Empfängerrichtungen ist keine physische Portanzahl. '
+                                 'Zusätzliche unabhängige Medien oder ausdrücklich benötigte parallele physische Anschlüsse '
+                                 'getrennt begründen und vollständig erhalten. Profilmöglichkeiten sind keine bestätigte '
+                                 'Hardware oder gewählte PHY-Variante; fehlende Quellentscheidungen bleiben offen. '
+                                 'Quellen und feldgebundene Referenzen vollständig erhalten. '
                                  'Geplante Stückzahlen sind zu prüfende Auslegungsannahmen, niemals Hardwarequalifikationsbelege. '
-                                 'Eine leere connections-Liste ist nur bei ausdrücklich begründetem fehlendem Anschlussbedarf '
-                                 'dieses Teilnehmers zulässig. Echte offene Fachentscheidungen in unresolved nennen. '
-                                 'port_plan_complete=true schließt diesen gesamten ausgewählten Bedarf; die folgende '
+                                 'Fehlende einzeln zugeordnete FUNCTION-Fakten bedeuten nicht fehlenden Kommunikationsbedarf: '
+                                 'ursprüngliche Geräteaufgaben und REQUIREMENT-Fakten gelten weiterhin für alle Teilnehmer. '
+                                 'Der vollständige aktuelle Gerätebestand ist bereits vorhanden; '
+                                 'nis_current_selection zeigt seine Istanzahlen nach Geräteart sowie die ausgewählten '
+                                 'Geräte und Funktionsbezüge direkt. Eine Gesamtmenge der Quelle gilt nicht erneut '
+                                 'je Controller. Fehlende Geräte nur gegen diesen aktuellen Bestand belegen. '
+                                 'Parameter, Messgrößen, Stellbefehle und Kommunikations-/Routingplanung folgen '
+                                 'in eigenen Stufen. Dass ihre Ergebnislisten jetzt noch leer sind, ist keine '
+                                 'offene Anschlussentscheidung. Echte fehlende Quellenangaben für den physischen '
+                                 'Transport bleiben dagegen konkrete unresolved-Befunde. '
+                                 'port_plan_complete=true verlangt mindestens einen quellengebundenen physischen Anschluss '
+                                 'je ausgewähltem elektronischem Teilnehmer. Fehlt eine echte Auslegungsentscheidung oder '
+                                 'soll ein Teilnehmer ausdrücklich ohne externe Kommunikation bleiben, keine Anschlüsse '
+                                 'erfinden: port_plan_complete=false und mindestens einen konkreten unresolved-Befund mit '
+                                 'betroffener Teilnehmer-ID als target_ref liefern. Das ist eine offene Entscheidung, '
+                                 'kein vollständiger Anschlussplan. Die folgende '
                                  'Parameterstufe legt JEDEN erzeugten Anschluss aus. Kein fertiges Modell oder Timing-/Safety-PASS. '
                                  if port_groups else '')
                               + ('Ausschließlich IO für alle angeforderten vorhandenen Teilnehmer-IDs liefern; keine anderen Geräte, Anschlüsse, Messgrößen oder Befehle überschreiben. Teilnehmer und ihre IO getrennt erhalten. Alle Nachbarteilnehmer bleiben als Planungskontext sichtbar. ' if device_ids else '')
@@ -2084,6 +2315,14 @@ class LocalEngineeringReasoner:
                                 raise ValueError('Die Anschlussplanung darf keine neue oder bereits geplante Port-ID vorgeben; '
                                                  'ausschließlich port_groups_by_device liefern, NIS vergibt die Identitäten.')
                             native_port_groups = decoded.pop('port_groups_by_device')
+                            if decoded.get('port_plan_complete') is False:
+                                findings = ReferenceDesignProposal.model_validate(
+                                    {'unresolved': decoded.get('unresolved', [])}).unresolved
+                                if not findings or any(row.target_ref not in device_ids for row in findings):
+                                    raise ValueError('Offener Anschlussbedarf benötigt konkrete unresolved-Befunde '
+                                                     'für die ausgewählten Teilnehmer.')
+                                raise ValueError('Anschlussentscheidung offen; keine technischen Defaults erfinden: '
+                                    + json.dumps([row.model_dump(mode='json') for row in findings], ensure_ascii=False))
                             decoded['ports'] = _reference_expand_port_groups(current['ports'], native_port_groups,
                                 device_ids, decoded.pop('port_plan_complete', None))
                         if port_ids:
@@ -2096,6 +2335,11 @@ class LocalEngineeringReasoner:
                             if decoded.get('functions', []) != []:
                                 raise ValueError('Die Funktionsstufe muss genau ihre ursprünglichen Funktions-FactIDs '
                                                  'über functions_by_fact abdecken; keine fremden Senderabhängigkeiten.')
+                            from jsonschema import Draft202012Validator
+                            choice_schema = {'$defs': payload['format']['$defs'],
+                                **payload['format']['properties']['functions_by_fact']}
+                            if next(Draft202012Validator(choice_schema).iter_errors(decoded.get('functions_by_fact')), None):
+                                raise ValueError('Funktionsentscheidung verletzt die gewählte atomare oder zusammengesetzte Realisierung. Atomar: Ausführer, keine Teilfunktionen. Zusammengesetzt: gültige andere Funktions-FactIDs, kein eigener Ausführer.')
                             decoded['functions'] = _reference_expand_selected_functions(
                                 decoded.pop('functions_by_fact'), function_ids)
                         result = ReferenceDesignProposal.model_validate(decoded).model_dump(mode='json')
@@ -2135,6 +2379,12 @@ class LocalEngineeringReasoner:
                             if (len(actual) != len(set(actual)) or set(actual) != set(function_ids)
                                     or any(row['producer_fact_id'] not in function_ids for row in result['functional_dependencies'])):
                                 raise ValueError('Die Funktionsstufe muss genau ihre ursprünglichen Funktions-FactIDs abdecken; keine fremden Senderabhängigkeiten.')
+                            from backend.nis.agent.orchestration.project_intake import _reference_acyclic
+                            # Reuse the public graph check before accepting this
+                            # stage. Future groups may be referenced; already
+                            # visible cycles must be corrected before communication.
+                            _reference_acyclic({row['source_fact_id']: row.get('realized_by_fact_ids', [])
+                                for row in [*current['functions'], *result['functions']]}, 'Funktionsabdeckung')
                         if inventory_stage:
                             result['inventory_complete'] = inventory_complete
                             calls[-1]['inventory_complete'] = inventory_complete
@@ -2144,6 +2394,20 @@ class LocalEngineeringReasoner:
                         if port_groups:
                             calls[-1].update(port_plan_complete=True, planned_port_count=len(result['ports']),
                                              port_groups_by_device=deepcopy(native_port_groups))
+                        # Findings describe open decisions, not occurrences.
+                        # Only exact validated triples are idempotent; every
+                        # changed target, code or message remains independently
+                        # open. Preserve the actual native reply below for audit
+                        # and KV history, including its repeated findings.
+                        seen_findings = {tuple(row[key] for key in ('code', 'message', 'target_ref'))
+                                         for row in current['unresolved']}
+                        new_findings = []
+                        for row in result['unresolved']:
+                            identity = tuple(row[key] for key in ('code', 'message', 'target_ref'))
+                            if identity not in seen_findings:
+                                seen_findings.add(identity)
+                                new_findings.append(row)
+                        result['unresolved'] = new_findings
                         reference_messages = [*deepcopy(payload['messages']), {'role': 'assistant', 'content': native_content}]
                         reference_prompt = deepcopy(prompt)
                         if reference_anchor is None or (context_rebased and len(full_messages) == 2):
@@ -2159,17 +2423,31 @@ class LocalEngineeringReasoner:
                         return result
                     except (ValueError, TypeError, KeyError) as error:
                         report_validation(error)
+                        terminal_input = (_reference_context_artifact({
+                            'context': prompt, 'request': payload, 'response': raw, 'error': str(error)
+                        }) if attempt else None)
                         logging.getLogger(__name__).warning(
                             'Native reference validation failed: %s',
                             json.dumps({'stage': stage, 'profile': list(profile), 'attempt': attempt + 1,
                                         'inventory_target': inventory_target,
                                         'derivation_fact_ids': derivation_fact_ids,
                                         'error': str(error), 'response': raw,
-                                        'response_sha256': calls[-1]['response_sha256']}, ensure_ascii=False))
+                                        'response_sha256': calls[-1]['response_sha256'],
+                                        'terminal_input': terminal_input}, ensure_ascii=False))
                         if attempt:
                             raise ValueError(f'Kein gültiger strukturierter Referenzvorschlag: {error}') from error
+                        correction = f'Validierungsfehler: {error}. Vollständigen JSON-Entwurf dieser Stufe korrigieren, keine Quellen ändern.'
+                        if port_groups:
+                            correction += (
+                                ' Die abgelehnte Antwort ist keine bestätigte Bestands- oder Quellenfeststellung. '
+                                'Prüfe jede Behauptung gegen nis_current_selection der letzten Planungsvorgabe: '
+                                'selected_devices, inventory_counts_by_kind und selected_port_function_context '
+                                'stammen aus dem aktuellen geprüften Zwischenstand. Gesamtmengen nicht je '
+                                'Controller wiederholen. Noch ausstehende Parameter-/IO-/Kommunikationsstufen '
+                                'nicht als fehlende Quellenentscheidung melden. Tatsächlich unbelegte physische '
+                                'Anschlussentscheidungen weiterhin explizit offenlassen; keine Defaults erfinden.')
                         payload['messages'] = [*messages, {'role': 'assistant', 'content': native_content},
-                                               {'role': 'user', 'content': f'Validierungsfehler: {error}. Vollständigen JSON-Entwurf dieser Stufe korrigieren, keine Quellen ändern.'}]
+                                               {'role': 'user', 'content': correction}]
                 raise AssertionError('Reference inference did not return')
             async def plan_profile(feedback=None):
                 nonlocal reference_messages, reference_prompt, reference_anchor, reference_anchors
@@ -2248,6 +2526,17 @@ class LocalEngineeringReasoner:
                 inventory_findings = _validate_reference_inventory({'devices': current['devices']}, prepared, profile)
                 if inventory_findings:
                     raise ValueError('Inventar vor Anschlussplanung unvollständig: ' + json.dumps(inventory_findings, ensure_ascii=False))
+                # Physical demand depends on the actual function executors. Resolve
+                # all original functions before closing immutable port identities.
+                current['functions'] = []
+                current['functional_dependencies'] = []
+                function_ids = [key for key, fact in profile_facts.items() if fact['kind'] == 'FUNCTION']
+                for start in range(0, len(function_ids), 4):
+                    functions = await infer('Atomare und zusammengesetzte Funktionen',
+                        {'functions', 'functional_dependencies'}, feedback=feedback,
+                        function_ids=tuple(function_ids[start:start + 4]))
+                    for field in ('functions', 'functional_dependencies', 'unresolved'):
+                        current[field].extend(functions[field])
                 io_groups = {}
                 for device in current['devices']:
                     if device['kind'] != 'PHYSICAL_CONTEXT':
@@ -2276,15 +2565,6 @@ class LocalEngineeringReasoner:
                         choices = await infer(stage, {field}, feedback=feedback, device_ids=tuple(ids[start:start + 4]))
                         for key in (field, 'unresolved'):
                             current[key].extend(choices[key])
-                current['functions'] = []
-                current['functional_dependencies'] = []
-                function_ids = [key for key, fact in profile_facts.items() if fact['kind'] == 'FUNCTION']
-                for start in range(0, len(function_ids), 4):
-                    functions = await infer('Atomare und zusammengesetzte Funktionen',
-                        {'functions', 'functional_dependencies'}, feedback=feedback,
-                        function_ids=tuple(function_ids[start:start + 4]))
-                    for field in ('functions', 'functional_dependencies', 'unresolved'):
-                        current[field].extend(functions[field])
                 current['communication'] = []
                 producers = [item['id'] for item in current['devices'] if item['kind'] in {'CONTROLLER', 'GATEWAY', 'SENSOR', 'ACTUATOR'}]
                 for start in range(0, len(producers), 2):

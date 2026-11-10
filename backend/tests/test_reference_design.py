@@ -988,6 +988,8 @@ def test_local_reference_planner_uses_decoder_projection_but_rejects_oversized_r
     # Private output is a strict concise, field-bound subset. Public response
     # validation still rejects2001 characters above; no public bound changes.
     assert prepared['reference_sources'] == {}
+    expected['$defs']['ReferenceFinding']['properties']['code']['maxLength'] = 120
+    expected['$defs']['ReferenceFinding']['properties']['message']['maxLength'] = 240
     fields_by_definition = {
         'ReferenceDevice': ('quantity', 'device_type', 'function_hosts'),
         'ReferenceFunction': ('function_hosts',), 'ReferencePort': ('ports',),
@@ -1008,13 +1010,17 @@ def test_local_reference_planner_uses_decoder_projection_but_rejects_oversized_r
     expected['properties']['devices'].update(minItems=0, maxItems=0)
     expected['properties']['inventory_complete'] = {'type': 'boolean'}
     # Only the source-compiled controller exists at this first sensor cursor;
-    # it is not a sensor candidate. The sole choice must be a new sensor.
+    # it is not a sensor candidate. Both ownership alternatives create a new sensor.
     expected.setdefault('required', []).extend(['inventory_complete', 'inventory_choices'])
     for request in requests:
         actual = deepcopy(request['format'])
         variants = actual['$defs']['ReferenceDevice']['anyOf']
-        sensor = next(row for row in variants if row['properties']['kind']['enum'] == ['SENSOR'])
-        assert len(variants) == 1
+        assert len(variants) == 2
+        assert all(row['properties']['kind']['enum'] == ['SENSOR'] for row in variants)
+        by_owner = {row['properties']['owner_device_id']['type']: row for row in variants}
+        assert set(by_owner) == {'string', 'null'}
+        sensor = by_owner['string']
+        assert 'owner_device_id' in sensor['required']
         assert sensor['properties']['source_member_bindings'] == {
             'type': 'object', 'properties': {}, 'additionalProperties': False}
         assert sensor['properties']['quantity'] == {'type': 'integer', 'enum': [1]}
@@ -1024,11 +1030,18 @@ def test_local_reference_planner_uses_decoder_projection_but_rejects_oversized_r
                            for field in ('quantity', 'device_type', 'function_hosts')}}
         assert all(row['properties']['rationale'] == expected['$defs']['ReferenceDevice']['properties']['rationale']
                    for row in variants)
-        selected_sensor = deepcopy(sensor)
-        selected_sensor['properties'] = {'choice_kind': {'type': 'string', 'enum': ['NEW_SENSOR']}, **selected_sensor['properties']}
-        selected_sensor['required'] = ['choice_kind', *selected_sensor['required']]
+        unowned_sensor = deepcopy(sensor)
+        unowned_sensor['properties']['owner_device_id'] = {'type': 'null'}
+        del unowned_sensor['properties']['field_references']['properties']['function_hosts']
+        assert by_owner['null'] == unowned_sensor
+        selected_sensors = []
+        for variant in (sensor, unowned_sensor):
+            selected_sensor = deepcopy(variant)
+            selected_sensor['properties'] = {'choice_kind': {'type': 'string', 'enum': ['NEW_SENSOR']}, **selected_sensor['properties']}
+            selected_sensor['required'] = ['choice_kind', *selected_sensor['required']]
+            selected_sensors.append(selected_sensor)
         expected['properties']['inventory_choices'] = {
-            'type': 'array', 'minItems': 1, 'maxItems': 1, 'items': selected_sensor}
+            'type': 'array', 'minItems': 1, 'maxItems': 1, 'items': {'anyOf': selected_sensors}}
         complete = deepcopy({key: value for key, value in expected.items() if key not in {'$defs', 'anyOf'}})
         incomplete = deepcopy(complete)
         complete['properties']['inventory_complete'] = {'type': 'boolean', 'enum': [True]}

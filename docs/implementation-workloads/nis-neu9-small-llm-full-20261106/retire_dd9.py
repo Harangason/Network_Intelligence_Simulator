@@ -82,8 +82,37 @@ def main():
     if PLAN:
         state = json.loads(Path(PLAN['state']).read_text(encoding='utf-8'))
         assert state['image_id'] == IMAGE and state['containers'] == NAMES
-        if state['status'] == 'OPERATOR_VERIFIED_REFERENCE_CANCELED':
-            # A human-requested cancellation is not a failed-model receipt.
+        if PLAN.get('reason') == 'VERIFIED_SERVER_CANCELED_CLIENT_EXIT_UNKNOWN':
+            # A lost stream can leave the original client state stale. Admit only
+            # the independently bound terminal server generation, never relabel
+            # it a human cancellation, native failure, or release FAIL.
+            from urllib.request import Request, build_opener, ProxyHandler
+            evidence = PLAN['terminal_evidence']
+            proof_path = Path(evidence['path']).resolve(strict=True)
+            assert proof_path.is_relative_to(Path(__file__).resolve().parent)
+            assert ref(proof_path)['sha256'] == evidence['sha256']
+            terminal = json.loads(proof_path.read_text(encoding='utf-8'))
+            assert terminal['server_generation']['status'] == 'CANCELED'
+            assert terminal['server_draft_status'] == 'REFERENCE_CANCELED'
+            assert terminal['actual_native_driver_processes'] == []
+            assert terminal['client_exit_code'] is None and terminal['normal_client_result_available'] is False
+            assert terminal['canonical_model_empty'] is True and terminal['simulation_jobs'] == 0
+            assert state['base_url'] == receipt['base_url']
+            observed = {}
+            for key, endpoint in [('draft', '/api/engineering/agent/project-draft'),
+                                  ('export', '/api/engineering/projects/export'),
+                                  ('jobs', '/api/simulations')]:
+                query = Request(receipt['base_url'] + endpoint, headers={'X-Project-ID': state['project_id']})
+                with build_opener(ProxyHandler({})).open(query, timeout=20) as response:
+                    observed[key] = json.load(response)
+            current = observed['draft']['data']
+            assert current['reference_generation'] == terminal['server_generation']
+            assert current['reference_generation']['source_sha256'] == state['original_sha256']
+            assert current['status'] == 'REFERENCE_CANCELED' and not current.get('reference_design')
+            assert not any(observed['export']['source_data'].values()) and observed['jobs']['jobs'] == []
+            save('fresh-server-terminal-precheck.json', observed)
+        elif state['status'] == 'OPERATOR_VERIFIED_REFERENCE_CANCELED':
+            # An authorized cancellation is not a failed-model receipt.
             # Bind its saved evidence and re-read the normal isolated project API.
             from urllib.request import Request, build_opener, ProxyHandler
             evidence = PLAN['cancellation_evidence']
@@ -91,7 +120,20 @@ def main():
             assert proof_path.is_relative_to(Path(__file__).resolve().parent)
             assert ref(proof_path)['sha256'] == evidence['sha256']
             canceled = json.loads(proof_path.read_text(encoding='utf-8'))
-            assert canceled['classification'] == 'EXPLICIT_USER_CANCELLATION_NOT_NATIVE_FAILURE'
+            if canceled['classification'] == 'AUTONOMOUS_AUTHORIZED_REPAIR_CANCELLATION_AFTER_PROVEN_SOURCE_CONTRADICTION':
+                for key in ('human_authorization', 'finding'):
+                    bound = canceled[key]
+                    bound_path = Path(bound['path']).resolve(strict=True)
+                    assert bound_path.is_relative_to(Path(__file__).resolve().parent)
+                    assert ref(bound_path)['sha256'] == bound['sha256']
+                authorization = json.loads(Path(canceled['human_authorization']['path']).read_text(encoding='utf-8'))
+                assert authorization['source'] == 'Direct human message in this NIS chat'
+                assert authorization['human_message'] == 'Arbeite autark zu ende bis alle Testfälle abgeschlossen sind. Reparaturen ohne Rückfragen bearbeiten es sei denn es gibt entscheidungen.'
+                assert canceled['client_action'] == 'Regular Ctrl-C via original session handle; exit_code1'
+                assert canceled['driver_process_end_verified'] and canceled['no_provider_restart_or_kill'] is True
+                assert canceled['canonical_model_empty'] is True and canceled['simulation_jobs'] == 0
+            else:
+                assert canceled['classification'] == 'EXPLICIT_USER_CANCELLATION_NOT_NATIVE_FAILURE'
             assert canceled['server_generation']['status'] == 'CANCELED'
             assert state['base_url'] == receipt['base_url']
             query = Request(receipt['base_url'] + '/api/engineering/agent/project-draft',
@@ -101,6 +143,14 @@ def main():
             assert current['reference_generation'] == canceled['server_generation']
             assert current['status'] == 'REFERENCE_CANCELED' and not current.get('reference_design')
             assert current['reference_generation']['source_sha256'] == state['original_sha256']
+            if canceled['classification'] == 'AUTONOMOUS_AUTHORIZED_REPAIR_CANCELLATION_AFTER_PROVEN_SOURCE_CONTRADICTION':
+                observed = {}
+                for key, endpoint in [('export', '/api/engineering/projects/export'), ('jobs', '/api/simulations')]:
+                    query = Request(receipt['base_url'] + endpoint, headers={'X-Project-ID': state['project_id']})
+                    with build_opener(ProxyHandler({})).open(query, timeout=20) as response:
+                        observed[key] = json.load(response)
+                assert not any(observed['export']['source_data'].values()) and observed['jobs']['jobs'] == []
+                save('fresh-authorized-repair-terminal-precheck.json', observed)
             save('fresh-cancellation-precheck.json', current)
         elif state['status'] == 'READY_FOR_NATIVE_INTAKE':
             # An unused preparation with the disabled provider is not a native failure.

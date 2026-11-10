@@ -1,0 +1,32 @@
+--- before/local_reasoner.py
++++ after/local_reasoner.py
+@@ -1894,7 +1894,7 @@
+                               + 'Nur den ausdrücklich ausgewählten Stufenbereich vollständig liefern; vorhandene eindeutige IDs erhalten. '
+                               'Jede Auswahl in rationale mit einem kurzen fachlichen Satz und höchstens 240 Zeichen begründen; '
+                               'Quellenbindungen und technische Entscheidungen vollständig in ihren eigenen Feldern erhalten. '
+-                              'Echte offene Auslegung explizit unresolved halten. '
++                              'Echte offene Auslegung explizit unresolved halten. Bereits in current_candidate.unresolved gespeicherte identische Befunde bleiben offen und werden nicht erneut ausgegeben; nur neue oder inhaltlich andere Befunde ergänzen. '
+                               + ('Zunächst ausschließlich konkrete Portabsicht über port_intents statt ports planen: Teilnehmer und alle technischen Felder vollständig wählen, aber keine id vorgeben. Je Antwort höchstens EINEN noch fehlenden physischen Anschluss planen. Vorhandene Anschlüsse in current_candidate.ports erhalten; weitere notwendige Anschlüsse mit port_intents_complete=false für die normale nächste Antwort offenhalten. port_intents_complete bewertet alle ausgewählten Teilnehmer und ist erst true, wenn sämtliche benötigten Anschlüsse geplant sind. Leeres port_intents ist nur mit true zulässig. Die Gesamtzahl benötigter Anschlüsse ist durch diese Antwortaufteilung nicht begrenzt. Keine bereits geplanten Anschlüsse erneut deklarieren; technisch identische parallele Anschlüsse nur bei tatsächlich weiterem physischem Bedarf. Die Begründung kurz und fachlich konkret formulieren. NIS vergibt anschließend eindeutige neue Port-IDs; bestehende Ports bleiben unverändert. parameters bleibt {}. Die folgende eigene Parameterstufe legt jeden Anschluss aus; diese Zwischenstufe ist keine vollständige Prüfung. ' if port_intent else '')
+                               + ('Jetzt EINEN vollständigen physischen Anschlussbedarf für ALLE ausgewählten Teilnehmer '
+                                  'über port_groups_by_device liefern; ports und alle anderen Modelllisten bleiben leer. '
+@@ -2198,6 +2198,20 @@
+                         if port_groups:
+                             calls[-1].update(port_plan_complete=True, planned_port_count=len(result['ports']),
+                                              port_groups_by_device=deepcopy(native_port_groups))
++                        # Findings describe open decisions, not occurrences.
++                        # Only exact validated triples are idempotent; every
++                        # changed target, code or message remains independently
++                        # open. Preserve the actual native reply below for audit
++                        # and KV history, including its repeated findings.
++                        seen_findings = {tuple(row[key] for key in ('code', 'message', 'target_ref'))
++                                         for row in current['unresolved']}
++                        new_findings = []
++                        for row in result['unresolved']:
++                            identity = tuple(row[key] for key in ('code', 'message', 'target_ref'))
++                            if identity not in seen_findings:
++                                seen_findings.add(identity)
++                                new_findings.append(row)
++                        result['unresolved'] = new_findings
+                         reference_messages = [*deepcopy(payload['messages']), {'role': 'assistant', 'content': native_content}]
+                         reference_prompt = deepcopy(prompt)
+                         if reference_anchor is None or (context_rebased and len(full_messages) == 2):

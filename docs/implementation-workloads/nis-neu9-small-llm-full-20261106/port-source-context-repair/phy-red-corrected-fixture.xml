@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="23.271" timestamp="2026-11-09T20:42:06.897878+01:00" hostname="Haranga"><testcase classname="tests.test_reference_port_source_context" name="test_port_planner_receives_authoritative_physical_profiles_without_selecting_a_phy" time="22.369"><failure message="KeyError: 'physical_profile'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x00000197FB115A70&gt;
+
+    def test_port_planner_receives_authoritative_physical_profiles_without_selecting_a_phy(monkeypatch):
+        from dataclasses import asdict
+        import hashlib
+        from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
+        from backend.tests.test_reference_design import fixture_request
+        request = fixture_request()
+        envelope = json.loads(request['prompt'].split('- Dokument-Geräte: ', 1)[1])
+        for technology in ('can_fd', 'ethernet', 'mqtt'):
+            quote = 'Transport: ' + technology
+            envelope['source_text'] += '\n' + quote
+            envelope['technologies'].append({'name': technology, 'kind': 'TRANSPORT', 'source_quote': quote})
+        envelope['source_chars'] = len(envelope['source_text'])
+        envelope['source_sha256'] = hashlib.sha256(envelope['source_text'].encode()).hexdigest()
+        request['prompt'] = envelope['source_text'] + '\n- Dokument-Geräte: ' + json.dumps(envelope, ensure_ascii=False)
+        instance, prepared, observed = reasoner_with_transport(monkeypatch, request=request)
+        run_reference(instance, prepared)
+        requests = [row for row in observed if row.get('selected_port_function_context') is not None]
+        assert requests
+        for request in requests:
+            technologies = request['registered_catalogs']['source_technologies']
+            assert technologies
+            for identity, technology in technologies.items():
+                profile = DEFAULT_TECHNOLOGY_REGISTRY.physical_profile(identity)
+                expected = json.loads(json.dumps(asdict(profile))) if profile else None
+&gt;               assert technology['physical_profile'] == expected
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               KeyError: 'physical_profile'
+
+backend\tests\test_reference_port_source_context.py:105: KeyError</failure></testcase></testsuite></testsuites>

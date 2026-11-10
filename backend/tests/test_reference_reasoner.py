@@ -971,7 +971,8 @@ def test_existing_binding_schema_offers_only_identity_selection_and_scoped_metad
     for candidate in (row for row in alternatives if row is not choice):
         kind = candidate['properties']['kind']['enum'][0]
         original = next(row for row in schema['$defs']['ReferenceDevice']['anyOf']
-                        if row['properties']['kind']['enum'] == [kind])
+                        if row['properties']['kind']['enum'] == [kind]
+                        and row['properties']['owner_device_id'] == candidate['properties']['owner_device_id'])
         assert candidate['properties']['choice_kind']['enum'] == ['NEW_' + kind]
         assert {key: value for key, value in candidate['properties'].items() if key != 'choice_kind'} == original['properties']
         assert candidate['required'] == ['choice_kind', *original['required']]
@@ -1018,8 +1019,14 @@ def test_existing_binding_schema_excludes_incompatible_immutable_identities(mism
         target['member'] = 'Temperatur rechts'
     schema = _reference_schema_for_stage(prepared, {'devices'}, inventory_target=target, existing_devices=[sensor])
     new_choice = schema['properties']['inventory_choices']['items']
-    assert new_choice['properties']['choice_kind']['enum'] == ['NEW_' + prepared['facts'][target['fact_id']]['role']]
-    assert 'device_id' not in new_choice['properties']
+    alternatives = new_choice.get('anyOf', [new_choice])
+    role = prepared['facts'][target['fact_id']]['role']
+    assert len(alternatives) == (1 if role == 'CONTROLLER' else 2)
+    assert {row['properties']['owner_device_id']['type'] for row in alternatives} == (
+        {'null'} if role == 'CONTROLLER' else {'null', 'string'})
+    for row in alternatives:
+        assert row['properties']['choice_kind']['enum'] == ['NEW_' + role]
+        assert 'device_id' not in row['properties']
     assert schema['properties']['inventory_choices']['minItems'] == 1
     assert schema['properties']['devices']['maxItems'] == 0
 

@@ -14,7 +14,8 @@ from backend.tests.test_reference_design import fixture_request, reference
 
 def anchor_fixture():
     early = {'original_source': 'Original\r\nµ 🦾 /~' + 's' * 30000,
-             'current_candidate': {'devices': []}, 'typed': [False, 0, None]}
+             'current_candidate': {'devices': []}, 'typed': [False, 0, None],
+             'planning_stage': 'Initial source planning'}
     messages, _, _ = reasoner._reference_context_messages([], None, early, 'system', 131072)
     older = ([*messages, {'role': 'assistant', 'content': ' {"unit_actual_reply":true}\n'}], early)
     latest = deepcopy(early)
@@ -45,7 +46,13 @@ def test_overflow_snapshot_preserves_more_current_prefix_than_a_fitting_old_anch
     # The fresh complete snapshot reuses almost all of the latest native
     # request, whereas the older anchor diverges before its 65000-char notes.
     assert len(messages) == 2
-    assert messages[1]['content'].startswith(newer[0][1]['content'][:-1])
+    # Both snapshots have the normal stage envelope. The task changes only
+    # after the large unchanged source/candidate prefix, before the repeated
+    # selection view; compare that prefix rather than the whole wrapper.
+    left, right = messages[1]['content'], newer[0][1]['content']
+    common = next((i for i, pair in enumerate(zip(left, right)) if pair[0] != pair[1]),
+                  min(len(left), len(right)))
+    assert common > 90000
     assert len(newer[0][1]['content']) > len(older[0][1]['content'])
     assert effective_reference_context(messages) == current
     assert reasoner._reference_context_window(messages, 131072) == 131072
@@ -207,12 +214,13 @@ def test_planner_retains_bounded_original_and_recent_actual_native_anchors(monke
     from backend.tests.test_reference_reasoner import reasoner_with_transport, run_reference
     actual_builder = reasoner._reference_context_messages
     observed = []
-    def fresh(history, previous, current, system, maximum, *, anchor=None, anchors=()):
+    def fresh(history, previous, current, system, maximum, *, anchor=None, anchors=(), capacity_check=None):
         observed.append(deepcopy((anchor, anchors)))
         if history:
-            messages, full, _ = actual_builder([], None, current, system, maximum)
+            messages, full, _ = actual_builder([], None, current, system, maximum, capacity_check=capacity_check)
             return messages, full, True
-        return actual_builder(history, previous, current, system, maximum, anchor=anchor, anchors=anchors)
+        return actual_builder(history, previous, current, system, maximum, anchor=anchor, anchors=anchors,
+                              capacity_check=capacity_check)
     monkeypatch.setattr(reasoner, '_reference_context_messages', fresh)
     instance, prepared, _ = reasoner_with_transport(monkeypatch, wire_padding=True)
     result = run_reference(instance, prepared)
